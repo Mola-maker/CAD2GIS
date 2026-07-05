@@ -1,0 +1,15 @@
+{
+  "extraPaths": [
+    "/usr/local/lib/python3.12/dist-packages",
+    "/usr/lib/python3/dist-packages"
+  ],
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Linux",
+  "reportUnknownMemberType": false,
+  "reportMissingImports": false,
+  "reportOptionalMemberAccess": false,
+  "reportUnknownParameterType": false,
+  "reportUnknownArgumentType": false,
+  "reportUnknownVariableType": false,
+  "reportGeneralTypeIssues": false
+}
