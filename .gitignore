@@ -1,0 +1,30 @@
+# Claude Code / MCP — personal config, do not commit
+.claude/
+CLAUDE.md
+.claudeignore
+.mcp.json
+.omc/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Demo output
+demo/output/
+
+# Temp
+*.tmp
+*.bak
