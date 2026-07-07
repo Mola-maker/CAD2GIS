@@ -1,0 +1,23 @@
+{
+  "name": "cad2gis-project",
+  "version": "0.1.0",
+  "description": "Project-local Codex guidance and MCP context for the Cad2GIS Python/QGIS pipeline.",
+  "author": {
+    "name": "Cad2GIS local project"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Cad2GIS Project",
+    "shortDescription": "Work on the Cad2GIS CAD-to-GIS pipeline with project-specific guidance.",
+    "longDescription": "Adds project-local guidance and read-only MCP context for the Cad2GIS Python/QGIS conversion platform, including commands, architecture, tests, and deterministic runtime constraints.",
+    "developerName": "Cad2GIS local project",
+    "category": "Productivity",
+    "capabilities": ["Code", "Read", "Context"],
+    "defaultPrompt": [
+      "Review the Cad2GIS pipeline architecture.",
+      "Run the right Cad2GIS verification checks.",
+      "Help extend Cad2GIS without runtime LLMs."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}
