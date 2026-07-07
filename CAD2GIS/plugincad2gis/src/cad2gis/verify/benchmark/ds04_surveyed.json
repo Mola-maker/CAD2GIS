@@ -1,0 +1,14 @@
+{
+  "name": "DS-04 comms (surveyed-anchored ground truth)",
+  "source": "DS-04_comms.dxf; manhole count anchored to surveyed X=/Y= node labels",
+  "expected_counts": {
+    "manhole": 259
+  },
+  "crs": {
+    "expected": "local-engineering-grid"
+  },
+  "tolerance": {
+    "rmse_m": 3.0
+  },
+  "notes": "Only manhole count is independently anchored (surveyed labels). Other classes are reported but not independently count-verified without organizer ground truth."
+}

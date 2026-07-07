@@ -1,0 +1,34 @@
+# Reproducible geospatial toolchain for the CAD2GIS platform.
+# Create:  conda env create -f env/environment.yml
+# Lock:    conda env export -n cad2gis > env/environment.lock.yml   (run after first solve)
+# Rationale: system Python 3.14 is too new for GDAL/QGIS wheels; this pins a supported 3.12 stack.
+name: cad2gis
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python
+  # --- GIS platform + geometry/CRS core ---
+  # NOTE: standalone `grass` is intentionally NOT pinned here. On conda-forge/win-64 the current
+  # qgis requires proj>=9.8.1 while grass 8.5.0 requires proj<9.8.0 — mutually unsolvable. QGIS
+  # ships its own GRASS Processing provider, and we also have a shapely topology fallback, so we
+  # let the solver pick the python/qgis/gdal combo that co-installs. (create with:
+  #   conda create -n cad2gis --override-channels -c conda-forge --strict-channel-priority \
+  #     qgis gdal ezdxf geopandas pyproj shapely pyogrio fiona pyyaml pytest )
+  - qgis
+  - gdal
+  - proj
+  - geos
+  # --- Python geo stack ---
+  - ezdxf
+  - geopandas
+  - pyproj
+  - shapely
+  - pyogrio
+  - fiona
+  - pandas
+  - numpy
+  # --- config / dev / test ---
+  - pyyaml
+  - pytest
+  - pip

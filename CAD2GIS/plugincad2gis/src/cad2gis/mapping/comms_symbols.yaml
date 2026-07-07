@@ -1,0 +1,129 @@
+# Communications-infrastructure CAD -> GIS semantic mapping dictionary.
+# Deterministic, rules-first. Each class maps CAD (layer name / block name / entity type)
+# to a GIS feature class + target geometry + default attributes. Highest priority wins.
+# Layer regexes are case-insensitive and cover common Chinese + pinyin/abbrev conventions.
+# This file is the authoritative mapping; LLM assistance (G6) only *proposes* additions here
+# for human review — it never edits classifications at runtime.
+version: 1
+classes:
+  # ---- REAL organizer layer names (綦江区东溪镇 dataset, DS-02/DS-04 通信平面布置图) ----
+  # Comms symbols are drawn as opaque INSERT block codes (GC200, gc119...) on the 通信* layers,
+  # so classification here is LAYER-DRIVEN (Codex strategy): layer identifies discipline+role,
+  # geometry/entity type refines cable-vs-duct-vs-point. Block-name matching stays secondary.
+  - name: cable            # 通信 layer, linework = optical cable routes
+    geom: LineString
+    priority: 95
+    match:
+      layer_regex: "^通信$|通信线路|光缆|\\bGX[_-]?YZ?\\b"
+      entity_types: [LINE, LWPOLYLINE, POLYLINE, SPLINE]
+    attributes: {facility: cable, discipline: comms}
+
+  - name: duct             # 通信土建 = comms civil works (ducts/管道/排管)
+    geom: LineString
+    priority: 92
+    match:
+      layer_regex: "通信土建|通信管|排管|管孔"
+      entity_types: [LINE, LWPOLYLINE, POLYLINE]
+    attributes: {facility: duct, discipline: comms}
+
+  - name: manhole          # comms point facilities: INSERT well/manhole blocks on 通信/通信土建
+    # Real data (DS-04 probe): comms nodes are named 井 (well) blocks — 末端井(terminal), 三通井
+    # /四通井/直通井(3/4-way/straight junction wells on 人行道/车行道), 检查井, plus 人孔/手孔.
+    # Matching '井$' captures the whole family; opaque gc* codes stay out (they are duct/paving symbols).
+    geom: Point
+    priority: 90
+    match:
+      layer_regex: "^通信$|通信土建"
+      block_regex: "井$|井[0-9]*$|末端井|三通井|四通井|直通井|检查井|人孔|手孔|人手孔"
+      entity_types: [INSERT, POINT, CIRCLE]
+    attributes: {facility: manhole, discipline: comms}
+
+  - name: annotation       # 通信坐标标注 / 通信线路长度统计 = coordinate + length labels
+    geom: Point
+    priority: 40
+    match:
+      layer_regex: "通信坐标标注|通信线路长度|坐标标注"
+      entity_types: [TEXT, MTEXT]
+    attributes: {facility: annotation, discipline: comms}
+
+  - name: annotation       # any TEXT/MTEXT on a 通信* layer is a comms label (cable IDs, specs,
+    # coordinates). Lower priority than the specific 坐标标注 rule; catches labels on plain 通信.
+    geom: Point
+    priority: 35
+    match:
+      layer_regex: "^通信|通信$|通信土建"
+      entity_types: [TEXT, MTEXT]
+    attributes: {facility: annotation, discipline: comms}
+
+  - name: control_point    # 测量控制点 / KZD / GPSCOMMON = survey control (georeferencing anchors)
+    geom: Point
+    priority: 88
+    match:
+      layer_regex: "测量控制点|\\bKZD\\b|GPSCOMMON|控制点"
+      entity_types: [POINT, INSERT, CIRCLE]
+    attributes: {facility: control_point, discipline: survey}
+
+  # ---- generic / synthetic-fixture conventions (kept for tests + other datasets) ----
+  - name: cable            # 光缆 / optical cable (generic)
+    geom: LineString
+    priority: 90
+    match:
+      layer_regex: "(光缆|guang\\s*lan|\\bgx[_-]|\\bcable\\b|\\bfiber\\b)"
+      entity_types: [LINE, LWPOLYLINE, POLYLINE, SPLINE]
+    attributes: {facility: cable}
+
+  - name: duct             # 管道 / 管孔 / duct-pipe
+    geom: LineString
+    priority: 80
+    match:
+      layer_regex: "(管道|管孔|\\bgd[_-]|\\bduct\\b|\\bpipe\\b|conduit)"
+      entity_types: [LINE, LWPOLYLINE, POLYLINE]
+    attributes: {facility: duct}
+
+  - name: manhole          # 人孔 / 手孔 / 井 / manhole-handhole
+    geom: Point
+    priority: 85
+    match:
+      layer_regex: "(人孔|手孔|人手孔|\\brk[_-]|\\bsk[_-]|manhole|handhole|\\bmh\\b)"
+      entity_types: [POINT, INSERT, CIRCLE]
+    attributes: {facility: manhole}
+
+  - name: pole             # 杆 / 电杆 / 通信杆 / pole
+    geom: Point
+    priority: 70
+    match:
+      layer_regex: "(电杆|通信杆|(^|[_-])杆|\\bgg[_-]|\\bpole\\b)"
+      entity_types: [POINT, INSERT, CIRCLE]
+    attributes: {facility: pole}
+
+  - name: closure          # 接头盒 / 光缆接头 / splice closure
+    geom: Point
+    priority: 75
+    match:
+      layer_regex: "(接头盒|接续盒|光缆接头|splice|closure|\\bjt[_-])"
+      entity_types: [POINT, INSERT]
+    attributes: {facility: closure}
+
+  - name: cabinet          # 机柜 / 交接箱 / cabinet
+    geom: Point
+    priority: 65
+    match:
+      layer_regex: "(机柜|交接箱|光交|cabinet|\\bodf\\b)"
+      entity_types: [POINT, INSERT]
+    attributes: {facility: cabinet}
+
+  - name: room             # 机房 / equipment room (closed area -> polygon)
+    geom: Polygon
+    priority: 60
+    match:
+      layer_regex: "(机房|局房|\\bjf[_-]|equipment\\s*room|\\broom\\b)"
+      entity_types: [LWPOLYLINE, POLYLINE, HATCH]
+    attributes: {facility: room}
+
+  - name: annotation       # 注记 / 标注 / 文字 / text
+    geom: Point
+    priority: 10
+    match:
+      layer_regex: "(注记|标注|注释|文字|\\bzs[_-]|\\btext\\b|annotation|label)"
+      entity_types: [TEXT, MTEXT]
+    attributes: {facility: annotation}
