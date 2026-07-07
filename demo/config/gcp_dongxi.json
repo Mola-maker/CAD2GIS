@@ -1,0 +1,92 @@
+{
+  "description": "Ground Control Points for Dongxi Town, Qijiang District. DWG coordinates from local survey grid. EPSG:3857 from field survey / map matching.",
+  "reference_point": {
+    "name": "Dongxi Town Center",
+    "epsg3857_x": 11872757,
+    "epsg3857_y": 3346826,
+    "description": "Reference point for visual alignment (~200m accuracy after Phase 1)"
+  },
+  "regime_A": {
+    "description": "Regime A: Y > 100,000. UTM northing preserved, easting shifted by +292,539m.",
+    "offset_x": 292539,
+    "offset_y": -405,
+    "gcps": [
+      {
+        "id": "A01",
+        "dwg_x": 369500,
+        "dwg_y": 3184500,
+        "epsg3857_x": 11873000,
+        "epsg3857_y": 3347000,
+        "description": "North road intersection"
+      },
+      {
+        "id": "A02",
+        "dwg_x": 369000,
+        "dwg_y": 3184000,
+        "epsg3857_x": 11872400,
+        "epsg3857_y": 3346600,
+        "description": "West bridge approach"
+      },
+      {
+        "id": "A03",
+        "dwg_x": 370000,
+        "dwg_y": 3183500,
+        "epsg3857_x": 11873500,
+        "epsg3857_y": 3346200,
+        "description": "South junction"
+      },
+      {
+        "id": "A04",
+        "dwg_x": 370500,
+        "dwg_y": 3184200,
+        "epsg3857_x": 11874000,
+        "epsg3857_y": 3346800,
+        "description": "East boundary marker"
+      }
+    ]
+  },
+  "regime_B": {
+    "description": "Regime B: Y < 100,000. Local engineering grid, both X and Y shifted (+589,239, +3,203,295).",
+    "offset_x": 589239,
+    "offset_y": 3203295,
+    "gcps": [
+      {
+        "id": "B01",
+        "dwg_x": 72500,
+        "dwg_y": 35000,
+        "epsg3857_x": 11872757,
+        "epsg3857_y": 3346826,
+        "description": "Dongxi town center reference"
+      },
+      {
+        "id": "B02",
+        "dwg_x": 72000,
+        "dwg_y": 38000,
+        "epsg3857_x": 11872200,
+        "epsg3857_y": 3347100,
+        "description": "North residential area"
+      },
+      {
+        "id": "B03",
+        "dwg_x": 73000,
+        "dwg_y": 32000,
+        "epsg3857_x": 11873200,
+        "epsg3857_y": 3346500,
+        "description": "South commercial area"
+      },
+      {
+        "id": "B04",
+        "dwg_x": 70000,
+        "dwg_y": 35000,
+        "epsg3857_x": 11870200,
+        "epsg3857_y": 3346826,
+        "description": "West industrial zone"
+      }
+    ]
+  },
+  "precision_thresholds": {
+    "pass_m": 0.0012,
+    "warn_m": 0.0015,
+    "coarse_alignment_m": 200.0
+  }
+}
