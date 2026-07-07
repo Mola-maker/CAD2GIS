@@ -1,0 +1,134 @@
+{
+  "layer_mappings": {
+    "DGX": {
+      "fc_name": "fc_contours",
+      "geometry_type": "LineString",
+      "attributes": {
+        "contour_value_m": {
+          "type": "float",
+          "source": "annotation"
+        }
+      }
+    },
+    "DMTZ": {
+      "fc_name": "fc_terrain_soil",
+      "geometry_type": "Polygon",
+      "attributes": {
+        "terrain_type": {
+          "type": "string",
+          "domain": ["耕地", "林地", "草地", "水域", "建设用地", "未利用地"]
+        }
+      }
+    },
+    "GCD": {
+      "fc_name": "fc_elevation_pts",
+      "geometry_type": "Point",
+      "attributes": {
+        "elevation_m": {
+          "type": "float",
+          "source": "annotation"
+        }
+      }
+    },
+    "JMD": {
+      "fc_name": "fc_residential",
+      "geometry_type": "Polygon",
+      "attributes": {
+        "building_name": {
+          "type": "string",
+          "source": "annotation"
+        }
+      }
+    },
+    "DLSS": {
+      "fc_name": "fc_roads",
+      "geometry_type": "LineString",
+      "attributes": {
+        "road_number": {
+          "type": "string",
+          "source": "annotation"
+        },
+        "road_name": {
+          "type": "string",
+          "source": "annotation"
+        }
+      }
+    },
+    "GXYZ": {
+      "fc_name": "fc_pipelines",
+      "geometry_type": "LineString",
+      "attributes": {
+        "pipeline_type": {
+          "type": "string",
+          "domain": ["供水", "排水", "燃气", "电力", "通信", "热力"]
+        }
+      }
+    },
+    "SXSS": {
+      "fc_name": "fc_water",
+      "geometry_type": "LineString",
+      "attributes": {
+        "waterway_name": {
+          "type": "string",
+          "source": "annotation"
+        }
+      }
+    },
+    "ZBTZ": {
+      "fc_name": "fc_vegetation",
+      "geometry_type": "Polygon",
+      "attributes": {
+        "vegetation_type": {
+          "type": "string",
+          "domain": ["针叶林", "阔叶林", "混交林", "灌木林", "草地", "耕地", "园地"]
+        }
+      }
+    },
+    "comm_civil": {
+      "fc_name": "fc_comm_civil",
+      "geometry_type": "Polygon",
+      "attributes": {
+        "civil_type": {
+          "type": "string",
+          "domain": ["管道", "人井", "手井", "交接箱", "基站"]
+        }
+      }
+    },
+    "comm_line": {
+      "fc_name": "fc_comm_lines",
+      "geometry_type": "LineString",
+      "attributes": {
+        "line_id": {
+          "type": "string",
+          "source": "annotation"
+        },
+        "length_m": {
+          "type": "float",
+          "source": "annotation"
+        }
+      }
+    },
+    "elec_pipe": {
+      "fc_name": "fc_power_pipe",
+      "geometry_type": "LineString",
+      "attributes": {
+        "pipe_type": {
+          "type": "string",
+          "domain": ["高压", "中压", "低压", "电缆沟", "排管"]
+        }
+      }
+    },
+    "drainage": {
+      "fc_name": "fc_drainage",
+      "geometry_type": "LineString",
+      "attributes": {
+        "drainage_id": {
+          "type": "string",
+          "source": "annotation"
+        }
+      }
+    }
+  },
+  "default_fc": "fc_misc",
+  "target_crs": "EPSG:3857"
+}
