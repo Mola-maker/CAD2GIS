@@ -28,3 +28,13 @@ demo/output/
 # Temp
 *.tmp
 *.bak
+/temp/
+
+# QGIS project files
+*.qgz
+
+# Plugincad2gis (legacy)
+/plugincad2gis/
+
+# Official reference Shape files
+/official/Shape/

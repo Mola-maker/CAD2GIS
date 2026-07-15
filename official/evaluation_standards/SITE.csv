@@ -1,0 +1,25 @@
+﻿OBJET : SITE TECHNIQUE,,,,,,,,,
+Nom champ,字段描述,Descriptif champ,Exemple,"Type
+champ","Longueur
+champ",Format de saisie,"Obligatoire
+O/C/N","Description de
+la condition","Contrainte de
+remplissage"
+CODE,技术站点编码,Code du site technique,TNG01-BOK01,Texte,20,Saisie libre,O,,Format à définir
+REF_PLAQUE,归属面板编码,Code de la plaque de rattachement,TNG01-BOK,Texte,50,Saisie libre,O,,Format à définir
+REF_NRO,归属 NRO 编码,Code du NRO de rattachement,UNF-NRO-TNG01-BOK,Texte,50,Saisie libre,O,,Format à définir
+TYPE,类型,Type de site,PM,Texte,50,Liste de valeurs l_site_type,O,,
+FABRIQUANT,光缆厂商编号,Référence cablier,"FBR, FIBERHOME",Texte,50,Saisie libre,O,,
+REF_PRODUIT,产品型号,Référence produit ,ADR_28U,Texte,50,Saisie libre,O,,
+MODE_POSE,站点安装方式,Mode de pose du site,PM,Texte,50,Liste de valeurs l_site_type_phy,O,,
+STATUT,部署状态,Statut de déploiement,DEPLOYE,Texte,30,Liste de valeurs l_statut,O,,
+PROPRIETAIRE,产权方,Propriétaire,UNIFIBER,Texte,50,Saisie libre,O,,
+GESTIONNAIRE,管理方,Gestionnaire,UNIFIBER,Texte,50,Saisie libre,O,,
+ADRESSSE,站点附近地址,Adresse située à proximité du site,RUE DE LA MER,Texte,50,"Adresse sans complément : ""Numéro""""Espace""""Nom de la rue""
+Adresse avec complément : ""Numéro""""Espace""""Complement""""Espace""""Nom de la rue""
+Adresse sans numéro : ""Nom de la rue""",C,Si existant,
+COMMUNE,市镇,Commune,CASABLANCA,Texte,50,Saisie libre,O,,
+CODE_POSTAL,邮政编码,Code Postal,20250,Entier,5,Saisie libre,C,Si existant,
+X,地理坐标 X,Coordonnées géographiques X,33.68371964,Double,,Valeur calculée automatiquement,O,,Coordonnées géographiques exprimées en WGS84
+Y,地理坐标 Y,Coordonnées géographiques Y,7.393088654,Double,,Valeur calculée automatiquement,O,,Coordonnées géographiques exprimées en WGS84
+COMMENT,备注信息,Commentaires éventuels,,Texte,50,Saisie libre,C,,

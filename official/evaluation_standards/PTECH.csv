@@ -1,0 +1,32 @@
+﻿OBJET : POINT TECHNIQUE,,,,,,,,,
+Nom champ,字段描述,Descriptif champ,Exemple,"Type
+champ","Longueur
+champ",Format de saisie,"Obligatoire
+O/C/N","Description de
+la condition","Contrainte de
+remplissage"
+CODE,技术点标识,Identifiant du point technique,IAM-POT-00001,Texte,30,Saisie libre,O,,Format à définir
+NOM,现场 / 业主数据库中的技术点名称,Nom du point technique sur le terrain ou dans les bases de données du propriétaire,IAM-CHA-00016,Texte,50,"Identique au code si point technique UNIFIBER
+Vide s'il n'existe pas de nom
+Codification du propriétaire du ptech si existant",O,,
+REF_PLAQUE,归属面板编码,Code de la plaque de rattachement,UNF-CAS-MAA-00001,Texte,50,Saisie libre,O,,Format à définir
+TYPE,技术点类型,Type de point technique,"POTEAU,CHAMBRE",Texte,30,Liste de valeurs l_ptc_type,O,,
+NATURE,技术点性质,Nature du point technique,"PBOI,L2T,PNS3",Texte,30,Liste de valeurs l_ptc_nature,O,,
+HAUTEUR_APPUI,支撑高度（米）,Hauteur de l'appui en mètre,8,Double,10,Saisie libre,C,"Si ptc_type = POTEAU
+sinon 0",
+TYPE_APPUI,支撑类型（单杆 / 复合杆 / 拉索杆 / 双杆等）,"Type d'appui, Simple, Moisé, Haubané, Couple, …",S,Double,10,Saisie libre,C,"Si ptc_type = POTEAU
+sinon vide",
+EFFORT_APPUI,支撑额定拉力（10牛）,Effort nominal de l'appui en daN,255,Double,10,Saisie libre,O,"Si ptc_type = POTEAU
+sinon vide",
+NB_BOITIERS,技术点内箱体数量,Nombre de boitiers present dans le point technique,"0,1,2",,,,,,
+STATUT,部署状态,Statut de déploiement,DEPLOYE,Texte,30,Liste de valeurs l_statut,O,,
+PROPRIETAIRE,产权方,Propriétaire,UNIFIBER,Texte,50,Saisie libre,O,,
+GESTIONNAIRE,管理方,Gestionnaire,UNIFIBER,Texte,50,Saisie libre,O,,
+ADRESSSE,箱体附近地址,Adresse située à proximité du boitier,RUE DE LA MER,Texte,50,"Adresse sans complément : ""Numéro""""Espace""""Nom de la rue""
+Adresse avec complément : ""Numéro""""Espace""""Complement""""Espace""""Nom de la rue""
+Adresse sans numéro : ""Nom de la rue""",C,Si existant,
+VILLE,城市,VILLE,CASABLANCA,Texte,50,Saisie libre,O,,
+CODE_POSTAL,邮政编码,Code Postal,20250,Entier,5,Saisie libre,C,Si existant,
+X,地理坐标 X,Coordonnées géographiques X,33.68371964,Double,,Valeur calculée automatiquement,O,,Coordonnées géographiques exprimées en WGS84
+Y,地理坐标 Y,Coordonnées géographiques Y,7.393088654,Double,,Valeur calculée automatiquement,O,,Coordonnées géographiques exprimées en WGS84
+COMMENT,备注信息,Commentaires éventuels,,Texte,50,Saisie libre,C,,

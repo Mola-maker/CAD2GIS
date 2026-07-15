@@ -1,0 +1,177 @@
+{
+  "gpkg": "JAD_MARJANE_Reference.gpkg",
+  "rules": {
+    "1.1": {
+      "severity": "C",
+      "status": "PASS"
+    },
+    "1.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.3": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.4": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.5": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.6": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.7": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.8": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.9": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "2.0": {
+      "severity": "C",
+      "status": "PASS"
+    },
+    "3.0": {
+      "severity": "C",
+      "status": "PASS"
+    },
+    "4.1": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.2_IMB": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.3": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.4_BOITE": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.5": {
+      "severity": "E",
+      "status": "FAIL",
+      "detail": "2 features have null NB_FIBRE_UTIL; 1 features have null NB_FIBRE_DISP"
+    },
+    "4.6_CABLE": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.7": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.8_PTECH": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.9": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.10_INFRA": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.11": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.12_ZPM": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.13": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.14_ZNRO": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.15": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.16_SITE": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.1": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.3": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.4": {
+      "severity": "E",
+      "status": "FAIL",
+      "detail": "5.4.3: 2 BPE/PBO(s) not referenced by any DISTRIBUTION CABLE endpoint"
+    },
+    "6.1": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.3": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.4": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.5": {
+      "severity": "E",
+      "status": "FAIL",
+      "detail": "2 violation(s)"
+    },
+    "6.6": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "7.1": {
+      "severity": "E",
+      "status": "FAIL",
+      "detail": "1 capacity violation(s)"
+    },
+    "7.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "domain_vocab": {
+      "severity": "W",
+      "status": "FAIL",
+      "detail": "200 domain value violations: BOITE.MODE_POSE (100 violations); INFRASTRUCTURE.TYPE (100 violations)"
+    }
+  },
+  "summary": {
+    "errors": 4,
+    "warnings": 1,
+    "verdict": "FAIL",
+    "rules_passed": 35,
+    "rules_failed": 5
+  }
+}
