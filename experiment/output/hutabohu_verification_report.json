@@ -1,0 +1,219 @@
+{
+  "gpkg": "output/APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.gpkg",
+  "rules": {
+    "1.1": {
+      "severity": "C",
+      "status": "PASS"
+    },
+    "1.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.3": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.4": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.5": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.6": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.7": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.8": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "1.9": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "2.0": {
+      "severity": "C",
+      "status": "PASS"
+    },
+    "3.0": {
+      "severity": "C",
+      "status": "FAIL",
+      "detail": "Empty layers: ZNRO, CABLE, INFRASTRUCTURE, IMB, ZPM, PTECH"
+    },
+    "4.1": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.2_IMB": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.3": {
+      "severity": "E",
+      "status": "FAIL",
+      "detail": "15 features have null CODE; 15 features have null CODE_PTC; 15 features have null REF_PLAQUE; 15 features have null REF_PM; 15 features have null TYPE"
+    },
+    "4.4_BOITE": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.5": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.6_CABLE": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.7": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.8_PTECH": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.9": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.10_INFRA": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.11": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.12_ZPM": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.13": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.14_ZNRO": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "4.15": {
+      "severity": "E",
+      "status": "FAIL",
+      "detail": "2 features have null CODE; 2 features have null REF_PLAQUE; 2 features have null REF_NRO; 2 features have null TYPE; 2 features have null FABRIQUANT"
+    },
+    "4.16_SITE": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.1": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.3": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "5.4": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.1": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.3": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.4": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.5": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "6.6": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "7.1": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "7.2": {
+      "severity": "E",
+      "status": "PASS"
+    },
+    "domain_vocab": {
+      "severity": "W",
+      "status": "PASS"
+    }
+  },
+  "summary": {
+    "errors": 3,
+    "warnings": 0,
+    "verdict": "FAIL",
+    "rules_passed": 37,
+    "rules_failed": 3,
+    "extended_metrics": {
+      "feature_counts": {
+        "BOITE": 15,
+        "SITE": 2,
+        "CABLE": 0,
+        "PTECH": 0,
+        "INFRASTRUCTURE": 0,
+        "ZNRO": 0,
+        "ZPM": 0,
+        "IMB": 0
+      }
+    }
+  },
+  "intermediate_dump_analysis": {
+    "source_dwg": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
+    "total_objects": 15716,
+    "raw_entities_extractable": 10519,
+    "converter_extracted": 687,
+    "extraction_rate_pct": 6.5,
+    "classification_summary": {
+      "BOITE": 3594,
+      "CABLE": 995,
+      "PTECH": 360,
+      "IMB": 1364,
+      "SITE": 20,
+      "INFRASTRUCTURE": 518,
+      "ZNRO": 0,
+      "ZPM": 0,
+      "NO_MATCH": 1899,
+      "NEGATIVE_EVIDENCE": 1769
+    },
+    "schema_conformance_pct": 65.1,
+    "missing_layers": [
+      "ZNRO",
+      "ZPM"
+    ],
+    "notes": [
+      "Converter misses ~93% of entities due to legacy DWG r11 format (POLYLINE_r11, TEXT_r11 type conflicts)",
+      "Intermediate dump shows 10519 entities are extractable with proper DWG parsing",
+      "ZNRO and ZPM layers have zero entities in source DWG — no zone polygons were drawn",
+      "Text labels are single characters (X, M, B, F, P, D, A, G, O) — not descriptive FTTH annotations",
+      "SHP reference codes are Morocco-based (BPE-JAD-MAR-*, IAM-CHA-*, JAD-MAR-BAT-*)",
+      "GeoPackage verification: 37/40 rules pass. Failures: empty layers (6), missing BOITE attrs, missing SITE attrs"
+    ]
+  }
+}
