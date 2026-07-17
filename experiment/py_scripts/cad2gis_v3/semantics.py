@@ -11,6 +11,12 @@ from .config import MappingRegistry
 from .model import Feature, Relation, SourceEntity
 
 
+_ANNOTATION_CARRIER_TYPES = frozenset({
+    "TEXT", "MTEXT", "ATTRIB", "ATTDEF", "MLEADER", "MULTILEADER",
+    "TABLE", "TABLE_CELL",
+})
+
+
 def _feature_key(entity: SourceEntity, feature_class: str) -> str:
     return hashlib.sha256(f"{entity.entity_key}|{feature_class}".encode("utf-8")).hexdigest()
 
@@ -74,7 +80,9 @@ def _minimum_cost_assignment(costs):
     return assignment
 
 
-def _assign_family_annotations(annotations, targets, tolerance):
+def _assign_family_annotations(
+    annotations, targets, tolerance, *, family_id="", require_same_layer=False,
+):
     """Maximum-cardinality, minimum-distance one-to-one annotation matching."""
     annotations = sorted(annotations, key=lambda item: (item.text.casefold(), item.entity_key))
     targets = sorted(
@@ -87,15 +95,20 @@ def _assign_family_annotations(annotations, targets, tolerance):
         ranked = sorted(
             (math.dist(annotation.centroid, target.native_centroid), target.feature_key, target)
             for target in targets
+            if not require_same_layer
+            or annotation.layer.strip().casefold() == target.source_layer.strip().casefold()
         )
         within = [item for item in ranked if item[0] <= tolerance]
         for distance, _, target in within:
             distances[(annotation.entity_key, target.feature_key)] = distance
             candidate_records.append({
                 "annotation_key": annotation.entity_key,
+                "family_id": family_id,
                 "text": annotation.text.strip(),
+                "source_layer": annotation.layer,
                 "target_key": target.feature_key,
                 "target_handle": target.source_handle,
+                "target_layer": target.source_layer,
                 "distance_native_m": distance,
                 "selected": False,
                 "status": "candidate",
@@ -103,12 +116,16 @@ def _assign_family_annotations(annotations, targets, tolerance):
         if not within:
             failures.append({
                 "kind": "annotation", "entity_key": annotation.entity_key,
-                "text": annotation.text, "status": "outside_tolerance",
+                "family_id": family_id, "text": annotation.text,
+                "source_layer": annotation.layer,
+                "status": "outside_tolerance",
             })
         elif len(within) > 1 and within[1][0] - within[0][0] <= 0.01:
             failures.append({
                 "kind": "annotation", "entity_key": annotation.entity_key,
-                "text": annotation.text, "status": "multiple_optima",
+                "family_id": family_id, "text": annotation.text,
+                "source_layer": annotation.layer,
+                "status": "multiple_optima",
             })
             for record in candidate_records:
                 if record["annotation_key"] == annotation.entity_key:
@@ -145,7 +162,9 @@ def _assign_family_annotations(annotations, targets, tolerance):
         else:
             failures.append({
                 "kind": "annotation", "entity_key": annotation.entity_key,
-                "text": annotation.text, "status": "assignment_conflict",
+                "family_id": family_id, "text": annotation.text,
+                "source_layer": annotation.layer,
+                "status": "assignment_conflict",
             })
     for record in candidate_records:
         if (record["annotation_key"], record["target_key"]) in selected_pairs:
@@ -229,7 +248,10 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
             feature_class = reverse_blocks.get(entity.block_name.upper())
         elif entity.dwg_type in {"LWPOLYLINE", "POLYLINE"} and route_pattern.search(entity.layer):
             feature_class, geometry_kind, geometry_role = "CABLE", "LineString", "SOURCE_ROUTE"
-        elif entity.dwg_type in {"TEXT", "MTEXT"} and entity.layer.upper() in home_layers:
+        elif (
+            entity.dwg_type in _ANNOTATION_CARRIER_TYPES
+            and entity.layer.upper() in home_layers
+        ):
             feature_class, geometry_role = "IMB", "SOURCE_HOME_LABEL"
         if not feature_class or not entity.points:
             continue
@@ -241,6 +263,11 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
         )
         attributes.update(reviewed_attributes)
         provenance.update(reviewed_provenance)
+        if feature_class == "CABLE" and entity.native_length is not None:
+            attributes["source_autocad_native_length_m"] = float(entity.native_length)
+            provenance["source_autocad_native_length_m"] = (
+                "DWG_DIRECT:AutoCAD-curve-distance"
+            )
         display_label, label_provenance = _registry_display_label(
             feature_class, attributes, registry,
         )
@@ -267,38 +294,136 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
     by_class = defaultdict(list)
     for feature in features:
         by_class[feature.feature_class].append(feature)
-    label_specs = [
-        (re.compile(registry.labels["fat"]), "BOITE"),
-        (re.compile(registry.labels["pole"]), "PTECH"),
+    compiled_families = [
+        (
+            family,
+            re.compile(family.text_pattern),
+            re.compile(family.source_layer_pattern),
+            re.compile(family.target_layer_pattern),
+        )
+        for family in registry.annotation_families
     ]
-    annotations_by_class = defaultdict(list)
+    annotations_by_family = defaultdict(list)
+    annotation_discovery_failures = []
+    suspected_asset_id = re.compile(registry.labels["suspected_asset_id"])
+    known_non_assignment_labels = [re.compile(registry.labels["site"])]
     for entity in model_entities:
-        if entity.dwg_type not in {"TEXT", "MTEXT"} or not entity.text.strip():
+        if entity.dwg_type not in _ANNOTATION_CARRIER_TYPES or not entity.text.strip():
             continue
-        target_class = next((feature_class for pattern, feature_class in label_specs if pattern.fullmatch(entity.text.strip())), None)
-        if target_class is None:
+        text = entity.text.strip()
+        text_matches = [
+            family
+            for family, text_pattern, _, _ in compiled_families
+            if text_pattern.fullmatch(text)
+        ]
+        exact_matches = [
+            family
+            for family, text_pattern, source_layer_pattern, _ in compiled_families
+            if text_pattern.fullmatch(text) and source_layer_pattern.fullmatch(entity.layer.strip())
+        ]
+        if len(exact_matches) == 1:
+            annotations_by_family[exact_matches[0].family_id].append(entity)
             continue
-        annotations_by_class[target_class].append(entity)
+        if len(exact_matches) > 1:
+            annotation_discovery_failures.append({
+                "kind": "annotation",
+                "entity_key": entity.entity_key,
+                "family_id": "|".join(sorted(family.family_id for family in exact_matches)),
+                "text": text,
+                "source_layer": entity.layer,
+                "status": "multiple_annotation_families",
+            })
+        elif text_matches:
+            annotation_discovery_failures.append({
+                "kind": "annotation",
+                "entity_key": entity.entity_key,
+                "family_id": "|".join(sorted(family.family_id for family in text_matches)),
+                "text": text,
+                "source_layer": entity.layer,
+                "status": "source_layer_mismatch",
+            })
+        elif suspected_asset_id.fullmatch(text) and not any(
+            pattern.fullmatch(text) for pattern in known_non_assignment_labels
+        ):
+            annotation_discovery_failures.append({
+                "kind": "annotation",
+                "entity_key": entity.entity_key,
+                "family_id": "UNRECOGNIZED",
+                "text": text,
+                "source_layer": entity.layer,
+                "status": "unrecognized_asset_id",
+            })
 
-    annotation_candidates, annotation_assignments = [], {}
+    annotation_candidates = []
+    annotation_assignments_by_family = {}
+    annotation_assignments = defaultdict(lambda: {
+        "source_annotations": 0,
+        "assigned": 0,
+        "missing": 0,
+        "unresolved": 0,
+        "cross_layer_assignments": 0,
+        "total_distance_native_m": 0.0,
+    })
     annotation_rule = registry.decision_rules["annotation_assignment"]
-    tolerance = registry.thresholds["annotation_to_asset"]
-    for target_class, annotations in sorted(annotations_by_class.items()):
+    target_memberships = defaultdict(list)
+    for family, _, _, target_layer_pattern in compiled_families:
+        for target in by_class[family.target_class]:
+            if target_layer_pattern.fullmatch(target.source_layer.strip()):
+                target_memberships[target.feature_key].append(family.family_id)
+    overlapping_target_keys = {
+        target_key
+        for target_key, family_ids in target_memberships.items()
+        if len(family_ids) > 1
+    }
+    for target_key in sorted(overlapping_target_keys):
+        target = next(
+            feature for feature in features if feature.feature_key == target_key
+        )
+        annotation_discovery_failures.append({
+            "kind": "annotation",
+            "entity_key": target.source_entity_key,
+            "family_id": "|".join(sorted(target_memberships[target_key])),
+            "text": "",
+            "source_layer": target.source_layer,
+            "target_key": target_key,
+            "status": "target_in_multiple_annotation_families",
+        })
+    unresolved.extend(annotation_discovery_failures)
+    for family, _, _, target_layer_pattern in compiled_families:
+        annotations = annotations_by_family[family.family_id]
+        family_targets = [
+            target
+            for target in by_class[family.target_class]
+            if target_layer_pattern.fullmatch(target.source_layer.strip())
+            and target.feature_key not in overlapping_target_keys
+        ]
         assignments, failures, candidates = _assign_family_annotations(
-            annotations, by_class[target_class], tolerance,
+            annotations,
+            family_targets,
+            family.max_distance_native_m,
+            family_id=family.family_id,
+            require_same_layer=family.require_same_layer,
         )
         for item in failures:
-            unresolved.append({**item, "target_class": target_class})
+            unresolved.append({**item, "target_class": family.target_class})
         for candidate in candidates:
+            assignment_provenance = (
+                f"{family.provenance}|RULE:{annotation_rule['rule_id']}"
+            )
             annotation_candidates.append({
-                **candidate, "target_class": target_class,
-                "rule_id": annotation_rule["rule_id"],
+                **candidate,
+                "target_class": family.target_class,
+                "rule_id": family.rule_id,
+                "provenance": assignment_provenance,
             })
         for entity, target, distance in assignments:
+            assignment_provenance = (
+                f"{family.provenance}|RULE:{annotation_rule['rule_id']}"
+            )
             target.attributes["CODE"] = entity.text.strip()
-            target.field_provenance["CODE"] = annotation_rule["provenance"]
+            target.field_provenance["CODE"] = assignment_provenance
             target.display_label = entity.text.strip()
-            target.label_provenance = annotation_rule["provenance"]
+            target.label_provenance = assignment_provenance
             relation_key = hashlib.sha256(
                 f"{entity.entity_key}|labels|{target.feature_key}".encode()
             ).hexdigest()
@@ -306,24 +431,56 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
                 relation_key=relation_key, relation_kind="labels",
                 source_key=entity.entity_key, target_key=target.feature_key,
                 status="accepted",
-                method=f"{annotation_rule['rule_id']}:{annotation_rule['method']}",
+                method=(
+                    f"{family.family_id}:{family.rule_id}:"
+                    f"{annotation_rule['rule_id']}:{annotation_rule['method']}"
+                ),
                 distance_native_m=distance,
                 evidence_keys=(entity.entity_key, target.source_entity_key),
             ))
             mapped_entities.add(entity.entity_key)
-        annotation_assignments[target_class] = {
+        cross_layer_assignments = sum(
+            entity.layer.strip().casefold() != target.source_layer.strip().casefold()
+            for entity, target, _ in assignments
+        )
+        family_diagnostics = {
+            "target_class": family.target_class,
+            "target_assets": len(family_targets),
             "source_annotations": len(annotations),
             "assigned": len(assignments),
+            "missing": len(annotations) - len(assignments),
             "unresolved": len(failures),
+            "cross_layer_assignments": cross_layer_assignments,
             "total_distance_native_m": sum(item[2] for item in assignments),
+            "max_distance_native_m": family.max_distance_native_m,
+            "require_same_layer": family.require_same_layer,
         }
+        annotation_assignments_by_family[family.family_id] = family_diagnostics
+        aggregate = annotation_assignments[family.target_class]
+        for key in (
+            "source_annotations", "assigned", "missing", "unresolved",
+            "cross_layer_assignments", "total_distance_native_m",
+        ):
+            aggregate[key] += family_diagnostics[key]
 
     diagnostics = {
         "candidate_counts": {
             feature_class: len(items) for feature_class, items in sorted(by_class.items())
         },
         "mapped_entity_keys": sorted(mapped_entities),
-        "annotation_assignments": annotation_assignments,
+        "annotation_assignments": {
+            target_class: dict(values)
+            for target_class, values in sorted(annotation_assignments.items())
+        },
+        "annotation_assignments_by_family": annotation_assignments_by_family,
+        "unrecognized_suspected_asset_ids": sum(
+            item["status"] == "unrecognized_asset_id"
+            for item in annotation_discovery_failures
+        ),
+        "annotation_discovery_failure_counts": dict(sorted(
+            (status, sum(item["status"] == status for item in annotation_discovery_failures))
+            for status in {item["status"] for item in annotation_discovery_failures}
+        )),
         "annotation_candidates": annotation_candidates,
     }
     return features, relations, unresolved, diagnostics

@@ -227,10 +227,13 @@ def write_styles(output_dir, features, delivery_path=None):
     for layer_name in LAYER_ORDER:
         observed = {}
         for feature in by_class[layer_name]:
-            key = feature.style.render_key
+            key = str(feature.attributes.get("delivery_style_render_key", feature.style.render_key))
+            qgis_rotation = float(feature.attributes.get(
+                "delivery_style_qgis_rotation_deg", feature.style.qgis_rotation_degrees,
+            ))
             observed.setdefault(key, (
                 key, feature.style.aci_color, _rgba(feature), feature.style.linetype,
-                feature.style.lineweight, feature.style.qgis_rotation_degrees,
+                feature.style.lineweight, qgis_rotation,
             ))
         styles = [observed[key] for key in sorted(observed)] or [
             ("ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000", 7, "0,0,0,255", "Continuous", -1, 0.0)

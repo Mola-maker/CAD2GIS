@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import gc
+import math
 import os
 import shutil
 import sqlite3
@@ -72,6 +73,95 @@ def _contract_geometry_kind(value):
     raise ValueError(f"Unsupported contract geometry type: {value}")
 
 
+def _cable_span_payload(feature, target_points, grid_length, geodesic_length):
+    metrics = feature.attributes.get("span_metrics")
+    expected_count = max(0, len(feature.native_points) - 1)
+    if not isinstance(metrics, list) or len(metrics) != expected_count:
+        raise RuntimeError(
+            f"Missing complete span metrics for {feature.feature_key}: "
+            f"expected {expected_count} source segments"
+        )
+    span_count = feature.attributes.get("span_count")
+    measured_count = feature.attributes.get("measured_span_count")
+    unmeasured_count = feature.attributes.get("unmeasured_span_count")
+    if any(isinstance(value, bool) or not isinstance(value, int) for value in (
+        span_count, measured_count, unmeasured_count,
+    )):
+        raise RuntimeError(f"Invalid CABLE span counts for {feature.feature_key}")
+    if (
+        span_count != expected_count
+        or measured_count + unmeasured_count != span_count
+    ):
+        raise RuntimeError(f"CABLE span count closure failed for {feature.feature_key}")
+
+    measured = 0
+    dimension_measurements = []
+    for segment_index, metric in enumerate(metrics):
+        if metric.get("segment_index") != segment_index:
+            raise RuntimeError(
+                f"CABLE span order mismatch for {feature.feature_key}:segment:{segment_index}"
+            )
+        required = {
+            "source_native_length_m", "dimension_entity_key",
+            "measurement_native_m", "measurement_delta_m", "status",
+            "delivery_grid_length_m", "geodesic_length_m",
+        }
+        if not required <= set(metric):
+            raise RuntimeError(
+                f"Incomplete CABLE span metric for {feature.feature_key}:segment:{segment_index}"
+            )
+        native_length = math.dist(
+            feature.native_points[segment_index], feature.native_points[segment_index + 1]
+        )
+        target_length = math.dist(
+            target_points[segment_index], target_points[segment_index + 1]
+        )
+        if abs(float(metric["source_native_length_m"]) - native_length) > 1e-9:
+            raise RuntimeError(
+                f"Native CABLE span length mismatch for {feature.feature_key}:segment:{segment_index}"
+            )
+        if abs(float(metric["delivery_grid_length_m"]) - target_length) > 1e-6:
+            raise RuntimeError(
+                f"Delivery CABLE span length mismatch for {feature.feature_key}:segment:{segment_index}"
+            )
+        if not math.isfinite(float(metric["geodesic_length_m"])):
+            raise RuntimeError(
+                f"Non-finite geodesic CABLE span length for "
+                f"{feature.feature_key}:segment:{segment_index}"
+            )
+        if metric["status"] == "measured":
+            measurement = metric["measurement_native_m"]
+            if metric["dimension_entity_key"] in (None, "") or measurement is None:
+                raise RuntimeError(
+                    f"Measured CABLE span lacks DIMENSION evidence for "
+                    f"{feature.feature_key}:segment:{segment_index}"
+                )
+            measured += 1
+            dimension_measurements.append(float(measurement))
+
+    if measured != measured_count:
+        raise RuntimeError(f"Measured CABLE span count mismatch for {feature.feature_key}")
+    if abs(sum(float(item["delivery_grid_length_m"]) for item in metrics) - grid_length) > 1e-6:
+        raise RuntimeError(f"CABLE projected span length closure failed for {feature.feature_key}")
+    if abs(sum(float(item["geodesic_length_m"]) for item in metrics) - geodesic_length) > 1e-6:
+        raise RuntimeError(f"CABLE geodesic span length closure failed for {feature.feature_key}")
+    dimension_total = feature.attributes.get("dimension_length_m")
+    if dimension_measurements:
+        if dimension_total is None or abs(sum(dimension_measurements) - float(dimension_total)) > 1e-9:
+            raise RuntimeError(f"CABLE DIMENSION total closure failed for {feature.feature_key}")
+    elif dimension_total is not None:
+        raise RuntimeError(
+            f"CABLE has a DIMENSION total without measured spans: {feature.feature_key}"
+        )
+    return json.dumps(
+        metrics,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+        allow_nan=False,
+    )
+
+
 def _populate_dataset(dataset, features, transformer):
     by_class = defaultdict(list)
     for feature in features:
@@ -110,9 +200,24 @@ def _populate_dataset(dataset, features, transformer):
             ("style_qgis_rotation_deg", ogr.OFTReal),
             ("style_render_key", ogr.OFTString), ("lineage_json", ogr.OFTString),
             ("source_cad_length_m", ogr.OFTReal), ("dimension_length_m", ogr.OFTReal),
+            ("source_segment_sum_m", ogr.OFTReal),
+            ("source_native_length_delta_m", ogr.OFTReal),
             ("delivery_grid_length_m", ogr.OFTReal), ("geodesic_length_m", ogr.OFTReal),
         ):
             layer.CreateField(ogr.FieldDefn(name, field_type))
+        if layer_name == "CABLE":
+            for name, field_type in (
+                ("span_count", ogr.OFTInteger),
+                ("measured_span_count", ogr.OFTInteger),
+                ("unmeasured_span_count", ogr.OFTInteger),
+                ("dimension_measured_sum_m", ogr.OFTReal),
+                ("dimension_measurement_status", ogr.OFTString),
+                ("dimension_coverage_ratio", ogr.OFTReal),
+                ("span_schema_version", ogr.OFTString),
+                ("span_unit", ogr.OFTString),
+                ("span_metrics_json", ogr.OFTString),
+            ):
+                layer.CreateField(ogr.FieldDefn(name, field_type))
         count = 0
         for feature in sorted(by_class[layer_name], key=lambda item: item.feature_key):
             geometry, points = _geometry(feature, transformer)
@@ -134,8 +239,16 @@ def _populate_dataset(dataset, features, transformer):
             if geometry_kind == "Point":
                 if feature.attributes.get("X") is None or feature.attributes.get("Y") is None:
                     raise RuntimeError(f"Missing projected coordinates for {feature.feature_key}")
-                row.SetField("X", float(feature.attributes["X"]))
-                row.SetField("Y", float(feature.attributes["Y"]))
+                enriched_point = (
+                    float(feature.attributes["X"]), float(feature.attributes["Y"]),
+                )
+                if math.dist(enriched_point, points[0]) > 1e-6:
+                    raise RuntimeError(
+                        f"Projected coordinate enrichment mismatch for {feature.feature_key}: "
+                        f"{enriched_point} != {points[0]}"
+                    )
+                row.SetField("X", enriched_point[0])
+                row.SetField("Y", enriched_point[1])
             if geometry_kind == "LineString":
                 actual_grid_length = float(geometry.Length())
                 grid_length = feature.attributes.get("delivery_grid_length_m")
@@ -152,8 +265,49 @@ def _populate_dataset(dataset, features, transformer):
                 row.SetField("geodesic_length_m", float(geodesic_length))
                 if feature.attributes.get("source_cad_length_m") is not None:
                     row.SetField("source_cad_length_m", float(feature.attributes["source_cad_length_m"]))
+                if feature.attributes.get("source_segment_sum_m") is not None:
+                    row.SetField(
+                        "source_segment_sum_m", float(feature.attributes["source_segment_sum_m"]),
+                    )
+                if feature.attributes.get("source_native_length_delta_m") is not None:
+                    row.SetField(
+                        "source_native_length_delta_m",
+                        float(feature.attributes["source_native_length_delta_m"]),
+                    )
                 if feature.attributes.get("dimension_length_m") is not None:
                     row.SetField("dimension_length_m", float(feature.attributes["dimension_length_m"]))
+                if layer_name == "CABLE":
+                    span_payload = _cable_span_payload(
+                        feature, points, float(grid_length), float(geodesic_length),
+                    )
+                    row.SetField("span_count", int(feature.attributes["span_count"]))
+                    row.SetField(
+                        "measured_span_count",
+                        int(feature.attributes["measured_span_count"]),
+                    )
+                    row.SetField(
+                        "unmeasured_span_count",
+                        int(feature.attributes["unmeasured_span_count"]),
+                    )
+                    if feature.attributes.get("dimension_measured_sum_m") is not None:
+                        row.SetField(
+                            "dimension_measured_sum_m",
+                            float(feature.attributes["dimension_measured_sum_m"]),
+                        )
+                    row.SetField(
+                        "dimension_measurement_status",
+                        str(feature.attributes["dimension_measurement_status"]),
+                    )
+                    row.SetField(
+                        "dimension_coverage_ratio",
+                        float(feature.attributes["dimension_coverage_ratio"]),
+                    )
+                    row.SetField(
+                        "span_schema_version",
+                        str(feature.attributes["span_schema_version"]),
+                    )
+                    row.SetField("span_unit", str(feature.attributes["span_unit"]))
+                    row.SetField("span_metrics_json", span_payload)
             row.SetField("display_label", feature.display_label)
             row.SetField("label_provenance", feature.label_provenance)
             row.SetField("source_entity_key", feature.source_entity_key)
@@ -166,8 +320,16 @@ def _populate_dataset(dataset, features, transformer):
             row.SetField("style_lineweight", feature.style.lineweight)
             row.SetField("style_rotation", feature.style.rotation)
             row.SetField("style_rotation_deg", feature.style.rotation_degrees)
-            row.SetField("style_qgis_rotation_deg", feature.style.qgis_rotation_degrees)
-            row.SetField("style_render_key", feature.style.render_key)
+            row.SetField(
+                "style_qgis_rotation_deg",
+                float(feature.attributes.get(
+                    "delivery_style_qgis_rotation_deg", feature.style.qgis_rotation_degrees,
+                )),
+            )
+            row.SetField(
+                "style_render_key",
+                str(feature.attributes.get("delivery_style_render_key", feature.style.render_key)),
+            )
             row.SetField("lineage_json", json.dumps(feature.lineage, ensure_ascii=False, separators=(",", ":")))
             if layer.CreateFeature(row) != 0:
                 raise RuntimeError(f"Could not write {layer_name} feature {feature.feature_key}")
