@@ -1,0 +1,80 @@
+{
+  "schema_version": "cad2gis-gcp-profile-v1",
+  "enabled": false,
+  "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
+  "source_crs": "EPSG:3857",
+  "target_crs": "EPSG:9481",
+  "requested_model": "auto",
+  "controls": [],
+  "control_schema": {
+    "description": "Reviewed ground-control observations. Coordinate values must come from surveyed or authoritative evidence; this profile intentionally contains no example coordinates.",
+    "required_fields": [
+      "point_id",
+      "cad_x",
+      "cad_y",
+      "target_easting",
+      "target_northing",
+      "target_crs",
+      "role",
+      "source",
+      "accuracy_m",
+      "weight",
+      "enabled"
+    ],
+    "fields": {
+      "point_id": "Stable, unique string identifier for the physical control point.",
+      "cad_x": "Finite source drawing X coordinate in EPSG:3857 metres.",
+      "cad_y": "Finite source drawing Y coordinate in EPSG:3857 metres.",
+      "target_easting": "Finite surveyed target easting in EPSG:9481 metres.",
+      "target_northing": "Finite surveyed target northing in EPSG:9481 metres.",
+      "target_crs": "Must equal EPSG:9481 for this profile.",
+      "role": "Either train for model fitting or check for independent validation.",
+      "source": "Human-readable provenance for the survey or authoritative control record.",
+      "accuracy_m": "Positive estimated one-sigma positional accuracy in metres from the source record.",
+      "weight": "Positive reviewed fitting weight; it must not be inferred by an LLM.",
+      "enabled": "Boolean review switch for this control observation."
+    }
+  },
+  "model_selection": {
+    "candidate_order": [
+      "translation",
+      "similarity",
+      "affine"
+    ],
+    "policy": "select_the_simplest_model_that_passes_independent_validation",
+    "minimum_training_controls": {
+      "translation": 3,
+      "similarity": 4,
+      "affine": 6
+    },
+    "affine_gate": {
+      "require_spatially_structured_similarity_residuals": true,
+      "spatial_structure_reviewed": false,
+      "require_holdout_improvement": true
+    },
+    "nonlinear_models": {
+      "enabled": false,
+      "reason": "TPS and rubber-sheet transforms are outside the current production contract and require a separate reviewed profile with dense, well-distributed controls and independent validation."
+    }
+  },
+  "robust": {
+    "enabled": true,
+    "max_iterations": 512,
+    "outlier_threshold_m": null
+  },
+  "transform_limits": {
+    "max_pivot_shift_m": null,
+    "max_abs_rotation_deg": null,
+    "max_scale_deviation_ratio": null,
+    "max_affine_condition_number": null
+  },
+  "validation": {
+    "max_check_rmse_m": null,
+    "max_check_p95_m": null,
+    "max_check_error_m": null,
+    "min_check_points": 2,
+    "spatial_distribution_reviewed": false,
+    "spatial_distribution_review_source": "",
+    "affine_min_improvement_ratio": null
+  }
+}

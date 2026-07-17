@@ -6,15 +6,24 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import tempfile
 import time
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from .calibration import GCPProfile, fit_profile
 from .config import MappingRegistry, SourceProfile
 from .evidence import write_evidence
-from .georef import DirectTransformer, enrich_delivery_metrics
+from .georef import (
+    DeliveryTransformer,
+    DirectTransformer,
+    enrich_delivery_metrics,
+    feature_adjustment_records,
+)
 from .ingest import ingest
+from .implementation import implementation_manifest_fields, production_conversion_provenance
 from .semantics import classify_entities
 from .styles import write_styles
 from .topology import build_topology
@@ -30,20 +39,8 @@ def _sha256(path):
 
 
 def _implementation_digest():
-    package_dir = Path(__file__).resolve().parent
-    files = sorted(package_dir.glob("*.py")) + [
-        package_dir.parent / "autocad_reader.py",
-        package_dir.parent / "apd_rules.py",
-        package_dir.parent / "schema_config.py",
-        package_dir.parent / "convert_v3.py",
-    ]
-    digest = hashlib.sha256()
-    for path in files:
-        digest.update(path.name.encode("utf-8"))
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
-    return digest.hexdigest()
+    """Compatibility wrapper for callers of the former scalar-only helper."""
+    return production_conversion_provenance()["sha256"]
 
 
 @dataclass(frozen=True)
@@ -52,6 +49,7 @@ class ConversionRequest:
     run_dir: Path
     source_profile: Path
     mapping_registry: Path
+    gcp_profile: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -73,6 +71,52 @@ def _write_manifest(path, payload):
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+def _publish_run_bundle(staged_run_dir: Path, destination_run_dir: Path) -> None:
+    """Publish one complete run directory with rollback on replacement failure.
+
+    All GeoPackages, styles and the manifest are closed and validated inside a
+    same-volume staging directory before this function is called.  An existing
+    destination is first renamed as one unit.  On Windows this also provides a
+    fail-fast lock check: if QGIS holds a file without delete sharing, the
+    rename fails before any current artifact is replaced.
+    """
+    staged = Path(staged_run_dir).resolve()
+    destination = Path(destination_run_dir).resolve()
+    if staged.parent != destination.parent:
+        raise ValueError("Run bundle staging and destination must share a parent directory")
+    if not staged.is_dir():
+        raise ValueError(f"Staged run directory does not exist: {staged}")
+
+    backup = destination.with_name(
+        f".{destination.name}.backup.{os.getpid()}.{time.time_ns()}"
+    )
+    had_existing = destination.exists()
+    moved_existing = False
+    try:
+        if had_existing:
+            os.replace(destination, backup)
+            moved_existing = True
+        try:
+            os.replace(staged, destination)
+        except Exception:
+            if moved_existing and backup.exists() and not destination.exists():
+                os.replace(backup, destination)
+                moved_existing = False
+            raise
+    except Exception:
+        if moved_existing and backup.exists() and not destination.exists():
+            os.replace(backup, destination)
+        raise
+    else:
+        if backup.exists():
+            try:
+                shutil.rmtree(backup)
+            except OSError:
+                # Publication is already complete.  A consumer may still hold
+                # the retired bundle; leave the hidden backup for later cleanup.
+                pass
 
 
 def _enforce_geometry_policy(entities, features, relations, registry, topology_diagnostics):
@@ -136,10 +180,133 @@ def _enforce_geometry_policy(entities, features, relations, registry, topology_d
     }
 
 
+def _calibration_observations(profile, result, transformer):
+    """Normalize every reviewed control, including explicitly excluded points."""
+    residuals = {residual.point_id: residual for residual in result.residuals}
+    active_ids = {control.point_id for control in profile.active_controls}
+    if set(residuals) != active_ids:
+        raise RuntimeError(
+            "GCP result/control mismatch: "
+            f"missing={sorted(active_ids - set(residuals))}, "
+            f"unexpected={sorted(set(residuals) - active_ids)}"
+        )
+    observations = []
+    for control in profile.controls:
+        if not control.enabled:
+            nominal = transformer.point(control.cad_point)
+            observations.append({
+                "point_id": control.point_id,
+                "role": control.role,
+                "source": control.source,
+                "accuracy_m": control.accuracy_m,
+                "weight": control.weight,
+                "enabled": False,
+                "inlier": None,
+                "cad_x": control.cad_point[0],
+                "cad_y": control.cad_point[1],
+                "nominal_easting": nominal[0],
+                "nominal_northing": nominal[1],
+                "predicted_easting": None,
+                "predicted_northing": None,
+                "observed_easting": control.target_point[0],
+                "observed_northing": control.target_point[1],
+                "residual_dx_m": None,
+                "residual_dy_m": None,
+                "residual_m": None,
+                "status": "excluded_by_review",
+            })
+            continue
+
+        residual = residuals[control.point_id]
+        observations.append({
+            "point_id": control.point_id,
+            "role": control.role,
+            "source": control.source,
+            "accuracy_m": control.accuracy_m,
+            "weight": control.weight,
+            "enabled": True,
+            "inlier": residual.inlier,
+            "cad_x": control.cad_point[0],
+            "cad_y": control.cad_point[1],
+            "nominal_easting": residual.nominal_point[0],
+            "nominal_northing": residual.nominal_point[1],
+            "predicted_easting": residual.adjusted_point[0],
+            "predicted_northing": residual.adjusted_point[1],
+            "observed_easting": control.target_point[0],
+            "observed_northing": control.target_point[1],
+            # Residual vector points from the prediction to the observed control.
+            "residual_dx_m": residual.target_point[0] - residual.adjusted_point[0],
+            "residual_dy_m": residual.target_point[1] - residual.adjusted_point[1],
+            "residual_m": residual.error_m,
+            "status": (
+                "independent_check" if control.role == "check"
+                else "inlier" if residual.inlier else "outlier"
+            ),
+        })
+    return observations
+
+
+def _bbox(points):
+    if not points:
+        return None
+    return {
+        "min_easting": min(point[0] for point in points),
+        "min_northing": min(point[1] for point in points),
+        "max_easting": max(point[0] for point in points),
+        "max_northing": max(point[1] for point in points),
+    }
+
+
+def _calibration_spatial_coverage(profile, transformer, drawing_native_points):
+    """Record deterministic coverage diagnostics; approval remains explicit."""
+    drawing = [transformer.point(point) for point in drawing_native_points]
+    active = list(profile.active_controls)
+    train = [transformer.point(control.cad_point) for control in active if control.role == "train"]
+    check = [transformer.point(control.cad_point) for control in active if control.role == "check"]
+    drawing_bbox = _bbox(drawing)
+    train_bbox = _bbox(train)
+
+    def coverage(axis):
+        if drawing_bbox is None or train_bbox is None:
+            return None
+        low, high = ("min_easting", "max_easting") if axis == "x" else (
+            "min_northing", "max_northing",
+        )
+        denominator = drawing_bbox[high] - drawing_bbox[low]
+        if denominator <= 0.0:
+            return None
+        return (train_bbox[high] - train_bbox[low]) / denominator
+
+    outside = None
+    if train_bbox is not None:
+        outside = sum(
+            not (
+                train_bbox["min_easting"] <= point[0] <= train_bbox["max_easting"]
+                and train_bbox["min_northing"] <= point[1] <= train_bbox["max_northing"]
+            )
+            for point in drawing
+        )
+    return {
+        "reviewed": profile.validation.spatial_distribution_reviewed,
+        "review_source": getattr(
+            profile.validation, "spatial_distribution_review_source", "",
+        ),
+        "drawing_vertex_count": len(drawing),
+        "training_control_count": len(train),
+        "check_control_count": len(check),
+        "drawing_bbox": drawing_bbox,
+        "training_bbox": train_bbox,
+        "check_bbox": _bbox(check),
+        "training_extent_coverage_x_ratio": coverage("x"),
+        "training_extent_coverage_y_ratio": coverage("y"),
+        "drawing_vertices_outside_training_bbox": outside,
+    }
+
+
 def convert(request: ConversionRequest) -> ConversionResult:
     source = Path(request.source).resolve()
     run_dir = Path(request.run_dir).resolve()
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_dir.parent.mkdir(parents=True, exist_ok=True)
     profile = SourceProfile.load(request.source_profile)
     source_hash = profile.validate_source(source)
     registry = MappingRegistry.load(request.mapping_registry, source_hash)
@@ -171,12 +338,66 @@ def convert(request: ConversionRequest) -> ConversionResult:
         actual = actual_annotations.get(feature_class, {})
         source_count = actual.get("source_annotations", 0)
         assigned_count = actual.get("assigned", 0)
-        if source_count != expected or assigned_count != expected:
+        missing_count = actual.get("missing", source_count - assigned_count)
+        if source_count != expected or assigned_count != expected or missing_count != 0:
             raise RuntimeError(
                 f"Annotation assignment regression for {feature_class}: "
-                f"expected source/assigned={expected}/{expected}, "
-                f"got {source_count}/{assigned_count}"
+                f"expected source/assigned/missing={expected}/{expected}/0, "
+                f"got {source_count}/{assigned_count}/{missing_count}"
             )
+    expected_annotation_families = {
+        "fat": profile.expected_census["direct_fat_annotations"],
+        "pole_new": profile.expected_census["direct_new_pole_annotations"],
+        "pole_existing": profile.expected_census["direct_existing_pole_annotations"],
+    }
+    family_configs = {
+        family.family_id: family for family in registry.annotation_families
+    }
+    actual_families = semantic_diagnostics["annotation_assignments_by_family"]
+    if set(actual_families) != set(expected_annotation_families):
+        raise RuntimeError(
+            "Annotation family census mismatch: "
+            f"expected {sorted(expected_annotation_families)}, "
+            f"got {sorted(actual_families)}"
+        )
+    for family_id, expected in expected_annotation_families.items():
+        actual = actual_families[family_id]
+        observed = (
+            actual.get("source_annotations", 0),
+            actual.get("target_assets", 0),
+            actual.get("assigned", 0),
+            actual.get("missing", 0),
+            actual.get("unresolved", 0),
+        )
+        required = (expected, expected, expected, 0, 0)
+        if observed != required:
+            raise RuntimeError(
+                f"Annotation family regression for {family_id}: "
+                "expected source/target/assigned/missing/unresolved="
+                f"{required}, got {observed}"
+            )
+        if (
+            family_configs[family_id].require_same_layer
+            and actual.get("cross_layer_assignments", 0) != 0
+        ):
+            raise RuntimeError(
+                f"Annotation family isolation regression for {family_id}: "
+                "cross_layer_assignments must be 0"
+            )
+    ptech_cross_layer = actual_annotations["PTECH"].get("cross_layer_assignments", 0)
+    if ptech_cross_layer != 0:
+        raise RuntimeError(
+            "PTECH annotation family isolation regression: "
+            f"expected cross_layer_assignments=0, got {ptech_cross_layer}"
+        )
+    discovery_failures = semantic_diagnostics.get(
+        "annotation_discovery_failure_counts", {}
+    )
+    if discovery_failures:
+        raise RuntimeError(
+            "Annotation discovery failures require reviewed mapping rules: "
+            f"{discovery_failures}"
+        )
     expected_components = profile.expected_census["source_route_components"]
     if topology_diagnostics["source_route_components"] != expected_components:
         raise RuntimeError(
@@ -205,6 +426,19 @@ def convert(request: ConversionRequest) -> ConversionResult:
         raise RuntimeError(
             "SPAN measurement/source-segment residual exceeds 1e-6 native metres: "
             f"{topology_diagnostics['span_measurement_max_abs_error_m']}"
+        )
+    expected_native_lengths = profile.expected_census["source_route_native_lengths"]
+    if topology_diagnostics["source_route_native_lengths"] != expected_native_lengths:
+        raise RuntimeError(
+            "CABLE AutoCAD native-length conservation mismatch: "
+            f"expected {expected_native_lengths}, got "
+            f"{topology_diagnostics['source_route_native_lengths']}"
+        )
+    if topology_diagnostics["source_route_native_length_max_abs_delta_m"] > 1e-6:
+        raise RuntimeError(
+            "CABLE AutoCAD native length differs from source-segment sum by more "
+            "than 1e-6 m; curved/bulged segment extraction requires review: "
+            f"{topology_diagnostics['source_route_native_length_max_abs_delta_m']}"
         )
     graph_expected = {
         "unique_nodes": profile.expected_census["source_route_nodes"],
@@ -244,7 +478,59 @@ def convert(request: ConversionRequest) -> ConversionResult:
     engine_crosscheck = transformer.engine_crosscheck_error(all_points)
     if engine_crosscheck > 1e-6:
         raise RuntimeError(f"OSR/PROJ target-coordinate disagreement exceeds 1e-6 m: {engine_crosscheck}")
-    enrich_delivery_metrics(features, transformer)
+    selected_transformer = transformer
+    calibration_audit = None
+    calibration_diagnostics = {"status": "not_provided"}
+    gcp_profile = None
+    if request.gcp_profile is not None:
+        gcp_profile = GCPProfile.load(
+            request.gcp_profile, expected_source_sha256=source_hash,
+        )
+        gcp_profile.validate_transformer(transformer)
+        calibration_result = fit_profile(gcp_profile, transformer)
+        result_payload = calibration_result.to_dict()
+        if gcp_profile.enabled:
+            if calibration_result.validation_passed is not True:
+                raise RuntimeError(
+                    "GCP calibration failed independent validation: "
+                    + "; ".join(calibration_result.validation_failures)
+                )
+            selected_transformer = DeliveryTransformer(
+                transformer, calibration_result, profile_sha256=gcp_profile.sha256,
+            )
+            if not selected_transformer.calibration_active:
+                raise RuntimeError("Enabled GCP profile did not produce an active calibration model")
+            status = "accepted"
+            feature_displacements = feature_adjustment_records(
+                features, transformer, selected_transformer,
+            )
+        else:
+            status = "disabled"
+            feature_displacements = []
+        calibration_diagnostics = {
+            "status": status,
+            "profile_path": str(gcp_profile.path),
+            "profile_sha256": gcp_profile.sha256,
+            "source_sha256": gcp_profile.source_sha256,
+            "spatial_coverage": _calibration_spatial_coverage(
+                gcp_profile, transformer, all_points,
+            ),
+            "result": result_payload,
+        }
+        calibration_audit = {
+            **calibration_diagnostics,
+            "observations": _calibration_observations(
+                gcp_profile, calibration_result, transformer,
+            ),
+            "feature_displacements": feature_displacements,
+        }
+
+    enrich_delivery_metrics(features, selected_transformer)
+    operation_metadata = transformer.operation_metadata(all_points[0] if all_points else None)
+    if calibration_diagnostics["status"] == "accepted":
+        operation_metadata["absolute_accuracy_validation"] = (
+            "nominal CRS operation only; accepted GCP validation is recorded in calibration"
+        )
     diagnostics = {
         "ingest": ingest_diagnostics,
         "semantics": semantic_diagnostics,
@@ -256,41 +542,73 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "operation": "direct source-to-target; no EPSG:4326 intermediate geometry",
             "roundtrip_max_source_m": roundtrip_error,
             "engine_crosscheck_max_target_m": engine_crosscheck,
-            "coordinate_operation": transformer.operation_metadata(all_points[0] if all_points else None),
+            "coordinate_operation": operation_metadata,
+            "calibration": calibration_diagnostics,
         },
     }
 
     evidence_path = run_dir / "apd_evidence.gpkg"
     delivery_path = run_dir / "apd_delivery.gpkg"
-    styles_dir = run_dir / "qgis" / "styles"
-    write_evidence(
-        evidence_path, entities, features, relations, unresolved,
-        diagnostics, transformer.source,
-    )
-    counts = write_delivery(delivery_path, features, transformer)
-    style_manifest_path = write_styles(styles_dir, features, delivery_path)
+    style_manifest_path = run_dir / "qgis" / "styles" / "style_manifest.json"
     manifest_path = run_dir / "run_manifest.json"
-    manifest = {
-        "schema_version": "cad2gis-run-manifest-v3",
-        "pipeline": "experiment-direct-dwg-evidence-first-v3",
-        "implementation_sha256": _implementation_digest(),
-        "source": {"path": str(source), "sha256": source_hash},
-        "profiles": {
-            "source_profile": {"path": str(profile.path), "sha256": _sha256(profile.path)},
-            "mapping_registry": {"path": str(registry.path), "sha256": _sha256(registry.path)},
-        },
-        "crs": diagnostics["georeference"],
-        "artifacts": {
-            "evidence": {"path": str(evidence_path), "sha256": _sha256(evidence_path)},
-            "delivery": {"path": str(delivery_path), "sha256": _sha256(delivery_path)},
-            "styles": {"path": str(style_manifest_path), "sha256": _sha256(style_manifest_path)},
-        },
-        "delivery_counts": counts,
-        "source_route_components": topology_diagnostics["source_route_components"],
-        "unresolved_count": len(unresolved),
-        "policy": dict(registry.policy),
-    }
-    _write_manifest(manifest_path, manifest)
+    staged_run_dir = Path(tempfile.mkdtemp(
+        prefix=f".{run_dir.name}.stage.", dir=run_dir.parent,
+    )).resolve()
+    try:
+        staged_evidence_path = staged_run_dir / evidence_path.name
+        staged_delivery_path = staged_run_dir / delivery_path.name
+        staged_styles_dir = staged_run_dir / "qgis" / "styles"
+        write_evidence(
+            staged_evidence_path, entities, features, relations, unresolved,
+            diagnostics, transformer.source,
+            calibration_audit=calibration_audit, target_srs=transformer.target,
+            delivery_transformer=selected_transformer,
+        )
+        counts = write_delivery(staged_delivery_path, features, selected_transformer)
+        staged_style_manifest_path = write_styles(
+            staged_styles_dir, features, staged_delivery_path,
+        )
+        implementation = production_conversion_provenance()
+        manifest = {
+            "schema_version": "cad2gis-run-manifest-v3",
+            "pipeline": "experiment-direct-dwg-evidence-first-v3",
+            **implementation_manifest_fields(implementation),
+            "publication": {
+                "status": "complete",
+                "strategy": "same-volume-staged-run-directory-swap",
+            },
+            "source": {"path": str(source), "sha256": source_hash},
+            "profiles": {
+                "source_profile": {"path": str(profile.path), "sha256": _sha256(profile.path)},
+                "mapping_registry": {"path": str(registry.path), "sha256": _sha256(registry.path)},
+            },
+            "crs": diagnostics["georeference"],
+            "artifacts": {
+                "evidence": {
+                    "path": str(evidence_path), "sha256": _sha256(staged_evidence_path),
+                },
+                "delivery": {
+                    "path": str(delivery_path), "sha256": _sha256(staged_delivery_path),
+                },
+                "styles": {
+                    "path": str(style_manifest_path),
+                    "sha256": _sha256(staged_style_manifest_path),
+                },
+            },
+            "delivery_counts": counts,
+            "source_route_components": topology_diagnostics["source_route_components"],
+            "unresolved_count": len(unresolved),
+            "policy": dict(registry.policy),
+        }
+        if gcp_profile is not None:
+            manifest["profiles"]["gcp_profile"] = {
+                "path": str(gcp_profile.path), "sha256": gcp_profile.sha256,
+            }
+        _write_manifest(staged_run_dir / manifest_path.name, manifest)
+        _publish_run_bundle(staged_run_dir, run_dir)
+    finally:
+        if staged_run_dir.exists():
+            shutil.rmtree(staged_run_dir, ignore_errors=True)
     return ConversionResult(
         evidence_path=evidence_path,
         delivery_path=delivery_path,

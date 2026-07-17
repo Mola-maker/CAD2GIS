@@ -24,6 +24,7 @@ from apd_rules import is_telecom_block, link_apd_annotations
 AUTOCAD_PROGIDS = ("AutoCAD.Application.26", "AutoCAD.Application")
 OBJECTDBX_PROGID = "ObjectDBX.AxDbDocument.26"
 DEFAULT_ACCORECONSOLE = Path("C:/Program Files/Autodesk/AutoCAD 2027/accoreconsole.exe")
+COM_FALLBACK_ENV = "CAD2GIS_ALLOW_COM_FALLBACK"
 
 _AUTOLISP_EXTRACTOR = r'''
 (vl-load-com)
@@ -35,7 +36,7 @@ _AUTOLISP_EXTRACTOR = r'''
   (while (<= index (strlen value))
     (setq code (ascii (substr value index 1)))
     (setq result (strcat result (cond
-      ((= code 92) "\\\\") ((= code 9) "\\t")
+      ((= code 92) "\\\\") ((= code 124) "\\p") ((= code 9) "\\t")
       ((= code 10) "\\n") ((= code 13) "\\r")
       (T (chr code)))))
     (setq index (1+ index))) result)
@@ -44,6 +45,18 @@ _AUTOLISP_EXTRACTOR = r'''
   (if point (strcat (c2g-num (car point)) "," (c2g-num (cadr point))) ""))
 (defun c2g-add-point (result point)
   (if (= result "") (c2g-point point) (strcat result ";" (c2g-point point))))
+(defun c2g-owner-handle (data / value)
+  (setq value (c2g-get 330 data nil))
+  (cond
+    ((= (type value) 'ENAME) (c2g-get 5 (entget value) ""))
+    ((= (type value) 'STR) value)
+    (T "")))
+(defun c2g-length (entity / endparam result)
+  (setq endparam (vl-catch-all-apply 'vlax-curve-getEndParam (list entity)))
+  (if (vl-catch-all-error-p endparam) ""
+    (progn
+      (setq result (vl-catch-all-apply 'vlax-curve-getDistAtParam (list entity endparam)))
+      (if (vl-catch-all-error-p result) "" (c2g-num result)))))
 (defun c2g-points (entity data kind / result item next nextdata nextkind)
   (setq result "")
   (cond
@@ -64,9 +77,31 @@ _AUTOLISP_EXTRACTOR = r'''
       (setq result (c2g-add-point result (c2g-get 13 data nil)))
       (setq result (c2g-add-point result (c2g-get 14 data nil))))
     (T (setq result (c2g-add-point result (c2g-get 10 data nil))))) result)
-(defun c2g-text (data / result item)
-  (setq result (c2g-get 1 data ""))
-  (foreach item data (if (= (car item) 3) (setq result (strcat result (cdr item))))) result)
+(defun c2g-text (data kind / result item value)
+  (setq result "")
+  (cond
+    ((= kind "MTEXT")
+      (foreach item data
+        (if (= (car item) 3) (setq result (strcat result (cdr item)))))
+      (setq result (strcat result (c2g-get 1 data ""))))
+    ((member kind '("MULTILEADER" "MLEADER"))
+      (foreach item data
+        (if (= (car item) 304)
+          (progn
+            (setq value (cdr item))
+            (if (and value (/= value "")
+                     (not (wcmatch (strcase value) "LEADER_LINE*")))
+              (setq result (if (= result "") value (strcat result (chr 10) value)))))))
+      (if (= result "") (setq result (c2g-get 1 data ""))))
+    ((= kind "TABLE")
+      (foreach item data
+        (if (= (car item) 304)
+          (progn
+            (setq value (cdr item))
+            (if (and value (/= value ""))
+              (setq result (if (= result "") value (strcat result (chr 10) value)))))))
+      (if (= result "") (setq result (c2g-get 1 data ""))))
+    (T (setq result (c2g-get 1 data "")))) result)
 (defun c2g-attributes (entity / result next data kind tag value)
   (setq result "" next (entnext entity))
   (while next
@@ -78,12 +113,12 @@ _AUTOLISP_EXTRACTOR = r'''
       ((= kind "SEQEND") (setq next nil)))
     (if next (setq next (entnext next)))) result)
 (defun c2g-supported (kind)
-  (wcmatch kind "LINE,LWPOLYLINE,POLYLINE,CIRCLE,ARC,POINT,INSERT,TEXT,MTEXT"))
-(defun c2g-write-entity (file entity layoutoverride / data kind handle layer layout color truecolor linetype lineweight rotation closed block text attrs points radius start end row flags layerdata layercolor layertruecolor layerlinetype layerlineweight scalex scaley scalez)
+  (wcmatch kind "LINE,LWPOLYLINE,POLYLINE,CIRCLE,ARC,POINT,INSERT,TEXT,MTEXT,ATTRIB,ATTDEF,MULTILEADER,MLEADER,TABLE,DIMENSION"))
+(defun c2g-write-entity (file entity layoutoverride / data kind handle owner layer layout color truecolor linetype lineweight rotation closed block text textsource attrs points radius start end row flags layerdata layercolor layertruecolor layerlinetype layerlineweight scalex scaley scalez dimoverride dynamicprops unsupported nativelength)
   (setq data (entget entity) kind (c2g-get 0 data ""))
   (if (/= kind "")
     (progn
-      (setq handle (c2g-get 5 data "") layer (c2g-get 8 data "0"))
+      (setq handle (c2g-get 5 data "") owner (c2g-owner-handle data) layer (c2g-get 8 data "0"))
       (setq layout (if layoutoverride layoutoverride (c2g-get 410 data "Model")))
       (setq color (c2g-get 62 data 256) truecolor (c2g-get 420 data -1))
       (setq linetype (c2g-get 6 data "ByLayer") lineweight (c2g-get 370 data -1) rotation (c2g-get 50 data 0.0))
@@ -95,8 +130,24 @@ _AUTOLISP_EXTRACTOR = r'''
       (setq scalex (if (= kind "INSERT") (c2g-get 41 data 1.0) 1.0))
       (setq scaley (if (= kind "INSERT") (c2g-get 42 data 1.0) 1.0))
       (setq scalez (if (= kind "INSERT") (c2g-get 43 data 1.0) 1.0))
-      (setq text (if (or (= kind "TEXT") (= kind "MTEXT") (= kind "DIMENSION")) (c2g-text data) ""))
+      (setq text (if (member kind '("TEXT" "MTEXT" "ATTRIB" "ATTDEF" "MULTILEADER" "MLEADER" "TABLE" "DIMENSION")) (c2g-text data kind) ""))
       (setq attrs (if (= kind "INSERT") (c2g-attributes entity) ""))
+      (setq textsource (cond
+        ((member kind '("TEXT" "MTEXT")) "entity_text")
+        ((member kind '("ATTRIB" "ATTDEF")) "attribute_text")
+        ((member kind '("MULTILEADER" "MLEADER")) "multileader_text")
+        ((= kind "TABLE") "table_cells")
+        ((= kind "DIMENSION") "dimension_text_override")
+        ((and (= kind "INSERT") (/= attrs "")) "block_attributes")
+        (T "")))
+      (setq dimoverride (if (= kind "DIMENSION") (c2g-get 1 data "") ""))
+      (setq dynamicprops "")
+      (setq nativelength (if (member kind '("LINE" "LWPOLYLINE" "POLYLINE" "CIRCLE" "ARC" "SPLINE" "ELLIPSE")) (c2g-length entity) ""))
+      (setq unsupported (cond
+        ((= kind "INSERT") "dynamic_block_properties_unavailable_in_bulk_backend")
+        ((and (member kind '("MULTILEADER" "MLEADER")) (= text "")) "multileader_text_unavailable_in_bulk_backend")
+        ((and (= kind "TABLE") (= text "")) "table_text_unavailable_in_bulk_backend")
+        (T "")))
       (setq points (c2g-points entity data kind))
       (setq radius (if (= kind "DIMENSION") (c2g-get 42 data 0.0) (c2g-get 40 data 0.0)))
       (setq start (c2g-get 50 data 0.0) end (c2g-get 51 data 6.283185307179586))
@@ -107,7 +158,9 @@ _AUTOLISP_EXTRACTOR = r'''
         (itoa closed) (chr 9) (c2g-escape block) (chr 9) (c2g-escape text) (chr 9)
         attrs (chr 9) points (chr 9) (c2g-num radius) (chr 9) (c2g-num start) (chr 9) (c2g-num end) (chr 9)
         (itoa layercolor) (chr 9) (itoa layertruecolor) (chr 9) (c2g-escape layerlinetype) (chr 9) (itoa layerlineweight) (chr 9)
-        (c2g-num scalex) (chr 9) (c2g-num scaley) (chr 9) (c2g-num scalez)))
+        (c2g-num scalex) (chr 9) (c2g-num scaley) (chr 9) (c2g-num scalez) (chr 9)
+        (c2g-escape owner) (chr 9) (c2g-escape textsource) (chr 9) (c2g-escape dimoverride) (chr 9)
+        dynamicprops (chr 9) (c2g-escape unsupported) (chr 9) nativelength))
       (write-line row file))))
 (defun cad2gis-export (path / file selection index entity blockdata blockname blockentity blockkind)
   (setq file (open path "w" "utf8"))
@@ -140,7 +193,10 @@ _AUTOLISP_EXTRACTOR = r'''
   (close file) (princ))
 '''
 
-_TEXT_OBJECTS = {"ACDBTEXT", "ACDBMTEXT", "ACDBATTRIBUTEREFERENCE"}
+_TEXT_OBJECTS = {
+    "ACDBTEXT", "ACDBMTEXT", "ACDBATTRIBUTE", "ACDBATTRIBUTEREFERENCE",
+    "ACDBATTRIBUTEDEFINITION", "ACDBMLEADER", "ACDBMULTILEADER", "ACDBTABLE",
+}
 _TOPOLOGY_LAYOUT = re.compile(r"(?i)(TOPOLOGY|SPLICING|SCHEMATIC|DIAGRAM)")
 _PLAN_LAYOUT = re.compile(r"(?i)(FDT(?:[-_ ]?(?:ALL|\d+))?|PLAN|NETWORK)")
 _STYLE_LAYOUT = re.compile(r"(?i)(LEGEND|CABLE[ _-]*TYPE|SYMBOL)")
@@ -152,6 +208,130 @@ _TITLE_TEXT = re.compile(
 )
 _LEGEND_TEXT = re.compile(r"(?i)^(?:\s*)(LEGEND|CABLE\s+TYPE)(?:\s*)$")
 _TITLE_BLOCK_NAME = re.compile(r"(?i)(ETIKET|TITLE|FRAME|BORDER|CARTOUCHE)")
+RAW_PROPERTIES_SCHEMA = "cad2gis-raw-properties-v1"
+
+
+def _com_fallback_enabled():
+    return os.environ.get(COM_FALLBACK_ENV, "").strip().casefold() in {
+        "1", "true", "yes", "on",
+    }
+
+
+def _authorize_com_fallback(bulk_error):
+    """Fail closed unless the semantically different COM backend is explicit."""
+    if not _com_fallback_enabled():
+        raise RuntimeError(
+            "AutoCAD Core Console inventory failed and the non-equivalent COM "
+            f"fallback is disabled; set {COM_FALLBACK_ENV}=1 to opt in explicitly"
+        ) from bulk_error
+    print(
+        "  AutoCAD bulk database extraction unavailable; explicitly enabled "
+        f"COM fallback: {bulk_error}"
+    )
+
+
+def _canonical_json_value(value):
+    """Return a deterministic, JSON-safe representation of an AutoCAD value."""
+    if value is None or isinstance(value, (str, bool, int)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, dict):
+        return {
+            str(key): _canonical_json_value(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_canonical_json_value(item) for item in value]
+    try:
+        return [_canonical_json_value(item) for item in value]
+    except Exception:
+        # COM VARIANT values are not guaranteed to be iterable even when they
+        # expose an iterator-like interface.  Never let an opaque automation
+        # object leak past the reader boundary or make the inventory fail.
+        try:
+            return str(value)
+        except Exception:
+            return f"<{type(value).__name__}>"
+
+
+def _float_or_none(value):
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if math.isfinite(result) else None
+
+
+def _canonical_raw_properties(
+    record,
+    *,
+    extraction_backend,
+    reader_backend_status,
+    owner_handle="",
+    raw_text=None,
+    text_source="",
+    dimension_text_override="",
+    dynamic_block_properties=None,
+    dynamic_block_properties_status="not_applicable",
+    block_effective_name="",
+    block_reference_name="",
+    native_length_source="",
+    unsupported_reasons=(),
+):
+    """Build the fixed raw-fact schema shared by both extraction backends."""
+    attributes = {
+        str(key).strip().upper(): str(value)
+        for key, value in dict(record.get("block_attributes") or {}).items()
+        if str(key).strip()
+    }
+    reasons = sorted({str(item).strip() for item in unsupported_reasons if str(item).strip()})
+    raw = {
+        "schema_version": RAW_PROPERTIES_SCHEMA,
+        "extraction_backend": str(extraction_backend),
+        "reader_backend_status": str(reader_backend_status),
+        "object_name": str(record.get("object_name", "")),
+        "dwg_type_name": str(record.get("dwg_type_name", "")),
+        "handle": str(record.get("handle", "")),
+        "owner_handle": str(owner_handle or ""),
+        "layout": str(record.get("layout", "")),
+        "layer": str(record.get("layer", "")),
+        "block_name": str(record.get("block_name", "")),
+        "block_effective_name": str(block_effective_name or ""),
+        "block_reference_name": str(block_reference_name or ""),
+        "raw_text": str(record.get("text", "") if raw_text is None else raw_text),
+        "text": str(record.get("text", "")),
+        "text_source": str(text_source or ""),
+        "attribute_tags": sorted(attributes),
+        "block_attributes": attributes,
+        "dynamic_block_properties": _canonical_json_value(dynamic_block_properties or {}),
+        "dynamic_block_properties_status": str(dynamic_block_properties_status or "unknown"),
+        "dimension_measurement": _float_or_none(record.get("dimension_value")),
+        "dimension_text_override": str(dimension_text_override or ""),
+        "native_length": _float_or_none(record.get("native_length")),
+        "native_length_source": str(native_length_source or ""),
+        "scale_x": _float_or_none(record.get("scale_x", 1.0)),
+        "scale_y": _float_or_none(record.get("scale_y", 1.0)),
+        "scale_z": _float_or_none(record.get("scale_z", 1.0)),
+        "rotation": _float_or_none(record.get("rotation", 0.0)),
+        "aci_color": int(record.get("aci_color", 256)),
+        "true_color": str(record.get("true_color", "")),
+        "linetype": str(record.get("linetype", "ByLayer")),
+        "lineweight": int(record.get("lineweight", -1)),
+        "entity_aci_color": int(record.get("entity_aci_color", record.get("aci_color", 256))),
+        "layer_aci_color": int(record.get("layer_aci_color", 7)),
+        "entity_true_color": str(record.get("entity_true_color", "")),
+        "layer_true_color": str(record.get("layer_true_color", "")),
+        "entity_linetype": str(record.get("entity_linetype", record.get("linetype", "ByLayer"))),
+        "layer_linetype": str(record.get("layer_linetype", "Continuous")),
+        "entity_lineweight": int(record.get("entity_lineweight", record.get("lineweight", -1))),
+        "layer_lineweight": int(record.get("layer_lineweight", -1)),
+        "unsupported_reason": ";".join(reasons),
+        "unsupported_reasons": reasons,
+    }
+    return _canonical_json_value(raw)
 
 
 def classify_layout_role(layout_name: str) -> str:
@@ -177,7 +357,7 @@ def _unescape_tsv(value):
     while index < len(value):
         if value[index] == "\\" and index + 1 < len(value):
             code = value[index + 1]
-            result.append({"t": "\t", "n": "\n", "r": "\r", "\\": "\\"}.get(code, code))
+            result.append({"t": "\t", "n": "\n", "r": "\r", "p": "|", "\\": "\\"}.get(code, code))
             index += 2
         else:
             result.append(value[index])
@@ -209,7 +389,7 @@ def _parse_bulk_points(value):
 
 
 def _record_from_bulk_row(columns):
-    if len(columns) not in {17, 21, 24}:
+    if len(columns) not in {17, 21, 24, 29, 30}:
         return None
     base = columns[:17]
     (kind, handle, layer, layout, aci, truecolor, linetype, lineweight,
@@ -218,14 +398,18 @@ def _record_from_bulk_row(columns):
     layer_aci, layer_truecolor, layer_linetype, layer_lineweight = (
         columns[17:21] if len(columns) >= 21 else ("7", "-1", "Continuous", "-1")
     )
-    scale_x, scale_y, scale_z = columns[21:24] if len(columns) == 24 else ("1", "1", "1")
+    scale_x, scale_y, scale_z = columns[21:24] if len(columns) >= 24 else ("1", "1", "1")
+    owner_handle, text_source, dimension_text_override, dynamic_text, unsupported_text = (
+        columns[24:29] if len(columns) >= 29 else ("", "", "", "", "")
+    )
+    native_length_text = columns[29] if len(columns) >= 30 else ""
     kind = _unescape_tsv(kind).upper()
     points = _parse_bulk_points(point_text)
     if kind in {"CIRCLE", "ARC"} and points:
         center = points[0]
-        radius = float(radius_text or 0.0)
-        start = 0.0 if kind == "CIRCLE" else float(start_text or 0.0)
-        end = 2 * math.pi if kind == "CIRCLE" else float(end_text or 2 * math.pi)
+        radius = _float_or_none(radius_text) or 0.0
+        start = 0.0 if kind == "CIRCLE" else (_float_or_none(start_text) or 0.0)
+        end = 2 * math.pi if kind == "CIRCLE" else (_float_or_none(end_text) or 2 * math.pi)
         if end <= start:
             end += 2 * math.pi
         segments = 48 if kind == "CIRCLE" else 24
@@ -235,7 +419,8 @@ def _record_from_bulk_row(columns):
             for index in range(segments + 1)
         ]
     parsed_attributes = _parse_bulk_attributes(attributes)
-    parsed_text = _unescape_tsv(text)
+    raw_text = _unescape_tsv(text)
+    parsed_text = _plain_text(raw_text)
     if parsed_attributes:
         parsed_text = "\n".join(f"{key}={value}" for key, value in sorted(parsed_attributes.items()))
     centroid = (
@@ -261,9 +446,39 @@ def _record_from_bulk_row(columns):
         "POLYLINE": "ACDBPOLYLINE", "CIRCLE": "ACDBCIRCLE",
         "ARC": "ACDBARC", "POINT": "ACDBPOINT", "INSERT": "ACDBBLOCKREFERENCE",
         "TEXT": "ACDBTEXT", "MTEXT": "ACDBMTEXT",
+        "ATTRIB": "ACDBATTRIBUTE", "ATTDEF": "ACDBATTRIBUTEDEFINITION",
+        "MLEADER": "ACDBMLEADER", "MULTILEADER": "ACDBMLEADER",
+        "TABLE": "ACDBTABLE",
         "DIMENSION": "ACDBDIMENSION",
     }
-    return {
+    dimension_value = _float_or_none(radius_text) if kind == "DIMENSION" else None
+    try:
+        dynamic_properties = json.loads(_unescape_tsv(dynamic_text)) if dynamic_text else {}
+    except (TypeError, ValueError, json.JSONDecodeError):
+        dynamic_properties = {}
+        unsupported_text = ";".join(filter(None, (
+            _unescape_tsv(unsupported_text), "invalid_dynamic_block_properties_payload",
+        )))
+    inferred_text_source = {
+        "TEXT": "entity_text", "MTEXT": "entity_text",
+        "ATTRIB": "attribute_text", "ATTDEF": "attribute_text",
+        "MLEADER": "multileader_text", "MULTILEADER": "multileader_text",
+        "TABLE": "table_cells", "DIMENSION": "dimension_text_override",
+    }.get(kind, "block_attributes" if kind == "INSERT" and parsed_attributes else "")
+    unsupported_reasons = [
+        item for item in _unescape_tsv(unsupported_text).split(";") if item
+    ]
+    if len(columns) < 29:
+        unsupported_reasons.append("legacy_bulk_protocol_without_raw_extension")
+    if kind == "INSERT" and not dynamic_properties and not any(
+        "dynamic_block_properties" in item for item in unsupported_reasons
+    ):
+        unsupported_reasons.append("dynamic_block_properties_unavailable_in_bulk_backend")
+    if kind in {"MLEADER", "MULTILEADER"} and not parsed_text:
+        unsupported_reasons.append("multileader_text_unavailable_in_bulk_backend")
+    if kind == "TABLE" and not parsed_text:
+        unsupported_reasons.append("table_text_unavailable_in_bulk_backend")
+    record = {
         "handle": _unescape_tsv(handle), "object_name": object_names.get(kind, f"ACDB{kind}"),
         "dwg_type_name": kind, "layout": layout_name, "layout_role": layout_role,
         "cad_role": layout_role, "layer": _unescape_tsv(layer) or "0",
@@ -282,8 +497,32 @@ def _record_from_bulk_row(columns):
         "layer_lineweight": int(layer_lineweight or -1),
         "scale_x": float(scale_x or 1.0), "scale_y": float(scale_y or 1.0),
         "scale_z": float(scale_z or 1.0),
-        "dimension_value": float(radius_text or 0.0) if kind == "DIMENSION" else None,
+        "dimension_value": dimension_value,
+        "dimension_text_override": _unescape_tsv(dimension_text_override),
+        "owner_handle": _unescape_tsv(owner_handle),
+        "native_length": _float_or_none(native_length_text),
     }
+    record["raw_properties"] = _canonical_raw_properties(
+        record,
+        extraction_backend="autocad_core_console_bulk",
+        reader_backend_status="authoritative",
+        owner_handle=record["owner_handle"],
+        raw_text=raw_text,
+        text_source=_unescape_tsv(text_source) or inferred_text_source,
+        dimension_text_override=record["dimension_text_override"],
+        dynamic_block_properties=dynamic_properties,
+        dynamic_block_properties_status=(
+            "available" if dynamic_properties else
+            "unsupported_by_core_console_bulk" if kind == "INSERT" else
+            "not_applicable"
+        ),
+        block_reference_name=record["block_name"] if kind == "INSERT" else "",
+        native_length_source=(
+            "autocad_curve_distance" if record["native_length"] is not None else ""
+        ),
+        unsupported_reasons=unsupported_reasons,
+    )
+    return record
 
 
 def _extract_records_with_core_console(dwg_path, accoreconsole=DEFAULT_ACCORECONSOLE):
@@ -333,6 +572,19 @@ def _extract_records_with_core_console(dwg_path, accoreconsole=DEFAULT_ACCORECON
                     if record["cad_role"] == "plan":
                         record["cad_role"] = "block_definition"
             result.append((layout_name, layout_role, records))
+        entity_count = sum(
+            record.get("dwg_type_name") != "DOCUMENT_METADATA"
+            for _, _, records in result
+            for record in records
+        )
+        if entity_count == 0:
+            detail = (completed.stdout + completed.stderr)[-4000:].decode(
+                "utf-16-le", errors="replace"
+            )
+            raise RuntimeError(
+                "AutoCAD Core Console returned no CAD entity rows; "
+                f"inventory is incomplete: {detail}"
+            )
         return result
 
 
@@ -389,7 +641,10 @@ def _select_model_collections(document, assign_fc):
             relevant_layers.append(layer_name)
 
     selected = []
-    specifications = [("TEXT,MTEXT,INSERT", None)]
+    specifications = [(
+        "TEXT,MTEXT,ATTRIB,ATTDEF,INSERT,MULTILEADER,MLEADER,TABLE,DIMENSION",
+        None,
+    )]
     if relevant_layers:
         specifications.append(("LINE,LWPOLYLINE,POLYLINE,CIRCLE,ARC,POINT", ",".join(relevant_layers)))
     try:
@@ -440,26 +695,115 @@ def _plain_text(value):
     return text.replace("{", "").replace("}", "").strip()
 
 
+def _table_text(entity):
+    rows = int(_safe_get(entity, "Rows", 0) or 0)
+    columns = int(_safe_get(entity, "Columns", 0) or 0)
+    if rows <= 0 or columns <= 0:
+        return ""
+    output = []
+    for row_index in range(rows):
+        row = []
+        for column_index in range(columns):
+            try:
+                value = _retry_com(
+                    lambda row_index=row_index, column_index=column_index:
+                    entity.GetText(row_index, column_index)
+                )
+            except Exception:
+                value = ""
+            row.append(_plain_text(value))
+        if any(row):
+            output.append("\t".join(row).rstrip())
+    return "\n".join(output).strip()
+
+
+def _entity_text_facts(entity, object_name):
+    """Return normalized text, raw text and its deterministic CAD source."""
+    raw = ""
+    source = ""
+    if object_name == "ACDBTABLE":
+        raw = _table_text(entity)
+        source = "table_cells"
+    elif object_name in {"ACDBMLEADER", "ACDBMULTILEADER"}:
+        raw = str(_safe_get(entity, "TextString", _safe_get(entity, "Contents", "")) or "")
+        if not raw:
+            mtext = _safe_get(entity, "MText")
+            if mtext is not None:
+                raw = str(_safe_get(mtext, "TextString", _safe_get(mtext, "Contents", "")) or "")
+        source = "multileader_text"
+    elif object_name in _TEXT_OBJECTS:
+        raw = str(_safe_get(entity, "TextString", _safe_get(entity, "Contents", "")) or "")
+        source = (
+            "attribute_text"
+            if object_name in {
+                "ACDBATTRIBUTE", "ACDBATTRIBUTEREFERENCE", "ACDBATTRIBUTEDEFINITION",
+            }
+            else "entity_text"
+        )
+    elif "DIMENSION" in object_name:
+        raw = str(_safe_get(entity, "TextOverride", "") or "")
+        source = "dimension_text_override"
+    return _plain_text(raw), raw, source
+
+
 def _entity_text(entity, object_name):
-    if object_name in _TEXT_OBJECTS:
-        return _plain_text(_safe_get(entity, "TextString", _safe_get(entity, "Contents", "")))
-    return ""
+    return _entity_text_facts(entity, object_name)[0]
+
+
+def _block_attribute_facts(entity):
+    result = {}
+    unsupported = []
+    # Constant attributes live on the block reference separately from editable
+    # attribute references, so both collections are part of the instance facts.
+    for method_name in ("GetConstantAttributes", "GetAttributes"):
+        method = _safe_get(entity, method_name)
+        if not callable(method):
+            continue
+        try:
+            attributes = _retry_com(method)
+        except Exception:
+            unsupported.append(f"{method_name}_unavailable")
+            continue
+        for attribute in attributes or ():
+            tag = str(_safe_get(attribute, "TagString", "")).strip().upper()
+            value = _plain_text(_safe_get(attribute, "TextString", ""))
+            if tag:
+                result[tag] = value
+    return result, unsupported
 
 
 def _block_attributes(entity):
-    if not bool(_safe_get(entity, "HasAttributes", False)):
-        return {}
+    return _block_attribute_facts(entity)[0]
+
+
+def _dynamic_block_facts(entity):
+    is_dynamic = bool(_safe_get(entity, "IsDynamicBlock", False))
+    if not is_dynamic:
+        return {}, "not_dynamic", []
+    method = _safe_get(entity, "GetDynamicBlockProperties")
+    if not callable(method):
+        return {}, "unsupported", ["dynamic_block_properties_method_unavailable"]
     try:
-        attributes = _retry_com(entity.GetAttributes)
+        properties = _retry_com(method)
     except Exception:
-        return {}
+        return {}, "unreadable", ["dynamic_block_properties_read_failed"]
     result = {}
-    for attribute in attributes or ():
-        tag = str(_safe_get(attribute, "TagString", "")).strip().upper()
-        value = _plain_text(_safe_get(attribute, "TextString", ""))
-        if tag and value:
-            result[tag] = value
-    return result
+    for index, prop in enumerate(properties or ()):
+        name = str(_safe_get(prop, "PropertyName", "")).strip() or f"PROPERTY_{index}"
+        result[name] = {
+            "value": _canonical_json_value(_safe_get(prop, "Value")),
+            "read_only": bool(_safe_get(prop, "ReadOnly", False)),
+            "allowed_values": _canonical_json_value(_safe_get(prop, "AllowedValues", ())),
+        }
+    return result, "available", []
+
+
+def _native_length(entity):
+    for property_name in ("Length", "ArcLength", "Circumference"):
+        value = _float_or_none(_safe_get(entity, property_name))
+        if value is not None and value >= 0:
+            return value, f"autocad_com:{property_name}"
+    return None, ""
 
 
 def _entity_points(entity, object_name):
@@ -469,12 +813,24 @@ def _entity_points(entity, object_name):
         return _flat_points(_safe_get(entity, "Coordinates", ()), 3)
     if object_name in {"ACDBLWPOLYLINE", "ACDBLEADER"}:
         return _flat_points(_safe_get(entity, "Coordinates", ()), 2)
-    if object_name in {"ACDBPOINT", "ACDBBLOCKREFERENCE", "ACDBDYNAMICBLOCKREFERENCE"}:
+    if object_name in {"ACDBPOINT", "ACDBBLOCKREFERENCE", "ACDBDYNAMICBLOCKREFERENCE", "ACDBTABLE"}:
         point = _xy(_safe_get(entity, "InsertionPoint", _safe_get(entity, "Coordinates")))
         return [point] if point else []
     if object_name in _TEXT_OBJECTS:
-        point = _xy(_safe_get(entity, "InsertionPoint", _safe_get(entity, "TextAlignmentPoint")))
+        if object_name in {"ACDBMLEADER", "ACDBMULTILEADER"}:
+            point = _xy(_safe_get(entity, "TextLocation", _safe_get(entity, "InsertionPoint")))
+            if point is None:
+                points = _flat_points(_safe_get(entity, "Coordinates", ()), 3)
+                point = points[0] if points else None
+            return [point] if point else []
+        alignment = int(_safe_get(entity, "Alignment", 0) or 0)
+        aligned = _xy(_safe_get(entity, "TextAlignmentPoint")) if alignment else None
+        point = aligned or _xy(_safe_get(entity, "InsertionPoint", _safe_get(entity, "TextAlignmentPoint")))
         return [point] if point else []
+    if "DIMENSION" in object_name:
+        first = _xy(_safe_get(entity, "XLine1Point", _safe_get(entity, "ExtLine1Point")))
+        second = _xy(_safe_get(entity, "XLine2Point", _safe_get(entity, "ExtLine2Point")))
+        return [point for point in (first, second) if point is not None]
     if object_name in {"ACDBCIRCLE", "ACDBARC"}:
         center = _xy(_safe_get(entity, "Center"))
         radius = float(_safe_get(entity, "Radius", 0.0) or 0.0)
@@ -505,31 +861,66 @@ def _true_color(entity):
 def extract_com_entity(
     entity, layout_name, layout_role,
     object_name_hint=None, layer_hint=None, block_name_hint=None,
+    reader_backend_status="com_direct",
 ):
     """Convert one AutoCAD COM entity into a deterministic neutral record."""
     object_name = str(object_name_hint or _safe_get(entity, "ObjectName", "")).upper()
     points = _entity_points(entity, object_name)
-    text = _entity_text(entity, object_name)
+    text, raw_text, text_source = _entity_text_facts(entity, object_name)
     block_name = ""
+    block_effective_name = ""
+    block_reference_name = ""
     attributes = {}
+    dynamic_properties = {}
+    dynamic_status = "not_applicable"
+    unsupported_reasons = []
     if object_name in {"ACDBBLOCKREFERENCE", "ACDBDYNAMICBLOCKREFERENCE"}:
+        block_effective_name = str(_safe_get(entity, "EffectiveName", "") or "").strip()
+        block_reference_name = str(_safe_get(entity, "Name", "") or "").strip()
         block_name = str(
-            block_name_hint
-            or _safe_get(entity, "EffectiveName", _safe_get(entity, "Name", ""))
-        )
-        attributes = _block_attributes(entity)
+            block_name_hint or block_effective_name or block_reference_name
+        ).strip()
+        attributes, attribute_unsupported = _block_attribute_facts(entity)
+        unsupported_reasons.extend(attribute_unsupported)
+        dynamic_properties, dynamic_status, dynamic_unsupported = _dynamic_block_facts(entity)
+        unsupported_reasons.extend(dynamic_unsupported)
         if attributes:
             text = "\n".join(f"{key}={value}" for key, value in sorted(attributes.items()))
-    if not points and not text:
+            raw_text = text
+            text_source = "block_attributes"
+    elif object_name in {
+        "ACDBATTRIBUTE", "ACDBATTRIBUTEREFERENCE", "ACDBATTRIBUTEDEFINITION",
+    }:
+        tag = str(_safe_get(entity, "TagString", "")).strip().upper()
+        if tag:
+            attributes[tag] = text
+    if object_name in {"ACDBMLEADER", "ACDBMULTILEADER"} and not text:
+        unsupported_reasons.append("multileader_text_unavailable_in_com_backend")
+    if object_name == "ACDBTABLE" and not text:
+        unsupported_reasons.append("table_text_unavailable_in_com_backend")
+    is_dimension = "DIMENSION" in object_name
+    dimension_value = _float_or_none(_safe_get(entity, "Measurement")) if is_dimension else None
+    dimension_text_override = str(_safe_get(entity, "TextOverride", "") or "") if is_dimension else ""
+    if is_dimension and dimension_value is None:
+        unsupported_reasons.append("dimension_measurement_unavailable_in_com_backend")
+    if is_dimension and len(points) < 2:
+        unsupported_reasons.append("dimension_definition_points_unavailable_in_com_backend")
+    # Attribute-only records must survive even when AutoCAD exposes no usable
+    # insertion point. They are evidence, not synthetic point geometries.
+    if not points and not text and not attributes:
         return None
     centroid = (
         sum(point[0] for point in points) / len(points),
         sum(point[1] for point in points) / len(points),
     ) if points else (0.0, 0.0)
-    return {
+    scale_x = float(_safe_get(entity, "XScaleFactor", 1.0) or 1.0)
+    scale_y = float(_safe_get(entity, "YScaleFactor", 1.0) or 1.0)
+    scale_z = float(_safe_get(entity, "ZScaleFactor", 1.0) or 1.0)
+    native_length, native_length_source = _native_length(entity)
+    record = {
         "handle": str(_safe_get(entity, "Handle", "")),
         "object_name": object_name,
-        "dwg_type_name": object_name.removeprefix("ACDB").upper(),
+        "dwg_type_name": "DIMENSION" if is_dimension else object_name.removeprefix("ACDB").upper(),
         "layout": layout_name,
         "layout_role": layout_role,
         "cad_role": layout_role,
@@ -545,7 +936,30 @@ def extract_com_entity(
         "linetype": str(_safe_get(entity, "Linetype", "ByLayer")),
         "lineweight": int(_safe_get(entity, "Lineweight", -1) or -1),
         "rotation": float(_safe_get(entity, "Rotation", 0.0) or 0.0),
+        "scale_x": scale_x,
+        "scale_y": scale_y,
+        "scale_z": scale_z,
+        "dimension_value": dimension_value,
+        "dimension_text_override": dimension_text_override,
+        "owner_handle": str(_safe_get(entity, "OwnerID", "") or ""),
+        "native_length": native_length,
     }
+    record["raw_properties"] = _canonical_raw_properties(
+        record,
+        extraction_backend="autocad_com",
+        reader_backend_status=reader_backend_status,
+        owner_handle=record["owner_handle"],
+        raw_text=raw_text,
+        text_source=text_source,
+        dimension_text_override=dimension_text_override,
+        dynamic_block_properties=dynamic_properties,
+        dynamic_block_properties_status=dynamic_status,
+        block_effective_name=block_effective_name,
+        block_reference_name=block_reference_name,
+        native_length_source=native_length_source,
+        unsupported_reasons=unsupported_reasons,
+    )
+    return record
 
 
 def partition_plan_roles(records):
@@ -826,7 +1240,7 @@ def _bind_entity_keys(items, source):
     return items
 
 
-def _collect_records(database, assign_fc=None):
+def _collect_records(database, assign_fc=None, reader_backend_status="com_direct"):
     collections = [("Model", "model", database.ModelSpace)]
     try:
         layouts = _safe_get(database, "Layouts")
@@ -874,6 +1288,7 @@ def _collect_records(database, assign_fc=None):
                 object_name_hint=object_name,
                 layer_hint=layer_name,
                 block_name_hint=block_name,
+                reader_backend_status=reader_backend_status,
             )
             if record is not None:
                 records.append(record)
@@ -1007,11 +1422,15 @@ def read_dwg_with_autocad(dwg_path, reproject_point, assign_fc, classify_block, 
         )
         return _bind_entity_keys(items, source)
     except Exception as bulk_error:
-        print(f"  AutoCAD bulk database extraction unavailable; COM fallback: {bulk_error}")
+        _authorize_com_fallback(bulk_error)
 
     pythoncom, application, created, database, opened_document = _open_autocad_database(source)
     try:
-        grouped = _collect_records(database, assign_fc=assign_fc)
+        grouped = _collect_records(
+            database,
+            assign_fc=assign_fc,
+            reader_backend_status="fallback_after_core_console_failure",
+        )
         items = _items_from_grouped(
             grouped, source, reproject_point, assign_fc, classify_block, extract_attributes,
         )
@@ -1049,10 +1468,14 @@ def extract_dwg_records(dwg_path):
     try:
         grouped = _extract_records_with_core_console(source)
     except Exception as bulk_error:
-        print(f"  AutoCAD bulk database extraction unavailable; COM fallback: {bulk_error}")
+        _authorize_com_fallback(bulk_error)
         pythoncom, application, created, database, opened_document = _open_autocad_database(source)
         try:
-            grouped = _collect_records(database, assign_fc=None)
+            grouped = _collect_records(
+                database,
+                assign_fc=None,
+                reader_backend_status="fallback_after_core_console_failure",
+            )
         finally:
             if opened_document is not None:
                 try:

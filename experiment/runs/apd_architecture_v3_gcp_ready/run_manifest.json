@@ -1,0 +1,143 @@
+{
+  "schema_version": "cad2gis-run-manifest-v3",
+  "pipeline": "experiment-direct-dwg-evidence-first-v3",
+  "implementation_sha256": "6540f27c883a743b35f50d74d8ac215e4a62114a67d3b6e2e2fb53e04470e35f",
+  "publication": {
+    "status": "complete",
+    "strategy": "same-volume-staged-run-directory-swap"
+  },
+  "source": {
+    "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
+    "sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557"
+  },
+  "profiles": {
+    "source_profile": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_source_profile.json",
+      "sha256": "d24cb63297a7e164bf6f395b942c8cb99110da7f2e33e5912bb9d1f52619c3e0"
+    },
+    "mapping_registry": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_mapping_registry.json",
+      "sha256": "0a57f545e84f7f105707b65a83db28ca47fb1745a7fc527836935353458d308e"
+    },
+    "gcp_profile": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_gcp_profile.json",
+      "sha256": "cd3edbc6910cab9da7d55a34f54ceb8f587a413b5fee4d15793f1bd99a2b1017"
+    }
+  },
+  "crs": {
+    "source_crs": "EPSG:3857",
+    "target_crs": "EPSG:9481",
+    "operation": "direct source-to-target; no EPSG:4326 intermediate geometry",
+    "roundtrip_max_source_m": 3.7401652296097646e-08,
+    "engine_crosscheck_max_target_m": 0.0,
+    "coordinate_operation": {
+      "description": "Inverse of Popular Visualisation Pseudo-Mercator + Inverse of DGN95 to WGS 84 (1) + DGN95 to SRGI2013 (1) + UTM zone 51N",
+      "definition": "proj=pipeline step inv proj=webmerc lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84 step proj=push v_3 step proj=cart ellps=WGS84 step proj=helmert x=-0.2773 y=0.0534 z=0.4819 rx=0.0192857593841035 ry=-0.00589917345866696 rz=0.00199870597253436 s=-0.028 convention=coordinate_frame step inv proj=cart ellps=WGS84 step proj=pop v_3 step proj=utm zone=51 ellps=WGS84",
+      "declared_accuracy_m": 1.2,
+      "pyproj_version": "3.7.2",
+      "proj_version": "9.8.1",
+      "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied"
+    },
+    "calibration": {
+      "status": "disabled",
+      "profile_path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_gcp_profile.json",
+      "profile_sha256": "cd3edbc6910cab9da7d55a34f54ceb8f587a413b5fee4d15793f1bd99a2b1017",
+      "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
+      "spatial_coverage": {
+        "reviewed": false,
+        "review_source": "",
+        "drawing_vertex_count": 1039,
+        "training_control_count": 0,
+        "check_control_count": 0,
+        "drawing_bbox": {
+          "min_easting": 488521.4938342907,
+          "min_northing": 67924.47659667954,
+          "max_easting": 491303.72076507896,
+          "max_northing": 69780.78322110986
+        },
+        "training_bbox": null,
+        "check_bbox": null,
+        "training_extent_coverage_x_ratio": null,
+        "training_extent_coverage_y_ratio": null,
+        "drawing_vertices_outside_training_bbox": null
+      },
+      "result": {
+        "requested_model": "disabled",
+        "selected_model": "disabled",
+        "source_crs": "EPSG:3857",
+        "target_crs": "EPSG:9481",
+        "parameters": {
+          "model": "disabled",
+          "nominal_origin_e": 0.0,
+          "nominal_origin_n": 0.0,
+          "adjusted_origin_e": 0.0,
+          "adjusted_origin_n": 0.0,
+          "matrix_ee": 1.0,
+          "matrix_en": 0.0,
+          "matrix_ne": 0.0,
+          "matrix_nn": 1.0,
+          "intercept_e_m": 0.0,
+          "intercept_n_m": 0.0,
+          "pivot_shift_e_m": 0.0,
+          "pivot_shift_n_m": 0.0
+        },
+        "robust": {
+          "enabled": false,
+          "iterations": 0
+        },
+        "validation": {
+          "passed": null,
+          "failures": []
+        },
+        "train_metrics": {
+          "count": 0,
+          "rmse_m": null,
+          "p95_m": null,
+          "max_m": null
+        },
+        "check_metrics": {
+          "count": 0,
+          "rmse_m": null,
+          "p95_m": null,
+          "max_m": null
+        },
+        "residuals": [],
+        "candidates": []
+      }
+    }
+  },
+  "artifacts": {
+    "evidence": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v3_gcp_ready\\apd_evidence.gpkg",
+      "sha256": "6c7725c754d6c9ab96a978e59adc6fc14c2443bbb9ecf227676be6beb43ad51b"
+    },
+    "delivery": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v3_gcp_ready\\apd_delivery.gpkg",
+      "sha256": "5d95c56d39a893d6f81880d8a2879751a57d4f81397463d8c251405a69f1776f"
+    },
+    "styles": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v3_gcp_ready\\qgis\\styles\\style_manifest.json",
+      "sha256": "a191f637a6b9b9d27779e946a871f13fdf945ab0c1aa5351792bb63260c9ddde"
+    }
+  },
+  "delivery_counts": {
+    "BOITE": 43,
+    "CABLE": 6,
+    "PTECH": 167,
+    "INFRASTRUCTURE": 0,
+    "SITE": 2,
+    "ZNRO": 0,
+    "ZPM": 0,
+    "IMB": 682
+  },
+  "source_route_components": 2,
+  "unresolved_count": 13,
+  "policy": {
+    "source_geometry_immutable": true,
+    "crossing_is_connection": false,
+    "support_is_optical_node": false,
+    "force_route_components_connected": false,
+    "generic_line_is_cable": false,
+    "dimension_is_cable_geometry": false
+  }
+}

@@ -107,6 +107,41 @@
       "provenance": "DWG_DIRECT:text|RULE:APD-IMB-LABEL-001"
     }
   },
+  "annotation_families": [
+    {
+      "family_id": "fat",
+      "target_class": "BOITE",
+      "text_pattern": "(?i)^DMPH-[0-9]+\\.[0-9]+\\.[A-C][0-9]{2}$",
+      "source_layer_pattern": "(?i)^FAT$",
+      "target_layer_pattern": "(?i)^FAT DWG$",
+      "require_same_layer": false,
+      "max_distance_native_m": 15.0,
+      "rule_id": "APD-ANNOTATION-FAT-001",
+      "provenance": "DWG_DERIVED:APD-ANNOTATION-FAT-001"
+    },
+    {
+      "family_id": "pole_new",
+      "target_class": "PTECH",
+      "text_pattern": "(?i)^MR\\.DMPH\\.P(?:00[1-9]|0[1-9][0-9]|1(?:0[0-9]|1[0-8]))$",
+      "source_layer_pattern": "(?i)^NEW POLE 7-(?:2\\.5|3|4)$",
+      "target_layer_pattern": "(?i)^NEW POLE 7-(?:2\\.5|3|4)$",
+      "require_same_layer": true,
+      "max_distance_native_m": 15.0,
+      "rule_id": "APD-ANNOTATION-POLE-NEW-001",
+      "provenance": "DWG_DERIVED:APD-ANNOTATION-POLE-NEW-001"
+    },
+    {
+      "family_id": "pole_existing",
+      "target_class": "PTECH",
+      "text_pattern": "(?i)^EXT\\.MR\\.MF\\.LBB\\.S02\\.P0(?:5[0-9]|[6-8][0-9]|9[0-8])$",
+      "source_layer_pattern": "(?i)^EXISTING POLE$",
+      "target_layer_pattern": "(?i)^EXISTING POLE$",
+      "require_same_layer": true,
+      "max_distance_native_m": 23.0,
+      "rule_id": "APD-ANNOTATION-POLE-EXISTING-001",
+      "provenance": "DWG_DERIVED:APD-ANNOTATION-POLE-EXISTING-001"
+    }
+  ],
   "decision_rules": {
     "annotation_assignment": {
       "rule_id": "APD-ANNOTATION-ASSIGN-001",
@@ -130,8 +165,8 @@
     }
   },
   "labels": {
-    "fat": "(?i)^DMPH-[0-9]+\\.[0-9]+\\.[A-Z][0-9]{2}$",
-    "pole": "(?i)^MR\\.DMPH\\.P[0-9]+$",
+    "site": "(?i)^DMPH-[0-9]+\\.[0-9]+$",
+    "suspected_asset_id": "(?i)^(?:DMPH|MR[._-]DMPH|EXT[._-]MR[._-]MF)[A-Z0-9._/-]*$",
     "fdt_id_attribute": "FDT_ID",
     "fat_sequence_attribute": "FAT_SEQUENCE"
   },
@@ -139,7 +174,6 @@
     "exact": 0.000001,
     "dimension_to_support": 2.0,
     "device_to_support_candidate": 8.0,
-    "annotation_to_asset": 15.0,
     "route_to_asset": 8.0
   },
   "policy": {

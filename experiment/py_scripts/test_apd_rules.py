@@ -21,7 +21,9 @@ from autocad_reader import (
 )
 from schema_config import LAYER_PATTERN_MAP
 
-if "osgeo" not in sys.modules:
+try:
+    import osgeo  # noqa: F401 - prefer the real bindings when the suite has GDAL
+except ImportError:
     fake_osgeo = types.ModuleType("osgeo")
     fake_osgeo.ogr = types.SimpleNamespace()
     fake_osgeo.osr = types.SimpleNamespace()

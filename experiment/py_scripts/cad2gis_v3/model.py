@@ -68,6 +68,18 @@ class SourceEntity:
     style: CadStyle
     dimension_value: float | None = None
     scale: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    owner_handle: str = ""
+    dimension_text_override: str = ""
+    native_length: float | None = None
+    raw_properties: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def extraction_backend(self) -> str:
+        return str(self.raw_properties.get("extraction_backend", ""))
+
+    @property
+    def reader_backend_status(self) -> str:
+        return str(self.raw_properties.get("reader_backend_status", ""))
 
     @classmethod
     def from_record(cls, record: dict[str, Any]) -> "SourceEntity":
@@ -117,6 +129,13 @@ class SourceEntity:
                 float(record.get("scale_y", 1.0)),
                 float(record.get("scale_z", 1.0)),
             ),
+            owner_handle=str(record.get("owner_handle", "")),
+            dimension_text_override=str(record.get("dimension_text_override", "")),
+            native_length=(
+                None if record.get("native_length") is None
+                else float(record["native_length"])
+            ),
+            raw_properties=dict(record.get("raw_properties") or {}),
         )
 
 

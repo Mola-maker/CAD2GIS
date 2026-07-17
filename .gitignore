@@ -29,6 +29,7 @@ demo/output/
 *.tmp
 *.bak
 /temp/
+/.firecrawl/
 
 # QGIS project files
 *.qgz

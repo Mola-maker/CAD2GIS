@@ -256,6 +256,8 @@ def _assign_branch_labels(group, facts, route_assets, measures, unresolved, rule
 
 def build_topology(entities, features, registry, existing_relations, unresolved):
     relations = list(existing_relations)
+    source_route_native_lengths = 0
+    source_route_native_length_max_abs_delta = 0.0
     by_class = defaultdict(list)
     for feature in features:
         by_class[feature.feature_class].append(feature)
@@ -330,7 +332,7 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
     ]
     span_edges, span_edges_all, span_nodes, accepted_dimensions, candidate_dimensions = set(), set(), set(), 0, 0
     span_role_counts = Counter()
-    route_dimension_sums = Counter()
+    route_segment_dimensions = defaultdict(list)
     measured_cable_segments = set()
     span_measurement_max_abs_error = 0.0
     span_rule = registry.decision_rules["span_segment_measurement"]
@@ -342,8 +344,7 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             owner_key, segment_index = cable_matches[0]
             span_role = "cable_route_span"
             target_key = f"{owner_key}:segment:{segment_index}"
-            measured_cable_segments.add((owner_key, segment_index))
-            route_dimension_sums[owner_key] += float(dimension.dimension_value or 0.0)
+            route_segment_dimensions[(owner_key, segment_index)].append(dimension)
         elif len(sling_matches) == 1 and not cable_matches:
             owner_key, segment_index = sling_matches[0]
             span_role = "sling_wire_span"
@@ -399,12 +400,93 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             span_nodes.update(edge)
 
     for route in routes:
-        route.attributes["source_cad_length_m"] = sum(
-            math.dist(start, end) for start, end in zip(route.native_points, route.native_points[1:])
+        span_metrics = []
+        dimension_total = 0.0
+        measured_count = 0
+        for segment_index, (start, end) in enumerate(
+            zip(route.native_points, route.native_points[1:])
+        ):
+            source_length = math.dist(start, end)
+            dimensions = sorted(
+                route_segment_dimensions.get((route.feature_key, segment_index), ()),
+                key=lambda item: item.entity_key,
+            )
+            dimension_key = None
+            measurement = None
+            measurement_delta = None
+            if len(dimensions) == 1:
+                dimension = dimensions[0]
+                dimension_key = dimension.entity_key
+                if dimension.dimension_value is None:
+                    status = "unmeasured_missing_dimension_value"
+                else:
+                    measurement = float(dimension.dimension_value)
+                    measurement_delta = measurement - source_length
+                    status = "measured"
+                    measured_count += 1
+                    measured_cable_segments.add((route.feature_key, segment_index))
+                    dimension_total += measurement
+            elif len(dimensions) > 1:
+                status = "unmeasured_ambiguous_dimensions"
+                unresolved.append({
+                    "kind": "route_span_membership",
+                    "route": route.feature_key,
+                    "segment_index": segment_index,
+                    "status": "multiple_exact_span_dimensions",
+                    "dimension_entity_keys": [item.entity_key for item in dimensions],
+                })
+            else:
+                status = "unmeasured_no_dimension"
+            span_metrics.append({
+                "segment_index": segment_index,
+                "source_native_length_m": source_length,
+                "dimension_entity_key": dimension_key,
+                "measurement_native_m": measurement,
+                "measurement_delta_m": measurement_delta,
+                "status": status,
+            })
+
+        span_count = len(span_metrics)
+        source_segment_sum = sum(
+            metric["source_native_length_m"] for metric in span_metrics
         )
-        route.attributes["dimension_length_m"] = route_dimension_sums.get(route.feature_key)
-        route.field_provenance["source_cad_length_m"] = "DWG_DIRECT:polyline-geometry"
-        route.field_provenance["dimension_length_m"] = "DWG_DIRECT:SPAN-CABLE-measurements"
+        source_autocad_native_length = route.attributes.get(
+            "source_autocad_native_length_m"
+        )
+        if source_autocad_native_length is not None:
+            source_autocad_native_length = float(source_autocad_native_length)
+            source_route_native_lengths += 1
+            source_length_delta = source_autocad_native_length - source_segment_sum
+            source_route_native_length_max_abs_delta = max(
+                source_route_native_length_max_abs_delta, abs(source_length_delta),
+            )
+        else:
+            source_autocad_native_length = source_segment_sum
+            source_length_delta = None
+        route.attributes.update({
+            "source_cad_length_m": source_autocad_native_length,
+            "source_segment_sum_m": source_segment_sum,
+            "source_native_length_delta_m": source_length_delta,
+            "dimension_length_m": dimension_total if measured_count else None,
+            "span_count": span_count,
+            "measured_span_count": measured_count,
+            "unmeasured_span_count": span_count - measured_count,
+            "span_metrics": span_metrics,
+        })
+        route.field_provenance.update({
+            "source_cad_length_m": (
+                "DWG_DIRECT:AutoCAD-curve-distance"
+                if source_length_delta is not None
+                else "DWG_DERIVED:source-segment-chord-sum-fallback"
+            ),
+            "source_segment_sum_m": "DWG_DERIVED:source-segment-chord-sum",
+            "source_native_length_delta_m": "DWG_DERIVED:AutoCAD-minus-segment-sum",
+            "dimension_length_m": "DWG_DIRECT:SPAN-CABLE-measurements",
+            "span_count": "DWG_DIRECT:polyline-segment-count",
+            "measured_span_count": span_rule["provenance"],
+            "unmeasured_span_count": span_rule["provenance"],
+            "span_metrics": span_rule["provenance"],
+        })
 
     all_cable_segments = {
         (route.feature_key, segment_index)
@@ -412,10 +494,19 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         for segment_index in range(max(0, len(route.native_points) - 1))
     }
     unmeasured_cable_segments = sorted(all_cable_segments - measured_cable_segments)
+    routes_by_key = {route.feature_key: route for route in routes}
     for route_key, segment_index in unmeasured_cable_segments:
+        metric_status = routes_by_key[route_key].attributes["span_metrics"][segment_index]["status"]
+        if metric_status == "unmeasured_ambiguous_dimensions":
+            continue
         unresolved.append({
             "kind": "route_span_membership", "route": route_key,
-            "segment_index": segment_index, "status": "no_exact_span_dimension",
+            "segment_index": segment_index,
+            "status": (
+                "no_exact_span_dimension"
+                if metric_status == "unmeasured_no_dimension"
+                else "exact_span_dimension_without_measurement"
+            ),
         })
 
     groups = _route_groups(routes, exact)
@@ -484,6 +575,10 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         "span_support_nodes": len(span_nodes),
         "span_roles": dict(sorted(span_role_counts.items())),
         "span_measurement_max_abs_error_m": span_measurement_max_abs_error,
+        "source_route_native_lengths": source_route_native_lengths,
+        "source_route_native_length_max_abs_delta_m": (
+            source_route_native_length_max_abs_delta
+        ),
         "route_segment_occurrences": len(all_cable_segments),
         "route_segments_with_span_dimension": len(measured_cable_segments),
         "route_segments_without_span_dimension": len(unmeasured_cable_segments),

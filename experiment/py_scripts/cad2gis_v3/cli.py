@@ -15,12 +15,14 @@ def main(argv=None):
     parser.add_argument("--run-dir", required=True, type=Path, help="New run directory")
     parser.add_argument("--source-profile", required=True, type=Path)
     parser.add_argument("--mapping-registry", required=True, type=Path)
+    parser.add_argument("--gcp-profile", type=Path)
     args = parser.parse_args(argv)
     result = convert(ConversionRequest(
         source=args.input,
         run_dir=args.run_dir,
         source_profile=args.source_profile,
         mapping_registry=args.mapping_registry,
+        gcp_profile=args.gcp_profile,
     ))
     topology_summary = {
         key: value
