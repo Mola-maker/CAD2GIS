@@ -571,23 +571,29 @@ def check_5_4_cable_endpoint_isolation(report, ds, layer_map):
     # 5.4.1 Forward: Each DISTRIBUTION CABLE.ORIGINE/EXTREMITE must exist as BOITE.CODE or SITE(PM).CODE
     unresolved_origins = []
     unresolved_ends = []
+    missing_origins = []
+    missing_ends = []
     cable_lyr.ResetReading()
     for feat in cable_lyr:
-        if type_idx >= 0:
-            ctype = feat.GetField(type_idx)
-            if ctype is None or str(ctype).strip().upper() != "DISTRIBUTION":
-                continue
         orig = feat.GetField(orig_idx)
         ext = feat.GetField(ext_idx)
-        if orig is not None and str(orig).strip() != '':
+        if orig is None or str(orig).strip() == '':
+            missing_origins.append(feat.GetFID())
+        else:
             if str(orig).strip().upper() not in all_endpoint_targets:
                 unresolved_origins.append(f"{orig} (FID={feat.GetFID()})")
-        if ext is not None and str(ext).strip() != '':
+        if ext is None or str(ext).strip() == '':
+            missing_ends.append(feat.GetFID())
+        else:
             if str(ext).strip().upper() not in all_endpoint_targets:
                 unresolved_ends.append(f"{ext} (FID={feat.GetFID()})")
 
-    if unresolved_origins or unresolved_ends:
-        issues.append(f"5.4.1: {len(unresolved_origins)} unresolved ORIGINE, {len(unresolved_ends)} unresolved EXTREMITE")
+    if missing_origins or missing_ends or unresolved_origins or unresolved_ends:
+        issues.append(
+            "5.4.1: "
+            f"{len(missing_origins)} missing ORIGINE, {len(missing_ends)} missing EXTREMITE; "
+            f"{len(unresolved_origins)} unresolved ORIGINE, {len(unresolved_ends)} unresolved EXTREMITE"
+        )
 
     # 5.4.2 Reverse A: Every PM SITE.CODE appears in >= 1 DISTRIBUTION CABLE ORIGINE/EXTREMITE
     cable_endpoint_pm_refs = set()
@@ -929,11 +935,14 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
 
     violations_6a = []
     violations_6b = []
+    missing_refs = []
+    unresolved_refs = []
     cable_lyr.ResetReading()
     for feat in cable_lyr:
         orig = feat.GetField(orig_idx)
         ext = feat.GetField(ext_idx)
-        if orig is None or ext is None:
+        if orig is None or str(orig).strip() == '' or ext is None or str(ext).strip() == '':
+            missing_refs.append(f"CABLE FID={feat.GetFID()}")
             continue
         orig_s = str(orig).strip().upper()
         ext_s = str(ext).strip().upper()
@@ -957,6 +966,8 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
             dist = _haversine_distance(start_pt[0], start_pt[1], nx, ny)
             if dist > 0.0001:
                 violations_6b.append(f"CABLE FID={feat.GetFID()} ORIGINE={orig_s} distance {dist:.6f}")
+        else:
+            unresolved_refs.append(f"CABLE FID={feat.GetFID()} ORIGINE={orig_s}")
 
         # Check extremity
         if ext_s in node_geoms:
@@ -964,12 +975,18 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
             dist = _haversine_distance(end_pt[0], end_pt[1], nx, ny)
             if dist > 0.0001:
                 violations_6b.append(f"CABLE FID={feat.GetFID()} EXTREMITE={ext_s} distance {dist:.6f}")
+        else:
+            unresolved_refs.append(f"CABLE FID={feat.GetFID()} EXTREMITE={ext_s}")
 
     issues = []
     if violations_6a:
         issues.append(f"6.6a: {len(violations_6a)} self-loop(s)")
     if violations_6b:
         issues.append(f"6.6b: {len(violations_6b)} endpoint coincidence violation(s)")
+    if missing_refs:
+        issues.append(f"6.6: {len(missing_refs)} cable(s) missing ORIGINE/EXTREMITE")
+    if unresolved_refs:
+        issues.append(f"6.6: {len(unresolved_refs)} endpoint reference(s) not found in BOITE/SITE")
 
     if issues:
         report.add_rule("6.6", "E", "FAIL", "; ".join(issues))
