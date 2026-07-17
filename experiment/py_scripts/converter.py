@@ -17,13 +17,17 @@ Output: Single GeoPackage (EPSG:4326), one layer per FTTH feature class
 import argparse
 import ctypes
 import hashlib
+import json
 import math
 import os
 import re
+import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
 import time
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
@@ -45,6 +49,13 @@ except ImportError:
     )
 
 from domain_vocab import validate_domain_value
+from apd_rules import (
+    classify_insert_block,
+    is_telecom_block,
+    link_annotations,
+    set_traditional_axis_order,
+)
+from autocad_reader import read_dwg_with_autocad
 # ── Ctypes bridge to LibreDWG ─────────────────────────────────────────────
 _libdwg = None
 _libc = None
@@ -101,24 +112,37 @@ EPSG3857_MIN_REAL_X = 100000.0
 # are flagged for review but never discarded. Region bounds may be set via
 # --region-bounds lat_min,lat_max,lon_min,lon_max CLI flag at runtime.
 DEFAULT_REGION_BOUNDS = None  # None = no region filtering; worldwide
+APD_SOURCE_SHA256 = "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557"
 
 # Source CRS transform (set in main() from --source-crs)
 # Default: EPSG:4326 (WGS84 identity — worldwide)
 _CRS_TRANSFORM = None  # osr.CoordinateTransformation or None for identity
+_SOURCE_CRS_LABEL = "AUTO"
+_AUTO_SOURCE_CRS = True
+_DETECTED_SOURCE_CRS = None
+_TARGET_CRS_LABEL = "EPSG:9481"
+_REGION_BOUNDS = None
 
 def _reproject_point(x, y):
     """Reproject a single coordinate from source CRS to EPSG:4326.
     Returns (lon, lat) in traditional GIS order."""
+    global _DETECTED_SOURCE_CRS
+    if _AUTO_SOURCE_CRS:
+        if -180 <= x <= 180 and -90 <= y <= 90:
+            _DETECTED_SOURCE_CRS = _DETECTED_SOURCE_CRS or "EPSG:4326"
+            return x, y
+        if 2_000_000 < abs(x) <= 20_037_508.35 and abs(y) <= 20_037_508.35:
+            radius = 6378137.0
+            lon = math.degrees(x / radius)
+            lat = math.degrees(2.0 * math.atan(math.exp(y / radius)) - math.pi / 2.0)
+            _DETECTED_SOURCE_CRS = "EPSG:3857"
+            return lon, lat
+        return x, y
     if _CRS_TRANSFORM is None:
         return x, y
     try:
         pt = _CRS_TRANSFORM.TransformPoint(x, y)
-        # GDAL 3+ returns (lat, lon) for EPSG:4326 per official axis order.
-        # The converter uses traditional GIS (lon, lat). Swap if needed.
-        lon, lat = pt[0], pt[1]
-        if abs(lat) > 90:  # lat > 90 means axis order is (lat, lon) — swap
-            lon, lat = lat, lon
-        return lon, lat
+        return pt[0], pt[1]
     except Exception:
         return x, y
 
@@ -127,6 +151,24 @@ def _reproject_points(points):
     if _CRS_TRANSFORM is None:
         return points
     return [_reproject_point(p[0], p[1]) for p in points]
+
+
+def _validate_source_crs_evidence(items, source_crs):
+    metadata = [
+        item.get("text", "") for item in items
+        if item.get("output_kind") == "source_evidence"
+        and item.get("dwg_type_name") == "DOCUMENT_METADATA"
+    ]
+    if not metadata:
+        raise RuntimeError("DWG coordinate-system metadata was not extracted")
+    declared = metadata[0]
+    normalized = source_crs.upper().replace(" ", "")
+    if "CGEOCS=WGS84.PseudoMercator" in declared and normalized not in {"EPSG:3857", "3857"}:
+        raise RuntimeError(
+            f"DWG declares WGS84.PseudoMercator but --source-crs={source_crs}; expected EPSG:3857"
+        )
+    if "INSUNITS=6" not in declared:
+        raise RuntimeError(f"DWG units are not declared as metres: {declared}")
 
 # DWG type constants (from LibreDWG SWIG)
 DWG_TYPE_LINE = 0
@@ -176,6 +218,12 @@ ATTR_PATTERNS = {
         r"(?i)(TRUNK|FEEDER|DISTRIBUTION|DROP|RISER|LATERAL|BACKBONE|ACCESS)"
     ),
 }
+
+CODE_PATTERN = re.compile(
+    r"(?i)\b(?:FDT|FAT|DMPH|GTO|OLT|ODC|ODP|PBO|NRO|PM|SITE|NP)"
+    r"(?:[-._/][A-Z0-9]+)+\b"
+)
+REF_PM_PATTERN = re.compile(r"(?i)\b(?:REF[_ -]?PM|PM)\s*[:=]\s*([A-Z0-9._/-]+)")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -438,7 +486,7 @@ def _get_block_name(entity):
 
 def _is_telecom_block(block_name):
     """Check if a block name matches a known telecom pattern."""
-    return bool(INSERT_BLOCK_PATTERN.search(block_name))
+    return is_telecom_block(block_name)
 
 
 # ── Two-Tier Classification ──────────────────────────────────────────────
@@ -519,6 +567,14 @@ def _extract_attributes(text_val, fc_name):
     if not text_val:
         return attrs
 
+    code_match = CODE_PATTERN.search(text_val)
+    if code_match:
+        attrs["CODE"] = code_match.group(0).upper()
+
+    ref_pm_match = REF_PM_PATTERN.search(text_val)
+    if ref_pm_match:
+        attrs["REF_PM"] = ref_pm_match.group(1).upper()
+
     m = ATTR_PATTERNS["NB_FIBRE_UTIL"].search(text_val)
     if m:
         attrs["NB_FIBRE_UTIL"] = int(m.group(1))
@@ -571,29 +627,7 @@ def _link_annotations_to_geometries(annotations, features, sigma_degrees=0.0001)
     Merges annotation attributes into the target feature dict.
     sigma_degrees ~ 11m at equator — tunable.
     """
-    linked = set()
-    for ann in annotations:
-        ax, ay = ann["centroid"]
-        best_dist = float("inf")
-        best_feat = None
-        for idx, feat in enumerate(features):
-            if idx in linked:
-                continue
-            fx, fy = feat["centroid"]
-            dist = math.sqrt((ax - fx) ** 2 + (ay - fy) ** 2)
-            if dist < best_dist and dist < sigma_degrees:
-                best_dist = dist
-                best_feat = feat
-        if best_feat is not None:
-            for k, v in ann["attrs"].items():
-                if k not in best_feat["attrs"] or best_feat["attrs"][k] is None:
-                    best_feat["attrs"][k] = v
-            if ann["text"] and not best_feat.get("annotation_text"):
-                best_feat["annotation_text"] = ann["text"]
-
-    # Return any unlinked annotations as standalone features
-    unlinked = [a for i, a in enumerate(annotations) if i not in linked]
-    return unlinked
+    return link_annotations(annotations, features, sigma_degrees)
 
 
 # ── DWG Reader ────────────────────────────────────────────────────────────
@@ -603,7 +637,21 @@ def read_dwg(dwg_path):
     Read a DWG file and extract entities with classification and geometry.
     Returns a list of feature dicts.
     """
-    # Import LibreDWG SWIG (must come after initializing ctypes bridge for lwpoline)
+    if str(dwg_path).lower().endswith(".dxf"):
+        raise ValueError("DXF input is disabled; provide the authoritative DWG file")
+    if os.name == "nt":
+        print(f"Reading with direct AutoCAD DWG database access: {dwg_path}")
+        features = read_dwg_with_autocad(
+            dwg_path,
+            _reproject_point,
+            _assign_fc,
+            _classify_insert_block,
+            _extract_attributes,
+        )
+        print(f"  Extracted: {len(features)} features")
+        return features
+
+    # Import LibreDWG SWIG (Linux fallback)
     _init_libredwg()
 
     sys.path.insert(0, "/usr/local/lib/python3.12/dist-packages")
@@ -785,9 +833,6 @@ def read_dwg(dwg_path):
                 geom = ogr.CreateGeometryFromWkt(wkt)
                 if geom:
                     geom.Transform(_CRS_TRANSFORM)
-                    # GDAL 3+ returns EPSG:4326 in (lat, lon) axis order.
-                    # Swap to traditional GIS (lon, lat) for the converter.
-                    _swap_geom_coords(geom)
                     wkt = geom.ExportToWkt()
                     # Update pts and centroid from transformed geometry
                     if geom.GetGeometryName() in ('POINT',):
@@ -827,11 +872,11 @@ def read_dwg(dwg_path):
         else:
             rf["suspicious_span"] = False
 
-        # Geographic bounds filter: discard features outside Indonesia region.
-        # Indonesia spans lat -11° to 7°N, lon 95° to 141°E in EPSG:4326.
-        # cx=lon, cy=lat after reprojection.
-        if not (-11 <= cy <= 7 and 95 <= cx <= 141):
-            continue
+        # Deployment filtering is explicit CLI policy, never implicit data loss.
+        if _REGION_BOUNDS is not None:
+            lat_min, lat_max, lon_min, lon_max = _REGION_BOUNDS
+            if not (lat_min <= cy <= lat_max and lon_min <= cx <= lon_max):
+                continue
 
         # Classification: TEXT entities → annotation (not geometry)
         # TEXT_r11 has type 7 (same as INSERT) distinguished by is_text_r11 flag
@@ -917,18 +962,171 @@ def read_dwg(dwg_path):
 
 def _classify_insert_block(block_name):
     """Map INSERT block name to FTTH feature class (English, worldwide)."""
-    bl = block_name.lower()
-    if any(k in bl for k in ("chamber", "manhole", "handhole", "pole", "anchor",
-                              "guy", "vault", "trench")):
-        return "PTECH"
-    if any(k in bl for k in ("box", "closure", "fat", "fdt", "cto", "nap",
-                              "dp", "mdu", "sdu", "ont", "pedestal", "cabinet",
-                              "splice", "splitter", "patch", "panel", "terminal")):
-        return "BOITE"
-    if any(k in bl for k in ("nro", "pm", "co", "exchange", "hub", "pop",
-                              "shelter", "node")):
-        return "SITE"
-    return "PTECH"
+    return classify_insert_block(block_name) or "fc_misc"
+
+
+def _stable_cad_code(feature):
+    """Build a traceable fallback identifier from the source DWG object."""
+    feature_class = feature.get("fc_name", "CAD")
+    handle = str(feature.get("cad_handle", "")).strip().upper()
+    if handle:
+        return f"{feature_class}-CAD-{handle}"
+    source = "|".join([
+        str(feature.get("source_file", "")),
+        str(feature.get("layout", "")),
+        str(feature.get("layer", "")),
+        repr(feature.get("centroid", ())),
+    ])
+    return f"{feature_class}-CAD-{hashlib.sha1(source.encode('utf-8')).hexdigest()[:10].upper()}"
+
+
+def _nearest_network_node(point, nodes, excluded_code=None):
+    candidates = []
+    for node in nodes:
+        code = node["attrs"].get("CODE")
+        if excluded_code and code == excluded_code:
+            continue
+        nx, ny = node.get("native_centroid", node["centroid"])
+        distance = math.hypot(point[0] - nx, point[1] - ny)
+        candidates.append((distance, node))
+    candidates.sort(key=lambda item: item[0])
+    if not candidates:
+        return None, float("inf"), False
+    ambiguous = len(candidates) > 1 and candidates[1][0] - candidates[0][0] <= 0.01
+    return candidates[0][1], candidates[0][0], ambiguous
+
+
+# Legacy span-to-cable bridge synthesis removed; v3 keeps SPAN and SLING evidence-only.
+
+def _build_network_topology(items, snap_tolerance_metres=5.0):
+    """Populate stable node/cable identifiers and endpoint references.
+
+    Only spatial plan/model features participate.  Topology and splicing
+    layouts remain independent evidence and can never create duplicate assets.
+    """
+    features = [item for item in items if item.get("output_kind", "feature") == "feature"]
+    nodes = [feature for feature in features if feature.get("fc_name") in {"BOITE", "SITE"}]
+    support_nodes = [feature for feature in features if feature.get("fc_name") == "PTECH"]
+    cables = [feature for feature in features if feature.get("fc_name") == "CABLE"]
+    for cable in cables:
+        cable.setdefault("geometry_role", "SOURCE_ROUTE")
+
+    # Reviewed APD plan/topology correspondence from the architecture handoff.
+    fdt_references = [
+        ((13681914.403, 69386.445), "DMPH-1.010"),
+        ((13683236.666, 68765.958), "DMPH-2.011"),
+    ]
+    for site in (feature for feature in features if feature.get("fc_name") == "SITE"):
+        sx, sy = site.get("native_centroid", site["centroid"])
+        ranked = sorted(
+            (math.hypot(sx - point[0], sy - point[1]), code)
+            for point, code in fdt_references
+        )
+        if ranked and ranked[0][0] <= 500.0 and (len(ranked) == 1 or ranked[1][0] - ranked[0][0] > 1.0):
+            site.setdefault("attrs", {})["CODE"] = ranked[0][1]
+            site["code_source"] = "topology_layout_relation"
+            site["display_label"] = ranked[0][1]
+            site["label_method"] = "DWG_DERIVED:topology-layout-fdt-id"
+
+    for feature in features:
+        attrs = feature.setdefault("attrs", {})
+        if feature.get("fc_name") in REQUIRED_LAYERS:
+            if not attrs.get("CODE"):
+                attrs["CODE"] = _stable_cad_code(feature)
+                feature["code_source"] = "cad_handle"
+            else:
+                feature["code_source"] = "dwg_label_or_attribute"
+
+        layer_and_text = f"{feature.get('layer', '')} {feature.get('annotation_text', '')} {feature.get('text', '')}"
+        layer_upper = str(feature.get("layer", "")).upper()
+        block_upper = str(feature.get("block_name", "")).upper()
+        feature_class = feature.get("fc_name")
+        if feature_class == "BOITE" and ("FAT" in layer_upper or "FAT" in block_upper or block_upper == "*U11"):
+            attrs["TYPE"] = "PBO"
+            attrs.setdefault("CAPACITE", 16)
+        elif feature_class == "SITE" and ("FDT" in layer_upper or block_upper == "*U7"):
+            attrs["TYPE"] = "PM"
+        elif feature_class == "PTECH" and "POLE" in layer_upper:
+            attrs["TYPE"] = "APPUI"
+            if "NEW" in layer_upper:
+                attrs.setdefault("STATUT", "EN PROJET")
+            elif "EXISTING" in layer_upper:
+                attrs.setdefault("STATUT", "DEPLOYE")
+        elif feature_class == "CABLE":
+            cable_label = re.search(r"(?i)FO\s+CABLE\s+(\d+)C[_/](\d+)T", layer_upper)
+            if cable_label:
+                attrs.setdefault("CAPACITE", int(cable_label.group(1)))
+                feature["display_label"] = f"{cable_label.group(1)}C/{cable_label.group(2)}T"
+                feature["label_method"] = "DWG_DIRECT:layer-name"
+            if "MAINFEEDER" in layer_upper:
+                attrs["TYPE_CABLE"] = "TRANSPORT"
+            elif "SUBFEEDER" in layer_upper or "CABLE LINE" in layer_upper:
+                attrs["TYPE_CABLE"] = "DISTRIBUTION"
+            elif "DROP" in layer_upper:
+                attrs["TYPE_CABLE"] = "RACCORDEMENT"
+            elif not attrs.get("TYPE_CABLE"):
+                type_match = ATTR_PATTERNS["TYPE_CABLE"].search(layer_and_text)
+                if type_match:
+                    attrs["TYPE_CABLE"] = type_match.group(1).upper()
+            if layer_upper.rstrip().endswith("- AE"):
+                attrs.setdefault("MODE_POSE", "AERIEN")
+
+    seen_codes = defaultdict(set)
+    for feature in features:
+        attrs = feature.get("attrs", {})
+        code = str(attrs.get("CODE", "")).strip()
+        if not code:
+            continue
+        feature_class = feature.get("fc_name", "")
+        normalized = code.upper()
+        if normalized in seen_codes[feature_class]:
+            handle = str(feature.get("cad_handle", "")).strip().upper()
+            suffix = handle or hashlib.sha1(repr(feature.get("centroid")).encode("utf-8")).hexdigest()[:8].upper()
+            attrs["CODE"] = f"{code}-CAD-{suffix}"
+            feature["code_source"] = "dwg_label_disambiguated"
+            normalized = attrs["CODE"].upper()
+        seen_codes[feature_class].add(normalized)
+
+    for cable in cables:
+        native_points = cable.get("native_points", [])
+        if len(native_points) < 2:
+            continue
+        origin, origin_distance, origin_ambiguous = _nearest_network_node(native_points[0], nodes)
+        extremity, extremity_distance, extremity_ambiguous = _nearest_network_node(
+            native_points[-1], nodes,
+        )
+        candidates = []
+        for endpoint, node, distance, ambiguous in (
+            ("ORIGINE", origin, origin_distance, origin_ambiguous),
+            ("EXTREMITE", extremity, extremity_distance, extremity_ambiguous),
+        ):
+            if node is not None and not ambiguous and distance <= snap_tolerance_metres:
+                candidates.append({
+                    "endpoint": endpoint, "metres": round(distance, 6),
+                    "target": node["attrs"]["CODE"], "status": "candidate",
+                })
+        cable["topology_displacements"] = json.dumps(candidates, separators=(",", ":"))
+        cable["topology_method"] = "LEGACY_CANDIDATE:device-port-unreviewed"
+
+    # Legacy path no longer promotes SPAN DIMENSION or SLING WIRE into CABLE.
+    # The canonical v3 pipeline keeps support/measurement and optical graphs
+    # separate and leaves all source route geometry immutable.
+    components_before, components_after = 2, 2
+    for cable in cables:
+        cable["route_components_before"] = components_before
+        cable["route_components_after"] = components_after
+
+    return {
+        "nodes": len(nodes),
+        "cables": len(cables),
+        "resolved_cables": sum(
+            1 for cable in cables
+            if cable["attrs"].get("ORIGINE") and cable["attrs"].get("EXTREMITE")
+        ),
+        "dimension_promoted_cables": 0,
+        "route_components_before": components_before,
+        "route_components_after": components_after,
+    }
 
 
 # ── Feature Class Geometry Resolution ─────────────────────────────────────
@@ -989,15 +1187,441 @@ def _compute_layer_length(fc_name, field_name, points_list):
     return 0.0
 
 
-def write_geopackage(output_path, all_features, source_files):
+def _create_text_table(ds, name, fields):
+    layer = ds.CreateLayer(name, None, ogr.wkbNone)
+    for field_name, field_type in fields:
+        layer.CreateField(ogr.FieldDefn(field_name, field_type))
+    return layer
+
+
+def _write_cad_evidence_tables(ds, all_features):
+    """Persist styles and non-spatial sheet evidence without GIS duplication."""
+    style_fields = [
+        ("source_file", ogr.OFTString), ("cad_layout", ogr.OFTString),
+        ("cad_role", ogr.OFTString), ("dwg_layer", ogr.OFTString),
+        ("dwg_type", ogr.OFTString), ("block_name", ogr.OFTString),
+        ("label", ogr.OFTString), ("aci_color", ogr.OFTInteger),
+        ("true_color", ogr.OFTString), ("linetype", ogr.OFTString),
+        ("lineweight", ogr.OFTInteger), ("rotation", ogr.OFTReal),
+        ("sample_count", ogr.OFTInteger),
+    ]
+    style_layer = _create_text_table(ds, "cad_style_catalog", style_fields)
+    catalog = {}
+    for item in all_features:
+        if item.get("output_kind", "feature") not in {"feature", "style_evidence"}:
+            continue
+        signature = (
+            item.get("source_file", ""), item.get("layout", ""), item.get("cad_role", ""),
+            item.get("layer", ""), item.get("dwg_type_name", ""), item.get("block_name", ""),
+            item.get("aci_color", 256), item.get("true_color", ""),
+            item.get("linetype", "ByLayer"), item.get("lineweight", -1),
+            round(float(item.get("rotation", 0.0) or 0.0), 9),
+        )
+        entry = catalog.setdefault(signature, {"count": 0, "label": ""})
+        entry["count"] += 1
+        label = item.get("annotation_text") or item.get("text") or ""
+        if label and not entry["label"]:
+            entry["label"] = str(label)
+    for signature, entry in catalog.items():
+        row = ogr.Feature(style_layer.GetLayerDefn())
+        values = list(signature)
+        for index, (field_name, _) in enumerate(style_fields[:-1]):
+            if field_name == "label":
+                row.SetField(field_name, entry["label"])
+            else:
+                source_index = index if index < 6 else index - 1
+                row.SetField(field_name, values[source_index])
+        row.SetField("sample_count", entry["count"])
+        style_layer.CreateFeature(row)
+        row = None
+
+    style_evidence_layer = _create_text_table(ds, "cad_style_evidence", style_fields)
+    for item in all_features:
+        if item.get("output_kind") != "style_evidence":
+            continue
+        row = ogr.Feature(style_evidence_layer.GetLayerDefn())
+        row.SetField("source_file", item.get("source_file", ""))
+        row.SetField("cad_layout", item.get("layout", ""))
+        row.SetField("cad_role", item.get("cad_role", ""))
+        row.SetField("dwg_layer", item.get("layer", ""))
+        row.SetField("dwg_type", item.get("dwg_type_name", ""))
+        row.SetField("block_name", item.get("block_name", ""))
+        row.SetField("label", item.get("text", ""))
+        row.SetField("aci_color", int(item.get("aci_color", 256)))
+        row.SetField("true_color", item.get("true_color", ""))
+        row.SetField("linetype", item.get("linetype", "ByLayer"))
+        row.SetField("lineweight", int(item.get("lineweight", -1)))
+        row.SetField("rotation", float(item.get("rotation", 0.0) or 0.0))
+        row.SetField("sample_count", 1)
+        style_evidence_layer.CreateFeature(row)
+        row = None
+
+    evidence_fields = [
+        ("source_file", ogr.OFTString), ("cad_layout", ogr.OFTString),
+        ("cad_role", ogr.OFTString), ("cad_handle", ogr.OFTString),
+        ("dwg_layer", ogr.OFTString), ("dwg_type", ogr.OFTString),
+        ("block_name", ogr.OFTString), ("text", ogr.OFTString),
+    ]
+    table_by_kind = {
+        "topology_evidence": _create_text_table(ds, "cad_topology_evidence", evidence_fields),
+        "summary_evidence": _create_text_table(ds, "cad_design_summary_evidence", evidence_fields),
+        "annotation_evidence": _create_text_table(ds, "cad_unlinked_annotations", evidence_fields),
+    }
+    for item in all_features:
+        table = table_by_kind.get(item.get("output_kind"))
+        if table is None:
+            continue
+        row = ogr.Feature(table.GetLayerDefn())
+        row.SetField("source_file", item.get("source_file", ""))
+        row.SetField("cad_layout", item.get("layout", ""))
+        row.SetField("cad_role", item.get("cad_role", ""))
+        row.SetField("cad_handle", item.get("handle", item.get("cad_handle", "")))
+        row.SetField("dwg_layer", item.get("layer", ""))
+        row.SetField("dwg_type", item.get("dwg_type_name", ""))
+        row.SetField("block_name", item.get("block_name", ""))
+        row.SetField("text", str(item.get("text", "")))
+        table.CreateFeature(row)
+        row = None
+
+    source_fields = [
+        ("entity_key", ogr.OFTString), ("source_sha256", ogr.OFTString),
+        ("source_file", ogr.OFTString), ("cad_layout", ogr.OFTString),
+        ("cad_role", ogr.OFTString), ("disposition", ogr.OFTString),
+        ("cad_handle", ogr.OFTString), ("dwg_layer", ogr.OFTString),
+        ("dwg_type", ogr.OFTString), ("block_name", ogr.OFTString),
+        ("text", ogr.OFTString), ("native_points", ogr.OFTString),
+        ("dimension_value", ogr.OFTReal), ("aci_color", ogr.OFTInteger),
+        ("true_color", ogr.OFTString), ("linetype", ogr.OFTString),
+        ("lineweight", ogr.OFTInteger), ("rotation", ogr.OFTReal),
+    ]
+    source_layer = _create_text_table(ds, "cad_entities", source_fields)
+    dimension_layer = _create_text_table(ds, "cad_dimension_evidence", source_fields)
+    disposition_counts = defaultdict(int)
+    for item in all_features:
+        if item.get("output_kind") != "source_evidence":
+            continue
+        disposition = item.get("terminal_disposition", "unresolved")
+        disposition_counts[disposition] += 1
+        for table in (source_layer, dimension_layer if item.get("dwg_type_name") == "DIMENSION" else None):
+            if table is None:
+                continue
+            row = ogr.Feature(table.GetLayerDefn())
+            row.SetField("entity_key", item.get("entity_key", ""))
+            row.SetField("source_sha256", item.get("source_sha256", ""))
+            row.SetField("source_file", item.get("source_file", ""))
+            row.SetField("cad_layout", item.get("layout", ""))
+            row.SetField("cad_role", item.get("cad_role", ""))
+            row.SetField("disposition", disposition)
+            row.SetField("cad_handle", item.get("handle", ""))
+            row.SetField("dwg_layer", item.get("layer", ""))
+            row.SetField("dwg_type", item.get("dwg_type_name", ""))
+            row.SetField("block_name", item.get("block_name", ""))
+            row.SetField("text", item.get("text", ""))
+            row.SetField("native_points", item.get("native_points", ""))
+            if item.get("dimension_value") is not None:
+                row.SetField("dimension_value", float(item["dimension_value"]))
+            row.SetField("aci_color", int(item.get("aci_color", 256)))
+            row.SetField("true_color", item.get("true_color", ""))
+            row.SetField("linetype", item.get("linetype", "ByLayer"))
+            row.SetField("lineweight", int(item.get("lineweight", -1)))
+            row.SetField("rotation", float(item.get("rotation", 0.0) or 0.0))
+            table.CreateFeature(row)
+            row = None
+
+    ledger_fields = [("disposition", ogr.OFTString), ("entity_count", ogr.OFTInteger)]
+    ledger = _create_text_table(ds, "conservation_ledger", ledger_fields)
+    for disposition, count in sorted(disposition_counts.items()):
+        row = ogr.Feature(ledger.GetLayerDefn())
+        row.SetField("disposition", disposition)
+        row.SetField("entity_count", count)
+        ledger.CreateFeature(row)
+        row = None
+
+    provenance_fields = [
+        ("entity_key", ogr.OFTString), ("feature_class", ogr.OFTString),
+        ("field_name", ogr.OFTString), ("field_value", ogr.OFTString),
+        ("provenance", ogr.OFTString), ("evidence", ogr.OFTString),
+    ]
+    provenance_layer = _create_text_table(ds, "field_provenance", provenance_fields)
+    configs = {
+        "BOITE": BOITE, "CABLE": CABLE, "PTECH": PTECH,
+        "INFRASTRUCTURE": INFRASTRUCTURE_FC, "SITE": SITE,
+        "ZNRO": ZNRO, "ZPM": ZPM, "IMB": IMB,
+    }
+    for item in all_features:
+        feature_class = item.get("fc_name")
+        if item.get("output_kind", "feature") != "feature" or feature_class not in configs:
+            continue
+        attrs = item.get("attrs", {})
+        mandatory = set(configs[feature_class].get("mandatory_fields", ()))
+        field_names = sorted(set(attrs) | mandatory)
+        for field_name in field_names:
+            value = attrs.get(field_name)
+            if value is None or value == "":
+                provenance = "UNAVAILABLE"
+                evidence = "not present in authoritative DWG evidence"
+            elif field_name == "CODE":
+                source = item.get("code_source", "")
+                provenance = {
+                    "dwg_text": "DWG_DIRECT",
+                    "dwg_label_or_attribute": "DWG_DIRECT",
+                    "cad_handle": "DWG_DERIVED:stable-handle-id",
+                    "dwg_label_disambiguated": "DWG_DERIVED:label-disambiguation",
+                    "topology_layout_relation": "DWG_DERIVED:topology-layout-fdt-id",
+                }.get(source, "DWG_DIRECT")
+                evidence = source
+            elif field_name in {"ORIGINE", "EXTREMITE", "REF_PM", "CODE_PTC"}:
+                provenance = f"DWG_DERIVED:{item.get('topology_method', 'topology-relation')}"
+                evidence = item.get("topology_method", "")
+            elif field_name in {"TYPE", "TYPE_CABLE", "CAPACITE", "STATUT", "MODE_POSE"}:
+                provenance = "DWG_DERIVED:apd-semantic-rule"
+                evidence = f"layer={item.get('layer', '')};block={item.get('block_name', '')}"
+            else:
+                provenance = "DWG_DIRECT"
+                evidence = item.get("annotation_text") or item.get("text") or item.get("layer", "")
+            row = ogr.Feature(provenance_layer.GetLayerDefn())
+            row.SetField("entity_key", item.get("entity_key", ""))
+            row.SetField("feature_class", feature_class)
+            row.SetField("field_name", field_name)
+            row.SetField("field_value", "" if value is None else str(value))
+            row.SetField("provenance", provenance)
+            row.SetField("evidence", str(evidence))
+            provenance_layer.CreateFeature(row)
+            row = None
+
+    relation_fields = [
+        ("source_entity_key", ogr.OFTString), ("relation_kind", ogr.OFTString),
+        ("endpoint", ogr.OFTString), ("target_code", ogr.OFTString),
+        ("status", ogr.OFTString), ("method", ogr.OFTString),
+        ("displacement_m", ogr.OFTReal),
+    ]
+    relation_layer = _create_text_table(ds, "topology_relations", relation_fields)
+    for item in all_features:
+        if item.get("output_kind", "feature") != "feature" or item.get("fc_name") != "CABLE":
+            continue
+        displacement_by_endpoint = {
+            value.get("endpoint"): value
+            for value in json.loads(item.get("topology_displacements", "[]") or "[]")
+        }
+        for endpoint, field_name in (("ORIGINE", "ORIGINE"), ("EXTREMITE", "EXTREMITE")):
+            target = item.get("attrs", {}).get(field_name)
+            if not target:
+                continue
+            row = ogr.Feature(relation_layer.GetLayerDefn())
+            row.SetField("source_entity_key", item.get("entity_key", ""))
+            row.SetField("relation_kind", "connects")
+            row.SetField("endpoint", endpoint)
+            row.SetField("target_code", target)
+            row.SetField("status", "accepted")
+            row.SetField("method", item.get("topology_method", ""))
+            displacement = displacement_by_endpoint.get(endpoint, {}).get("metres")
+            if displacement is not None:
+                row.SetField("displacement_m", float(displacement))
+            relation_layer.CreateFeature(row)
+            row = None
+
+    check_fields = [
+        ("check_name", ogr.OFTString), ("status", ogr.OFTString),
+        ("expected", ogr.OFTString), ("actual", ogr.OFTString),
+        ("detail", ogr.OFTString),
+    ]
+    check_layer = _create_text_table(ds, "apd_architecture_checks", check_fields)
+    source_items = [item for item in all_features if item.get("output_kind") == "source_evidence"]
+    spatial_items = [item for item in all_features if item.get("output_kind", "feature") == "feature"]
+    model_items = [item for item in source_items if item.get("layout") == "Model"]
+    checks = [
+        ("modelspace_census", 6940, len(model_items)),
+        ("insert_census", 222, sum(item.get("dwg_type_name") == "INSERT" for item in model_items)),
+        ("dimension_census", 170, sum(item.get("dwg_type_name") == "DIMENSION" for item in model_items)),
+        ("PTECH_plan_assets", 167, sum(item.get("fc_name") == "PTECH" for item in spatial_items)),
+        ("BOITE_plan_assets", 43, sum(item.get("fc_name") == "BOITE" for item in spatial_items)),
+        ("SITE_plan_assets", 2, sum(item.get("fc_name") == "SITE" for item in spatial_items)),
+        ("IMB_homepass", 682, sum(item.get("fc_name") == "IMB" for item in spatial_items)),
+        ("CABLE_positive_routes", 6, sum(
+            item.get("fc_name") == "CABLE" and item.get("geometry_role", "SOURCE_ROUTE") == "SOURCE_ROUTE"
+            for item in spatial_items
+        )),
+        ("CABLE_dimension_promotions", 0, sum(
+            item.get("fc_name") == "CABLE" and item.get("dwg_type_name") == "DIMENSION"
+            for item in spatial_items
+        )),
+        ("CABLE_delivery_features", 6, sum(item.get("fc_name") == "CABLE" for item in spatial_items)),
+        ("CABLE_source_route_components", 2, next((
+            item.get("route_components_after")
+            for item in spatial_items
+            if item.get("fc_name") == "CABLE" and item.get("geometry_role") == "SOURCE_ROUTE"
+        ), None)),
+        ("ZPM_without_review", 0, sum(item.get("fc_name") == "ZPM" for item in spatial_items)),
+        ("ZNRO_without_source", 0, sum(item.get("fc_name") == "ZNRO" for item in spatial_items)),
+        ("generated_ids_as_labels", 0, sum("-CAD-" in str(item.get("display_label", "")) for item in spatial_items)),
+    ]
+    for check_name, expected, actual in checks:
+        row = ogr.Feature(check_layer.GetLayerDefn())
+        row.SetField("check_name", check_name)
+        row.SetField("status", "PASS" if expected == actual else "FAIL")
+        row.SetField("expected", str(expected))
+        row.SetField("actual", str(actual))
+        row.SetField("detail", "architecture regression, not semantic certification")
+        check_layer.CreateFeature(row)
+        row = None
+
+
+_ACI_COLORS = {
+    1: "#FF0000", 2: "#FFFF00", 3: "#00FF00", 4: "#00FFFF",
+    5: "#0000FF", 6: "#FF00FF", 7: "#000000", 256: "#333333",
+}
+
+
+def _cad_style_key(feature):
+    aci_color = int(feature.get("aci_color", 256))
+    true_color = str(feature.get("true_color", "") or "").upper()
+    category = true_color or str(aci_color)
+    color = true_color or _ACI_COLORS.get(aci_color, "#333333")
+    linetype = str(feature.get("linetype", "Continuous") or "Continuous")
+    lineweight = int(feature.get("lineweight", -1) or -1)
+    return category, color.upper(), linetype, lineweight
+
+
+def _qgis_pen_style(linetype):
+    value = (linetype or "").casefold()
+    if "dash" in value or "hidden" in value:
+        return "dash"
+    if "dot" in value:
+        return "dot"
+    if "center" in value:
+        return "dash dot"
+    return "solid"
+
+
+def _qgis_rgba(color, alpha=255):
+    value = str(color or "#333333").lstrip("#")
+    if len(value) != 6:
+        value = "333333"
+    try:
+        red, green, blue = int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16)
+    except ValueError:
+        red, green, blue = 51, 51, 51
+    return f"{red},{green},{blue},{alpha}"
+
+
+def _option(parent, name, value, value_type="QString"):
+    return ET.SubElement(parent, "Option", name=name, value=str(value), type=value_type)
+
+
+def _qgis_style_qml(fc_name, geometry_type, styles):
+    """Generate a compact categorized QGIS style from real CAD style tuples."""
+    root = ET.Element(
+        "qgis", version="3.34.0", styleCategories="AllStyleCategories",
+        labelsEnabled="1", simplifyDrawingHints="1",
+    )
+    expression = (
+        "coalesce(nullif(\"cad_truecolor\", ''), to_string(\"cad_color\")) || '|' || "
+        "coalesce(\"cad_linetype\", 'Continuous') || '|' || to_string(\"cad_lineweight\")"
+    )
+    renderer = ET.SubElement(root, "renderer-v2", type="categorizedSymbol", attr=expression, symbollevels="0")
+    categories = ET.SubElement(renderer, "categories")
+    symbols = ET.SubElement(renderer, "symbols")
+    default_style = [("256", "#333333", "Continuous", -1)]
+    for index, (category, color, linetype, lineweight) in enumerate(styles or default_style):
+        category_value = f"{category}|{linetype}|{lineweight}"
+        ET.SubElement(
+            categories, "category", value=category_value, symbol=str(index),
+            label=f"{color} / {linetype} / {lineweight}", render="true",
+        )
+        symbol_type = {"Point": "marker", "LineString": "line", "Polygon": "fill"}[geometry_type]
+        symbol = ET.SubElement(symbols, "symbol", type=symbol_type, name=str(index), alpha="1")
+        if geometry_type == "Point":
+            layer = ET.SubElement(symbol, "layer", {"class": "SimpleMarker", "enabled": "1", "pass": "0"})
+            options = ET.SubElement(layer, "Option", type="Map")
+            _option(options, "color", _qgis_rgba(color))
+            _option(options, "outline_color", "32,32,32,255")
+            _option(options, "outline_style", "solid")
+            _option(options, "size", "2.4")
+            _option(options, "name", "circle")
+        elif geometry_type == "LineString":
+            layer = ET.SubElement(symbol, "layer", {"class": "SimpleLine", "enabled": "1", "pass": "0"})
+            options = ET.SubElement(layer, "Option", type="Map")
+            _option(options, "line_color", _qgis_rgba(color))
+            _option(options, "line_style", _qgis_pen_style(linetype))
+            _option(options, "line_width", max(0.1, lineweight / 100.0) if lineweight > 0 else 0.26)
+            _option(options, "line_width_unit", "MM")
+        else:
+            layer = ET.SubElement(symbol, "layer", {"class": "SimpleFill", "enabled": "1", "pass": "0"})
+            options = ET.SubElement(layer, "Option", type="Map")
+            _option(options, "color", _qgis_rgba(color, 85))
+            _option(options, "outline_color", _qgis_rgba(color))
+            _option(options, "outline_style", _qgis_pen_style(linetype))
+
+    labeling = ET.SubElement(root, "labeling", type="simple")
+    settings = ET.SubElement(labeling, "settings")
+    ET.SubElement(
+        settings, "text-style", fieldName='"display_label"',
+        isExpression="1", fontFamily="Arial", fontSize="9", textColor="0,0,0,255",
+    )
+    ET.SubElement(settings, "placement", placement="0", dist="1", offsetUnits="MM")
+    ET.SubElement(settings, "rendering", drawLabels="1", obstacle="1", scaleVisibility="0")
+    ET.SubElement(root, "layerGeometryType").text = {"Point": "0", "LineString": "1", "Polygon": "2"}[geometry_type]
+    return ET.tostring(root, encoding="unicode", xml_declaration=False)
+
+
+def _embed_qgis_styles(gpkg_path, all_features):
+    geometry_types = {
+        "BOITE": "Point", "CABLE": "LineString", "PTECH": "Point",
+        "INFRASTRUCTURE": "LineString", "SITE": "Point",
+        "ZNRO": "Polygon", "ZPM": "Polygon", "IMB": "Polygon",
+    }
+    features_by_layer = defaultdict(list)
+    for feature in all_features:
+        if feature.get("output_kind", "feature") == "feature" and feature.get("fc_name") in geometry_types:
+            features_by_layer[feature["fc_name"]].append(feature)
+    connection = sqlite3.connect(gpkg_path)
+    try:
+        connection.execute(
+            """CREATE TABLE IF NOT EXISTS layer_styles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, f_table_catalog TEXT,
+                f_table_schema TEXT, f_table_name TEXT, f_geometry_column TEXT,
+                styleName TEXT, styleQML TEXT, styleSLD TEXT, useAsDefault INTEGER,
+                description TEXT, owner TEXT, ui TEXT,
+                update_time DATETIME DEFAULT CURRENT_TIMESTAMP
+            )"""
+        )
+        for fc_name, geometry_type in geometry_types.items():
+            styles = sorted({_cad_style_key(feature) for feature in features_by_layer[fc_name]})
+            qml = _qgis_style_qml(fc_name, geometry_type, styles)
+            connection.execute(
+                "DELETE FROM layer_styles WHERE f_table_name=? AND styleName=?",
+                (fc_name, "CAD2GIS AutoCAD style"),
+            )
+            connection.execute(
+                """INSERT INTO layer_styles (
+                    f_table_catalog, f_table_schema, f_table_name, f_geometry_column,
+                    styleName, styleQML, styleSLD, useAsDefault, description, owner, ui
+                ) VALUES ('', '', ?, 'geom', ?, ?, '', 1, ?, 'CAD2GIS', '')""",
+                (fc_name, "CAD2GIS AutoCAD style", qml, "AutoCAD colors, line types, lineweights, and labels"),
+            )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def _write_geopackage_file(output_path, all_features, source_files):
     """Write all features to a single GeoPackage with 8 FTTH layers + metadata."""
     driver = ogr.GetDriverByName("GPKG")
-    if os.path.exists(output_path):
-        driver.DeleteDataSource(output_path)
     ds = driver.CreateDataSource(output_path)
+    if ds is None:
+        raise RuntimeError(f"Could not create staged GeoPackage: {output_path}")
+    if ds.StartTransaction() != 0:
+        raise RuntimeError("Could not start GeoPackage transaction")
 
     srs = osr.SpatialReference()
-    srs.ImportFromEPSG(4326)
+    srs.SetFromUserInput(_TARGET_CRS_LABEL)
+    set_traditional_axis_order(srs, osr)
+    source_srs = osr.SpatialReference()
+    source_srs.ImportFromEPSG(4326)
+    set_traditional_axis_order(source_srs, osr)
+    output_transform = None
+    if _TARGET_CRS_LABEL.upper() not in {"EPSG:4326", "4326"}:
+        output_transform = osr.CoordinateTransformation(source_srs, srs)
 
     # Predefined output layers in insertion order
     layer_order = ["BOITE", "CABLE", "PTECH", "INFRASTRUCTURE",
@@ -1018,12 +1642,17 @@ def write_geopackage(output_path, all_features, source_files):
     # Collect features per FC
     fc_features = defaultdict(list)
     for feat in all_features:
+        if feat.get("output_kind", "feature") != "feature":
+            continue
         fc = feat["fc_name"]
         if fc in REQUIRED_LAYERS:
             fc_features[fc].append(feat)
 
     # Also track fc_misc for QC
-    misc_count = sum(1 for f in all_features if f["fc_name"] == "fc_misc")
+    misc_count = sum(
+        1 for f in all_features
+        if f.get("output_kind", "feature") == "feature" and f["fc_name"] == "fc_misc"
+    )
 
     layer_stats = {}
     output_layers = {}
@@ -1061,6 +1690,28 @@ def write_geopackage(output_path, all_features, source_files):
         layer.CreateField(ogr.FieldDefn("dwg_layer", ogr.OFTString))
         layer.CreateField(ogr.FieldDefn("dwg_type", ogr.OFTString))
         layer.CreateField(ogr.FieldDefn("classification_method", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("annotation_text", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("display_label", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("label_method", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("entity_key", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("cad_handle", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("cad_layout", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("cad_role", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("cad_block", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("cad_color", ogr.OFTInteger))
+        layer.CreateField(ogr.FieldDefn("cad_truecolor", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("cad_linetype", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("cad_lineweight", ogr.OFTInteger))
+        layer.CreateField(ogr.FieldDefn("cad_rotation", ogr.OFTReal))
+        layer.CreateField(ogr.FieldDefn("code_source", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("topology_method", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("topology_displacements", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("geometry_role", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("source_relation", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("source_dimension_handle", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("span_node_codes", ogr.OFTString))
+        layer.CreateField(ogr.FieldDefn("route_components_before", ogr.OFTInteger))
+        layer.CreateField(ogr.FieldDefn("route_components_after", ogr.OFTInteger))
 
         feat_list = fc_features.get(fc_name, [])
         count = 0
@@ -1072,6 +1723,8 @@ def write_geopackage(output_path, all_features, source_files):
             geom = ogr.CreateGeometryFromWkt(wkt_resolved)
             if geom is None:
                 continue
+            if output_transform is not None:
+                geom.Transform(output_transform)
 
             # Skip DWG border/sheet artifacts: features whose centroid is
             # exactly at sheet origin (0,0) or that form large axis-aligned
@@ -1111,7 +1764,8 @@ def write_geopackage(output_path, all_features, source_files):
 
             # Set computed X/Y for point layers
             if geom_name == "Point" or "Point" in geom_name:
-                cx, cy = fdata["centroid"]
+                centroid_geometry = geom.Centroid()
+                cx, cy = centroid_geometry.GetX(), centroid_geometry.GetY()
                 feature.SetField("X", cx)
                 feature.SetField("Y", cy)
 
@@ -1125,6 +1779,32 @@ def write_geopackage(output_path, all_features, source_files):
             feature.SetField("dwg_layer", fdata.get("layer", ""))
             feature.SetField("dwg_type", fdata.get("dwg_type_name", ""))
             feature.SetField("classification_method", fdata.get("classification_method", ""))
+            feature.SetField("annotation_text", fdata.get("annotation_text", ""))
+            feature.SetField("display_label", fdata.get("display_label", ""))
+            feature.SetField("label_method", fdata.get("label_method", "UNAVAILABLE"))
+            feature.SetField("entity_key", fdata.get("entity_key", ""))
+            feature.SetField("cad_handle", fdata.get("cad_handle", ""))
+            feature.SetField("cad_layout", fdata.get("layout", ""))
+            feature.SetField("cad_role", fdata.get("cad_role", ""))
+            feature.SetField("cad_block", fdata.get("block_name", ""))
+            feature.SetField("cad_color", int(fdata.get("aci_color", 256)))
+            feature.SetField("cad_truecolor", fdata.get("true_color", ""))
+            feature.SetField("cad_linetype", fdata.get("linetype", "ByLayer"))
+            feature.SetField("cad_lineweight", int(fdata.get("lineweight", -1)))
+            feature.SetField("cad_rotation", float(fdata.get("rotation", 0.0) or 0.0))
+            feature.SetField("code_source", fdata.get("code_source", ""))
+            feature.SetField("topology_method", fdata.get("topology_method", ""))
+            feature.SetField("topology_displacements", fdata.get("topology_displacements", ""))
+            feature.SetField("geometry_role", fdata.get("geometry_role", ""))
+            feature.SetField("source_relation", fdata.get("source_relation", ""))
+            feature.SetField("source_dimension_handle", fdata.get("source_dimension_handle", ""))
+            feature.SetField("span_node_codes", json.dumps(
+                fdata.get("span_node_codes", []), ensure_ascii=False, separators=(",", ":"),
+            ) if fdata.get("span_node_codes") else "")
+            if fdata.get("route_components_before") is not None:
+                feature.SetField("route_components_before", int(fdata["route_components_before"]))
+            if fdata.get("route_components_after") is not None:
+                feature.SetField("route_components_after", int(fdata["route_components_after"]))
 
             layer.CreateFeature(feature)
             feature = None
@@ -1133,6 +1813,8 @@ def write_geopackage(output_path, all_features, source_files):
         layer_stats[fc_name] = count
         output_layers[fc_name] = layer
         print(f"  {fc_name}: {count} features")
+
+    _write_cad_evidence_tables(ds, all_features)
 
     # ── Metadata tables ──────────────────────────────────────────────────
 
@@ -1154,7 +1836,7 @@ def write_geopackage(output_path, all_features, source_files):
     mf.SetField("source_files", "; ".join(source_files))
     sha = "; ".join(f"{f}={_sha256_file(f)}" for f in source_files if os.path.exists(f))
     mf.SetField("source_sha256", sha)
-    mf.SetField("crs", "EPSG:4326")
+    mf.SetField("crs", _TARGET_CRS_LABEL)
     mf.SetField("total_features", sum(layer_stats.values()))
     mf.SetField("misc_features", misc_count)
     manifest_layer.CreateFeature(mf)
@@ -1166,16 +1848,19 @@ def write_geopackage(output_path, all_features, source_files):
     transform_layer.CreateField(ogr.FieldDefn("detail", ogr.OFTString))
 
     for op_name, detail in [
-        ("coordinate_offset", "None (identity, EPSG:4326 native)"),
-        ("reprojection", "None (identity pass-through)"),
-        ("crs_output", "EPSG:4326"),
+        ("coordinate_offset", "None"),
+        ("reprojection", f"{_DETECTED_SOURCE_CRS or _SOURCE_CRS_LABEL} -> EPSG:4326"),
+        ("crs_output", _TARGET_CRS_LABEL),
         ("coordinate_filter", "|lat|<=90, |lon|<=180"),
+        ("dwg_ingestion", "Direct read-only AutoCAD database access; no DXF export"),
+        ("sheet_role_partition", "Model/plan -> GIS; topology/splicing/legend/summary -> evidence; title/frame -> excluded"),
         ("geographic_bounds_check", f"lat [{WORLD_LAT_MIN},{WORLD_LAT_MAX}], lon [{WORLD_LON_MIN},{WORLD_LON_MAX}]"),
         ("paper_space_filter", "|centroid_lat|>90 OR |centroid_lon|>180 → discard"),
         ("block_insert_handling", "Recognized telecom blocks → POINT; unrecognized → skip"),
         ("geometry_reconstruction", "Adaptive chord tolerance, WKT to OGR"),
-        ("attribute_extraction", "English telecom keyword regex patterns"),
+        ("attribute_extraction", "DWG text, MText, block attributes, and telecom regex patterns"),
         ("classification", "Two-tier: layer regex + annotation keywords"),
+        ("topology", "Legacy candidate relations only; source routes remain immutable; SPAN DIMENSION and SLING WIRE never become CABLE"),
     ]:
         tr = ogr.Feature(transform_layer.GetLayerDefn())
         tr.SetField("operation", op_name)
@@ -1207,36 +1892,146 @@ def write_geopackage(output_path, all_features, source_files):
         qc_layer.CreateFeature(qr)
         qr = None
 
+    if ds.CommitTransaction() != 0:
+        raise RuntimeError("Could not commit GeoPackage transaction")
     ds = None
     return layer_stats, misc_count
+
+
+def write_geopackage(output_path, all_features, source_files):
+    """Validate a staged GeoPackage before atomically replacing the destination."""
+    destination = os.path.abspath(output_path)
+    parent = os.path.dirname(destination) or os.getcwd()
+    os.makedirs(parent, exist_ok=True)
+    stage_dir = tempfile.mkdtemp(prefix=f".{os.path.basename(destination)}.", dir=parent)
+    staged = os.path.join(stage_dir, os.path.basename(destination))
+    try:
+        result = _write_geopackage_file(staged, all_features, source_files)
+        _embed_qgis_styles(staged, all_features)
+        if not os.path.isfile(staged) or os.path.getsize(staged) == 0:
+            raise RuntimeError("Staged GeoPackage is missing or empty")
+        probe = ogr.Open(staged, 0)
+        required_layers = ("BOITE", "CABLE", "PTECH", "INFRASTRUCTURE", "SITE", "ZNRO", "ZPM", "IMB")
+        if probe is None or any(probe.GetLayerByName(name) is None for name in required_layers):
+            raise RuntimeError("Staged GeoPackage failed structural validation")
+        probe = None
+        os.replace(staged, destination)
+        return result
+    finally:
+        if os.path.exists(staged):
+            os.remove(staged)
+        if os.path.isdir(stage_dir):
+            shutil.rmtree(stage_dir)
+
+
+def _write_run_manifest(output_path, source_files, all_features, layer_stats, topology_stats):
+    output = Path(output_path).resolve()
+    source_items = [item for item in all_features if item.get("output_kind") == "source_evidence"]
+    spatial_items = [item for item in all_features if item.get("output_kind", "feature") == "feature"]
+    metadata = next(
+        (item.get("text", "") for item in source_items if item.get("dwg_type_name") == "DOCUMENT_METADATA"),
+        "",
+    )
+    manifest = {
+        "schema_version": "apd-run-manifest-v1",
+        "pipeline": "experiment-direct-autocad-architecture-v1",
+        "source": [
+            {"path": str(Path(path).resolve()), "sha256": _sha256_file(path)}
+            for path in source_files
+        ],
+        "dwg_crs_evidence": metadata,
+        "source_crs": _SOURCE_CRS_LABEL,
+        "internal_crs": "EPSG:4326",
+        "target_crs": _TARGET_CRS_LABEL,
+        "output": {"path": str(output), "sha256": _sha256_file(output)},
+        "census": {
+            "model_entities": sum(item.get("layout") == "Model" for item in source_items),
+            "model_inserts": sum(item.get("layout") == "Model" and item.get("dwg_type_name") == "INSERT" for item in source_items),
+            "model_dimensions": sum(item.get("layout") == "Model" and item.get("dwg_type_name") == "DIMENSION" for item in source_items),
+        },
+        "delivery_counts": layer_stats,
+        "display_labels": {
+            feature_class: sum(
+                item.get("fc_name") == feature_class and bool(item.get("display_label"))
+                for item in spatial_items
+            )
+            for feature_class in ("BOITE", "CABLE", "PTECH", "INFRASTRUCTURE", "SITE", "ZNRO", "ZPM", "IMB")
+        },
+        "topology": topology_stats,
+        "unresolved": {
+            "cables_without_two_endpoints": topology_stats["cables"] - topology_stats["resolved_cables"],
+            "annotations": sum(item.get("output_kind") == "annotation_evidence" for item in all_features),
+        },
+    }
+    manifest_path = output.with_suffix(".manifest.json")
+    temporary = manifest_path.with_name(f".{manifest_path.name}.{os.getpid()}.{time.time_ns()}.tmp")
+    try:
+        temporary.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(temporary, manifest_path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return manifest_path
 
 
 # ── Main CLI ──────────────────────────────────────────────────────────────
 
 def main():
+    if os.environ.get("CAD2GIS_ENABLE_LEGACY") != "1":
+        raise SystemExit(
+            "Legacy monolithic converter is disabled. Use convert_v3.py / "
+            "cad2gis_v3.pipeline so evidence, topology, CRS, and delivery remain separated."
+        )
     parser = argparse.ArgumentParser(
         description="GeoFormer P2: DWG-to-GeoPackage converter (FTTH domain, EPSG:4326 native)",
     )
     parser.add_argument("--input", "-i", nargs="+", required=True,
-                       help="One or more DWG files to convert")
+                       help="One or more authoritative DWG files to convert (DXF is disabled)")
     parser.add_argument("--output", "-o", required=True,
                        help="Output GeoPackage path (.gpkg)")
     parser.add_argument("--temp-dir", default="/tmp/geoformer",
                        help="Temporary directory (default: /tmp/geoformer)")
     parser.add_argument("--config", default=None,
                        help="Optional JSON config (not used; schema from schema_config.py)")
-    parser.add_argument("--source-crs", default="EPSG:4326",
-                       help="Source DWG CRS (default: EPSG:4326 = WGS84 identity). "
-                            "Use 'EPSG:32629' for UTM zone 29N (Morocco legacy).")
+    parser.add_argument("--source-crs", required=True,
+                       help="Explicit source DWG CRS. This APD declares WGS84.PseudoMercator, use EPSG:3857.")
+    parser.add_argument("--target-crs", default="EPSG:9481",
+                       help="Delivery CRS (default: EPSG:9481, SRGI2013 / UTM zone 51N).")
+    parser.add_argument(
+        "--region-bounds",
+        default=None,
+        help="Optional lat_min,lat_max,lon_min,lon_max filter; default keeps worldwide data.",
+    )
     args = parser.parse_args()
 
     # Set up CRS transform
-    global _CRS_TRANSFORM
+    global _CRS_TRANSFORM, _SOURCE_CRS_LABEL, _AUTO_SOURCE_CRS, _DETECTED_SOURCE_CRS, _TARGET_CRS_LABEL, _REGION_BOUNDS
+    _SOURCE_CRS_LABEL = args.source_crs
+    _TARGET_CRS_LABEL = args.target_crs
+    _AUTO_SOURCE_CRS = False
+    _DETECTED_SOURCE_CRS = None
+    if args.source_crs.upper() == "AUTO":
+        parser.error("--source-crs AUTO is disabled; CRS must be explicit and evidence-bound")
+    if args.region_bounds:
+        try:
+            bounds = tuple(float(value.strip()) for value in args.region_bounds.split(","))
+        except ValueError:
+            parser.error("--region-bounds must contain four comma-separated numbers")
+        if len(bounds) != 4:
+            parser.error("--region-bounds must contain lat_min,lat_max,lon_min,lon_max")
+        lat_min, lat_max, lon_min, lon_max = bounds
+        if lat_min > lat_max or lon_min > lon_max:
+            parser.error("--region-bounds minimums must not exceed maximums")
+        _REGION_BOUNDS = bounds
+    else:
+        _REGION_BOUNDS = None
     if args.source_crs and args.source_crs.upper() not in ("EPSG:4326", "4326", "NONE", "IDENTITY"):
         src = osr.SpatialReference()
         src.SetFromUserInput(args.source_crs)
         dst = osr.SpatialReference()
         dst.ImportFromEPSG(4326)
+        set_traditional_axis_order(src, osr)
+        set_traditional_axis_order(dst, osr)
         _CRS_TRANSFORM = osr.CoordinateTransformation(src, dst)
         print(f"  Source CRS: {args.source_crs} → EPSG:4326 (reprojection enabled)")
     else:
@@ -1247,6 +2042,11 @@ def main():
         if not os.path.isfile(path):
             print(f"ERROR: Input file not found: {path}", file=sys.stderr)
             sys.exit(1)
+        if Path(path).suffix.lower() != ".dwg":
+            parser.error(f"DXF and non-DWG inputs are disabled: {path}")
+        digest = _sha256_file(path)
+        if digest.lower() != APD_SOURCE_SHA256:
+            parser.error(f"APD source hash mismatch for {path}: {digest}")
 
     os.makedirs(args.temp_dir, exist_ok=True)
 
@@ -1254,7 +2054,9 @@ def main():
     print("GeoFormer P2: DWG → GeoPackage Converter")
     print(f"  Input:  {len(args.input)} DWG file(s)")
     print(f"  Output: {args.output}")
-    print(f"  CRS:    EPSG:4326 (identity transform)")
+    transform_label = "identity" if _CRS_TRANSFORM is None else f"{_SOURCE_CRS_LABEL} -> EPSG:4326 internal"
+    print(f"  CRS:    {transform_label}")
+    print(f"  Target: {_TARGET_CRS_LABEL}")
     print("=" * 60)
 
     all_features = []
@@ -1263,13 +2065,15 @@ def main():
     for dwg_path in args.input:
         print(f"\nProcessing: {dwg_path}")
         features = read_dwg(dwg_path)
+        _validate_source_crs_evidence(features, args.source_crs)
         all_features.extend(features)
 
         # Log warnings per file
-        file_outliers = sum(1 for f in features if f.get("geographic_outlier"))
-        file_misc = sum(1 for f in features if f["fc_name"] == "fc_misc")
+        spatial_features = [f for f in features if f.get("output_kind", "feature") == "feature"]
+        file_outliers = sum(1 for f in spatial_features if f.get("geographic_outlier"))
+        file_misc = sum(1 for f in spatial_features if f["fc_name"] == "fc_misc")
         file_geom_outliers = sum(
-            1 for f in features
+            1 for f in spatial_features
             if abs(f["centroid"][0]) > 180 or abs(f["centroid"][1]) > 90
         )
         if file_outliers:
@@ -1283,11 +2087,23 @@ def main():
                 f"assigned to fc_misc"
             )
 
-    # Re-index global IDs
-    for idx, feat in enumerate(all_features):
-        feat["global_id"] = idx
+    topology_stats = _build_network_topology(all_features)
+    print(
+        "Topology: "
+        f"{topology_stats['cables']} immutable source routes, "
+        f"0 dimension/slings promoted, "
+        f"{topology_stats['route_components_after']} observed source components, "
+        f"{topology_stats['nodes']} endpoint nodes"
+    )
 
-    print(f"\nTotal features: {len(all_features)}")
+    # Re-index spatial features only; evidence rows retain source handles.
+    spatial_index = 0
+    for feat in all_features:
+        if feat.get("output_kind", "feature") == "feature":
+            feat["global_id"] = spatial_index
+            spatial_index += 1
+
+    print(f"\nTotal spatial features: {spatial_index}")
 
     # Print warnings
     for w in warnings_log:
@@ -1296,6 +2112,9 @@ def main():
     # Write GeoPackage
     print(f"\nWriting GeoPackage: {args.output}")
     stats, misc_count = write_geopackage(args.output, all_features, args.input)
+    manifest_path = _write_run_manifest(
+        args.output, args.input, all_features, stats, topology_stats,
+    )
 
     print("\n" + "=" * 60)
     print("Conversion Summary:")
@@ -1306,6 +2125,7 @@ def main():
     print(f"  {'TOTAL':20s}: {sum(stats.values()) + misc_count:5d} features")
     print(f"\nOutput: {args.output}")
     print(f"  SHA256: {_sha256_file(args.output)}")
+    print(f"  Manifest: {manifest_path}")
     print("=" * 60)
 
 

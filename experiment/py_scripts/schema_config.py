@@ -1860,8 +1860,11 @@ NEGATIVE_EVIDENCE_LAYERS = {
     "FDT-Info",
     "FDT INFO",
     "FAT INFO",
-    "FDT DWG",
-    "FAT DWG",
+    "FAT AREA",
+    "FAT AREA FDT 1",
+    "FAT ARAR",
+    "BOUNDARY FAT",
+    "BOUNDARY CLUSTER",
     "0",
 }
 
@@ -1888,7 +1891,6 @@ LAYER_PATTERN_MAP = [
     (r"(?i).*cable.*|.*fib[er]*e.*|.*feeder.*|.*trunk.*"
      r"|.*distribution.*|.*drop.*|.*riser.*|.*lateral.*|.*backbone.*|.*access.*"
      r"|.*span\s*cable.*|.*micro\s*cable.*|.*loose\s*cable.*"
-     r"|.*sling\s*wire.*|.*suspension\s*wire.*"
      r"|.*fo\s*\d+\s*core.*|.*fo\s*cable.*",
      "CABLE", "LineString"),
     # IMB — buildings, premises, homes
@@ -1917,12 +1919,8 @@ LAYER_PATTERN_MAP = [
     (r"(?i).*zpm.*|.*zone.*pm.*|.*zone.*sro.*|.*distribution.*zone.*"
      r"|.*service.*zone.*|.*fat.*area.*|.*boundary.*fat.*",
      "ZPM", "Polygon"),
-    # Generic fallbacks (lower confidence)
-    (r"(?i)^line$", "CABLE", "LineString"),
-    (r"(?i).*service\s*core.*|.*expansion\s*core.*|.*moniter\s*core.*",
-     "INFRASTRUCTURE", "LineString"),
-    (r"(?i).*sling.*wire.*|.*suspension.*wire.*|.*span.*sling.*",
-     "CABLE", "LineString"),
+    # Generic Line, equipment-detail cores, and sling graphics are evidence only.
+    # They require a reviewed plan-role decision before feature emission.
     (r"(?i)^eu$|^go\d*$|^go$", "PTECH", "Point"),
     (r"(?i)^pln$|^telkom$", "SITE", "Point"),
     (r"(?i).*ftts.*site.*", "SITE", "Point"),

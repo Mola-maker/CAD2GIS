@@ -1,0 +1,52 @@
+{
+  "schema_version": "apd-run-manifest-v1",
+  "pipeline": "experiment-direct-autocad-architecture-v1",
+  "source": [
+    {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
+      "sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557"
+    }
+  ],
+  "dwg_crs_evidence": "CGEOCS=WGS84.PseudoMercator;INSUNITS=6",
+  "source_crs": "EPSG:3857",
+  "internal_crs": "EPSG:4326",
+  "target_crs": "EPSG:9481",
+  "output": {
+    "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v1\\apd_delivery.gpkg",
+    "sha256": "4526ea0e1e5e2bae30789673b0ea2b0644fec6bfbb4df77db4681be4bac97b82"
+  },
+  "census": {
+    "model_entities": 6940,
+    "model_inserts": 222,
+    "model_dimensions": 170
+  },
+  "delivery_counts": {
+    "BOITE": 43,
+    "CABLE": 6,
+    "PTECH": 167,
+    "INFRASTRUCTURE": 0,
+    "SITE": 2,
+    "ZNRO": 0,
+    "ZPM": 0,
+    "IMB": 682
+  },
+  "display_labels": {
+    "BOITE": 21,
+    "CABLE": 6,
+    "PTECH": 115,
+    "INFRASTRUCTURE": 0,
+    "SITE": 2,
+    "ZNRO": 0,
+    "ZPM": 0,
+    "IMB": 682
+  },
+  "topology": {
+    "nodes": 45,
+    "cables": 6,
+    "resolved_cables": 6
+  },
+  "unresolved": {
+    "cables_without_two_endpoints": 0,
+    "annotations": 519
+  }
+}
