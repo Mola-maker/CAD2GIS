@@ -1,5 +1,5 @@
 {
-  "gpkg": "output/APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.gpkg",
+  "gpkg": "../output/APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.gpkg",
   "rules": {
     "1.1": {
       "severity": "C",
@@ -44,11 +44,12 @@
     "3.0": {
       "severity": "C",
       "status": "FAIL",
-      "detail": "Empty layers: ZNRO, CABLE, INFRASTRUCTURE, IMB, ZPM, PTECH"
+      "detail": "Empty layers: ZNRO, INFRASTRUCTURE"
     },
     "4.1": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "682 features have null REF_PLAQUE; 682 features have null REGION; 682 features have null PROVINCE; 682 features have null VILLE; 682 features have null COMMUNE"
     },
     "4.2_IMB": {
       "severity": "E",
@@ -57,7 +58,7 @@
     "4.3": {
       "severity": "E",
       "status": "FAIL",
-      "detail": "15 features have null CODE; 15 features have null CODE_PTC; 15 features have null REF_PLAQUE; 15 features have null REF_PM; 15 features have null TYPE"
+      "detail": "43 features have null CODE_PTC; 43 features have null REF_PLAQUE; 43 features have null REF_PM; 43 features have null MODE_POSE; 43 features have null CAPACITE"
     },
     "4.4_BOITE": {
       "severity": "E",
@@ -65,7 +66,8 @@
     },
     "4.5": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "203 features have null REF_PLAQUE; 203 features have null REF_NRO; 203 features have null REF_PM; 203 features have null CODE_INFRA; 203 features have null TYPE_CABLE"
     },
     "4.6_CABLE": {
       "severity": "E",
@@ -73,7 +75,8 @@
     },
     "4.7": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "167 features have null REF_PLAQUE; 167 features have null NATURE; 167 features have null EFFORT_APPUI; 167 features have null STATUT; 167 features have null PROPRIETAIRE"
     },
     "4.8_PTECH": {
       "severity": "E",
@@ -89,7 +92,8 @@
     },
     "4.11": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "43 features have null REF_PLAQUE; 43 features have null REF_NRO; 43 features have null REF_SRO; 43 features have null STATUT; 43 features have null NB_PRISES"
     },
     "4.12_ZPM": {
       "severity": "E",
@@ -106,7 +110,7 @@
     "4.15": {
       "severity": "E",
       "status": "FAIL",
-      "detail": "2 features have null CODE; 2 features have null REF_PLAQUE; 2 features have null REF_NRO; 2 features have null TYPE; 2 features have null FABRIQUANT"
+      "detail": "2 features have null REF_PLAQUE; 2 features have null REF_NRO; 2 features have null FABRIQUANT; 2 features have null REF_PRODUIT; 2 features have null MODE_POSE"
     },
     "4.16_SITE": {
       "severity": "E",
@@ -114,19 +118,23 @@
     },
     "5.1": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "2 PM SITE(s) with no matching ZPM; 43 ZPM(s) with no matching PM SITE"
     },
     "5.2": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "43 PBO with invalid/missing REF_PM; 2 PM(s) with no PBO BOITE"
     },
     "5.3": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "2 PM(s) with no DISTRIBUTION cable"
     },
     "5.4": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "5.4.3: 25 BPE/PBO(s) not referenced by any DISTRIBUTION CABLE endpoint; 5.4.1 INFO: 366 endpoint(s) resolved to PTECH poles (aerial termination; not a violation, use --allow-ptech-endpoints to fold into resolved)"
     },
     "6.1": {
       "severity": "E",
@@ -134,11 +142,13 @@
     },
     "6.2": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "12 overlap(s)"
     },
     "6.3": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "2 violation(s)"
     },
     "6.4": {
       "severity": "E",
@@ -150,7 +160,8 @@
     },
     "6.6": {
       "severity": "E",
-      "status": "PASS"
+      "status": "FAIL",
+      "detail": "6.6a: 17 self-loop(s)"
     },
     "7.1": {
       "severity": "E",
@@ -163,57 +174,41 @@
     "domain_vocab": {
       "severity": "W",
       "status": "PASS"
+    },
+    "8.1": {
+      "severity": "I",
+      "status": "PASS",
+      "detail": "sum=6942 == expected (110 rows)"
+    },
+    "8.2": {
+      "severity": "I",
+      "status": "PASS",
+      "detail": "31 non-empty business field(s) covered"
+    },
+    "8.3": {
+      "severity": "I",
+      "status": "PASS",
+      "detail": "169 candidate(s), 161 keyed selection(s) consistent"
     }
   },
   "summary": {
-    "errors": 3,
+    "errors": 14,
     "warnings": 0,
+    "info": 0,
     "verdict": "FAIL",
-    "rules_passed": 37,
-    "rules_failed": 3,
+    "rules_passed": 29,
+    "rules_failed": 14,
     "extended_metrics": {
       "feature_counts": {
-        "BOITE": 15,
+        "BOITE": 43,
+        "CABLE": 203,
+        "PTECH": 167,
         "SITE": 2,
-        "CABLE": 0,
-        "PTECH": 0,
+        "ZPM": 43,
+        "IMB": 682,
         "INFRASTRUCTURE": 0,
-        "ZNRO": 0,
-        "ZPM": 0,
-        "IMB": 0
+        "ZNRO": 0
       }
     }
-  },
-  "intermediate_dump_analysis": {
-    "source_dwg": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
-    "total_objects": 15716,
-    "raw_entities_extractable": 10519,
-    "converter_extracted": 687,
-    "extraction_rate_pct": 6.5,
-    "classification_summary": {
-      "BOITE": 3594,
-      "CABLE": 995,
-      "PTECH": 360,
-      "IMB": 1364,
-      "SITE": 20,
-      "INFRASTRUCTURE": 518,
-      "ZNRO": 0,
-      "ZPM": 0,
-      "NO_MATCH": 1899,
-      "NEGATIVE_EVIDENCE": 1769
-    },
-    "schema_conformance_pct": 65.1,
-    "missing_layers": [
-      "ZNRO",
-      "ZPM"
-    ],
-    "notes": [
-      "Converter misses ~93% of entities due to legacy DWG r11 format (POLYLINE_r11, TEXT_r11 type conflicts)",
-      "Intermediate dump shows 10519 entities are extractable with proper DWG parsing",
-      "ZNRO and ZPM layers have zero entities in source DWG — no zone polygons were drawn",
-      "Text labels are single characters (X, M, B, F, P, D, A, G, O) — not descriptive FTTH annotations",
-      "SHP reference codes are Morocco-based (BPE-JAD-MAR-*, IAM-CHA-*, JAD-MAR-BAT-*)",
-      "GeoPackage verification: 37/40 rules pass. Failures: empty layers (6), missing BOITE attrs, missing SITE attrs"
-    ]
   }
 }

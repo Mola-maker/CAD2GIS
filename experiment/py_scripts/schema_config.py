@@ -1857,76 +1857,91 @@ NEGATIVE_EVIDENCE_LAYERS = {
     "fenêtres",
     "MURS 2",
     "DESIGN SUMMARY",
-    "FDT-Info",
-    "FDT INFO",
-    "FAT INFO",
-    "FDT DWG",
-    "FAT DWG",
     "0",
 }
 
 # ── 7. LAYER PATTERN MAP ──────────────────────────────────────────────────────
 # Tier-1 DWG layer regex → FC name + geometry type (from Agent 6).
-# Applied case-insensitive against DWG layer names.
+# Applied case-insensitive against DWG layer names, first match wins.
+# Ordered per the confirmed Hutabohu CAD-layer → FC mapping table:
+#   ZPM zone layers must match before FAT→BOITE and FDT→SITE
+#   ("FAT AREA FDT 1" contains both "fat" and "fdt" but is a ZPM zone).
 
 LAYER_PATTERN_MAP = [
-    # BOITE — splice closures, distribution points, terminals (MUST be before CABLE
-    # to prevent FAT/FO layer names from matching CABLE's FO pattern first)
-    (r"(?i).*box.*|.*slimbox.*|.*blackbox.*|.*closure.*|.*fdt.*|.*fat\b|.*cto.*"
-     r"|.*nap.*|.*dp\b|.*mdu.*|.*sdu.*|.*ont.*|.*pedestal.*|.*cabinet.*"
+    # ZPM — PM / FAT coverage zones (FAT AREA, BOUNDARY FAT, HP COVER)
+    (r"(?i).*fat\s*area.*|.*boundary\s*fat.*|.*hp\s*cover.*"
+     r"|.*zpm.*|.*zone.*pm.*|.*zone.*sro.*|.*distribution.*zone.*"
+     r"|.*service.*zone.*",
+     "ZPM", "Polygon"),
+    # SITE — FDT family (FDT STRUCTURE / FDT SP / FDT DWG / FDT INFO / FDT)
+    # Fragments on these layers are aggregated into cluster centroids (TYPE=PM).
+    (r"(?i).*fdt.*", "SITE", "Point"),
+    # BOITE — FAT family (FAT/FAT SP/FAT DWG/FAT CODE/FAT INFO/FAT ARAR),
+    # nap* circles (napf1-f15), plus generic closure/box vocabulary (TYPE=PBO)
+    (r"(?i).*\bfat\b.*|^nap.*"
+     r"|.*box.*|.*slimbox.*|.*blackbox.*|.*closure.*|.*cto.*"
+     r"|.*dp\b|.*ont.*|.*pedestal.*"
      r"|.*splice.*|.*splitter.*|.*spliter.*|.*patch.*|.*panel.*|.*terminal.*"
      r"|.*otb.*|.*fsc.*|.*boite.*|.*hw-fat.*",
      "BOITE", "Point"),
-    # PTECH — poles, chambers, manholes, handholes, anchors
+    # PTECH — poles (NEW POLE 7-*, EXISTING POLE*, POLE *, POLE ID *),
+    # guys, chambers, manholes, handholes, anchors
     (r"(?i).*pole.*|.*poteau.*|.*chamber.*|.*chambre.*|.*manhole.*|.*handhole.*"
-     r"|.*anchor.*|.*guy\b|.*vault.*|.*trench.*|.*ptech.*"
+     r"|.*anchor.*|.*guy\b|.*vault.*|.*ptech.*"
      r"|.*gaine\s*technique.*|.*gc\s|.*appui.*|.*ancrage.*"
      r"|.*hw-handhole.*|.*iam\s*mh.*",
      "PTECH", "Point"),
-    # CABLE — optical fibre / copper cable (English + French bilingual)
-    # NOTE: FO patterns restricted to avoid matching FAT/FO layer names
+    # IMB — Home Number text entities become IMB points; buildings, premises
+    (r"(?i).*home\s*number.*|.*home\s*pass.*"
+     r"|.*building.*|.*batiment.*|.*premise.*|.*house.*"
+     r"|.*unit.*|.*apartment.*|.*office.*"
+     r"|.*mdu.*|.*sdu.*|.*imb.*|.*property.*|.*address.*"
+     r"|.*customer.*|.*subscriber.*|.*logement.*|.*maison.*|.*villa.*"
+     r"|.*immeuble.*|.*residence.*",
+     "IMB", "Point"),
+    # CABLE — XXX.XXX Cable Line A/B/C, *FEEDER CABLE, FO n CORE, Service Core,
+    # Line, moniter core, Expansion Cores, SLING WIRE / SPAN SLING, SPAN CABLE
     (r"(?i).*cable.*|.*fib[er]*e.*|.*feeder.*|.*trunk.*"
      r"|.*distribution.*|.*drop.*|.*riser.*|.*lateral.*|.*backbone.*|.*access.*"
      r"|.*span\s*cable.*|.*micro\s*cable.*|.*loose\s*cable.*"
-     r"|.*sling\s*wire.*|.*suspension\s*wire.*"
-     r"|.*fo\s*\d+\s*core.*|.*fo\s*cable.*",
+     r"|.*sling\s*wire.*|.*suspension\s*wire.*|.*span\s*sling.*|.*sling.*"
+     r"|.*fo\s*\d+\s*core.*|.*fo\s*cable.*"
+     r"|.*service\s*core.*|.*expansion\s*core.*|.*moniter\s*core.*"
+     r"|.*monitor\s*core.*|^line$",
      "CABLE", "LineString"),
-    # IMB — buildings, premises, homes
-    (r"(?i).*building.*|.*batiment.*|.*premise.*|.*house.*|.*home\s*number.*"
-     r"|.*home\s*pass.*|.*hp\s*cover.*|.*unit.*|.*apartment.*|.*office.*"
-     r"|.*mdu.*|.*sdu.*|.*imb.*|.*property.*|.*address.*"
-     r"|.*customer.*|.*subscriber.*|.*logement.*|.*maison.*|.*villa.*"
-     r"|.*immeuble.*|.*residence.*|.*etik.*",
-     "IMB", "Polygon"),
     # INFRASTRUCTURE — ducts, conduits, trenches
     (r"(?i).*duct.*|.*conduit.*|.*pipe.*|.*trench.*|.*infra.*"
      r"|.*pathway.*|.*route.*|.*buried.*|.*underground.*|.*aerial.*"
      r"|.*fourreau.*|.*adduction.*|.*branchement.*|.*raccordement.*"
      r"|.*gaine.*|.*new\s*duct.*",
      "INFRASTRUCTURE", "LineString"),
-    # SITE — exchanges, nodes, hubs, shelters
+    # SITE — exchanges, nodes, hubs, shelters (generic vocabulary)
     (r"(?i).*site.*|.*nro.*|.*pm\b|.*exchange.*|.*node.*|.*hub.*"
      r"|.*pop\b|.*co\b|.*shelter.*|.*cabinet.*|.*location.*"
      r"|.*olt.*|.*ftts.*|.*local.*tech.*",
      "SITE", "Point"),
-    # ZNRO — NRO coverage zones
+    # ZNRO — NRO coverage zones (absent in the Hutabohu source drawing:
+    # layer stays empty and is reported in qc_summary / QUARANTINE)
     (r"(?i).*znro.*|.*zone.*nro.*|.*olt.*zone.*|.*exchange.*zone.*"
      r"|.*coverage.*|.*service.*area.*",
      "ZNRO", "Polygon"),
-    # ZPM — PM / SRO coverage zones
-    (r"(?i).*zpm.*|.*zone.*pm.*|.*zone.*sro.*|.*distribution.*zone.*"
-     r"|.*service.*zone.*|.*fat.*area.*|.*boundary.*fat.*",
-     "ZPM", "Polygon"),
     # Generic fallbacks (lower confidence)
-    (r"(?i)^line$", "CABLE", "LineString"),
-    (r"(?i).*service\s*core.*|.*expansion\s*core.*|.*moniter\s*core.*",
-     "INFRASTRUCTURE", "LineString"),
-    (r"(?i).*sling.*wire.*|.*suspension.*wire.*|.*span.*sling.*",
-     "CABLE", "LineString"),
     (r"(?i)^eu$|^go\d*$|^go$", "PTECH", "Point"),
     (r"(?i)^pln$|^telkom$", "SITE", "Point"),
     (r"(?i).*ftts.*site.*", "SITE", "Point"),
     (r"(?i)^text$|.*etik.*", "IMB", "Point"),
+]
+
+# ── 7b. FRAGMENT AGGREGATION LAYERS ──────────────────────────────────────────
+# DWG layers whose model-space entities are drawing fragments of a single
+# physical object (e.g. the FDT structure diagram exploded into thousands of
+# polylines). Non-point fragments plus INSERT points on these layers are
+# clustered by proximity; each cluster becomes ONE point feature (centroid).
+# (regex, fc_name, forced TYPE attribute value)
+
+FRAGMENT_AGGREGATION_LAYERS = [
+    (r"(?i).*fdt.*", "SITE", "PM"),
+    (r"(?i)^fat\s*sp$", "BOITE", "PBO"),
 ]
 
 # ── 8. DOMAIN VOCABULARIES ────────────────────────────────────────────────────
@@ -2588,3 +2603,77 @@ QUALITY_GATES = {
 
 CRS_DATA = "EPSG:4326"         # Authoritative geographic CRS for output data
 CRS_QGIS_DISPLAY = "EPSG:3857" # QGIS project CRS for OSM tile alignment
+
+# ── 11. LABEL FAMILIES ─────────────────────────────────────────────────────────
+# Text-annotation label families for family-gated global one-to-one label
+# assignment (rectangular Hungarian). `pattern` is fullmatch-ed against the
+# stripped TEXT/MTEXT content; matching texts compete only for features of
+# `target_fc`. Texts matching no family keep the legacy generic linking path.
+# Extend this list as further drawing label conventions are identified.
+
+LABEL_FAMILIES = [
+    {"family": "fat",  "pattern": r"^DMPH-\d+\.\d+\.[A-Z]\d{2}$", "target_fc": "BOITE"},
+    {"family": "pole", "pattern": r"^MR\.DMPH\.P\d+$",            "target_fc": "PTECH"},
+]
+
+# Abstain when the two best candidate distances for a label differ by no more
+# than this (metres): the label is ambiguous (multiple_optima) and stays
+# unassigned rather than risking a wrong binding.
+LABEL_MULTIPLE_OPTIMA_EPS_M = 0.01
+
+# ── 12. CAD COLOR / STYLE ─────────────────────────────────────────────────────
+# Effective-CAD-colour fields written to every delivery FC layer and the span
+# layer. `color_aci` is the resolved AutoCAD Color Index after ByLayer/ByBlock
+# fallback; `color_rgb` is "#RRGGBB" (truecolor wins over ACI); `style_key`
+# is "<#RRGGBB>|<linetype>" — the categorisation key for QML generation.
+
+STYLE_FIELDS = [
+    {"name": "color_aci", "type": "Integer"},
+    {"name": "color_rgb", "type": "String"},
+    {"name": "style_key", "type": "String"},
+]
+
+
+def _hsv_bytes(hue_deg, sat, val):
+    """HSV → RGB with AutoCAD's floor rounding (val is 0..255)."""
+    c = val * sat
+    hp = (hue_deg / 60.0) % 6
+    x = c * (1 - abs(hp % 2 - 1))
+    m = val - c
+    r, g, b = [(c, x, 0), (x, c, 0), (0, c, x),
+               (0, x, c), (x, 0, c), (c, 0, x)][int(hp)]
+    return int(r + m), int(g + m), int(b + m)
+
+
+def _generate_aci_table():
+    """Standard AutoCAD 255-colour palette as {aci: "#RRGGBB"}.
+    Indices 10-249 follow the documented hue/value/saturation pattern
+    (24 hues x 5 value levels x full/half saturation); 1-9 and 250-255
+    are fixed. ACI 7 renders black (white is invisible on light GIS
+    canvases — same convention as the v3 reference styles)."""
+    table = {
+        1: (255, 0, 0), 2: (255, 255, 0), 3: (0, 255, 0),
+        4: (0, 255, 255), 5: (0, 0, 255), 6: (255, 0, 255),
+        7: (0, 0, 0), 8: (65, 65, 65), 9: (128, 128, 128),
+        250: (51, 51, 51), 251: (91, 91, 91), 252: (132, 132, 132),
+        253: (173, 173, 173), 254: (214, 214, 214), 255: (255, 255, 255),
+    }
+    value_levels = {0: 255, 2: 204, 4: 153, 6: 127, 8: 76}
+    for aci in range(10, 250):
+        hue = ((aci - 10) // 10) * 15
+        offset = (aci - 10) % 10
+        val = value_levels[offset - offset % 2]
+        sat = 0.5 if offset % 2 else 1.0
+        table[aci] = _hsv_bytes(hue, sat, val)
+    return {aci: "#%02X%02X%02X" % rgb for aci, rgb in table.items()}
+
+
+ACI_TO_RGB = _generate_aci_table()
+
+# Neutral fallback when a colour cannot be resolved at all
+DEFAULT_COLOR_RGB = "#404040"
+
+
+def aci_to_rgb(aci):
+    """Map an ACI index to "#RRGGBB"; out-of-range → neutral gray."""
+    return ACI_TO_RGB.get(aci, DEFAULT_COLOR_RGB)

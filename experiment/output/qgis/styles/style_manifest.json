@@ -1,0 +1,192 @@
+{
+  "schema_version": "cad2gis-qgis-style-manifest-v2",
+  "source_gpkg": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.gpkg",
+  "categorized_by": "style_key (effective CAD colour | linetype)",
+  "embedded_default_styles": true,
+  "layers": {
+    "BOITE": {
+      "qml": "BOITE.qml",
+      "qml_sha256": "cd87b33548246b7d001abb328a6caa5e2aaf9e0f494f197de6b44b1110df4ec1",
+      "feature_count": 43,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#FF0000|Continuous",
+          "color_rgb": "#FF0000",
+          "linetype": "Continuous",
+          "count": 43
+        }
+      ]
+    },
+    "CABLE": {
+      "qml": "CABLE.qml",
+      "qml_sha256": "74de6bdec806d2549fa6b1c071c9f4077e831cd1505f790ed2f249c31a0c5592",
+      "feature_count": 203,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#00FF00|Continuous",
+          "color_rgb": "#00FF00",
+          "linetype": "Continuous",
+          "count": 102
+        },
+        {
+          "style_key": "#6600CC|Continuous",
+          "color_rgb": "#6600CC",
+          "linetype": "Continuous",
+          "count": 56
+        },
+        {
+          "style_key": "#00FFFF|Continuous",
+          "color_rgb": "#00FFFF",
+          "linetype": "Continuous",
+          "count": 45
+        }
+      ]
+    },
+    "PTECH": {
+      "qml": "PTECH.qml",
+      "qml_sha256": "c68adedbed2dfbfc33c0fcddd2ead810be83427ad042c18dea72e6c3c45aea96",
+      "feature_count": 167,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#00FFFF|Continuous",
+          "color_rgb": "#00FFFF",
+          "linetype": "Continuous",
+          "count": 71
+        },
+        {
+          "style_key": "#FF0000|Continuous",
+          "color_rgb": "#FF0000",
+          "linetype": "Continuous",
+          "count": 49
+        },
+        {
+          "style_key": "#FF00FF|Continuous",
+          "color_rgb": "#FF00FF",
+          "linetype": "Continuous",
+          "count": 46
+        },
+        {
+          "style_key": "#00FF00|Continuous",
+          "color_rgb": "#00FF00",
+          "linetype": "Continuous",
+          "count": 1
+        }
+      ]
+    },
+    "INFRASTRUCTURE": {
+      "qml": "INFRASTRUCTURE.qml",
+      "qml_sha256": "a77b6179d0e97f9629d1e2f6f7d9ef8722d3ebb0730526444abf9d4103d51d06",
+      "feature_count": 0,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#404040|Continuous",
+          "color_rgb": "#404040",
+          "linetype": "Continuous",
+          "count": 0
+        }
+      ]
+    },
+    "SITE": {
+      "qml": "SITE.qml",
+      "qml_sha256": "99654ce220379b5daf4bb17549b73afadd415cf506bede36164804208ca7da45",
+      "feature_count": 2,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#CC0000|Continuous",
+          "color_rgb": "#CC0000",
+          "linetype": "Continuous",
+          "count": 2
+        }
+      ]
+    },
+    "ZNRO": {
+      "qml": "ZNRO.qml",
+      "qml_sha256": "1abfdb4bf49c0fb48c202dde840c60fd2def67e28165c7fca14d54efb97a69dd",
+      "feature_count": 0,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#404040|Continuous",
+          "color_rgb": "#404040",
+          "linetype": "Continuous",
+          "count": 0
+        }
+      ]
+    },
+    "ZPM": {
+      "qml": "ZPM.qml",
+      "qml_sha256": "235f32928be652fc5ecef8b16d519cbb83c3007d41a275d46890c00e17c7b8d5",
+      "feature_count": 43,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#009999|PHANTOM2",
+          "color_rgb": "#009999",
+          "linetype": "PHANTOM2",
+          "count": 43
+        }
+      ]
+    },
+    "IMB": {
+      "qml": "IMB.qml",
+      "qml_sha256": "e6c511a64ddbe8f061bc78892aeacc770f47fb2374b84851f0e80c8e67cc0dc2",
+      "feature_count": 682,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#FF00FF|Continuous",
+          "color_rgb": "#FF00FF",
+          "linetype": "Continuous",
+          "count": 682
+        }
+      ]
+    },
+    "span_records": {
+      "qml": "span_records.qml",
+      "qml_sha256": "2a3c12a08cca44597c99ee38f160cd81218cae547ac5b2903706a670a5b5fbed",
+      "feature_count": 170,
+      "label_field": "SPAN_M",
+      "categories": [
+        {
+          "style_key": "#FFFF00|Continuous",
+          "color_rgb": "#FFFF00",
+          "linetype": "Continuous",
+          "count": 170
+        }
+      ]
+    },
+    "span_annotations": {
+      "qml": "span_annotations.qml",
+      "qml_sha256": "95de7bd9aae5edf1f0f8b005a0af9d4c79c97ea905a89755eef2603cf08d02ac",
+      "feature_count": 170,
+      "label_field": "display_label",
+      "categories": [
+        {
+          "style_key": "#FFFF00|Continuous",
+          "color_rgb": "#FFFF00",
+          "linetype": "Continuous",
+          "count": 170
+        }
+      ]
+    }
+  },
+  "project": {
+    "qgz": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.qgz",
+    "fdt_groups": [
+      "FDT-01",
+      "FDT-02",
+      "LINK"
+    ],
+    "fdt_group_layers": [
+      "CABLE",
+      "BOITE",
+      "PTECH",
+      "SITE"
+    ]
+  }
+}
