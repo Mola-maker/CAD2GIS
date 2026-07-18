@@ -25,6 +25,9 @@ __pycache__/
 # Demo output
 demo/output/
 
+#newmodel branch
+newmodel
+
 # Temp
 *.tmp
 *.bak

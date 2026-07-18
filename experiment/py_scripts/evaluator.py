@@ -11,16 +11,23 @@ Architecture:
 
 Rule Groups:
   1 — File Integrity (1.1-1.9): layer presence, geometry types, naming
-  2 — CRS Consistency (2.0): all layers EPSG:4326
+  2 — CRS Consistency (2.0): all layers share one CRS; if --expected-crs is
+      configured (default EPSG:3857) it must match
   3 — Empty Layer (3.0): all 8 layers have >=1 feature
   4 — Field Existence & Non-Null (4.1-4.16): mandatory field + CODE uniqueness
   5 — Referential Integrity / Isolation (5.1-5.4): FK bidirectional checks
   6 — Geometric Checks (6.1-6.6): overlap, containment, endpoint coincidence
   7 — Data Validation (7.1-7.2): capacity + PM port balance
+  8 — Evidence / Provenance Gate (8.1-8.3): conservation_ledger SUM invariant,
+      field_provenance coverage, annotation candidates consistency.
+      Default: warning level (WARN recorded, exit code unchanged);
+      --strict-provenance escalates violations to FAIL (fail-closed).
 
 Usage:
   python evaluator.py --gpkg output/FiberHome_P2_FTTH.gpkg [--output report.json]
+  python evaluator.py --gpkg ... --expected-crs EPSG:3857 --endpoint-tol 1.0
   python evaluator.py --gpkg ... --extended --agent-reports-dir <path> [--quiet]
+  python evaluator.py --gpkg ... --strict-provenance
 """
 
 import argparse
@@ -52,10 +59,31 @@ from schema_config import (
 
 from domain_vocab import validate_domain_value
 
+from evidence_ledger import (
+    CONSERVATION_TABLE,
+    CANDIDATES_TABLE,
+    PROVENANCE_TABLE,
+    META_TOTAL_DISPOSITION,
+    CANDIDATE_STATUSES,
+    PROVENANCE_KINDS,
+)
+
 # ── Geometry imports ──────────────────────────────────────────────────────────
 from shapely.geometry import Point, LineString, Polygon, shape
 from shapely.strtree import STRtree
 HAS_SHAPELY = True
+
+# ── Runtime configuration (set by run_verification / CLI) ─────────────────────
+
+DEFAULT_EXPECTED_CRS = "EPSG:3857"
+DEFAULT_ENDPOINT_TOL = 1.0  # metres (geographic CRS) / CRS units (projected CRS)
+
+_RUNTIME = {
+    "expected_crs": DEFAULT_EXPECTED_CRS,
+    "endpoint_tol": DEFAULT_ENDPOINT_TOL,
+    "strict_provenance": False,
+    "allow_ptech_endpoints": False,
+}
 
 # ── Layer name normalization ──────────────────────────────────────────────────
 
@@ -127,6 +155,7 @@ class VerificationReport:
         self.summary = {
             "errors": 0,
             "warnings": 0,
+            "info": 0,
             "verdict": "PASS",
             "rules_passed": 0,
             "rules_failed": 0,
@@ -147,6 +176,10 @@ class VerificationReport:
                 self.summary["errors"] += 1
             elif severity == "W":
                 self.summary["warnings"] += 1
+            elif severity == "I":
+                # Informational (e.g. 8.x provenance gate in warning mode):
+                # recorded but never changes the verdict / exit code.
+                self.summary["info"] += 1
 
     def finalize(self):
         """Compute final verdict from rule results."""
@@ -230,19 +263,50 @@ def check_1_9_zpm_naming(report, ds, layer_map):
 
 # ── Rule Group 2: CRS Consistency ─────────────────────────────────────────────
 
+def _srs_epsg_code(srs):
+    """Extract the EPSG code string from an OGR spatial reference, or None."""
+    if srs is None:
+        return None
+    return (srs.GetAuthorityCode(None)
+            or srs.GetAuthorityCode("PROJCS")
+            or srs.GetAuthorityCode("GEOGCS"))
+
+
+def _parse_expected_crs(expected):
+    """Normalize 'EPSG:3857' / '3857' to '3857'; '', 'any', 'none' disable the check."""
+    if expected is None:
+        return None
+    text = str(expected).strip().upper()
+    if text in ("", "ANY", "NONE"):
+        return None
+    return text.replace("EPSG:", "").strip()
+
+
 def check_2_0_crs_consistency(report, ds, layer_map):
-    """2.0: All layers must be EPSG:4326."""
-    bad_layers = []
+    """2.0: All layers share one CRS; if expected_crs is configured it must match."""
+    expected_code = _parse_expected_crs(_RUNTIME.get("expected_crs"))
+
+    codes = defaultdict(list)
+    no_crs = []
     for canonical, (lyr, _geom_name) in layer_map.items():
-        srs = lyr.GetSpatialRef()
-        if srs is None:
-            bad_layers.append(f"{canonical} (no CRS)")
-            continue
-        authority = srs.GetAuthorityCode("GEOGCS") or srs.GetAuthorityCode(None) or srs.GetAuthorityCode("PROJCS")
-        if authority != "4326":
-            bad_layers.append(f"{canonical} (EPSG:{authority})")
-    if bad_layers:
-        report.add_rule("2.0", "C", "FAIL", f"Non-EPSG:4326 layers: {', '.join(bad_layers)}")
+        code = _srs_epsg_code(lyr.GetSpatialRef())
+        if code is None:
+            no_crs.append(canonical)
+        else:
+            codes[code].append(canonical)
+
+    issues = []
+    if no_crs:
+        issues.append(f"layers without CRS: {', '.join(sorted(no_crs))}")
+    if len(codes) > 1:
+        desc = "; ".join(f"EPSG:{c}: {', '.join(sorted(ls))}" for c, ls in sorted(codes.items()))
+        issues.append(f"inconsistent CRS across layers ({desc})")
+    if expected_code and codes and set(codes) != {expected_code}:
+        found = ", ".join(f"EPSG:{c}" for c in sorted(codes))
+        issues.append(f"expected EPSG:{expected_code}, found {found}")
+
+    if issues:
+        report.add_rule("2.0", "C", "FAIL", "; ".join(issues))
     else:
         report.add_rule("2.0", "C", "PASS")
 
@@ -558,7 +622,18 @@ def check_5_4_cable_endpoint_isolation(report, ds, layer_map):
         site_defn = site_lyr.GetLayerDefn()
         site_pm_codes = _build_code_set(site_lyr, site_defn, "CODE", "SITE", "TYPE", "PM")
 
+    ptech_codes = set()
+    if "PTECH" in layer_map:
+        ptech_lyr = layer_map["PTECH"][0]
+        ptech_codes = _build_code_set(ptech_lyr, ptech_lyr.GetLayerDefn(), "CODE", "PTECH")
+
     all_endpoint_targets = boite_codes | site_pm_codes
+    # Company rule 5.4 recognizes BOITE/SITE endpoints only, but aerial cables
+    # legitimately terminate on PTECH poles. Endpoints resolving to a PTECH
+    # code are therefore counted separately (informational, not a violation);
+    # --allow-ptech-endpoints folds them into the resolved set outright.
+    if _RUNTIME.get("allow_ptech_endpoints", False):
+        all_endpoint_targets = all_endpoint_targets | ptech_codes
 
     type_resolved, type_idx = resolve_field(cable_defn, "TYPE_CABLE", "CABLE")
     orig_resolved, orig_idx = resolve_field(cable_defn, "ORIGINE", "CABLE")
@@ -569,23 +644,46 @@ def check_5_4_cable_endpoint_isolation(report, ds, layer_map):
         return
 
     # 5.4.1 Forward: Each DISTRIBUTION CABLE.ORIGINE/EXTREMITE must exist as BOITE.CODE or SITE(PM).CODE
+    # Cables with null TYPE_CABLE stay in scope: a null type cannot claim exemption
+    # from the endpoint check (eliminates the vacuous-pass hole on all-null data).
+    # Three-way counting: resolved (BOITE/SITE) / resolved_ptech (INFO) /
+    # truly unresolved (violation).
     unresolved_origins = []
     unresolved_ends = []
+    resolved_ptech = 0
+    null_origins = 0
+    null_ends = 0
     cable_lyr.ResetReading()
     for feat in cable_lyr:
         if type_idx >= 0:
             ctype = feat.GetField(type_idx)
-            if ctype is None or str(ctype).strip().upper() != "DISTRIBUTION":
+            if ctype is not None and str(ctype).strip().upper() != "DISTRIBUTION":
                 continue
         orig = feat.GetField(orig_idx)
         ext = feat.GetField(ext_idx)
-        if orig is not None and str(orig).strip() != '':
-            if str(orig).strip().upper() not in all_endpoint_targets:
+        if orig is None or str(orig).strip() == '':
+            null_origins += 1
+        elif str(orig).strip().upper() not in all_endpoint_targets:
+            if str(orig).strip().upper() in ptech_codes:
+                resolved_ptech += 1
+            else:
                 unresolved_origins.append(f"{orig} (FID={feat.GetFID()})")
-        if ext is not None and str(ext).strip() != '':
-            if str(ext).strip().upper() not in all_endpoint_targets:
+        if ext is None or str(ext).strip() == '':
+            null_ends += 1
+        elif str(ext).strip().upper() not in all_endpoint_targets:
+            if str(ext).strip().upper() in ptech_codes:
+                resolved_ptech += 1
+            else:
                 unresolved_ends.append(f"{ext} (FID={feat.GetFID()})")
 
+    info_notes = []
+    if resolved_ptech:
+        info_notes.append(
+            f"5.4.1 INFO: {resolved_ptech} endpoint(s) resolved to PTECH poles "
+            f"(aerial termination; not a violation, use --allow-ptech-endpoints "
+            f"to fold into resolved)")
+    if null_origins or null_ends:
+        issues.append(f"5.4.1: {null_origins} null/empty ORIGINE, {null_ends} null/empty EXTREMITE")
     if unresolved_origins or unresolved_ends:
         issues.append(f"5.4.1: {len(unresolved_origins)} unresolved ORIGINE, {len(unresolved_ends)} unresolved EXTREMITE")
 
@@ -595,7 +693,7 @@ def check_5_4_cable_endpoint_isolation(report, ds, layer_map):
     for feat in cable_lyr:
         if type_idx >= 0:
             ctype = feat.GetField(type_idx)
-            if ctype is None or str(ctype).strip().upper() != "DISTRIBUTION":
+            if ctype is not None and str(ctype).strip().upper() != "DISTRIBUTION":
                 continue
         orig = feat.GetField(orig_idx)
         ext = feat.GetField(ext_idx)
@@ -637,16 +735,29 @@ def check_5_4_cable_endpoint_isolation(report, ds, layer_map):
         issues.append(f"5.4.3: {len(bpe_pbo_not_in_cable)} BPE/PBO(s) not referenced by any DISTRIBUTION CABLE endpoint")
 
     if issues:
-        report.add_rule("5.4", "E", "FAIL", "; ".join(issues))
+        report.add_rule("5.4", "E", "FAIL", "; ".join(issues + info_notes))
     else:
-        report.add_rule("5.4", "E", "PASS")
+        report.add_rule("5.4", "E", "PASS", "; ".join(info_notes) or None)
 
 
 # ── Rule Group 6: Geometric Checks ────────────────────────────────────────────
 
-def _haversine_distance(lon1, lat1, lon2, lat2):
-    """Haversine distance in degrees (approximate for small distances)."""
-    return math.sqrt((lon2 - lon1) ** 2 + (lat2 - lat1) ** 2)
+_EARTH_RADIUS_M = 6371008.8
+
+
+def _crs_distance(x1, y1, x2, y2, is_geographic):
+    """
+    True distance between two coordinates, branching on the layer CRS:
+      geographic (e.g. EPSG:4326) -> haversine, metres
+      projected  (e.g. EPSG:3857) -> planar Euclidean, CRS units (metres)
+    """
+    if is_geographic:
+        phi1, phi2 = math.radians(y1), math.radians(y2)
+        dphi = phi2 - phi1
+        dlmb = math.radians(x2 - x1)
+        a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlmb / 2) ** 2
+        return 2 * _EARTH_RADIUS_M * math.asin(min(1.0, math.sqrt(a)))
+    return math.hypot(x2 - x1, y2 - y1)
 
 
 def check_6_1_znro_no_overlap(report, ds, layer_map):
@@ -895,6 +1006,11 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
         return
 
     # Build node geometry lookup (BOITE + SITE PM)
+    def _node_xy(ogr_geom):
+        """Representative (x, y) for a node: the centroid (identical to the point itself for Point geometries)."""
+        c = shape(json.loads(ogr_geom.ExportToJson())).centroid
+        return (c.x, c.y)
+
     node_geoms = {}
     if "BOITE" in layer_map:
         boite_lyr = layer_map["BOITE"][0]
@@ -905,9 +1021,8 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
             for feat in boite_lyr:
                 code = feat.GetField(code_idx)
                 geom = feat.GetGeometryRef()
-                if code is not None and geom is not None:
-                    g = json.loads(geom.ExportToJson())
-                    node_geoms[str(code).strip().upper()] = (g["coordinates"][0], g["coordinates"][1])
+                if code is not None and geom is not None and not geom.IsEmpty():
+                    node_geoms[str(code).strip().upper()] = _node_xy(geom)
 
     if "SITE" in layer_map:
         site_lyr = layer_map["SITE"][0]
@@ -923,20 +1038,29 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
                         continue
                 code = feat.GetField(code_idx)
                 geom = feat.GetGeometryRef()
-                if code is not None and geom is not None:
-                    g = json.loads(geom.ExportToJson())
-                    node_geoms[str(code).strip().upper()] = (g["coordinates"][0], g["coordinates"][1])
+                if code is not None and geom is not None and not geom.IsEmpty():
+                    node_geoms[str(code).strip().upper()] = _node_xy(geom)
 
+    violations_null = []
     violations_6a = []
     violations_6b = []
+    srs = cable_lyr.GetSpatialRef()
+    is_geographic = bool(srs.IsGeographic()) if srs is not None else False
+    endpoint_tol = _RUNTIME.get("endpoint_tol", DEFAULT_ENDPOINT_TOL)
     cable_lyr.ResetReading()
     for feat in cable_lyr:
         orig = feat.GetField(orig_idx)
         ext = feat.GetField(ext_idx)
-        if orig is None or ext is None:
-            continue
-        orig_s = str(orig).strip().upper()
-        ext_s = str(ext).strip().upper()
+        orig_s = str(orig).strip().upper() if orig is not None else ''
+        ext_s = str(ext).strip().upper() if ext is not None else ''
+
+        # Null/empty ORIGINE or EXTREMITE is a violation (rule 4.5 non-null),
+        # not a silent skip — eliminates the vacuous-pass hole.
+        if orig_s == '' or ext_s == '':
+            violations_null.append(f"CABLE FID={feat.GetFID()} null/empty "
+                                   f"{'ORIGINE' if orig_s == '' else ''}"
+                                   f"{'/' if orig_s == '' and ext_s == '' else ''}"
+                                   f"{'EXTREMITE' if ext_s == '' else ''}")
 
         # 6.6a: self-loop
         if orig_s == ext_s and orig_s != '':
@@ -947,6 +1071,10 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
         if geom is None:
             continue
         gjson = json.loads(geom.ExportToJson())
+        if gjson.get("type") != "LineString":
+            # Non-line cable geometry has no defined endpoints; geometry-type
+            # conformance is rule 1.5's responsibility.
+            continue
         coords = gjson["coordinates"]
         start_pt = coords[0]
         end_pt = coords[-1]
@@ -954,18 +1082,20 @@ def check_6_6_cable_endpoint_coincidence(report, ds, layer_map):
         # Check origin
         if orig_s in node_geoms:
             nx, ny = node_geoms[orig_s]
-            dist = _haversine_distance(start_pt[0], start_pt[1], nx, ny)
-            if dist > 0.0001:
+            dist = _crs_distance(start_pt[0], start_pt[1], nx, ny, is_geographic)
+            if dist > endpoint_tol:
                 violations_6b.append(f"CABLE FID={feat.GetFID()} ORIGINE={orig_s} distance {dist:.6f}")
 
         # Check extremity
         if ext_s in node_geoms:
             nx, ny = node_geoms[ext_s]
-            dist = _haversine_distance(end_pt[0], end_pt[1], nx, ny)
-            if dist > 0.0001:
+            dist = _crs_distance(end_pt[0], end_pt[1], nx, ny, is_geographic)
+            if dist > endpoint_tol:
                 violations_6b.append(f"CABLE FID={feat.GetFID()} EXTREMITE={ext_s} distance {dist:.6f}")
 
     issues = []
+    if violations_null:
+        issues.append(f"6.6: {len(violations_null)} cable(s) with null/empty ORIGINE or EXTREMITE")
     if violations_6a:
         issues.append(f"6.6a: {len(violations_6a)} self-loop(s)")
     if violations_6b:
@@ -1032,6 +1162,9 @@ def check_7_2_pm_port_balance(report, ds, layer_map):
     type_resolved, type_idx = resolve_field(boite_defn, "TYPE", "BOITE")
     ref_resolved, ref_idx = resolve_field(boite_defn, "REF_PM", "BOITE")
     cap_resolved, cap_idx = resolve_field(boite_defn, "CAPACITE", "BOITE")
+    if ref_idx < 0 or cap_idx < 0:
+        report.add_rule("7.2", "E", "FAIL", "REF_PM or CAPACITE field not found in BOITE")
+        return
     pbo_capacities = defaultdict(int)
     boite_lyr.ResetReading()
     for feat in boite_lyr:
@@ -1051,6 +1184,9 @@ def check_7_2_pm_port_balance(report, ds, layer_map):
     type_c_resolved, type_c_idx = resolve_field(cable_defn, "TYPE_CABLE", "CABLE")
     orig_resolved, orig_idx = resolve_field(cable_defn, "ORIGINE", "CABLE")
     cap_c_resolved, cap_c_idx = resolve_field(cable_defn, "CAPACITE", "CABLE")
+    if orig_idx < 0 or cap_c_idx < 0:
+        report.add_rule("7.2", "E", "FAIL", "ORIGINE or CAPACITE field not found in CABLE")
+        return
     cable_capacities = defaultdict(int)
     cable_lyr.ResetReading()
     for feat in cable_lyr:
@@ -1080,6 +1216,180 @@ def check_7_2_pm_port_balance(report, ds, layer_map):
         report.add_rule("7.2", "E", "FAIL", f"{len(violations)} PM balance violation(s)")
     else:
         report.add_rule("7.2", "E", "PASS")
+
+
+# ── Rule Group 8: Evidence / Provenance Gate ──────────────────────────────────
+#
+# Default policy is warning level: violations are recorded with severity "I"
+# and status "WARN" so the exit code is unchanged (spec: D-gate first phase).
+# With --strict-provenance the same violations become severity "E" FAIL
+# (v3-style fail-closed).
+
+# Pipeline-metadata columns on the 8 FC layers; every other attribute column
+# is treated as a business field for provenance coverage (rule 8.2).
+_NON_BUSINESS_FIELDS = {
+    "source_file", "dwg_layer", "dwg_type", "classification_method",
+    "annotation_text", "label_provenance",
+    "color_aci", "color_rgb", "style_key",
+}
+
+
+def _add_gate_rule(report, rule_id, ok, detail=None):
+    """Record an 8.x result honoring the warning/strict provenance policy."""
+    strict = _RUNTIME.get("strict_provenance", False)
+    severity = "E" if strict else "I"
+    if ok:
+        report.add_rule(rule_id, severity, "PASS", detail)
+    else:
+        report.add_rule(rule_id, severity, "FAIL" if strict else "WARN", detail)
+
+
+def check_8_1_conservation_ledger(report, ds, layer_map):
+    """8.1: conservation_ledger present and SUM(entity_count) == expected total."""
+    lyr = ds.GetLayerByName(CONSERVATION_TABLE)
+    if lyr is None:
+        _add_gate_rule(report, "8.1", False, f"{CONSERVATION_TABLE} table not present")
+        return
+    expected = None
+    total = 0
+    rows = 0
+    lyr.ResetReading()
+    for feat in lyr:
+        disposition = feat.GetField("disposition")
+        count = feat.GetField("entity_count") or 0
+        if disposition == META_TOTAL_DISPOSITION:
+            expected = int(count)
+        else:
+            total += int(count)
+            rows += 1
+    if rows == 0:
+        _add_gate_rule(report, "8.1", False, f"{CONSERVATION_TABLE} is empty")
+    elif expected is None:
+        _add_gate_rule(report, "8.1", False,
+                       f"no {META_TOTAL_DISPOSITION} meta row; sum={total} unverifiable")
+    elif total != expected:
+        _add_gate_rule(report, "8.1", False,
+                       f"SUM mismatch: sum={total} != expected={expected}")
+    else:
+        _add_gate_rule(report, "8.1", True, f"sum={total} == expected ({rows} rows)")
+
+
+def check_8_2_field_provenance(report, ds, layer_map):
+    """8.2: field_provenance covers every non-empty business field per FC layer."""
+    lyr = ds.GetLayerByName(PROVENANCE_TABLE)
+    if lyr is None:
+        _add_gate_rule(report, "8.2", False, f"{PROVENANCE_TABLE} table not present")
+        return
+
+    prov_counts = defaultdict(int)
+    unknown_kinds = defaultdict(int)
+    lyr.ResetReading()
+    for feat in lyr:
+        fc = feat.GetField("fc")
+        field = feat.GetField("field")
+        kind = feat.GetField("provenance")
+        count = int(feat.GetField("count") or 0)
+        prov_counts[(fc, field)] += count
+        if kind not in PROVENANCE_KINDS:
+            unknown_kinds[kind] += count
+
+    missing = []
+    mismatched = []
+    covered = 0
+    for canonical in sorted(REQUIRED_LAYERS):
+        if canonical not in layer_map:
+            continue
+        fc_lyr = layer_map[canonical][0]
+        defn = fc_lyr.GetLayerDefn()
+        business_fields = [
+            defn.GetFieldDefn(i).GetName() for i in range(defn.GetFieldCount())
+            if defn.GetFieldDefn(i).GetName() not in _NON_BUSINESS_FIELDS
+        ]
+        nonnull = defaultdict(int)
+        fc_lyr.ResetReading()
+        for feat in fc_lyr:
+            for fname in business_fields:
+                value = feat.GetField(fname)
+                if value is not None and not (isinstance(value, str) and value.strip() == ""):
+                    nonnull[fname] += 1
+        for fname, n in sorted(nonnull.items()):
+            recorded = prov_counts.get((canonical, fname))
+            if recorded is None:
+                missing.append(f"{canonical}.{fname} ({n} non-empty)")
+            elif recorded != n:
+                mismatched.append(f"{canonical}.{fname} (recorded {recorded} != actual {n})")
+            else:
+                covered += 1
+
+    issues = []
+    if missing:
+        issues.append(f"{len(missing)} field(s) without provenance: "
+                      + "; ".join(missing[:5]))
+    if mismatched:
+        issues.append(f"{len(mismatched)} field(s) with count mismatch: "
+                      + "; ".join(mismatched[:5]))
+    if unknown_kinds:
+        issues.append("unknown provenance kind(s): "
+                      + "; ".join(f"{k} ({v})" for k, v in sorted(unknown_kinds.items())))
+    if issues:
+        _add_gate_rule(report, "8.2", False, " | ".join(issues))
+    else:
+        _add_gate_rule(report, "8.2", True, f"{covered} non-empty business field(s) covered")
+
+
+def check_8_3_candidates_consistency(report, ds, layer_map):
+    """8.3: annotation candidates spot-check against the delivered label result."""
+    lyr = ds.GetLayerByName(CANDIDATES_TABLE)
+    if lyr is None:
+        _add_gate_rule(report, "8.3", False, f"{CANDIDATES_TABLE} table not present")
+        return
+
+    code_sets = {}
+    for canonical in REQUIRED_LAYERS:
+        if canonical in layer_map:
+            fc_lyr = layer_map[canonical][0]
+            code_sets[canonical] = _build_code_set(
+                fc_lyr, fc_lyr.GetLayerDefn(), "CODE", canonical)
+
+    total = 0
+    bad_status = defaultdict(int)
+    selected_by_key = defaultdict(int)
+    unresolved = []
+    lyr.ResetReading()
+    for feat in lyr:
+        total += 1
+        status = feat.GetField("status")
+        if status not in CANDIDATE_STATUSES:
+            bad_status[status] += 1
+        if not feat.GetField("selected"):
+            continue
+        key = feat.GetField("annotation_key")
+        if key:
+            selected_by_key[key] += 1
+        target_fc = feat.GetField("target_fc")
+        target_code = feat.GetField("target_code")
+        codes = code_sets.get(target_fc)
+        if codes is not None and target_code and str(target_code).strip().upper() not in codes:
+            unresolved.append(f"{target_fc}:{target_code}")
+
+    multi_selected = [k for k, v in selected_by_key.items() if v > 1]
+    issues = []
+    if total == 0:
+        issues.append(f"{CANDIDATES_TABLE} is empty")
+    if bad_status:
+        issues.append("invalid status value(s): "
+                      + "; ".join(f"{k} ({v})" for k, v in sorted(bad_status.items())))
+    if multi_selected:
+        issues.append(f"{len(multi_selected)} annotation(s) with >1 selected edge: "
+                      + "; ".join(multi_selected[:5]))
+    if unresolved:
+        issues.append(f"{len(unresolved)} selected edge(s) whose target_code is not a "
+                      f"delivered CODE: " + "; ".join(unresolved[:5]))
+    if issues:
+        _add_gate_rule(report, "8.3", False, " | ".join(issues))
+    else:
+        _add_gate_rule(report, "8.3", True,
+                       f"{total} candidate(s), {sum(selected_by_key.values())} keyed selection(s) consistent")
 
 
 # ── Domain Vocabulary Validation ──────────────────────────────────────────────
@@ -1206,7 +1516,9 @@ _CHECK_FUNCTIONS = {
 
 # ── Main Orchestrator ─────────────────────────────────────────────────────────
 
-def run_verification(gpkg_path, extended=False, agent_reports_dir=None):
+def run_verification(gpkg_path, extended=False, agent_reports_dir=None,
+                     expected_crs=DEFAULT_EXPECTED_CRS, endpoint_tol=DEFAULT_ENDPOINT_TOL,
+                     strict_provenance=False, allow_ptech_endpoints=False):
     """
     Run the full FTTH GIS verification pipeline.
 
@@ -1214,10 +1526,26 @@ def run_verification(gpkg_path, extended=False, agent_reports_dir=None):
         gpkg_path: Path to the GeoPackage to verify.
         extended: If True, compute Agent 8 Q1-Q5 extended metrics.
         agent_reports_dir: Directory with intermediate pipeline JSON reports.
+        expected_crs: CRS all layers must match (e.g. "EPSG:3857"); "any"/"none"
+            disables the expected check, leaving only cross-layer consistency.
+        endpoint_tol: Rule 6.6 endpoint coincidence tolerance — metres for
+            geographic layers (haversine), CRS units for projected layers.
+        strict_provenance: If True, rule group 8.x violations are FAIL
+            (fail-closed); default False records them as WARN without
+            changing the exit code.
+        allow_ptech_endpoints: If True, rule 5.4.1 counts CABLE endpoints
+            resolving to PTECH pole codes as fully resolved; default False
+            reports them as a separate informational count (never a
+            violation either way).
 
     Returns:
         VerificationReport with per-rule results and summary verdict.
     """
+    _RUNTIME["expected_crs"] = expected_crs
+    _RUNTIME["endpoint_tol"] = endpoint_tol
+    _RUNTIME["strict_provenance"] = strict_provenance
+    _RUNTIME["allow_ptech_endpoints"] = allow_ptech_endpoints
+
     if not os.path.isfile(gpkg_path):
         print(f"ERROR: GeoPackage not found: {gpkg_path}", file=sys.stderr)
         sys.exit(2)
@@ -1243,6 +1571,12 @@ def run_verification(gpkg_path, extended=False, agent_reports_dir=None):
         # Domain vocabulary validation (WARNING level)
         check_domain_vocabularies(report, layer_map)
 
+        # Rule Group 8: Evidence / Provenance gate (warning level by default;
+        # --strict-provenance escalates violations to FAIL)
+        check_8_1_conservation_ledger(report, ds, layer_map)
+        check_8_2_field_provenance(report, ds, layer_map)
+        check_8_3_candidates_consistency(report, ds, layer_map)
+
         # Extended metrics (Agent 8)
         if extended:
             _compute_extended_metrics(report, layer_map, agent_reports_dir)
@@ -1262,24 +1596,38 @@ def main():
         epilog="""
 Rule Groups:
   1 — File Integrity (layer presence, geometry, naming)
-  2 — CRS Consistency (EPSG:4326)
+  2 — CRS Consistency (cross-layer + configurable expected CRS)
   3 — Empty Layer Check
   4 — Field Existence & Non-Null + CODE Uniqueness
   5 — Referential Integrity / Isolation
   6 — Geometric Checks (overlap, containment, coincidence)
   7 — Data Validation (capacity, port balance)
+  8 — Evidence / Provenance Gate (warning level; --strict-provenance -> FAIL)
 
 Exit codes: 0=PASS, 1=FAIL, 2=QUARANTINE
         """
     )
     parser.add_argument("--gpkg", required=True,
                         help="Path to GeoPackage to verify (e.g., output/FiberHome_P2_FTTH.gpkg)")
+    parser.add_argument("--expected-crs", default=DEFAULT_EXPECTED_CRS,
+                        help="Expected CRS for all layers (default EPSG:3857); "
+                             "'any' or 'none' checks cross-layer consistency only")
+    parser.add_argument("--endpoint-tol", type=float, default=DEFAULT_ENDPOINT_TOL,
+                        help="Rule 6.6 endpoint coincidence tolerance: metres for geographic "
+                             "layers, CRS units for projected layers (default 1.0)")
     parser.add_argument("--output", "-o", default=None,
                         help="Write verification report JSON to this path")
     parser.add_argument("--extended", action="store_true",
                         help="Enable extended mode (Agent 8 Q1-Q5 metrics)")
     parser.add_argument("--agent-reports-dir", default=None,
                         help="Directory with intermediate pipeline JSON reports (for extended mode)")
+    parser.add_argument("--strict-provenance", action="store_true",
+                        help="Escalate rule group 8.x (evidence/provenance) violations "
+                             "from WARN to FAIL (fail-closed)")
+    parser.add_argument("--allow-ptech-endpoints", action="store_true",
+                        help="Rule 5.4.1: count CABLE endpoints resolving to PTECH pole "
+                             "codes as resolved (default: separate INFO count, "
+                             "not a violation)")
     parser.add_argument("--quiet", "-q", action="store_true",
                         help="Suppress per-rule console output")
 
@@ -1289,6 +1637,10 @@ Exit codes: 0=PASS, 1=FAIL, 2=QUARANTINE
         args.gpkg,
         extended=args.extended,
         agent_reports_dir=args.agent_reports_dir,
+        expected_crs=args.expected_crs,
+        endpoint_tol=args.endpoint_tol,
+        strict_provenance=args.strict_provenance,
+        allow_ptech_endpoints=args.allow_ptech_endpoints,
     )
 
     # Console output
@@ -1300,6 +1652,7 @@ Exit codes: 0=PASS, 1=FAIL, 2=QUARANTINE
         print(f"Verdict: {report.summary['verdict']}")
         print(f"  Errors:   {report.summary['errors']}")
         print(f"  Warnings: {report.summary['warnings']}")
+        print(f"  Info:     {report.summary['info']}")
         print()
 
         # Print failed rules
