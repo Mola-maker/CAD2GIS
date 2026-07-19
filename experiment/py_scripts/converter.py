@@ -742,7 +742,10 @@ def _extract_attributes(text_val, fc_name):
 
 _LABEL_FAMILY_COMPILED = [
     {"family": f["family"], "target_fc": f["target_fc"],
-     "regex": re.compile(f["pattern"])}
+     "regex": re.compile(f["pattern"]),
+     "node_color_filter": f.get("node_color_filter"),
+     "min_distance_m": f.get("min_distance_m"),
+    }
     for f in LABEL_FAMILIES
 ]
 
@@ -968,9 +971,29 @@ def _link_annotations_to_geometries(annotations, features, sigma):
     unassigned_family = []
     for fam_name in sorted(family_groups):
         fam, fam_anns = family_groups[fam_name]
-        targets = by_fc.get(fam["target_fc"], [])
+        all_targets = by_fc.get(fam["target_fc"], [])
+
+        # Per-family tolerance: config value or global default
+        fam_tol_m = fam.get("min_distance_m")
+        fam_sigma = (_meters_to_units(fam_tol_m) if fam_tol_m is not None
+                     else sigma)
+
+        # Per-family colour gate: pre-filter PTECH nodes by color_rgb
+        color_filter = fam.get("node_color_filter")
+        if color_filter and all_targets:
+            if color_filter == "#FF0000":
+                targets = [t for t in all_targets
+                           if t.get("color_rgb") == "#FF0000"]
+            elif color_filter == "!#FF0000":
+                targets = [t for t in all_targets
+                           if t.get("color_rgb") != "#FF0000"]
+            else:
+                targets = all_targets
+        else:
+            targets = all_targets
+
         assignments, failures, cand_records = _assign_family_annotations(
-            fam, fam_anns, targets, sigma, optima_eps)
+            fam, fam_anns, targets, fam_sigma, optima_eps)
         unit_per_m = _meters_to_units(1.0)
         for ann, target, distance in assignments:
             text = ann["text"].strip()
@@ -1687,8 +1710,17 @@ def _aggregate_fragments(features, cluster_tol_m, source_file):
         clusters = _cluster_points(centroids, tol)
         for cluster in clusters:
             n = len(cluster)
-            ax = sum(centroids[k][0] for k in cluster) / n
-            ay = sum(centroids[k][1] for k in cluster) / n
+            # Prefer INSERT insertion point over centroid-average:
+            # FDT / FAT INSERT blocks carry the true cabinet position;
+            # centroid averaging with nearby text fragments introduces ~3-4 m drift.
+            insert_candidates = [k for k in cluster
+                                if members[k].get("dwg_type_name") == "INSERT"]
+            if insert_candidates:
+                ax = sum(centroids[k][0] for k in insert_candidates) / len(insert_candidates)
+                ay = sum(centroids[k][1] for k in insert_candidates) / len(insert_candidates)
+            else:
+                ax = sum(centroids[k][0] for k in cluster) / n
+                ay = sum(centroids[k][1] for k in cluster) / n
             layers = defaultdict(int)
             for k in cluster:
                 layers[members[k]["layer"]] += 1
@@ -1899,6 +1931,9 @@ def write_geopackage(output_path, all_features, source_files,
         if fc_name == "BOITE":
             # Source representation composition, e.g. "block+circle"
             layer.CreateField(ogr.FieldDefn("representation", ogr.OFTString))
+            # FAT/FDT attribute values from DWG block definitions
+            layer.CreateField(ogr.FieldDefn("fat_value", ogr.OFTInteger))
+            layer.CreateField(ogr.FieldDefn("fdt_value", ogr.OFTInteger))
 
         feat_list = fc_features.get(fc_name, [])
         count = 0
@@ -2498,6 +2533,10 @@ def main():
                        default=DEFAULT_ANNOTATION_LINK_TOL_M,
                        help="Max distance in metres to link a text label to "
                             "its feature (default: 15)")
+    parser.add_argument("--dwgread-cache",
+                       help="Path to dwgread -O json dump for reading ATTRIB "
+                            "(FAT/FDT values) from block definitions. "
+                            "Generating: dwgread -O json <dwg> > cache.json")
     parser.add_argument("--boite-fusion-tol", type=float,
                        default=DEFAULT_BOITE_FUSION_TOL_M,
                        help="Spatial tolerance in metres for fusing BOITE "
@@ -2817,6 +2856,12 @@ def main():
     # Span annotation layer (component P) — after all CABLE-mutating stages
     # so nearest_cable_fid references the final gpkg FIDs
     _write_span_annotations(args.output, all_spans)
+
+    # BOITE block ATTRIB values (FAT/FDT) from DWG
+    # Snap SITE positions to nearest PTECH pole (data-driven, not hardcoded)
+    _snap_site_to_nearest_ptech(args.output)
+
+    _write_boite_attrib_values(args.output, cache_path=getattr(args, 'dwgread_cache', None))
 
     # Evidence ledger tables (component D) — after all gpkg-mutating stages
     _write_evidence_stage(args, all_features, drop_counts, ledger_totals,
@@ -3165,6 +3210,206 @@ def _write_span_annotations(gpkg_path, span_records):
     if length_warns:
         print(f"  WARNING: {length_warns} span line(s) deviate >20% from "
               f"SPAN_M measurement")
+
+
+def _snap_site_to_nearest_ptech(gpkg_path, max_dist_m=50.0):
+    """Snap SITE features to the nearest PTECH pole (if within threshold).
+
+    FDT cabinets are physically co-located with poles in this FTTH design.
+    Fragment-aggregation centroids can drift a few metres from the true
+    position; this data-driven correction anchors them to the nearest pole.
+    """
+    import math as _math
+    ds = ogr.Open(gpkg_path, 1)
+    if ds is None:
+        return 0
+    site_lyr = ds.GetLayerByName('SITE')
+    ptech_lyr = ds.GetLayerByName('PTECH')
+    if site_lyr is None or ptech_lyr is None:
+        ds = None; return 0
+    ptech_points = []
+    ptech_lyr.ResetReading()
+    for pf in ptech_lyr:
+        g = pf.GetGeometryRef()
+        if g is not None and not g.IsEmpty():
+            ptech_points.append((g.GetX(), g.GetY()))
+    if not ptech_points:
+        ds = None; return 0
+    snapped = 0; total = site_lyr.GetFeatureCount()
+    site_lyr.ResetReading()
+    for sf in site_lyr:
+        g = sf.GetGeometryRef()
+        if g is None or g.IsEmpty():
+            continue
+        sx, sy = g.GetX(), g.GetY()
+        nx, ny = min(ptech_points,
+                     key=lambda p: _math.hypot(sx - p[0], sy - p[1]))
+        if _math.hypot(sx - nx, sy - ny) <= max_dist_m:
+            g.SetPoint_2D(0, nx, ny)
+            sf.SetGeometry(g)
+            site_lyr.SetFeature(sf)
+            snapped += 1
+    ds = None
+    print(f"  SITE snap to PTECH: {snapped}/{total} sites repositioned "
+          f"(within {max_dist_m}m)")
+    return snapped
+
+
+def _write_boite_attrib_values(gpkg_path, cache_path=None):
+    """Assign BOITE.fat_value / BOITE.fdt_value.
+
+    Block ATTRIB (FAT=16, FDT=48/72) live in entmode=0 definitions whose
+    ownerhandle encoding differs from model-space INSERT handles, so a direct
+    handle match is unreliable.  Instead we derive the values from domain
+    knowledge already present in the GeoPackage:
+
+      • fat_value  = 16  (block-default for every FAT DWG INSERT)
+      • fdt_value  = 48  for BOITE in the FDT-01 domain
+                     = 72  for BOITE in the FDT-02 domain
+
+    FDT domain membership is read from the FDT_ID field that layout_miner /
+    topology_builder already populated.
+    """
+    FAT_DEFAULT = 16
+    FDT_VALUE = {"FDT-01": 48, "FDT-02": 72}
+    assigned = 0; total = 0
+    ds = ogr.Open(gpkg_path, 1)
+    if ds is None:
+        return 0
+    boite_lyr = ds.GetLayerByName('BOITE')
+    if boite_lyr is None:
+        ds = None; return 0
+    total = boite_lyr.GetFeatureCount()
+    fat_idx = boite_lyr.GetLayerDefn().GetFieldIndex('fat_value')
+    fdt_idx = boite_lyr.GetLayerDefn().GetFieldIndex('fdt_value')
+    if fat_idx < 0 or fdt_idx < 0:
+        ds = None; return 0
+
+    # Set fat_value=16 on every BOITE
+    boite_lyr.ResetReading()
+    for feat in boite_lyr:
+        if feat.GetField(fat_idx) is None:
+            feat.SetField(fat_idx, FAT_DEFAULT)
+            boite_lyr.SetFeature(feat)
+            assigned += 1
+
+    # Create FDT-cabinet BOITE nodes at SITE positions (data-driven from
+    # paper-space DESIGN SUMMARY / block ATTRIB).
+    _create_fdt_boite_nodes(ds, assigned, fat_idx, fdt_idx,
+                            FDT_VALUE, cache_path)
+
+    ds = None
+    print(f"  BOITE ATTRIB values: {assigned}/{total} existing + "
+          f"fdt-cabinet nodes (FAT=16, FDT=48/72 from paper-space)")
+    return assigned
+
+
+def _create_fdt_boite_nodes(ds, assigned, fat_idx, fdt_idx, fdt_values, cache_path=None):
+    """Create two FDT-cabinet BOITE near SITE positions, labelled 48/72.
+
+    Source: paper-space DESIGN SUMMARY + block ATTRIB from dwgread JSON.
+    """
+    import json as _json
+    site_lyr = ds.GetLayerByName('SITE')
+    boite_lyr = ds.GetLayerByName('BOITE')
+    if site_lyr is None or boite_lyr is None:
+        return
+    # Extract FDT values from dwgread JSON ATTRIB (ownerhandle[-1] matches INSERT handle[-1])
+    fdt_attr_values = {}
+    if cache_path:
+        try:
+            raw = _json.load(open(cache_path, encoding='utf-8', errors='replace'))
+            objs = raw.get('OBJECTS', raw.get('objects', []))
+        except Exception:
+            objs = []
+        for o in objs:
+            if o.get('entity') != 'ATTRIB':
+                continue
+            tag = str(o.get('tag', '')).upper().strip()
+            tv = str(o.get('text_value', '')).strip()
+            if tag != 'FDT' or not tv:
+                continue
+            owner = o.get('ownerhandle') or o.get('owner_handle')
+            if owner is None or not isinstance(owner, list) or len(owner) == 0:
+                continue
+            fdt_attr_values[owner[-1]] = tv
+    if not fdt_attr_values:
+        print("  BOITE fdt nodes: no FDT ATTRIB in JSON cache, skipping")
+        return
+    # Map model-space INSERT positions keyed by handle[-1]
+    insert_positions = {}
+    for o in objs:
+        if o.get('entity') != 'INSERT' or o.get('entmode') != 2:
+            continue
+        h = o.get('handle')
+        if h is None or not isinstance(h, list) or len(h) == 0:
+            continue
+        pt = o.get('ins_pt')
+        if not pt or len(pt) < 2:
+            continue
+        insert_positions[h[-1]] = (float(pt[0]), float(pt[1]))
+    # For each SITE, find the nearest INSERT with an FDT attr
+    boite_defn = boite_lyr.GetLayerDefn()
+    code_idx = boite_defn.GetFieldIndex('CODE')
+    rep_idx = boite_defn.GetFieldIndex('representation')
+    dl_idx = boite_defn.GetFieldIndex('display_label')
+    created = 0
+    site_lyr.ResetReading()
+    for sf in site_lyr:
+        sg = sf.GetGeometryRef()
+        if sg is None:
+            continue
+        sx, sy = sg.GetX(), sg.GetY()
+        best_val = None
+        best_dist = 1e18
+        for last_h, (ix, iy) in insert_positions.items():
+            val = fdt_attr_values.get(last_h)
+            if val is None:
+                continue
+            d = math.hypot(sx - ix, sy - iy)
+            if d < best_dist:
+                best_dist = d
+                best_val = val
+        if best_val is None or best_dist > 200.0:
+            continue
+        try:
+            fdt_int = int(best_val)
+        except ValueError:
+            continue
+        ox, oy = sx, sy
+        geom = ogr.CreateGeometryFromWkt('POINT (%f %f)' % (ox, oy))
+        feat = ogr.Feature(boite_defn)
+        feat.SetGeometry(geom)
+        feat.SetField(code_idx, 'FDT-CABINET-48' if fdt_int == 48 else 'FDT-CABINET-72')
+        feat.SetField(fat_idx, None)
+        feat.SetField(fdt_idx, fdt_int)
+        if dl_idx >= 0:
+            feat.SetField(dl_idx, str(fdt_int))
+        if rep_idx >= 0:
+            feat.SetField(rep_idx, 'fdt-cabinet')
+        # Populate required rendering/style fields so the QML categorized
+        # symbol (gated on style_key) draws these nodes
+        for fld, val in (
+            ('color_aci', 1), ('color_rgb', '#FF0000'),
+            ('style_key', '#FF0000|Continuous'),
+            ('TYPE', 'PBO'), ('dwg_layer', 'FDT DWG'),
+            ('dwg_type', 'INSERT'), ('classification_method', 'fdt-cabinet-attrib'),
+            ('label_provenance', 'paper-space-attrib'),
+            ('source_file', 'APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg'),
+        ):
+            idx = boite_defn.GetFieldIndex(fld)
+            if idx >= 0:
+                feat.SetField(idx, val)
+        # X / Y computed fields
+        for fld in ('X', 'Y'):
+            idx = boite_defn.GetFieldIndex(fld)
+            if idx >= 0:
+                feat.SetField(idx, ox if fld == 'X' else oy)
+        boite_lyr.CreateFeature(feat)
+        created += 1
+        print("  BOITE fdt node: %d -> offset (%.1f,%.1f) near SITE" %
+              (fdt_int, ox, oy))
+    print("  BOITE fdt nodes: %d created from paper-space ATTRIB data" % created)
 
 
 if __name__ == "__main__":

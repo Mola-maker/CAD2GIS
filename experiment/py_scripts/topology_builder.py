@@ -48,7 +48,7 @@ from shapely.strtree import STRtree
 
 ogr.UseExceptions()
 
-NODE_LAYERS = ("SITE", "BOITE", "PTECH")
+NODE_LAYERS = ("PTECH",)
 EDGE_LAYERS = ("CABLE", "INFRASTRUCTURE")
 
 DEFAULT_SNAP_TOL = 5.0
@@ -1138,7 +1138,14 @@ def tag_fdt_domains(ds, domain_prefixes, endpoint_tol,
     node_vertex = {}   # code -> vertex key
     seed_domain = {}   # vertex key -> domain
     node_feats = []    # (fc, fid, vertex_key)
-    for fc in node_layers:
+
+    # Also scan BOITE for DMPH-prefixed FAT label seeds even though BOITE
+    # is excluded from NODE_LAYERS (it supplies domain seeds, not routing).
+    seed_layers = list(node_layers)
+    if 'BOITE' not in seed_layers:
+        seed_layers.append('BOITE')
+
+    for fc in seed_layers:
         lyr = _find_layer(ds, fc)
         if lyr is None:
             continue

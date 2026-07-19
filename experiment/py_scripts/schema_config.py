@@ -1899,6 +1899,12 @@ LAYER_PATTERN_MAP = [
      r"|.*customer.*|.*subscriber.*|.*logement.*|.*maison.*|.*villa.*"
      r"|.*immeuble.*|.*residence.*",
      "IMB", "Point"),
+    # INFRASTRUCTURE — ducts, conduits, trenches, pits, handholes, chambers
+    (r"(?i).*duct.*|.*conduit.*|.*pipe.*|.*trench.*|.*infra.*"
+     r"|.*pathway.*|.*route.*|.*buried.*|.*underground.*|.*aerial.*"
+     r"|.*fourreau.*|.*adduction.*|.*branchement.*|.*raccordement.*"
+     r"|.*gaine.*|.*new\s*duct.*|.*pit.*|.*handhole.*|.*chamber.*",
+     "INFRASTRUCTURE", "LineString"),
     # CABLE — XXX.XXX Cable Line A/B/C, *FEEDER CABLE, FO n CORE, Service Core,
     # Line, moniter core, Expansion Cores, SLING WIRE / SPAN SLING, SPAN CABLE
     (r"(?i).*cable.*|.*fib[er]*e.*|.*feeder.*|.*trunk.*"
@@ -1909,12 +1915,6 @@ LAYER_PATTERN_MAP = [
      r"|.*service\s*core.*|.*expansion\s*core.*|.*moniter\s*core.*"
      r"|.*monitor\s*core.*|^line$",
      "CABLE", "LineString"),
-    # INFRASTRUCTURE — ducts, conduits, trenches
-    (r"(?i).*duct.*|.*conduit.*|.*pipe.*|.*trench.*|.*infra.*"
-     r"|.*pathway.*|.*route.*|.*buried.*|.*underground.*|.*aerial.*"
-     r"|.*fourreau.*|.*adduction.*|.*branchement.*|.*raccordement.*"
-     r"|.*gaine.*|.*new\s*duct.*",
-     "INFRASTRUCTURE", "LineString"),
     # SITE — exchanges, nodes, hubs, shelters (generic vocabulary)
     (r"(?i).*site.*|.*nro.*|.*pm\b|.*exchange.*|.*node.*|.*hub.*"
      r"|.*pop\b|.*co\b|.*shelter.*|.*cabinet.*|.*location.*"
@@ -2612,8 +2612,9 @@ CRS_QGIS_DISPLAY = "EPSG:3857" # QGIS project CRS for OSM tile alignment
 # Extend this list as further drawing label conventions are identified.
 
 LABEL_FAMILIES = [
-    {"family": "fat",  "pattern": r"^DMPH-\d+\.\d+\.[A-Z]\d{2}$", "target_fc": "BOITE"},
-    {"family": "pole", "pattern": r"^MR\.DMPH\.P\d+$",            "target_fc": "PTECH"},
+    {"family": "fat",      "pattern": r"^DMPH-\d+\.\d+\.[A-Z]\d{2}$", "target_fc": "BOITE"},
+    {"family": "pole",     "pattern": r"^MR\.DMPH\.P\d+$",            "target_fc": "PTECH", "node_color_filter": "!#FF0000", "min_distance_m": 15},
+    {"family": "pole_ext", "pattern": r"^EXT\.MR\.\w+\.\w+\.\w+\.P\d+$", "target_fc": "PTECH", "node_color_filter": "#FF0000", "min_distance_m": 25},
 ]
 
 # Abstain when the two best candidate distances for a label differ by no more

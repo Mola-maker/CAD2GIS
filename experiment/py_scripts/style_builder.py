@@ -75,7 +75,8 @@ def _option(parent, name, value):
     ET.SubElement(parent, "Option", name=name, value=str(value), type="QString")
 
 
-def _qml(layer_name, geom_kind, categories, label_field):
+def _qml(layer_name, geom_kind, categories, label_field,
+         label_is_expression=False):
     """Categorized QML on style_key — same shell pattern as BOITE.qml/v3."""
     root = ET.Element(
         "qgis", version="3.40.0", styleCategories="AllStyleCategories",
@@ -98,8 +99,15 @@ def _qml(layer_name, geom_kind, categories, label_field):
             lyr = ET.SubElement(symbol, "layer",
                                 **{"class": "SimpleMarker", "enabled": "1"})
             options = ET.SubElement(lyr, "Option", type="Map")
-            _option(options, "color", color)
-            _option(options, "outline_color", "20,20,20,255")
+            if layer_name == "BOITE":
+                _option(options, "color", "0,0,0,0")
+                _option(options, "outline_color", "255,0,0,255")
+                _option(options, "outline_style", "solid")
+                _option(options, "outline_width", "1.0")
+                _option(options, "outline_width_unit", "MM")
+            else:
+                _option(options, "color", color)
+                _option(options, "outline_color", "20,20,20,255")
             _option(options, "name", marker_name)
             _option(options, "size", marker_size)
             _option(options, "size_unit", "MM")
@@ -123,7 +131,8 @@ def _qml(layer_name, geom_kind, categories, label_field):
     labeling = ET.SubElement(root, "labeling", type="simple")
     settings = ET.SubElement(labeling, "settings")
     ET.SubElement(settings, "text-style", fieldName=label_field or "",
-                  isExpression="0", fontFamily="Arial", fontSize="8",
+                  isExpression="1" if label_is_expression else "0",
+                  fontFamily="Arial", fontSize="8",
                   textColor="0,0,0,255")
     ET.SubElement(settings, "placement", placement="0", dist="1",
                   offsetUnits="MM")
@@ -170,7 +179,14 @@ def _collect_layer_styles(gpkg_path):
             if not categories:
                 categories = [("#404040|Continuous", "#404040",
                                "Continuous", 0)]
-            if "display_label" in field_names:
+            label_is_expression = False
+            if name == "BOITE" and "CODE" in field_names:
+                has_fdt = "fdt_value" in field_names
+                val_expr = ('coalesce("fdt_value", "fat_value", \'\')'
+                            if has_fdt else 'coalesce("fat_value", \'\')')
+                label_field = ('"CODE" || \'\\n\' || ' + val_expr)
+                label_is_expression = True
+            elif "display_label" in field_names:
                 label_field = "display_label"
             elif "SPAN_M" in field_names:
                 label_field = "SPAN_M"
@@ -180,6 +196,7 @@ def _collect_layer_styles(gpkg_path):
                 "geom_kind": geom_kind,
                 "categories": categories,
                 "label_field": label_field,
+                "label_is_expression": label_is_expression,
                 "feature_count": lyr.GetFeatureCount(),
                 "has_fdt_id": "FDT_ID" in field_names,
             }
@@ -200,7 +217,8 @@ def write_sidecar_qml(gpkg_path, layers, styles_dir):
     }
     for name, info in layers.items():
         qml = _qml(name, info["geom_kind"], info["categories"],
-                   info["label_field"])
+                   info["label_field"],
+                   info.get("label_is_expression", False))
         ET.fromstring(qml)  # well-formedness gate before anything is written
         qml_path = os.path.join(styles_dir, f"{name}.qml")
         with open(qml_path, "w", encoding="utf-8") as f:
