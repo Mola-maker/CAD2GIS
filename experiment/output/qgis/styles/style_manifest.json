@@ -1,46 +1,46 @@
 {
   "schema_version": "cad2gis-qgis-style-manifest-v2",
-  "source_gpkg": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.gpkg",
+  "source_gpkg": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO_NEW_1.gpkg",
   "categorized_by": "style_key (effective CAD colour | linetype)",
   "embedded_default_styles": true,
   "layers": {
     "BOITE": {
       "qml": "BOITE.qml",
-      "qml_sha256": "cd87b33548246b7d001abb328a6caa5e2aaf9e0f494f197de6b44b1110df4ec1",
-      "feature_count": 43,
-      "label_field": "display_label",
+      "qml_sha256": "8a532e4faf2f3e522e609253a0ec52a0cc37306563603bf75898c9eda5dc9475",
+      "feature_count": 45,
+      "label_field": "\"CODE\" || '\\n' || coalesce(\"fdt_value\", \"fat_value\", '')",
       "categories": [
         {
           "style_key": "#FF0000|Continuous",
           "color_rgb": "#FF0000",
           "linetype": "Continuous",
-          "count": 43
+          "count": 45
         }
       ]
     },
     "CABLE": {
       "qml": "CABLE.qml",
-      "qml_sha256": "74de6bdec806d2549fa6b1c071c9f4077e831cd1505f790ed2f249c31a0c5592",
-      "feature_count": 203,
+      "qml_sha256": "bfbd2669fabed19308de611a64464bf1b5ded2e6802179d47ab69fe35559656c",
+      "feature_count": 166,
       "label_field": "display_label",
       "categories": [
         {
           "style_key": "#00FF00|Continuous",
           "color_rgb": "#00FF00",
           "linetype": "Continuous",
-          "count": 102
+          "count": 80
         },
         {
           "style_key": "#6600CC|Continuous",
           "color_rgb": "#6600CC",
           "linetype": "Continuous",
-          "count": 56
+          "count": 46
         },
         {
           "style_key": "#00FFFF|Continuous",
           "color_rgb": "#00FFFF",
           "linetype": "Continuous",
-          "count": 45
+          "count": 40
         }
       ]
     },
@@ -176,7 +176,7 @@
     }
   },
   "project": {
-    "qgz": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.qgz",
+    "qgz": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO_NEW_1.qgz",
     "fdt_groups": [
       "FDT-01",
       "FDT-02",

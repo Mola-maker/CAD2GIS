@@ -31,7 +31,7 @@ from pathlib import Path
 
 # ── Import validation from sibling modules ────────────────────────────────
 try:
-    from schema_config import (
+    from .schema_config import (
         REQUIRED_LAYERS,
         LAYER_PATTERN_MAP,
         NEGATIVE_EVIDENCE_LAYERS,
@@ -50,10 +50,10 @@ except ImportError:
         "directory as schema_config.py."
     )
 
-from domain_vocab import validate_domain_value
+from .domain_vocab import validate_domain_value
 
-import evidence_ledger
-import legend_detector
+from . import evidence_ledger
+from . import legend_detector
 # ── Ctypes bridge to LibreDWG ─────────────────────────────────────────────
 _libdwg = None
 _libc = None
@@ -2782,7 +2782,7 @@ def main():
     topo_metrics = None
     chain_metrics = None
     if not args.skip_topology:
-        import topology_builder
+        from . import topology_repair as topology_builder
         snap_units = _meters_to_units(args.snap_tol)
 
         if not args.skip_chaining:
@@ -2872,7 +2872,7 @@ def main():
     # final post-topology/FDT layer contents. Style failure must not
     # invalidate the finished delivery gpkg (warning, NOT halt).
     if not args.skip_styles:
-        import style_builder
+        from . import style_exporter as style_builder
         print("\nQGIS styling (three tracks):")
         try:
             style_builder.build_styles(args.output)
@@ -2951,7 +2951,7 @@ def _run_fdt_tagging(args, topology_builder, snap_units, chain_metrics):
     FDT_ID on CABLE/BOITE/PTECH/SITE and stores TOPOLOGY-sheet content in
     the topology_evidence side table.
     """
-    import layout_miner
+    from . import layout_miner
 
     facts, evidence = {}, []
     for dwg_path in args.input:
@@ -3318,7 +3318,9 @@ def _create_fdt_boite_nodes(ds, assigned, fat_idx, fdt_idx, fdt_values, cache_pa
     fdt_attr_values = {}
     if cache_path:
         try:
-            raw = _json.load(open(cache_path, encoding='utf-8', errors='replace'))
+            with open(cache_path, 'r', encoding='utf-8', errors='replace') as _fh:
+                raw_text = _fh.read()
+            raw = _json.loads(raw_text, strict=False)
             objs = raw.get('OBJECTS', raw.get('objects', []))
         except Exception:
             objs = []
