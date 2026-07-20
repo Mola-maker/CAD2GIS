@@ -183,5 +183,21 @@
     "force_route_components_connected": false,
     "generic_line_is_cable": false,
     "dimension_is_cable_geometry": false
+  },
+  "coverage": {
+    "semantics": {
+      "policy": "fail",
+      "allowlist": [
+        {"reason": "unmatched_route_layer", "dwg_type": "LINE"},
+        {"reason": "unmatched_route_layer", "dwg_type": "LWPOLYLINE"},
+        {"reason": "missing_geometry_points", "dwg_type": "HATCH"},
+        {"reason": "missing_geometry_points", "dwg_type": "LEADER"},
+        {"reason": "missing_geometry_points", "dwg_type": "OLE2FRAME"}
+      ]
+    },
+    "styles": {
+      "policy": "fail",
+      "allowlist": []
+    }
   }
 }

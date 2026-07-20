@@ -1,0 +1,36 @@
+{
+  "annotation_carriers": [],
+  "block_instances": [],
+  "block_names": {},
+  "cad_roles": {},
+  "counts": {
+    "model_dimensions": 0,
+    "model_entities": 0,
+    "model_inserts": 0,
+    "records": 0,
+    "unsupported_records": 0
+  },
+  "curve_capabilities": {},
+  "document_metadata": {
+    "dwg_cgeocs_values": [],
+    "dwg_insunits_values": [],
+    "records": []
+  },
+  "entity_types": {},
+  "inventory_sha256": "18189a51c820da9ff16d9087989a7fa410dccf11727af96c0aeecf767da19f61",
+  "layers": {},
+  "layouts": {},
+  "reader_protocol": {},
+  "schema_version": "cad2gis-source-inventory-v1",
+  "source": {
+    "name": "onboarding.dwg",
+    "sha256": "52a163db58d2115bec5d974f0dbac7d5ee62d09c3be958e4432c513fd141db10",
+    "size_bytes": 24
+  },
+  "style_facts": {},
+  "unsupported": {
+    "by_entity_type": {},
+    "by_reason": {},
+    "entity_keys_by_reason": {}
+  }
+}

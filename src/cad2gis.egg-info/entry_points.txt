@@ -1,0 +1,2 @@
+[console_scripts]
+cad2gis = cad2gis.cli:main

@@ -1,0 +1,1 @@
+{"enabled": true, "controls": [{"point_id": "P-1", "cad_x": 1, "cad_y": 2, "target_easting": 3, "target_northing": 4, "role": "train", "source": "RELATIVE_OSM_REFERENCE_ONLY | snapshot", "accuracy_m": 1, "weight": 1, "enabled": true}]}

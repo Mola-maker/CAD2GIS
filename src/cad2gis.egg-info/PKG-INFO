@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: cad2gis
+Version: 0.1.0
+Summary: Deterministic CAD-to-GIS orchestration and verification CLI
+Author: CAD2GIS contributors
+License: Proprietary
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: Microsoft :: Windows
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Provides-Extra: test
+Requires-Dist: pytest<10,>=8; extra == "test"
+Requires-Dist: build<2,>=1.2; extra == "test"
+
+CAD2GIS provides a lightweight canonical API and CLI. The pinned GIS runtime and separately deployed cad2gis_v3 backend are preflighted with `cad2gis doctor`.

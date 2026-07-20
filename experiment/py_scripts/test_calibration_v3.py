@@ -574,7 +574,7 @@ def test_affine_requires_explicit_spatial_structure_review(tmp_path):
         (30.0, 70.0),
         (80.0, 20.0),
     )
-    check_points = ((25.0, 40.0), (60.0, 85.0))
+    check_points = ((25.0, 40.0), (60.0, 85.0), (75.0, 15.0))
     mappings = []
     for index, point in enumerate(train_points):
         mappings.append(_control_mapping(f"AT{index}", point, _apply_affine(_nominal(point))))

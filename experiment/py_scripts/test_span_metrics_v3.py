@@ -122,7 +122,13 @@ def test_cable_spans_keep_dimension_and_delivery_length_closure(tmp_path):
     assert [metric["source_native_length_m"] for metric in native_metrics] == pytest.approx(
         [12.5, 7.25]
     )
-    assert native_metrics[0] == {
+    assert {
+        key: native_metrics[0][key]
+        for key in (
+            "segment_index", "source_native_length_m", "dimension_entity_key",
+            "measurement_native_m", "measurement_delta_m", "status",
+        )
+    } == {
         "segment_index": 0,
         "source_native_length_m": 12.5,
         "dimension_entity_key": "DIM-1",
@@ -130,6 +136,8 @@ def test_cable_spans_keep_dimension_and_delivery_length_closure(tmp_path):
         "measurement_delta_m": 0.0,
         "status": "measured",
     }
+    assert [metric["source_segment_kind"] for metric in native_metrics] == ["line", "line"]
+    assert all(metric["delivery_native_vertex_count"] == 2 for metric in native_metrics)
     assert native_metrics[1]["dimension_entity_key"] is None
     assert native_metrics[1]["measurement_native_m"] is None
     assert native_metrics[1]["measurement_delta_m"] is None
@@ -157,6 +165,7 @@ def test_cable_spans_keep_dimension_and_delivery_length_closure(tmp_path):
     delivery = tmp_path / "delivery.gpkg"
     counts = write_delivery(delivery, [route], transformer)
     assert counts["CABLE"] == 1
+    assert counts["CABLE_SEGMENT"] == 2
     with sqlite3.connect(delivery) as connection:
         row = connection.execute(
             'SELECT span_count, measured_span_count, unmeasured_span_count, '
@@ -164,6 +173,17 @@ def test_cable_spans_keep_dimension_and_delivery_length_closure(tmp_path):
             'dimension_coverage_ratio, span_schema_version, span_unit, '
             'span_metrics_json FROM "CABLE"'
         ).fetchone()
+        segment_rows = connection.execute(
+            'SELECT route_key, source_entity_key, source_handle, segment_index, '
+            'source_segment_key, source_native_length_m, dimension_entity_key, '
+            'measurement_native_m, measurement_delta_m, delivery_grid_length_m, '
+            'geodesic_length_m, length_value_m, status, length_label, length_source, '
+            'unit, schema_version, style_aci, label_provenance FROM "CABLE_SEGMENT" '
+            'ORDER BY segment_index'
+        ).fetchall()
+        segment_lineage = connection.execute(
+            'SELECT lineage_json FROM "CABLE_SEGMENT" ORDER BY segment_index'
+        ).fetchall()
     assert row[:3] == (2, 1, 1)
     assert row[3] == pytest.approx(12.5)
     assert row[4] == "partial"
@@ -174,6 +194,54 @@ def test_cable_spans_keep_dimension_and_delivery_length_closure(tmp_path):
     assert written_metrics == enriched
     assert written_metrics[0]["measurement_native_m"] == 12.5
     assert written_metrics[1]["measurement_native_m"] is None
+    assert len(segment_rows) == 2
+    assert segment_rows[0][0:4] == ("CABLE-R1", "entity-CABLE-R1", "R1", 0)
+    assert len(segment_rows[0][4]) == 64
+    assert segment_rows[0][5] == pytest.approx(12.5)
+    assert segment_rows[0][6] == "DIM-1"
+    assert segment_rows[0][7] == pytest.approx(12.5)
+    assert segment_rows[0][8] == pytest.approx(0.0)
+    assert segment_rows[0][11] == pytest.approx(12.5)
+    assert segment_rows[0][12] == "measured"
+    assert segment_rows[0][13] == "12.500 m"
+    assert segment_rows[0][14] == "dwg_dimension"
+    assert segment_rows[0][15:17] == ("m", "cad2gis.cable_segment.v1")
+    assert segment_rows[1][6] is None
+    assert segment_rows[1][7] is None
+    assert segment_rows[1][8] is None
+    assert segment_rows[1][11] == pytest.approx(enriched[1]["delivery_grid_length_m"])
+    assert segment_rows[1][12] == "unmeasured_no_dimension"
+    assert segment_rows[1][13] == (
+        f'{enriched[1]["delivery_grid_length_m"]:.3f} m [grid; unmeasured]'
+    )
+    assert segment_rows[1][14] == "delivery_grid_fallback_unmeasured"
+    assert segment_rows[1][15:17] == ("m", "cad2gis.cable_segment.v1")
+    assert segment_rows[0][17] == route.style.aci_color
+    assert "DWG_DIRECT:SPAN-CABLE-DIMENSION" in segment_rows[0][18]
+    assert "length_source=dwg_dimension" in segment_rows[0][18]
+    assert json.loads(segment_lineage[0][0])[-1] == {
+        "operation": "segment_occurrence",
+        "parent_feature_key": "CABLE-R1",
+        "segment_index": 0,
+        "source_segment_key": segment_rows[0][4],
+        "source_segment_kind": "line",
+        "geometry_policy": "versioned-source-segment-delivery-path",
+    }
+    segment_dataset = ogr.Open(str(delivery), 0)
+    segment_layer = segment_dataset.GetLayerByName("CABLE_SEGMENT")
+    assert segment_layer.GetFeatureCount() == 2
+    segment_features = list(segment_layer)
+    assert segment_features[0].GetGeometryRef().Length() == pytest.approx(
+        enriched[0]["delivery_grid_length_m"], abs=1e-6,
+    )
+    assert segment_features[1].GetGeometryRef().Length() == pytest.approx(
+        enriched[1]["delivery_grid_length_m"], abs=1e-6,
+    )
+    assert segment_features[0].GetField("length_value_m") == pytest.approx(12.5)
+    assert segment_features[1].GetField("length_value_m") == pytest.approx(
+        enriched[1]["delivery_grid_length_m"], abs=1e-9,
+    )
+    segment_dataset = None
 
     evidence = tmp_path / "evidence.gpkg"
     write_evidence(

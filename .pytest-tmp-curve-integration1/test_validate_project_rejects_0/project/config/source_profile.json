@@ -1,0 +1,39 @@
+{
+  "crs": {
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "source_crs": null,
+    "target_crs": null
+  },
+  "drawing": {
+    "drawing_units": null,
+    "dwg_cgeocs": "Vendor.LocalGrid",
+    "dwg_insunits": 4,
+    "source_coordinate_scale_reviewed": false,
+    "source_coordinate_scale_to_m": null
+  },
+  "expectations": {
+    "annotation_families": {},
+    "delivery_counts": {},
+    "feature_counts": {},
+    "segment_gates": {},
+    "source_geometry_gates": {},
+    "source_inventory": {
+      "model_dimensions": 1,
+      "model_entities": 2,
+      "model_inserts": 1
+    },
+    "topology_gates": {}
+  },
+  "project_id": "source-500c958b0f65",
+  "review": {
+    "status": "draft"
+  },
+  "schema_version": "cad2gis-project-profile-v1",
+  "source_binding": {
+    "inventory_sha256": "4bae35e05625a3da1a0c4f061c1fd55eb6c7cad886dd00b17d7d957db003e4b6",
+    "source_sha256": "500c958b0f650ae4d669e1871374f3fc30b322261e60fb2589d8ead75015b9fa",
+    "source_size_bytes": 32
+  },
+  "spatial_coverage_policy": null
+}

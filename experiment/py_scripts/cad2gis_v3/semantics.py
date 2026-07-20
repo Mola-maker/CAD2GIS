@@ -6,6 +6,8 @@ import hashlib
 import math
 import re
 from collections import defaultdict
+from fnmatch import fnmatchcase
+from typing import Any, Iterable, Mapping, Sequence
 
 from .config import MappingRegistry
 from .model import Feature, Relation, SourceEntity
@@ -15,6 +17,172 @@ _ANNOTATION_CARRIER_TYPES = frozenset({
     "TEXT", "MTEXT", "ATTRIB", "ATTDEF", "MLEADER", "MULTILEADER",
     "TABLE", "TABLE_CELL",
 })
+
+SEMANTIC_COVERAGE_SCHEMA_VERSION = "cad2gis-semantic-coverage-v1"
+OBSERVABILITY_POLICIES = frozenset({"warn", "abstain", "fail"})
+_ROUTE_ENTITY_TYPES = frozenset({"LINE", "LWPOLYLINE", "POLYLINE"})
+_ALLOWLIST_FIELDS = frozenset({
+    "reason", "candidate_class", "source_layer", "dwg_type", "block_name",
+})
+
+
+class CoverageGateError(RuntimeError):
+    """Fail-closed coverage error carrying the deterministic audit payload."""
+
+    def __init__(self, domain: str, coverage: Mapping[str, Any]):
+        self.domain = domain
+        self.coverage = dict(coverage)
+        reasons = ", ".join(
+            f"{reason}={count}"
+            for reason, count in self.coverage.get("by_reason", {}).items()
+        ) or "none"
+        super().__init__(
+            f"{domain} coverage gate failed: {reasons}; inspect coverage records"
+        )
+
+
+def normalize_observability_policy(policy: str | None, *, default: str) -> str:
+    """Validate a coverage policy without guessing a permissive fallback."""
+    selected = default if policy is None else str(policy).strip().casefold()
+    if selected not in OBSERVABILITY_POLICIES:
+        raise ValueError(
+            "coverage policy must be one of warn, abstain, fail; "
+            f"got {policy!r}"
+        )
+    return selected
+
+
+def _normalize_allowlist(
+    allowlist: Sequence[str | Mapping[str, Any]] | None,
+) -> tuple[dict[str, str], ...]:
+    normalized: list[dict[str, str]] = []
+    for index, item in enumerate(allowlist or ()):
+        if isinstance(item, str):
+            rule = {"reason": item}
+        elif isinstance(item, Mapping):
+            unknown = set(item) - _ALLOWLIST_FIELDS
+            if unknown:
+                raise ValueError(
+                    f"coverage allowlist[{index}] has unknown keys: {sorted(unknown)}"
+                )
+            rule = {
+                str(key): str(value)
+                for key, value in item.items()
+                if str(value).strip()
+            }
+        else:
+            raise ValueError(
+                f"coverage allowlist[{index}] must be a reason string or object"
+            )
+        if not rule.get("reason", "").strip():
+            raise ValueError(
+                f"coverage allowlist[{index}] requires a non-empty reason"
+            )
+        normalized.append(rule)
+    return tuple(normalized)
+
+
+def _matches_allowlist(record: Mapping[str, Any], rules: Iterable[Mapping[str, str]]) -> bool:
+    for rule in rules:
+        if all(
+            fnmatchcase(
+                str(record.get(field, "")).casefold(), pattern.casefold(),
+            )
+            for field, pattern in rule.items()
+        ):
+            return True
+    return False
+
+
+def build_coverage_report(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    schema_version: str,
+    policy: str,
+    allowlist: Sequence[str | Mapping[str, Any]] | None = None,
+    inspected_count: int | None = None,
+) -> dict[str, Any]:
+    """Build the shared deterministic semantic/style coverage contract.
+
+    Allowlisting is explicit and field-scoped.  Patterns use shell wildcards,
+    are matched case-insensitively, and never change classification or style;
+    they only acknowledge a reviewed unsupported case.
+    """
+    selected_policy = normalize_observability_policy(policy, default="fail")
+    rules = _normalize_allowlist(allowlist)
+    normalized_records: list[dict[str, Any]] = []
+    for raw_record in records:
+        record = {
+            "source_entity_key": str(raw_record.get("source_entity_key", "")),
+            "reason": str(raw_record.get("reason", "")),
+            "candidate_class": str(raw_record.get("candidate_class", "")),
+            "source_layer": str(raw_record.get("source_layer", "")),
+            "dwg_type": str(raw_record.get("dwg_type", "")),
+            **{
+                str(key): value for key, value in raw_record.items()
+                if key not in {
+                    "source_entity_key", "reason", "candidate_class",
+                    "source_layer", "dwg_type", "action", "allowlisted",
+                }
+            },
+        }
+        if not record["reason"]:
+            raise ValueError("coverage record reason must be non-empty")
+        is_allowlisted = _matches_allowlist(record, rules)
+        record["allowlisted"] = is_allowlisted
+        record["action"] = "allowlist" if is_allowlisted else selected_policy
+        normalized_records.append(record)
+    normalized_records.sort(key=lambda item: (
+        item["reason"], item["source_layer"].casefold(), item["dwg_type"],
+        item["source_entity_key"], item.get("candidate_class", ""),
+    ))
+    by_reason: dict[str, int] = {}
+    for record in normalized_records:
+        reason = record["reason"]
+        by_reason[reason] = by_reason.get(reason, 0) + 1
+    non_allowlisted = sum(not item["allowlisted"] for item in normalized_records)
+    failed = sum(item["action"] == "fail" for item in normalized_records)
+    abstained = sum(item["action"] == "abstain" for item in normalized_records)
+    warned = sum(item["action"] == "warn" for item in normalized_records)
+    status = "FAIL" if failed else "WATCH" if non_allowlisted else "PASS"
+    counts = {
+        "records": len(normalized_records),
+        "allowlisted": len(normalized_records) - non_allowlisted,
+        "non_allowlisted": non_allowlisted,
+        "warned": warned,
+        "abstained": abstained,
+        "failed": failed,
+    }
+    if inspected_count is not None:
+        counts["inspected"] = int(inspected_count)
+    return {
+        "schema_version": schema_version,
+        "policy": selected_policy,
+        "status": status,
+        "passed": status == "PASS",
+        "conversion_allowed": failed == 0,
+        "counts": counts,
+        "by_reason": dict(sorted(by_reason.items())),
+        "records": normalized_records,
+    }
+
+
+def _coverage_record(
+    entity: SourceEntity,
+    reason: str,
+    candidate_class: str = "",
+    **detail: Any,
+) -> dict[str, Any]:
+    return {
+        "source_entity_key": entity.entity_key,
+        "reason": reason,
+        "candidate_class": candidate_class,
+        "source_layer": entity.layer,
+        "dwg_type": entity.dwg_type,
+        "source_handle": entity.handle,
+        "block_name": entity.block_name,
+        **detail,
+    }
 
 
 def _feature_key(entity: SourceEntity, feature_class: str) -> str:
@@ -201,7 +369,7 @@ def _field_rule_value(entity: SourceEntity, rule: dict):
 
 def _registry_attributes(entity, feature_class, registry):
     attributes, provenance = {}, {}
-    for field_name, rule in registry.field_rules.get(feature_class, {}).items():
+    for field_name, rule in getattr(registry, "field_rules", {}).get(feature_class, {}).items():
         value = _field_rule_value(entity, rule)
         if value is not None and value != "":
             attributes[field_name] = value
@@ -210,7 +378,7 @@ def _registry_attributes(entity, feature_class, registry):
 
 
 def _registry_display_label(feature_class, attributes, registry):
-    rule = registry.display_label_rules.get(feature_class)
+    rule = getattr(registry, "display_label_rules", {}).get(feature_class)
     if not rule:
         return "", "UNAVAILABLE"
     if rule["kind"] == "attribute-field":
@@ -227,33 +395,74 @@ def _registry_display_label(feature_class, attributes, registry):
     return (str(value), str(rule["provenance"])) if value not in {None, ""} else ("", "UNAVAILABLE")
 
 
-def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
+def classify_entities(
+    entities: list[SourceEntity],
+    registry: MappingRegistry,
+    *,
+    coverage_policy: str | None = None,
+    coverage_allowlist: Sequence[str | Mapping[str, Any]] | None = None,
+):
+    """Classify only reviewed semantic mappings and account for every abstention.
+
+    ``coverage_policy`` and ``coverage_allowlist`` are stage-boundary inputs so
+    a reviewed project profile can make its exceptions explicit.  A new/draft
+    registry defaults to ``fail``.  Existing reviewed v1 registries default to
+    ``warn`` for API compatibility, but production callers should always pass
+    their reviewed policy explicitly.
+    """
     features: list[Feature] = []
     unresolved: list[dict] = []
+    coverage_records: list[dict[str, Any]] = []
     mapped_entities: set[str] = set()
     reverse_blocks = {
         block_name: feature_class
-        for feature_class, names in registry.block_families.items()
+        for feature_class, names in getattr(registry, "block_families", {}).items()
         for block_name in names
     }
-    route_pattern = re.compile(registry.positive_route_layer_regex)
-    home_layers = set(registry.layers["homepass"])
+    route_regex = str(getattr(registry, "positive_route_layer_regex", "") or "")
+    route_pattern = re.compile(route_regex) if route_regex else None
+    home_layers = set(getattr(registry, "layers", {}).get("homepass", ()))
     model_entities = [entity for entity in entities if entity.cad_role == "model"]
+    entity_by_key = {entity.entity_key: entity for entity in model_entities}
 
     for entity in model_entities:
         feature_class = None
         geometry_kind = "Point"
         geometry_role = "SOURCE_ASSET"
-        if entity.dwg_type == "INSERT":
+        dwg_type = entity.dwg_type.upper()
+        if dwg_type == "INSERT":
             feature_class = reverse_blocks.get(entity.block_name.upper())
-        elif entity.dwg_type in {"LWPOLYLINE", "POLYLINE"} and route_pattern.search(entity.layer):
-            feature_class, geometry_kind, geometry_role = "CABLE", "LineString", "SOURCE_ROUTE"
+            if feature_class is None:
+                coverage_records.append(_coverage_record(
+                    entity, "unknown_insert_block", "UNMAPPED_INSERT",
+                ))
         elif (
-            entity.dwg_type in _ANNOTATION_CARRIER_TYPES
+            dwg_type in _ROUTE_ENTITY_TYPES
+            and route_pattern is not None
+            and route_pattern.search(entity.layer)
+        ):
+            feature_class, geometry_kind, geometry_role = "CABLE", "LineString", "SOURCE_ROUTE"
+        elif dwg_type in _ROUTE_ENTITY_TYPES:
+            coverage_records.append(_coverage_record(
+                entity, "unmatched_route_layer", "CABLE",
+            ))
+        elif (
+            dwg_type in _ANNOTATION_CARRIER_TYPES
             and entity.layer.upper() in home_layers
         ):
             feature_class, geometry_role = "IMB", "SOURCE_HOME_LABEL"
-        if not feature_class or not entity.points:
+        if not entity.points:
+            coverage_records.append(_coverage_record(
+                entity, "missing_geometry_points", feature_class or "UNMAPPED",
+            ))
+            continue
+        if feature_class == "CABLE" and len(entity.points) < 2:
+            coverage_records.append(_coverage_record(
+                entity, "invalid_geometry_cardinality", "CABLE",
+                point_count=len(entity.points),
+            ))
+            continue
+        if not feature_class:
             continue
 
         attributes = {"CODE": _generated_code(feature_class, entity.handle)}
@@ -294,6 +503,7 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
     by_class = defaultdict(list)
     for feature in features:
         by_class[feature.feature_class].append(feature)
+    annotation_families = tuple(getattr(registry, "annotation_families", ()))
     compiled_families = [
         (
             family,
@@ -301,12 +511,15 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
             re.compile(family.source_layer_pattern),
             re.compile(family.target_layer_pattern),
         )
-        for family in registry.annotation_families
+        for family in annotation_families
     ]
     annotations_by_family = defaultdict(list)
     annotation_discovery_failures = []
-    suspected_asset_id = re.compile(registry.labels["suspected_asset_id"])
-    known_non_assignment_labels = [re.compile(registry.labels["site"])]
+    label_rules = getattr(registry, "labels", {})
+    suspected_pattern = str(label_rules.get("suspected_asset_id", "") or "")
+    site_pattern = str(label_rules.get("site", "") or "")
+    suspected_asset_id = re.compile(suspected_pattern) if suspected_pattern else None
+    known_non_assignment_labels = [re.compile(site_pattern)] if site_pattern else []
     for entity in model_entities:
         if entity.dwg_type not in _ANNOTATION_CARRIER_TYPES or not entity.text.strip():
             continue
@@ -342,7 +555,7 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
                 "source_layer": entity.layer,
                 "status": "source_layer_mismatch",
             })
-        elif suspected_asset_id.fullmatch(text) and not any(
+        elif suspected_asset_id is not None and suspected_asset_id.fullmatch(text) and not any(
             pattern.fullmatch(text) for pattern in known_non_assignment_labels
         ):
             annotation_discovery_failures.append({
@@ -353,6 +566,11 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
                 "source_layer": entity.layer,
                 "status": "unrecognized_asset_id",
             })
+        elif not compiled_families and suspected_asset_id is None:
+            coverage_records.append(_coverage_record(
+                entity, "unreviewed_annotation_carrier", "LABEL",
+                text=text,
+            ))
 
     annotation_candidates = []
     annotation_assignments_by_family = {}
@@ -364,7 +582,14 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
         "cross_layer_assignments": 0,
         "total_distance_native_m": 0.0,
     })
-    annotation_rule = registry.decision_rules["annotation_assignment"]
+    annotation_rule = (
+        getattr(registry, "decision_rules", {}).get("annotation_assignment")
+        if compiled_families else None
+    )
+    if compiled_families and not annotation_rule:
+        raise ValueError(
+            "annotation_assignment decision rule is required when annotation_families are configured"
+        )
     target_memberships = defaultdict(list)
     for family, _, _, target_layer_pattern in compiled_families:
         for target in by_class[family.target_class]:
@@ -389,6 +614,16 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
             "status": "target_in_multiple_annotation_families",
         })
     unresolved.extend(annotation_discovery_failures)
+    for failure in annotation_discovery_failures:
+        source_entity = entity_by_key.get(failure.get("entity_key"))
+        if source_entity is not None:
+            coverage_records.append(_coverage_record(
+                source_entity,
+                f"annotation_{failure['status']}",
+                str(failure.get("target_class", "LABEL")),
+                family_id=str(failure.get("family_id", "")),
+                text=str(failure.get("text", "")),
+            ))
     for family, _, _, target_layer_pattern in compiled_families:
         annotations = annotations_by_family[family.family_id]
         family_targets = [
@@ -406,6 +641,15 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
         )
         for item in failures:
             unresolved.append({**item, "target_class": family.target_class})
+            source_entity = entity_by_key.get(item.get("entity_key"))
+            if source_entity is not None:
+                coverage_records.append(_coverage_record(
+                    source_entity,
+                    f"annotation_{item['status']}",
+                    family.target_class,
+                    family_id=family.family_id,
+                    text=str(item.get("text", "")),
+                ))
         for candidate in candidates:
             assignment_provenance = (
                 f"{family.provenance}|RULE:{annotation_rule['rule_id']}"
@@ -463,6 +707,29 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
         ):
             aggregate[key] += family_diagnostics[key]
 
+    feature_by_key = {feature.feature_key: feature for feature in features}
+    for target_key, family_ids in sorted(target_memberships.items()):
+        target = feature_by_key[target_key]
+        if not target.display_label:
+            source_entity = entity_by_key.get(target.source_entity_key)
+            if source_entity is not None:
+                coverage_records.append(_coverage_record(
+                    source_entity, "missing_reviewed_label", target.feature_class,
+                    annotation_families=sorted(family_ids),
+                ))
+
+    selected_policy = normalize_observability_policy(
+        coverage_policy,
+        default="warn" if bool(getattr(registry, "is_reviewed", False)) else "fail",
+    )
+    coverage = build_coverage_report(
+        coverage_records,
+        schema_version=SEMANTIC_COVERAGE_SCHEMA_VERSION,
+        policy=selected_policy,
+        allowlist=coverage_allowlist,
+        inspected_count=len(model_entities),
+    )
+
     diagnostics = {
         "candidate_counts": {
             feature_class: len(items) for feature_class, items in sorted(by_class.items())
@@ -482,5 +749,8 @@ def classify_entities(entities: list[SourceEntity], registry: MappingRegistry):
             for status in {item["status"] for item in annotation_discovery_failures}
         )),
         "annotation_candidates": annotation_candidates,
+        "coverage": coverage,
     }
+    if not coverage["conversion_allowed"]:
+        raise CoverageGateError("semantics", coverage)
     return features, relations, unresolved, diagnostics

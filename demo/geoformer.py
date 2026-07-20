@@ -17,15 +17,37 @@ DWG → GeoPackage (EPSG:3857) with parallel tile processing.
 # ═══════════════════════════════════════════════════════════════════════════════
 # IMPORTS & ENVIRONMENT
 # ═══════════════════════════════════════════════════════════════════════════════
+import os
+import sys
+
+
+def _require_legacy_entrypoint_opt_in():
+    """Refuse direct execution unless the historical converter is requested."""
+    if os.environ.get("CAD2GIS_ENABLE_LEGACY") != "1":
+        raise SystemExit(
+            "DEPRECATED legacy conversion entrypoint is disabled.\n"
+            "Use the canonical `cad2gis` CLI instead.\n"
+            "To run this historical implementation intentionally, set "
+            "CAD2GIS_ENABLE_LEGACY=1."
+        )
+    print(
+        "WARNING: DEPRECATED legacy converter enabled via "
+        "CAD2GIS_ENABLE_LEGACY=1; prefer the canonical `cad2gis` CLI.",
+        file=sys.stderr,
+    )
+
+
+if __name__ == "__main__":
+    _require_legacy_entrypoint_opt_in()
+
+
 import ctypes
 import json
 import math
-import os
 import random
 import re
 import shutil
 import subprocess
-import sys
 import tempfile
 import argparse
 import logging

@@ -1512,7 +1512,7 @@ def _qgis_style_qml(fc_name, geometry_type, styles):
     """Generate a compact categorized QGIS style from real CAD style tuples."""
     root = ET.Element(
         "qgis", version="3.34.0", styleCategories="AllStyleCategories",
-        labelsEnabled="1", simplifyDrawingHints="1",
+        labelsEnabled="1", simplifyDrawingHints="0",
     )
     expression = (
         "coalesce(nullif(\"cad_truecolor\", ''), to_string(\"cad_color\")) || '|' || "

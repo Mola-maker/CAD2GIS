@@ -1,0 +1,797 @@
+{
+  "schema_version": "cad2gis-run-manifest-v4",
+  "pipeline": "cad2gis-reviewed-project-evidence-first-v4",
+  "implementation_sha256": "e918a2ec99e9db3b6025d5fff1c56aef4aecca0892ad300dc76ec2f433506937",
+  "implementation": {
+    "schema_version": "cad2gis-implementation-provenance-v1",
+    "scope": "production-conversion",
+    "scope_version": 3,
+    "files": [
+      {
+        "path": "apd_rules.py",
+        "sha256": "fca5ad3a5f9c005ac8bde1666b0a3d8c0d4c2b56a32fe053311e819681bfbd2f",
+        "size_bytes": 5449
+      },
+      {
+        "path": "autocad_reader.py",
+        "sha256": "75669e2b11c972dd4fb07d964b76c804a3393959bae8c6bd7222d26a7f392c0d",
+        "size_bytes": 153155
+      },
+      {
+        "path": "cad2gis_v3/__init__.py",
+        "sha256": "005fbd53489ac965c31d48ffa0469b421292c628baffd54177a9ba96181e7847",
+        "size_bytes": 593
+      },
+      {
+        "path": "cad2gis_v3/calibration.py",
+        "sha256": "70dc130b6aa3768ee6f1b529ccb7473d30c75bd5ff23f02cc02bfaa80027dabf",
+        "size_bytes": 79265
+      },
+      {
+        "path": "cad2gis_v3/cli.py",
+        "sha256": "7e7e784e9a1360dbf3102dcc8d28715c5c2ab62f0df2d8138beba3abdb49f65a",
+        "size_bytes": 1560
+      },
+      {
+        "path": "cad2gis_v3/config.py",
+        "sha256": "3bd937fb20b5adcf93b22ff6209fd7ddd3fa2a2300ded67d242ccdc9cad0b259",
+        "size_bytes": 48707
+      },
+      {
+        "path": "cad2gis_v3/curve_geometry.py",
+        "sha256": "03deae40ac75babe031b56acb27df9b6f476bf2b73291ac10b7b891605c48d2b",
+        "size_bytes": 30057
+      },
+      {
+        "path": "cad2gis_v3/evidence.py",
+        "sha256": "b0086a9f59d1ab942eadd5be7f573824b54d512c45f9b2c64cf80c6fc15ecec6",
+        "size_bytes": 49496
+      },
+      {
+        "path": "cad2gis_v3/georef.py",
+        "sha256": "fff72dc8e4e2ad06f687e91f9a6f0fee8f411b74c23f1c20f0348889cc533b5d",
+        "size_bytes": 36316
+      },
+      {
+        "path": "cad2gis_v3/gpkg_metadata.py",
+        "sha256": "4742d5597b639ff3ff6b36865f52c7b75f10ba8d02c5d04993108aeae9364fc7",
+        "size_bytes": 2749
+      },
+      {
+        "path": "cad2gis_v3/implementation.py",
+        "sha256": "316fed69dbe6b7c38ae8077ae2995fa93d18e65158e5f4a8b192e6e396e32cdb",
+        "size_bytes": 15440
+      },
+      {
+        "path": "cad2gis_v3/ingest.py",
+        "sha256": "b9e5be5d1f4eeae8c7e470f86c765ec8ac11926c98cd96f7c353edaca646f0a1",
+        "size_bytes": 6179
+      },
+      {
+        "path": "cad2gis_v3/model.py",
+        "sha256": "2793430f657dd17862d15ed122e27c5e93d4aa90a9e90770622b9283f968d790",
+        "size_bytes": 14651
+      },
+      {
+        "path": "cad2gis_v3/pipeline.py",
+        "sha256": "00774bae5a01eb980d3258d669b098ac63bbeedd78c4aa69b73664b121c05740",
+        "size_bytes": 54386
+      },
+      {
+        "path": "cad2gis_v3/ports.py",
+        "sha256": "ab8ed6a53f173564eee74f30a1aa685cdb010eea3c48bafa389ca82f85fc6a18",
+        "size_bytes": 29537
+      },
+      {
+        "path": "cad2gis_v3/project_profile.py",
+        "sha256": "dc4c2a35fec6b2aba77b45064849abcda8227686c7d922320dc50677e1df6907",
+        "size_bytes": 23658
+      },
+      {
+        "path": "cad2gis_v3/runtime_provenance.py",
+        "sha256": "0bb402ca9fafeddbd9e95323292bff9aafdfb982055e5972a65ef48c8d0aaaed",
+        "size_bytes": 11001
+      },
+      {
+        "path": "cad2gis_v3/semantics.py",
+        "sha256": "096d8b57eab799a1340263327314f64f91c3e8905bfce49e33745e4ac339f381",
+        "size_bytes": 31903
+      },
+      {
+        "path": "cad2gis_v3/spatial_coverage.py",
+        "sha256": "a8e97af7e07588ddd6e2ae33072d25b9afb1cb6656c8584fa5f5ead91cb7ed2a",
+        "size_bytes": 17739
+      },
+      {
+        "path": "cad2gis_v3/styles.py",
+        "sha256": "702c513a9e2026e3d7108f0964989b32cc8fa815cd4bda8dfaa7514ab123dc21",
+        "size_bytes": 18033
+      },
+      {
+        "path": "cad2gis_v3/topology.py",
+        "sha256": "f1d6cdc3ba8896d30d2c233130ef81c73f7beff959d34944257701d5fbfe08a6",
+        "size_bytes": 50395
+      },
+      {
+        "path": "cad2gis_v3/units.py",
+        "sha256": "2a2f044799d0b77a28fd73dd36c91dacae6c3cbf9c3bd44925f2879782609946",
+        "size_bytes": 15383
+      },
+      {
+        "path": "cad2gis_v3/warehouse.py",
+        "sha256": "9dc972268ec91eed04287f9094b54181c5f4858a334a1cb8d87f9b4243383598",
+        "size_bytes": 39760
+      },
+      {
+        "path": "convert_v3.py",
+        "sha256": "56db6dc688ed264e35aef555e03991b9ae516ab6d87b1e2697be606045d02ec2",
+        "size_bytes": 186
+      },
+      {
+        "path": "schema_config.py",
+        "sha256": "f889a1cffa8f5c04a002802973984c6f13f1e277b9ee47017164af28e5cd7cd9",
+        "size_bytes": 88924
+      }
+    ],
+    "sha256": "e918a2ec99e9db3b6025d5fff1c56aef4aecca0892ad300dc76ec2f433506937"
+  },
+  "conversion_snapshot_sha256": "0665034149d9aaa0c8bf625749cfc4609248f1acd3f66067fc1fa65531db7a10",
+  "conversion_snapshot": {
+    "artifacts": {
+      "gcp_profile": {
+        "kind": "gcp_profile",
+        "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_gcp_profile.json",
+        "sha256": "5aaa1596c91b95ea4980eb50da2a637b88325ab06a021fb2cf064f576b254e8b",
+        "size_bytes": 2907
+      },
+      "mapping_registry": {
+        "kind": "mapping_registry",
+        "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_mapping_registry.json",
+        "sha256": "16294c3449fa099fcc3e809944f5ca00a04f13d985803dc68646a9dcbc6f5914",
+        "size_bytes": 6671
+      },
+      "source": {
+        "kind": "source",
+        "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
+        "sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
+        "size_bytes": 1755055
+      },
+      "source_profile": {
+        "kind": "source_profile",
+        "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_source_profile.json",
+        "sha256": "a892bf0e5854bef5bdff4c2842529f5e4a370349d474cd9593330170662d2cc1",
+        "size_bytes": 1664
+      }
+    },
+    "code_root": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\py_scripts",
+    "gcp_profile_sha256": "5aaa1596c91b95ea4980eb50da2a637b88325ab06a021fb2cf064f576b254e8b",
+    "implementation": {
+      "files": [
+        {
+          "path": "apd_rules.py",
+          "sha256": "fca5ad3a5f9c005ac8bde1666b0a3d8c0d4c2b56a32fe053311e819681bfbd2f",
+          "size_bytes": 5449
+        },
+        {
+          "path": "autocad_reader.py",
+          "sha256": "75669e2b11c972dd4fb07d964b76c804a3393959bae8c6bd7222d26a7f392c0d",
+          "size_bytes": 153155
+        },
+        {
+          "path": "cad2gis_v3/__init__.py",
+          "sha256": "005fbd53489ac965c31d48ffa0469b421292c628baffd54177a9ba96181e7847",
+          "size_bytes": 593
+        },
+        {
+          "path": "cad2gis_v3/calibration.py",
+          "sha256": "70dc130b6aa3768ee6f1b529ccb7473d30c75bd5ff23f02cc02bfaa80027dabf",
+          "size_bytes": 79265
+        },
+        {
+          "path": "cad2gis_v3/cli.py",
+          "sha256": "7e7e784e9a1360dbf3102dcc8d28715c5c2ab62f0df2d8138beba3abdb49f65a",
+          "size_bytes": 1560
+        },
+        {
+          "path": "cad2gis_v3/config.py",
+          "sha256": "3bd937fb20b5adcf93b22ff6209fd7ddd3fa2a2300ded67d242ccdc9cad0b259",
+          "size_bytes": 48707
+        },
+        {
+          "path": "cad2gis_v3/curve_geometry.py",
+          "sha256": "03deae40ac75babe031b56acb27df9b6f476bf2b73291ac10b7b891605c48d2b",
+          "size_bytes": 30057
+        },
+        {
+          "path": "cad2gis_v3/evidence.py",
+          "sha256": "b0086a9f59d1ab942eadd5be7f573824b54d512c45f9b2c64cf80c6fc15ecec6",
+          "size_bytes": 49496
+        },
+        {
+          "path": "cad2gis_v3/georef.py",
+          "sha256": "fff72dc8e4e2ad06f687e91f9a6f0fee8f411b74c23f1c20f0348889cc533b5d",
+          "size_bytes": 36316
+        },
+        {
+          "path": "cad2gis_v3/gpkg_metadata.py",
+          "sha256": "4742d5597b639ff3ff6b36865f52c7b75f10ba8d02c5d04993108aeae9364fc7",
+          "size_bytes": 2749
+        },
+        {
+          "path": "cad2gis_v3/implementation.py",
+          "sha256": "316fed69dbe6b7c38ae8077ae2995fa93d18e65158e5f4a8b192e6e396e32cdb",
+          "size_bytes": 15440
+        },
+        {
+          "path": "cad2gis_v3/ingest.py",
+          "sha256": "b9e5be5d1f4eeae8c7e470f86c765ec8ac11926c98cd96f7c353edaca646f0a1",
+          "size_bytes": 6179
+        },
+        {
+          "path": "cad2gis_v3/model.py",
+          "sha256": "2793430f657dd17862d15ed122e27c5e93d4aa90a9e90770622b9283f968d790",
+          "size_bytes": 14651
+        },
+        {
+          "path": "cad2gis_v3/pipeline.py",
+          "sha256": "00774bae5a01eb980d3258d669b098ac63bbeedd78c4aa69b73664b121c05740",
+          "size_bytes": 54386
+        },
+        {
+          "path": "cad2gis_v3/ports.py",
+          "sha256": "ab8ed6a53f173564eee74f30a1aa685cdb010eea3c48bafa389ca82f85fc6a18",
+          "size_bytes": 29537
+        },
+        {
+          "path": "cad2gis_v3/project_profile.py",
+          "sha256": "dc4c2a35fec6b2aba77b45064849abcda8227686c7d922320dc50677e1df6907",
+          "size_bytes": 23658
+        },
+        {
+          "path": "cad2gis_v3/runtime_provenance.py",
+          "sha256": "0bb402ca9fafeddbd9e95323292bff9aafdfb982055e5972a65ef48c8d0aaaed",
+          "size_bytes": 11001
+        },
+        {
+          "path": "cad2gis_v3/semantics.py",
+          "sha256": "096d8b57eab799a1340263327314f64f91c3e8905bfce49e33745e4ac339f381",
+          "size_bytes": 31903
+        },
+        {
+          "path": "cad2gis_v3/spatial_coverage.py",
+          "sha256": "a8e97af7e07588ddd6e2ae33072d25b9afb1cb6656c8584fa5f5ead91cb7ed2a",
+          "size_bytes": 17739
+        },
+        {
+          "path": "cad2gis_v3/styles.py",
+          "sha256": "702c513a9e2026e3d7108f0964989b32cc8fa815cd4bda8dfaa7514ab123dc21",
+          "size_bytes": 18033
+        },
+        {
+          "path": "cad2gis_v3/topology.py",
+          "sha256": "f1d6cdc3ba8896d30d2c233130ef81c73f7beff959d34944257701d5fbfe08a6",
+          "size_bytes": 50395
+        },
+        {
+          "path": "cad2gis_v3/units.py",
+          "sha256": "2a2f044799d0b77a28fd73dd36c91dacae6c3cbf9c3bd44925f2879782609946",
+          "size_bytes": 15383
+        },
+        {
+          "path": "cad2gis_v3/warehouse.py",
+          "sha256": "9dc972268ec91eed04287f9094b54181c5f4858a334a1cb8d87f9b4243383598",
+          "size_bytes": 39760
+        },
+        {
+          "path": "convert_v3.py",
+          "sha256": "56db6dc688ed264e35aef555e03991b9ae516ab6d87b1e2697be606045d02ec2",
+          "size_bytes": 186
+        },
+        {
+          "path": "schema_config.py",
+          "sha256": "f889a1cffa8f5c04a002802973984c6f13f1e277b9ee47017164af28e5cd7cd9",
+          "size_bytes": 88924
+        }
+      ],
+      "schema_version": "cad2gis-implementation-provenance-v1",
+      "scope": "production-conversion",
+      "scope_version": 3,
+      "sha256": "e918a2ec99e9db3b6025d5fff1c56aef4aecca0892ad300dc76ec2f433506937"
+    },
+    "mapping_registry_sha256": "16294c3449fa099fcc3e809944f5ca00a04f13d985803dc68646a9dcbc6f5914",
+    "runtime_provenance": {
+      "autocad": {
+        "core_console": {
+          "path": null,
+          "source": null,
+          "version": null
+        },
+        "inventory": {},
+        "status": "not_reported"
+      },
+      "gdal": {
+        "available": true,
+        "version": "3.12.4"
+      },
+      "ogr": {
+        "available": true,
+        "driver_count": 71,
+        "version": "3.12.4"
+      },
+      "os": {
+        "machine": "AMD64",
+        "name": "nt",
+        "release": "11",
+        "system": "Windows",
+        "version": "10.0.26200"
+      },
+      "proj": {
+        "available": true,
+        "version": "9.8.1"
+      },
+      "pyproj": {
+        "available": true,
+        "version": "3.7.2"
+      },
+      "python": {
+        "executable": "C:\\Users\\22494\\miniconda3\\envs\\cad2gis\\python.exe",
+        "implementation": "CPython",
+        "version": "3.14.6"
+      },
+      "schema_version": "cad2gis-runtime-provenance-v1",
+      "sqlite": {
+        "python_binding_version": null,
+        "runtime_version": "3.53.3"
+      }
+    },
+    "schema_version": "cad2gis-conversion-snapshot-v1",
+    "snapshot_sha256": "0665034149d9aaa0c8bf625749cfc4609248f1acd3f66067fc1fa65531db7a10",
+    "source_profile_sha256": "a892bf0e5854bef5bdff4c2842529f5e4a370349d474cd9593330170662d2cc1",
+    "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557"
+  },
+  "runtime_provenance_sha256": "4c37bfe14664b36b52e7ab21fd2d029e3a3d41db45ad36b457eb56225392c37f",
+  "runtime_provenance": {
+    "autocad": {
+      "core_console": {
+        "path": "C:\\Program Files\\Autodesk\\AutoCAD 2027\\accoreconsole.exe",
+        "source": "default_2027",
+        "version": null
+      },
+      "inventory": {
+        "accoreconsole_path": "C:\\Program Files\\Autodesk\\AutoCAD 2027\\accoreconsole.exe",
+        "accoreconsole_source": "default_2027",
+        "annotation_carriers": {
+          "ATTDEF": 54,
+          "ATTRIB": 4,
+          "MTEXT": 242,
+          "MULTILEADER": 12,
+          "TEXT": 1810
+        },
+        "annotation_carriers_with_text": {
+          "ATTDEF": 35,
+          "ATTRIB": 2,
+          "MTEXT": 242,
+          "TEXT": 1810
+        },
+        "backend": "autocad_core_console_bulk",
+        "backend_statuses": {
+          "authoritative": 9619
+        },
+        "block_instances": 362,
+        "compatibility_policy": "strict",
+        "curve_entities_with_nonzero_bulge": 35,
+        "curve_entities_with_nonzero_elevation": 0,
+        "curve_facts_entities": 6043,
+        "curve_facts_schema_versions": {
+          "cad2gis-curve-facts-v1": 6043
+        },
+        "curve_fingerprint_entities": 6043,
+        "curve_primitive_types": {
+          "ARC": 147,
+          "CIRCLE": 227,
+          "ELLIPSE": 94,
+          "LINE": 729,
+          "LWPOLYLINE": 4763,
+          "SPLINE": 83
+        },
+        "dynamic_block_property_statuses": {
+          "unsupported_by_core_console_bulk": 362
+        },
+        "entity_rows": 9618,
+        "extraction_backends": {
+          "autocad_core_console_bulk": 9619
+        },
+        "inventory_complete": true,
+        "native_length_entities": 6043,
+        "nested_block_instances": 34,
+        "parsed_rows": 9619,
+        "protocol_schema": "cad2gis-autocad-bulk-tsv-v3",
+        "raw_property_schema_versions": {
+          "cad2gis-raw-properties-v1": 9619
+        },
+        "returned_records": 9619,
+        "skipped_row_errors": [],
+        "skipped_rows": 0,
+        "timeout_seconds": 120.0,
+        "timeout_source": "default",
+        "total_rows": 9619,
+        "unsupported_reasons": {
+          "dynamic_block_properties_unavailable_in_bulk_backend": 362,
+          "geometry_unavailable_for_block_definition_record": 228,
+          "geometry_unsupported_in_bulk_backend": 183,
+          "legacy_bulk_protocol_without_raw_extension": 1,
+          "multileader_text_unavailable_in_bulk_backend": 12
+        }
+      },
+      "status": "reported"
+    },
+    "gdal": {
+      "available": true,
+      "version": "3.12.4"
+    },
+    "ogr": {
+      "available": true,
+      "driver_count": 71,
+      "version": "3.12.4"
+    },
+    "os": {
+      "machine": "AMD64",
+      "name": "nt",
+      "release": "11",
+      "system": "Windows",
+      "version": "10.0.26200"
+    },
+    "proj": {
+      "available": true,
+      "version": "9.8.1"
+    },
+    "pyproj": {
+      "available": true,
+      "version": "3.7.2"
+    },
+    "python": {
+      "executable": "C:\\Users\\22494\\miniconda3\\envs\\cad2gis\\python.exe",
+      "implementation": "CPython",
+      "version": "3.14.6"
+    },
+    "schema_version": "cad2gis-runtime-provenance-v1",
+    "sqlite": {
+      "python_binding_version": null,
+      "runtime_version": "3.53.3"
+    }
+  },
+  "publication": {
+    "status": "complete",
+    "strategy": "same-volume-staged-run-directory-swap"
+  },
+  "source": {
+    "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
+    "sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557"
+  },
+  "profiles": {
+    "source_profile": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_source_profile.json",
+      "sha256": "a892bf0e5854bef5bdff4c2842529f5e4a370349d474cd9593330170662d2cc1"
+    },
+    "mapping_registry": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_mapping_registry.json",
+      "sha256": "16294c3449fa099fcc3e809944f5ca00a04f13d985803dc68646a9dcbc6f5914"
+    },
+    "gcp_profile": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_gcp_profile.json",
+      "sha256": "5aaa1596c91b95ea4980eb50da2a637b88325ab06a021fb2cf064f576b254e8b"
+    }
+  },
+  "crs": {
+    "source_crs": "EPSG:3857",
+    "target_crs": "EPSG:9481",
+    "operation": "direct source-to-target; no EPSG:4326 intermediate geometry",
+    "unit_crs_contract": {
+      "schema_version": "cad2gis.unit-crs-contract.v1",
+      "status": "reviewed",
+      "coordinate_mode": "direct_crs",
+      "source_geometry_unit": {
+        "insunits": 6,
+        "name": "metre",
+        "symbol": "m",
+        "metres_per_unit": 1.0
+      },
+      "source_coordinate_scale_to_m": 1.0,
+      "source_coordinate_scale_reviewed": false,
+      "source_coordinate_scale_origin": "DWG_DIRECT:$INSUNITS-6-metre-identity",
+      "source_crs": "EPSG:3857",
+      "source_crs_kind": "projected",
+      "source_crs_axis_unit": {
+        "name": "metre",
+        "metres_per_unit": 1.0
+      },
+      "source_to_crs_axis_factor": 1.0,
+      "target_crs": "EPSG:9481",
+      "target_crs_axis_unit": {
+        "name": "metre",
+        "metres_per_unit": 1.0
+      },
+      "local_registration_strategy": null,
+      "local_registration_reviewed": false,
+      "provenance": {
+        "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+        "source_coordinate_scale": "DWG_DIRECT:$INSUNITS-6-metre-identity",
+        "source_crs": "PROJECT_PROFILE:reviewed",
+        "target_crs": "PROJECT_PROFILE:reviewed",
+        "local_registration": null
+      }
+    },
+    "spatial_coverage_policy": {
+      "min_training_extent_x_ratio": 0.6,
+      "min_training_extent_y_ratio": 0.6,
+      "min_training_hull_area_ratio": 0.2,
+      "max_drawing_vertices_outside_training_bbox_ratio": 0.05,
+      "min_check_baseline_to_drawing_diagonal_ratio": 0.25,
+      "min_check_hull_area_ratio": 0.05,
+      "max_drawing_vertices_outside_training_hull_ratio": 0.05
+    },
+    "roundtrip_max_source_m": 3.7401652296097646e-08,
+    "engine_crosscheck_max_target_m": 0.0,
+    "coordinate_operation": {
+      "description": "Inverse of Popular Visualisation Pseudo-Mercator + Inverse of DGN95 to WGS 84 (1) + DGN95 to SRGI2013 (1) + UTM zone 51N",
+      "definition": "proj=pipeline step inv proj=webmerc lat_0=0 lon_0=0 x_0=0 y_0=0 ellps=WGS84 step proj=push v_3 step proj=cart ellps=WGS84 step proj=helmert x=-0.2773 y=0.0534 z=0.4819 rx=0.0192857593841035 ry=-0.00589917345866696 rz=0.00199870597253436 s=-0.028 convention=coordinate_frame step inv proj=cart ellps=WGS84 step proj=pop v_3 step proj=utm zone=51 ellps=WGS84",
+      "declared_accuracy_m": 1.2,
+      "pyproj_version": "3.7.2",
+      "proj_version": "9.8.1",
+      "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied",
+      "unit_crs_contract": {
+        "schema_version": "cad2gis.unit-crs-contract.v1",
+        "status": "reviewed",
+        "coordinate_mode": "direct_crs",
+        "source_geometry_unit": {
+          "insunits": 6,
+          "name": "metre",
+          "symbol": "m",
+          "metres_per_unit": 1.0
+        },
+        "source_coordinate_scale_to_m": 1.0,
+        "source_coordinate_scale_reviewed": false,
+        "source_coordinate_scale_origin": "DWG_DIRECT:$INSUNITS-6-metre-identity",
+        "source_crs": "EPSG:3857",
+        "source_crs_kind": "projected",
+        "source_crs_axis_unit": {
+          "name": "metre",
+          "metres_per_unit": 1.0
+        },
+        "source_to_crs_axis_factor": 1.0,
+        "target_crs": "EPSG:9481",
+        "target_crs_axis_unit": {
+          "name": "metre",
+          "metres_per_unit": 1.0
+        },
+        "local_registration_strategy": null,
+        "local_registration_reviewed": false,
+        "provenance": {
+          "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+          "source_coordinate_scale": "DWG_DIRECT:$INSUNITS-6-metre-identity",
+          "source_crs": "PROJECT_PROFILE:reviewed",
+          "target_crs": "PROJECT_PROFILE:reviewed",
+          "local_registration": null
+        }
+      }
+    },
+    "calibration": {
+      "status": "disabled",
+      "profile_path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\config\\apd_gcp_profile.json",
+      "profile_sha256": "5aaa1596c91b95ea4980eb50da2a637b88325ab06a021fb2cf064f576b254e8b",
+      "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
+      "spatial_coverage": {
+        "schema_version": "cad2gis-spatial-coverage-v2",
+        "policy": {
+          "min_training_extent_x_ratio": 0.6,
+          "min_training_extent_y_ratio": 0.6,
+          "min_training_hull_area_ratio": 0.2,
+          "max_drawing_vertices_outside_training_bbox_ratio": 0.05,
+          "min_check_baseline_to_drawing_diagonal_ratio": 0.25,
+          "min_check_hull_area_ratio": 0.05,
+          "max_drawing_vertices_outside_training_hull_ratio": 0.05
+        },
+        "drawing_vertex_count": 27003,
+        "training_control_count": 0,
+        "check_control_count": 0,
+        "drawing_bbox": {
+          "min_easting": 487362.2579260238,
+          "min_northing": 67488.84397712059,
+          "max_easting": 492873.2420897006,
+          "max_northing": 70299.3147390152
+        },
+        "training_bbox": null,
+        "check_bbox": null,
+        "drawing_bbox_area_m2": 15488459.861277867,
+        "drawing_diagonal_m": 6186.250266175862,
+        "drawing_bbox_containment_epsilon_m": 3.725290298461914e-09,
+        "training_extent_coverage_x_ratio": null,
+        "training_extent_coverage_y_ratio": null,
+        "training_convex_hull_area_m2": 0.0,
+        "training_hull_to_drawing_bbox_area_ratio": 0.0,
+        "drawing_vertices_outside_training_bbox": null,
+        "drawing_vertices_outside_training_bbox_ratio": null,
+        "drawing_vertices_outside_training_hull": null,
+        "drawing_vertices_outside_training_hull_ratio": null,
+        "training_controls_outside_drawing_bbox": 0,
+        "training_controls_outside_drawing_bbox_ratio": null,
+        "check_max_baseline_m": null,
+        "check_baseline_to_drawing_diagonal_ratio": null,
+        "check_convex_hull_area_m2": 0.0,
+        "check_hull_to_drawing_bbox_area_ratio": 0.0,
+        "check_controls_outside_drawing_bbox": 0,
+        "check_controls_outside_drawing_bbox_ratio": null,
+        "passed": false,
+        "failures": [
+          "fewer than 3 active training controls",
+          "fewer than 3 independent active check controls",
+          "training_extent_coverage_x_ratio is unavailable",
+          "training_extent_coverage_y_ratio is unavailable",
+          "training_hull_to_drawing_bbox_area_ratio 0.000000 < required 0.200000",
+          "drawing_vertices_outside_training_bbox_ratio is unavailable",
+          "drawing_vertices_outside_training_hull_ratio is unavailable",
+          "check_baseline_to_drawing_diagonal_ratio is unavailable",
+          "check_hull_to_drawing_bbox_area_ratio 0.000000 < required 0.050000"
+        ],
+        "reviewed": false,
+        "review_source": "",
+        "training_scope": "active_reviewed_controls"
+      },
+      "result": {
+        "requested_model": "disabled",
+        "selected_model": "disabled",
+        "source_crs": "EPSG:3857",
+        "target_crs": "EPSG:9481",
+        "parameters": {
+          "model": "disabled",
+          "nominal_origin_e": 0.0,
+          "nominal_origin_n": 0.0,
+          "adjusted_origin_e": 0.0,
+          "adjusted_origin_n": 0.0,
+          "matrix_ee": 1.0,
+          "matrix_en": 0.0,
+          "matrix_ne": 0.0,
+          "matrix_nn": 1.0,
+          "intercept_e_m": 0.0,
+          "intercept_n_m": 0.0,
+          "pivot_shift_e_m": 0.0,
+          "pivot_shift_n_m": 0.0
+        },
+        "robust": {
+          "enabled": false,
+          "iterations": 0
+        },
+        "validation": {
+          "passed": null,
+          "failures": []
+        },
+        "train_metrics": {
+          "count": 0,
+          "rmse_m": null,
+          "p95_m": null,
+          "max_m": null
+        },
+        "check_metrics": {
+          "count": 0,
+          "rmse_m": null,
+          "p95_m": null,
+          "max_m": null
+        },
+        "residuals": [],
+        "candidates": []
+      }
+    },
+    "lineage": {
+      "model": "identity_residual",
+      "feature_count": 900
+    }
+  },
+  "artifacts": {
+    "evidence": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v6_validation\\apd_evidence.gpkg",
+      "sha256": "a62899ff9c48b5eab0f8d9ee1b57d110cede647ce904170cc8068aac773a6c69"
+    },
+    "delivery": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v6_validation\\apd_delivery.gpkg",
+      "sha256": "38abcd964f4cf1afa429437ecb6ef2c346f7eb3b1e574f2db95c85b2fb251f2c"
+    },
+    "styles": {
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v6_validation\\qgis\\styles\\style_manifest.json",
+      "sha256": "90d7b84240e996b269579630493ff6205342ada7ea70a29dc19c3118249a362f"
+    }
+  },
+  "delivery_counts": {
+    "BOITE": 43,
+    "CABLE": 6,
+    "PTECH": 167,
+    "INFRASTRUCTURE": 0,
+    "SITE": 2,
+    "ZNRO": 0,
+    "ZPM": 0,
+    "IMB": 682,
+    "CABLE_SEGMENT": 139
+  },
+  "delivery_contract_gate": {
+    "domain": "delivery",
+    "passed": true,
+    "counts": {
+      "CABLE_SEGMENT": {
+        "expected": 139,
+        "actual": 139,
+        "passed": true
+      }
+    }
+  },
+  "source_route_components": 2,
+  "unresolved_count": 13,
+  "policy": {
+    "source_geometry_immutable": true,
+    "crossing_is_connection": false,
+    "support_is_optical_node": false,
+    "force_route_components_connected": false,
+    "generic_line_is_cable": false,
+    "dimension_is_cable_geometry": false
+  },
+  "validation": {
+    "schema_version": "cad2gis-validation-summary-v2",
+    "source_geometry": {
+      "passed": true,
+      "cable_sources_checked": 6,
+      "curve_facts_checked": 6,
+      "cable_curve_fingerprint_count": 6,
+      "cable_curve_fingerprint_set_sha256": "1b6e4d16cd2252aedf75a7fdfb2b9a781455240f23f331b37cb38dfcfc35760e",
+      "source_geometry_immutable": true,
+      "source_route_native_lengths": 6,
+      "source_route_native_length_max_abs_delta_m": 1.2422788131516427e-08
+    },
+    "topology": {
+      "passed": true,
+      "source_route_components": 2,
+      "source_routes": 6,
+      "source_route_nodes": 141,
+      "source_route_edges": 139,
+      "source_route_component_diagnostics": {
+        "route_group_components": 2,
+        "source_segment_graph_components": 2,
+        "status": "consistent"
+      },
+      "route_segment_intersection_counts": {
+        "proper_interior_crossing": 0,
+        "shared_source_segment_endpoint": 6,
+        "source_endpoint_on_segment": 0,
+        "collinear_overlap": 0,
+        "collinear_endpoint_on_segment": 0
+      },
+      "synthetic_route_vertices": 0,
+      "support_optical_promotions": 0,
+      "crossing_connections": 0
+    },
+    "measurements": {
+      "passed": true,
+      "route_segments_with_span_dimension": 130,
+      "route_segments_without_span_dimension": 9,
+      "span_measurement_max_abs_error_m": 1.2243219771335134e-08
+    },
+    "segment_delivery": {
+      "count": 139,
+      "measured": 130,
+      "unmeasured": 9,
+      "schema_version": "cad2gis.cable_segment.v1",
+      "unit": "m",
+      "schema_passed": true,
+      "unit_passed": true,
+      "index_passed": true,
+      "geometry_length_closure_passed": true,
+      "total_length_closure_passed": true,
+      "closure_passed": true,
+      "passed": true
+    },
+    "coordinate_accuracy": {
+      "calibration_status": "disabled",
+      "spatial_coverage_passed": false,
+      "lineage_model": "identity_residual",
+      "lineage_feature_count": 900,
+      "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied"
+    }
+  }
+}

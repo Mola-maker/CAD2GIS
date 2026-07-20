@@ -72,7 +72,7 @@
     "max_check_rmse_m": null,
     "max_check_p95_m": null,
     "max_check_error_m": null,
-    "min_check_points": 2,
+    "min_check_points": 3,
     "spatial_distribution_reviewed": false,
     "spatial_distribution_review_source": "",
     "affine_min_improvement_ratio": null

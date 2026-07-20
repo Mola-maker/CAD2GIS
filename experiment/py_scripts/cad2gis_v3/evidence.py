@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import gc
 import math
 import os
 import shutil
@@ -14,8 +15,52 @@ from pathlib import Path
 
 from osgeo import ogr
 
-from .model import Feature, Relation, SourceEntity
+from .gpkg_metadata import normalize_geopackage_metadata
 from .warehouse import LAYER_CONFIGS
+
+
+def _release_ogr_datasets(error: BaseException) -> tuple[str, ...]:
+    """Close OGR handles retained by an unwound writer traceback.
+
+    The evidence writer is deliberately one transaction.  GDAL's Python
+    bindings keep the Windows file handle open while a traceback still owns
+    the frame-local ``dataset`` object, so a normal caller-side ``finally``
+    cannot remove the staging directory.  Explicitly closing each distinct
+    dataset preserves the original validation error and makes cleanup
+    deterministic.
+    """
+    cleanup_errors: list[str] = []
+    seen: set[int] = set()
+    traceback = error.__traceback__
+    while traceback is not None:
+        dataset = traceback.tb_frame.f_locals.get("dataset")
+        traceback = traceback.tb_next
+        if dataset is None or id(dataset) in seen:
+            continue
+        seen.add(id(dataset))
+        rollback = getattr(dataset, "RollbackTransaction", None)
+        if callable(rollback):
+            try:
+                rollback()
+            except BaseException as cleanup_error:  # pragma: no cover - GDAL-specific
+                cleanup_errors.append(f"OGR rollback failed: {cleanup_error}")
+        close = getattr(dataset, "Close", None)
+        if callable(close):
+            try:
+                close()
+            except BaseException as cleanup_error:  # pragma: no cover - GDAL-specific
+                cleanup_errors.append(f"OGR close failed: {cleanup_error}")
+    # Release any SWIG proxy cycles before Windows stage deletion.
+    gc.collect()
+    return tuple(cleanup_errors)
+
+
+def _remove_stage(stage_dir: Path, staged: Path) -> None:
+    """Remove a same-volume stage and fail if any artifact remains."""
+    if staged.exists():
+        staged.unlink()
+    if stage_dir.exists():
+        shutil.rmtree(stage_dir)
 
 
 def _table(dataset, name, fields):
@@ -197,6 +242,8 @@ def _write_staged(
         ("dimension_text_override", ogr.OFTString),
         ("native_points", ogr.OFTString), ("dimension_value", ogr.OFTReal),
         ("native_length", ogr.OFTReal),
+        ("curve_facts_schema", ogr.OFTString),
+        ("curve_facts", ogr.OFTString), ("curve_fingerprint", ogr.OFTString),
         ("extraction_backend", ogr.OFTString),
         ("reader_backend_status", ogr.OFTString),
         ("raw_properties", ogr.OFTString),
@@ -255,6 +302,10 @@ def _write_staged(
             raw_properties, ensure_ascii=False, sort_keys=True,
             separators=(",", ":"), allow_nan=False,
         )
+        curve_facts_json = json.dumps(
+            entity.curve_facts, ensure_ascii=True, sort_keys=True,
+            separators=(",", ":"), allow_nan=False,
+        )
         row = ogr.Feature(entity_table.GetLayerDefn())
         _set(row, {
             "entity_key": entity.entity_key, "source_sha256": entity.source_sha256,
@@ -269,6 +320,9 @@ def _write_staged(
             "native_points": json.dumps(entity.points, separators=(",", ":")),
             "dimension_value": entity.dimension_value,
             "native_length": entity.native_length,
+            "curve_facts_schema": entity.curve_schema_version,
+            "curve_facts": curve_facts_json,
+            "curve_fingerprint": entity.curve_fingerprint,
             "extraction_backend": entity.extraction_backend,
             "reader_backend_status": entity.reader_backend_status,
             "raw_properties": raw_properties_json,
@@ -367,6 +421,88 @@ def _write_staged(
         row = ogr.Feature(annotation_table.GetLayerDefn())
         _set(row, {**candidate, "selected": int(bool(candidate.get("selected")))})
         annotation_table.CreateFeature(row)
+
+    coverage_summary_table = _table(dataset, "coverage_summaries", [
+        ("domain", ogr.OFTString), ("schema_version", ogr.OFTString),
+        ("policy", ogr.OFTString), ("status", ogr.OFTString),
+        ("passed", ogr.OFTInteger), ("conversion_allowed", ogr.OFTInteger),
+        ("counts", ogr.OFTString), ("by_reason", ogr.OFTString),
+    ])
+    coverage_record_table = _table(dataset, "coverage_records", [
+        ("domain", ogr.OFTString), ("schema_version", ogr.OFTString),
+        ("policy", ogr.OFTString), ("status", ogr.OFTString),
+        ("source_entity_key", ogr.OFTString), ("source_handle", ogr.OFTString),
+        ("reason", ogr.OFTString), ("candidate_class", ogr.OFTString),
+        ("source_layer", ogr.OFTString), ("dwg_type", ogr.OFTString),
+        ("action", ogr.OFTString), ("allowlisted", ogr.OFTInteger),
+        ("detail", ogr.OFTString),
+    ])
+    for domain in ("semantics", "styles"):
+        coverage = diagnostics.get(domain, {}).get("coverage")
+        if not isinstance(coverage, dict):
+            continue
+        required_fields = {
+            "schema_version", "policy", "status", "passed",
+            "conversion_allowed", "counts", "by_reason", "records",
+        }
+        missing_fields = required_fields - set(coverage)
+        if missing_fields:
+            raise RuntimeError(
+                f"{domain} coverage evidence lacks fields: {sorted(missing_fields)}"
+            )
+        summary_row = ogr.Feature(coverage_summary_table.GetLayerDefn())
+        _set(summary_row, {
+            "domain": domain,
+            "schema_version": str(coverage["schema_version"]),
+            "policy": str(coverage["policy"]),
+            "status": str(coverage["status"]),
+            "passed": int(bool(coverage["passed"])),
+            "conversion_allowed": int(bool(coverage["conversion_allowed"])),
+            "counts": json.dumps(
+                coverage["counts"], ensure_ascii=False, sort_keys=True,
+                separators=(",", ":"), allow_nan=False,
+            ),
+            "by_reason": json.dumps(
+                coverage["by_reason"], ensure_ascii=False, sort_keys=True,
+                separators=(",", ":"), allow_nan=False,
+            ),
+        })
+        coverage_summary_table.CreateFeature(summary_row)
+        for record in coverage["records"]:
+            required_record_fields = {
+                "source_entity_key", "reason", "candidate_class",
+                "source_layer", "dwg_type", "action", "allowlisted",
+            }
+            missing_record_fields = required_record_fields - set(record)
+            if missing_record_fields:
+                raise RuntimeError(
+                    f"{domain} coverage record lacks fields: "
+                    f"{sorted(missing_record_fields)}"
+                )
+            detail = {
+                key: value for key, value in record.items()
+                if key not in required_record_fields | {"source_handle"}
+            }
+            record_row = ogr.Feature(coverage_record_table.GetLayerDefn())
+            _set(record_row, {
+                "domain": domain,
+                "schema_version": str(coverage["schema_version"]),
+                "policy": str(coverage["policy"]),
+                "status": str(coverage["status"]),
+                "source_entity_key": str(record["source_entity_key"]),
+                "source_handle": str(record.get("source_handle", "")),
+                "reason": str(record["reason"]),
+                "candidate_class": str(record["candidate_class"]),
+                "source_layer": str(record["source_layer"]),
+                "dwg_type": str(record["dwg_type"]),
+                "action": str(record["action"]),
+                "allowlisted": int(bool(record["allowlisted"])),
+                "detail": json.dumps(
+                    detail, ensure_ascii=False, sort_keys=True,
+                    separators=(",", ":"), allow_nan=False,
+                ),
+            })
+            coverage_record_table.CreateFeature(record_row)
 
     relation_table = _table(dataset, "topology_relations", [
         ("relation_key", ogr.OFTString), ("relation_kind", ogr.OFTString),
@@ -756,6 +892,8 @@ def _write_staged(
         ("port_point_native", ogr.OFTString), ("center_distance_m", ogr.OFTReal),
         ("footprint_distance_m", ogr.OFTReal), ("status", ogr.OFTString),
         ("transform_basis", ogr.OFTString),
+        ("transform_fact_provenance", ogr.OFTString),
+        ("diagnostic", ogr.OFTString),
     ])
     for candidate in diagnostics.get("topology", {}).get("connection_port_candidates", ()):
         row = ogr.Feature(port_table.GetLayerDefn())
@@ -763,6 +901,16 @@ def _write_staged(
             **candidate,
             "route_point_native": json.dumps(candidate["route_point_native"], separators=(",", ":")),
             "port_point_native": json.dumps(candidate["port_point_native"], separators=(",", ":")),
+            "transform_fact_provenance": json.dumps(
+                candidate.get("transform_fact_provenance", {}),
+                ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                allow_nan=False,
+            ),
+            "diagnostic": json.dumps(
+                candidate.get("diagnostic", {}),
+                ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                allow_nan=False,
+            ),
         })
         port_table.CreateFeature(row)
 
@@ -809,6 +957,7 @@ def write_evidence(
     destination.parent.mkdir(parents=True, exist_ok=True)
     stage_dir = Path(tempfile.mkdtemp(prefix=f".{destination.name}.", dir=destination.parent))
     staged = stage_dir / destination.name
+    primary_error: BaseException | None = None
     try:
         _write_staged(
             staged, entities, features, relations, unresolved, diagnostics, source_srs,
@@ -817,6 +966,7 @@ def write_evidence(
         )
         connection = sqlite3.connect(staged)
         try:
+            normalize_geopackage_metadata(connection)
             integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
             conserved = connection.execute("SELECT SUM(entity_count) FROM conservation_ledger").fetchone()[0]
         finally:
@@ -824,7 +974,25 @@ def write_evidence(
         if integrity != "ok" or conserved != len(entities):
             raise RuntimeError(f"Evidence validation failed: integrity={integrity}, conserved={conserved}")
         os.replace(staged, destination)
+    except BaseException as error:
+        primary_error = error
+        for cleanup_error in _release_ogr_datasets(error):
+            error.add_note(cleanup_error)
+        raise
     finally:
-        if staged.exists():
-            staged.unlink()
-        shutil.rmtree(stage_dir, ignore_errors=True)
+        try:
+            _remove_stage(stage_dir, staged)
+        except OSError as cleanup_error:
+            # One final collection handles delayed SWIG/SQLite finalizers.  A
+            # cleanup defect is fatal on the success path, but it must never
+            # replace the primary conversion/validation exception.
+            gc.collect()
+            try:
+                _remove_stage(stage_dir, staged)
+            except OSError as retry_error:
+                if primary_error is None:
+                    raise
+                primary_error.add_note(
+                    "Evidence stage cleanup failed after primary error: "
+                    f"{retry_error} (first attempt: {cleanup_error})"
+                )
