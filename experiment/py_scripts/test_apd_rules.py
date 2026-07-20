@@ -217,6 +217,7 @@ def test_span_dimension_never_promotes_or_joins_source_routes():
 def test_qgis_style_contains_cad_categories_and_labels():
     qml = _qgis_style_qml("CABLE", "LineString", [("#FF0000", "#FF0000", "DASHED", 25)])
     root = ET.fromstring(qml)
+    assert root.get("simplifyDrawingHints") == "0"
     assert root.find("./renderer-v2/categories/category").get("value") == "#FF0000|DASHED|25"
     symbol_layer = root.find("./renderer-v2/symbols/symbol/layer")
     assert symbol_layer.get("class") == "SimpleLine"

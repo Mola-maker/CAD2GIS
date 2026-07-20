@@ -15,15 +15,30 @@ def ingest(source: str | Path, profile: SourceProfile) -> tuple[list[SourceEntit
     source_path = Path(source).resolve()
     source_hash = profile.validate_source(source_path)
     records = extract_dwg_records(source_path)
+    reader_protocol = dict(getattr(records, "diagnostics", {}) or {})
+    if (
+        int(reader_protocol.get("skipped_rows", 0) or 0) != 0
+        or reader_protocol.get("inventory_complete") is False
+    ):
+        raise RuntimeError(
+            "Authoritative reader inventory is incomplete; compatibility-mode "
+            f"skips cannot enter conversion: {reader_protocol}"
+        )
     entities = [SourceEntity.from_record(record) for record in records]
     model = [entity for entity in entities if entity.layout.casefold() == "model"]
     metadata = next((entity.text for entity in entities if entity.dwg_type == "DOCUMENT_METADATA"), "")
-    expected_cgeocs = f"CGEOCS={profile.dwg_cgeocs}"
-    if expected_cgeocs.casefold() not in metadata.casefold():
-        raise ValueError(f"DWG CRS evidence mismatch: expected {expected_cgeocs}, got {metadata!r}")
-    expected_insunits = f"INSUNITS={profile.dwg_insunits}"
-    if expected_insunits.casefold() not in metadata.casefold():
-        raise ValueError(f"DWG unit evidence mismatch: expected {expected_insunits}, got {metadata!r}")
+    if profile.dwg_cgeocs is not None:
+        expected_cgeocs = f"CGEOCS={profile.dwg_cgeocs}"
+        if expected_cgeocs.casefold() not in metadata.casefold():
+            raise ValueError(
+                f"DWG CRS evidence mismatch: expected {expected_cgeocs}, got {metadata!r}"
+            )
+    if profile.dwg_insunits is not None:
+        expected_insunits = f"INSUNITS={profile.dwg_insunits}"
+        if expected_insunits.casefold() not in metadata.casefold():
+            raise ValueError(
+                f"DWG unit evidence mismatch: expected {expected_insunits}, got {metadata!r}"
+            )
     census = {
         "model_entities": len(model),
         "model_inserts": sum(entity.dwg_type == "INSERT" for entity in model),
@@ -51,6 +66,14 @@ def ingest(source: str | Path, profile: SourceProfile) -> tuple[list[SourceEntit
     )
     reader_backend_statuses = Counter(
         entity.reader_backend_status or "UNAVAILABLE" for entity in entities
+    )
+    curve_entities = [entity for entity in entities if entity.curve_facts]
+    curve_schema_versions = Counter(
+        entity.curve_schema_version or "UNAVAILABLE" for entity in curve_entities
+    )
+    curve_primitive_types = Counter(
+        str(entity.curve_facts.get("primitive_type", "UNAVAILABLE"))
+        for entity in curve_entities
     )
     unsupported_reasons = Counter()
     dynamic_block_statuses = Counter()
@@ -86,7 +109,23 @@ def ingest(source: str | Path, profile: SourceProfile) -> tuple[list[SourceEntit
             ),
             "dynamic_block_property_statuses": dict(sorted(dynamic_block_statuses.items())),
             "native_length_entities": sum(entity.native_length is not None for entity in entities),
+            "curve_facts_entities": len(curve_entities),
+            "curve_fingerprint_entities": sum(
+                bool(entity.curve_fingerprint) for entity in curve_entities
+            ),
+            "curve_facts_schema_versions": dict(sorted(curve_schema_versions.items())),
+            "curve_primitive_types": dict(sorted(curve_primitive_types.items())),
+            "curve_entities_with_nonzero_bulge": sum(
+                any(abs(float(value)) > 0.0 for value in entity.curve_facts.get("bulges", ()))
+                for entity in curve_entities
+            ),
+            "curve_entities_with_nonzero_elevation": sum(
+                entity.curve_facts.get("elevation") is not None
+                and abs(float(entity.curve_facts["elevation"])) > 0.0
+                for entity in curve_entities
+            ),
             "unsupported_reasons": dict(sorted(unsupported_reasons.items())),
         },
+        "reader_protocol": reader_protocol,
     }
     return entities, diagnostics

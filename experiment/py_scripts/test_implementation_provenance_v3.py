@@ -8,12 +8,17 @@ from pathlib import Path
 import pytest
 
 from cad2gis_v3.implementation import (
+    CONVERSION_SNAPSHOT_SCHEMA_VERSION,
     IMPLEMENTATION_SCHEMA_VERSION,
     PRODUCTION_CONVERSION_FILES,
     PRODUCTION_CONVERSION_SCOPE,
+    SnapshotVerificationError,
     build_implementation_provenance,
+    conversion_snapshot_manifest_fields,
+    freeze_conversion_snapshot,
     implementation_manifest_fields,
     production_conversion_provenance,
+    verify_conversion_snapshot,
 )
 from cad2gis_v3.pipeline import _implementation_digest
 
@@ -26,6 +31,9 @@ def test_production_scope_is_explicit_complete_and_excludes_review_lane():
     assert all((PY_SCRIPTS / path).is_file() for path in PRODUCTION_CONVERSION_FILES)
     assert "cad2gis_v3/pipeline.py" in PRODUCTION_CONVERSION_FILES
     assert "cad2gis_v3/implementation.py" in PRODUCTION_CONVERSION_FILES
+    assert "cad2gis_v3/gpkg_metadata.py" in PRODUCTION_CONVERSION_FILES
+    assert "cad2gis_v3/spatial_coverage.py" in PRODUCTION_CONVERSION_FILES
+    assert "cad2gis_v3/semantic_anchor.py" not in PRODUCTION_CONVERSION_FILES
     assert not any("curation" in path or "provider" in path for path in PRODUCTION_CONVERSION_FILES)
 
 
@@ -81,3 +89,61 @@ def test_scope_fails_closed_when_a_declared_runtime_file_is_missing(tmp_path):
             tmp_path, scope="production-conversion", scope_version=1,
             relative_paths=("missing.py",),
         )
+
+
+def test_conversion_snapshot_freezes_inputs_and_verifies_before_publish(tmp_path):
+    source = tmp_path / "drawing.dwg"
+    profile = tmp_path / "profile.json"
+    registry = tmp_path / "registry.json"
+    gcp = tmp_path / "gcp.json"
+    source.write_bytes(b"DWG bytes")
+    profile.write_text("{\"schema_version\":\"draft\"}\n", encoding="utf-8")
+    registry.write_text("{\"schema_version\":\"draft\"}\n", encoding="utf-8")
+    gcp.write_text("{\"status\":\"blocked\"}\n", encoding="utf-8")
+    (tmp_path / "runtime.py").write_text("VALUE = 1\n", encoding="utf-8")
+
+    snapshot = freeze_conversion_snapshot(
+        source,
+        profile,
+        registry,
+        gcp,
+        code_root=tmp_path,
+        code_paths=("runtime.py",),
+    )
+    assert snapshot["schema_version"] == CONVERSION_SNAPSHOT_SCHEMA_VERSION
+    assert snapshot["source_sha256"] == snapshot["artifacts"]["source"]["sha256"]
+    manifest = conversion_snapshot_manifest_fields(snapshot)
+    assert manifest["conversion_snapshot_sha256"] == snapshot["snapshot_sha256"]
+    report = verify_conversion_snapshot(snapshot)
+    assert report["verified"] is True
+    assert report["checked"] == [
+        "source", "source_profile", "mapping_registry", "gcp_profile", "implementation",
+    ]
+
+    source.write_bytes(b"changed")
+    try:
+        verify_conversion_snapshot(snapshot)
+    except SnapshotVerificationError as exc:
+        assert any("artifacts.source.sha256" in item for item in exc.mismatches)
+    else:  # pragma: no cover - defensive assertion for fail-closed behavior
+        raise AssertionError("changed source must abort publication")
+
+
+def test_conversion_snapshot_rejects_descriptor_tampering(tmp_path):
+    source = tmp_path / "drawing.dwg"
+    profile = tmp_path / "profile.json"
+    registry = tmp_path / "registry.json"
+    source.write_bytes(b"DWG bytes")
+    profile.write_text("profile", encoding="utf-8")
+    registry.write_text("registry", encoding="utf-8")
+    (tmp_path / "runtime.py").write_text("VALUE = 1\n", encoding="utf-8")
+    snapshot = freeze_conversion_snapshot(
+        source, profile, registry, code_root=tmp_path, code_paths=("runtime.py",)
+    )
+    snapshot["artifacts"]["source"]["sha256"] = "0" * 64
+    try:
+        verify_conversion_snapshot(snapshot)
+    except SnapshotVerificationError as exc:
+        assert any("snapshot descriptor changed" in item for item in exc.mismatches)
+    else:  # pragma: no cover
+        raise AssertionError("descriptor tampering must abort publication")

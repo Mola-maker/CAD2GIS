@@ -14,14 +14,36 @@ Input:  DWG X = longitude, DWG Y = latitude (WGS84 native)
 Output: Single GeoPackage (EPSG:4326), one layer per FTTH feature class
 """
 
+import os
+import sys
+
+
+def _require_legacy_entrypoint_opt_in():
+    """Refuse direct execution unless the historical converter is requested."""
+    if os.environ.get("CAD2GIS_ENABLE_LEGACY") != "1":
+        raise SystemExit(
+            "DEPRECATED legacy conversion entrypoint is disabled.\n"
+            "Use the canonical `cad2gis` CLI instead.\n"
+            "To run this historical implementation intentionally, set "
+            "CAD2GIS_ENABLE_LEGACY=1."
+        )
+    print(
+        "WARNING: DEPRECATED legacy converter enabled via "
+        "CAD2GIS_ENABLE_LEGACY=1; prefer the canonical `cad2gis` CLI.",
+        file=sys.stderr,
+    )
+
+
+if __name__ == "__main__":
+    _require_legacy_entrypoint_opt_in()
+
+
 import argparse
 import ctypes
 import hashlib
 import math
-import os
 import re
 import subprocess
-import sys
 import tempfile
 import time
 from collections import defaultdict

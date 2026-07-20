@@ -1,0 +1,4 @@
+
+[test]
+pytest<10,>=8
+build<2,>=1.2

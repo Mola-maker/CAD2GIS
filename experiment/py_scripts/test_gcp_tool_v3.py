@@ -34,6 +34,7 @@ def _source_points():
         (13_682_000.0, 69_100.0),
         (13_682_100.0, 69_100.0),
         (13_682_050.0, 69_050.0),
+        (13_682_025.0, 69_075.0),
     )
 
 
@@ -155,7 +156,7 @@ def test_prepare_diagnose_and_enabled_export_are_separate_and_strict(tmp_path):
 
     dataset = ogr.Open(str(capture))
     layer = dataset.GetLayerByName("gcp_controls")
-    assert layer.GetFeatureCount() == 5
+    assert layer.GetFeatureCount() == 6
     first = layer.GetNextFeature()
     assert first.GetField("review_status") == "candidate"
     assert first.GetField("enabled") == 0
@@ -175,9 +176,9 @@ def test_prepare_diagnose_and_enabled_export_are_separate_and_strict(tmp_path):
     assert translation["result"]["parameters"]["pivot_shift_e_m"] == pytest.approx(8.0)
     assert translation["result"]["parameters"]["pivot_shift_n_m"] == pytest.approx(-6.0)
     assert translation["result"]["check_metrics"]["max_m"] == pytest.approx(0.0, abs=1e-9)
-    assert len(translation["result"]["residuals"]) == 5
+    assert len(translation["result"]["residuals"]) == 6
     assert report["spatial_coverage"]["training_control_count"] == 3
-    assert report["spatial_coverage"]["check_control_count"] == 2
+    assert report["spatial_coverage"]["check_control_count"] == 3
     assert _sha256(delivery) == delivery_before
     assert _sha256(evidence) == evidence_before
 
@@ -199,7 +200,7 @@ def test_prepare_diagnose_and_enabled_export_are_separate_and_strict(tmp_path):
     )
     profile = GCPProfile.load(exported, expected_source_sha256=SOURCE_SHA256)
     assert profile.enabled is True
-    assert len(profile.controls) == 5
+    assert len(profile.controls) == 6
     assert result["selected_model"] == "translation"
     assert result["validation_passed"] is True
     assert result["publication_changed"] is False

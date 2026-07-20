@@ -29,7 +29,7 @@ from cad2gis_v3.ports import build_port_candidates
 from cad2gis_v3.semantics import _assign_family_annotations, _registry_attributes
 from cad2gis_v3.styles import write_styles
 from cad2gis_v3.topology import build_topology
-from cad2gis_v3.warehouse import LAYER_ORDER, write_delivery
+from cad2gis_v3.warehouse import LAYER_CONFIGS, LAYER_ORDER, write_delivery
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -444,9 +444,62 @@ def test_geometry_policy_rejects_source_route_mutation():
         [source], [route], [], registry, {"synthetic_route_vertices": 0},
     )["cable_sources_checked"] == 1
     route.native_points.append((11.0, 0.0))
-    with pytest.raises(RuntimeError, match="displaced or re-vertexed"):
+    with pytest.raises(
+        RuntimeError,
+        match="Source geometry validation failed:.*displaced or re-vertexed",
+    ):
         _enforce_geometry_policy(
             [source], [route], [], registry, {"synthetic_route_vertices": 0},
+        )
+
+
+def test_geometry_and_topology_failures_have_separate_validation_domains():
+    profile = SourceProfile.load(PROFILE)
+    registry = MappingRegistry.load(REGISTRY, profile.source_sha256)
+    source = SourceEntity(
+        entity_key="entity-R", source_sha256="x", source_file="a.dwg", handle="R",
+        layout="Model", layout_role="model", cad_role="model",
+        layer="Cable Line A (FO Cable 24C_2T)", object_name="ACDBPOLYLINE",
+        dwg_type="LWPOLYLINE", points=((0.0, 0.0), (10.0, 0.0)),
+        centroid=(5.0, 0.0), closed=False, text="", block_name="",
+        block_attributes={}, style=CadStyle(),
+    )
+    route = _feature("R", "CABLE", source.points, "SOURCE_ROUTE")
+    crossing = Relation(
+        "crossing-R", "connects", route.feature_key, "OTHER",
+        "accepted", "crossing_intersection",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Topology policy validation failed:.*crossing promoted",
+    ):
+        _enforce_geometry_policy(
+            [source], [route], [crossing], registry,
+            {"synthetic_route_vertices": 0},
+        )
+
+
+def test_route_component_definition_mismatch_fails_topology_policy():
+    profile = SourceProfile.load(PROFILE)
+    registry = MappingRegistry.load(REGISTRY, profile.source_sha256)
+    with pytest.raises(
+        RuntimeError,
+        match="route-group/source-segment component definitions disagree",
+    ):
+        _enforce_geometry_policy(
+            [],
+            [],
+            [],
+            registry,
+            {
+                "synthetic_route_vertices": 0,
+                "source_route_component_diagnostics": {
+                    "status": "mismatch",
+                    "route_group_components": 2,
+                    "source_segment_graph_components": 1,
+                },
+            },
         )
 
 
@@ -479,6 +532,16 @@ def test_connection_port_uses_transformed_block_geometry_without_moving_route():
         object_name="ACDBBLOCKREFERENCE", dwg_type="INSERT", points=((10.0, 0.0),),
         centroid=(10.0, 0.0), closed=False, text="", block_name="*U99",
         block_attributes={}, style=CadStyle(), scale=(2.0, 2.0, 1.0),
+        raw_properties={
+            "transform_facts": {
+                "insertion_point": (10.0, 0.0, 0.0),
+                "block_base_point": (0.0, 0.0, 0.0),
+                "scale": (2.0, 2.0, 1.0),
+                "rotation": 0.0,
+                "normal": (0.0, 0.0, 1.0),
+                "extrusion": (0.0, 0.0, 1.0),
+            },
+        },
     )
     support = _feature("SUPPORT", "PTECH", [(10.0, 0.0)])
     support.source_entity_key = "instance"
@@ -490,7 +553,7 @@ def test_connection_port_uses_transformed_block_geometry_without_moving_route():
     assert route.native_points == source_geometry
 
 
-def test_delivery_contains_exactly_eight_business_layers(tmp_path):
+def test_delivery_contains_all_business_layers(tmp_path):
     transformer = DirectTransformer("EPSG:3857", "EPSG:9481")
     path = tmp_path / "delivery.gpkg"
     counts = write_delivery(path, [], transformer)
@@ -524,8 +587,18 @@ def test_delivery_contains_exactly_eight_business_layers(tmp_path):
             row[1] for row in connection.execute('PRAGMA table_info("CABLE")')
         }
     assert layers == set(LAYER_ORDER)
-    assert (style_count, default_count, labels_enabled, rotation_enabled) == (8, 8, 8, 8)
-    assert (registered_styles, ogr_style_count) == (1, 8)
+    layer_count = len(LAYER_ORDER)
+    line_layer_count = sum(
+        config["geometry_type"].startswith("LineString")
+        for config in LAYER_CONFIGS.values()
+    )
+    assert (style_count, default_count, labels_enabled) == (
+        layer_count,
+        layer_count,
+        layer_count,
+    )
+    assert rotation_enabled == layer_count - line_layer_count
+    assert (registered_styles, ogr_style_count) == (1, layer_count)
     assert {"style_rotation_deg", "style_qgis_rotation_deg", "style_render_key"} <= cable_fields
     style_manifest = json.loads(style_manifest_path.read_text(encoding="utf-8"))
     for item in style_manifest["layers"].values():

@@ -8,10 +8,13 @@ import sqlite3
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
+from typing import Any, Mapping, Sequence
 
 from ezdxf.colors import aci2rgb
 
+from .gpkg_metadata import normalize_geopackage_metadata
 from .model import Feature
+from .semantics import CoverageGateError, build_coverage_report
 from .warehouse import LAYER_CONFIGS, LAYER_ORDER, _contract_geometry_kind
 
 ACI = {
@@ -20,22 +23,31 @@ ACI = {
     7: "0,0,0,255",
 }
 
+STYLE_COVERAGE_SCHEMA_VERSION = "cad2gis-style-coverage-v1"
+_UNSUPPORTED_COLOR = "255,0,255,255"
+_UNSUPPORTED_PEN_STYLE = "dash dot dot"
+
 
 def _rgba(feature):
     value = feature.style.true_color.strip().lstrip("#")
-    if len(value) == 6:
+    if value:
         try:
+            if len(value) != 6:
+                raise ValueError
             red, green, blue = (int(value[index:index + 2], 16) for index in (0, 2, 4))
             return f"{red},{green},{blue},255"
         except ValueError:
-            pass
+            return _UNSUPPORTED_COLOR
     if feature.style.aci_color in ACI:
         return ACI[feature.style.aci_color]
     try:
         color = aci2rgb(feature.style.aci_color)
         return f"{color.r},{color.g},{color.b},255"
     except (IndexError, ValueError):
-        return "64,64,64,255"
+        # High-visibility sentinel.  Unsupported colour facts are also
+        # recorded in the manifest; they must never masquerade as a normal
+        # source colour.
+        return _UNSUPPORTED_COLOR
 
 
 def _option(parent, name, value):
@@ -43,20 +55,108 @@ def _option(parent, name, value):
 
 
 def _qgis_pen_style(linetype):
-    name = (linetype or "Continuous").upper()
+    name = (linetype or "").strip().upper()
+    if name == "CONTINUOUS":
+        return "solid"
     if "DASHDOT" in name or "CENTER" in name:
         return "dash dot"
     if "DOT" in name:
         return "dot"
     if "DASH" in name or "HIDDEN" in name:
         return "dash"
-    return "solid"
+    return None
+
+
+def _style_record(feature: Feature, reason: str, **detail: Any) -> dict[str, Any]:
+    return {
+        "source_entity_key": feature.source_entity_key,
+        "reason": reason,
+        "candidate_class": feature.feature_class,
+        "source_layer": feature.source_layer,
+        # Feature is the semantics/style boundary and intentionally does not
+        # copy a guessed source DWG type.  The empty value is explicit and the
+        # source_entity_key joins losslessly to cad_entities evidence.
+        "dwg_type": "",
+        "source_handle": feature.source_handle,
+        "render_key": str(feature.attributes.get(
+            "delivery_style_render_key", feature.style.render_key,
+        )),
+        **detail,
+    }
+
+
+def _style_coverage_records(features: Sequence[Feature]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for feature in features:
+        true_color = feature.style.true_color.strip().lstrip("#")
+        if true_color:
+            try:
+                if len(true_color) != 6:
+                    raise ValueError
+                int(true_color, 16)
+            except ValueError:
+                records.append(_style_record(
+                    feature, "invalid_true_color", true_color=feature.style.true_color,
+                    render_fallback=_UNSUPPORTED_COLOR,
+                ))
+        else:
+            aci = feature.style.aci_color
+            if aci in {0, 256}:
+                records.append(_style_record(
+                    feature, "unresolved_aci_color", aci_color=aci,
+                    render_fallback=_UNSUPPORTED_COLOR,
+                ))
+            else:
+                try:
+                    aci2rgb(aci)
+                except (IndexError, TypeError, ValueError):
+                    records.append(_style_record(
+                        feature, "unsupported_aci_color", aci_color=aci,
+                        render_fallback=_UNSUPPORTED_COLOR,
+                    ))
+
+        linetype = (feature.style.linetype or "").strip()
+        if not linetype or linetype.upper() in {"BYLAYER", "BYBLOCK"}:
+            records.append(_style_record(
+                feature, "unresolved_linetype", linetype=linetype,
+                render_fallback=_UNSUPPORTED_PEN_STYLE,
+            ))
+        elif _qgis_pen_style(linetype) is None:
+            records.append(_style_record(
+                feature, "unsupported_linetype", linetype=linetype,
+                render_fallback=_UNSUPPORTED_PEN_STYLE,
+            ))
+
+        lineweight = feature.style.lineweight
+        if lineweight < -3 or lineweight > 211:
+            records.append(_style_record(
+                feature, "unsupported_lineweight", lineweight=lineweight,
+                render_fallback="class-default-width",
+            ))
+    return records
+
+
+def analyze_style_coverage(
+    features: Sequence[Feature],
+    *,
+    policy: str = "warn",
+    allowlist: Sequence[str | Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Return style coverage without writing QML or mutating a GeoPackage."""
+    features = list(features)
+    return build_coverage_report(
+        _style_coverage_records(features),
+        schema_version=STYLE_COVERAGE_SCHEMA_VERSION,
+        policy=policy,
+        allowlist=allowlist,
+        inspected_count=len(features),
+    )
 
 
 def _line_width(layer_name, lineweight):
     if lineweight is not None and int(lineweight) > 0:
         return max(0.1, min(2.0, int(lineweight) / 100.0))
-    return 0.6 if layer_name == "CABLE" else 0.35
+    return 0.6 if layer_name in {"CABLE", "CABLE_SEGMENT"} else 0.35
 
 
 def _marker_properties(layer_name):
@@ -80,10 +180,14 @@ def _add_label_rotation(settings):
     ET.SubElement(collection, "Option", name="type", type="QString", value="collection")
 
 
-def _qml(layer_name, geometry_kind, styles):
+def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
     root = ET.Element(
         "qgis", version="3.40.0", styleCategories="AllStyleCategories",
-        labelsEnabled="1", simplifyDrawingHints="1",
+        # Rendering simplification is deliberately disabled.  Delivery
+        # geometry is an auditable projection of the immutable CAD vertex
+        # chain, so the default QGIS style must not visually remove vertices
+        # or make short source segments appear disconnected at small scales.
+        labelsEnabled="1", simplifyDrawingHints="0",
     )
     renderer = ET.SubElement(root, "renderer-v2", type="categorizedSymbol", attr="style_render_key")
     categories = ET.SubElement(renderer, "categories")
@@ -108,7 +212,10 @@ def _qml(layer_name, geometry_kind, styles):
             layer = ET.SubElement(symbol, "layer", **{"class": "SimpleLine", "enabled": "1"})
             options = ET.SubElement(layer, "Option", type="Map")
             _option(options, "line_color", color)
-            _option(options, "line_style", _qgis_pen_style(linetype))
+            _option(
+                options, "line_style",
+                _qgis_pen_style(linetype) or _UNSUPPORTED_PEN_STYLE,
+            )
             _option(options, "line_width", _line_width(layer_name, lineweight))
             _option(options, "line_width_unit", "MM")
         else:
@@ -116,21 +223,33 @@ def _qml(layer_name, geometry_kind, styles):
             options = ET.SubElement(layer, "Option", type="Map")
             _option(options, "color", color.rsplit(",", 1)[0] + ",70")
             _option(options, "outline_color", color)
-            _option(options, "outline_style", _qgis_pen_style(linetype))
+            _option(
+                options, "outline_style",
+                _qgis_pen_style(linetype) or _UNSUPPORTED_PEN_STYLE,
+            )
             _option(options, "outline_width", _line_width(layer_name, lineweight))
             _option(options, "outline_width_unit", "MM")
     labeling = ET.SubElement(root, "labeling", type="simple")
     settings = ET.SubElement(labeling, "settings")
     ET.SubElement(
-        settings, "text-style", fieldName="display_label", isExpression="0",
+        settings, "text-style", fieldName=label_field, isExpression="0",
         fontFamily="Arial", fontSize="8", textColor="0,0,0,255",
     )
+    # QGIS's legacy placement enum uses 2 for a line-following label.  The
+    # default point/polygon placement (0, around point/centroid) leaves short
+    # CABLE_SEGMENT labels detached from their source geometry.
     ET.SubElement(
-        settings, "placement", placement="0", dist="1", offsetUnits="MM",
-        rotationUnit="AngleDegrees",
+        settings, "placement",
+        placement="2" if geometry_kind == "LineString" else "0",
+        dist="1", offsetUnits="MM", rotationUnit="AngleDegrees",
     )
     ET.SubElement(settings, "rendering", drawLabels="1", obstacle="1", scaleVisibility="0")
-    _add_label_rotation(settings)
+    # Line labels follow their source LineString placement.  Applying the
+    # parent CAD rotation as a data-defined angle would override QGIS's line
+    # orientation (and turn diagonal segment labels horizontal), so reserve
+    # that rotation field for point/area symbols.
+    if geometry_kind != "LineString":
+        _add_label_rotation(settings)
     ET.SubElement(root, "layerGeometryType").text = {"Point": "0", "LineString": "1", "Polygon": "2"}[geometry_kind]
     return ET.tostring(root, encoding="unicode")
 
@@ -193,6 +312,7 @@ def _embed_default_styles(delivery_path, qml_by_layer):
                 """INSERT OR REPLACE INTO gpkg_ogr_contents (table_name, feature_count)
                 VALUES ('layer_styles', (SELECT COUNT(*) FROM layer_styles))"""
             )
+        normalize_geopackage_metadata(connection)
         integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
         registered = connection.execute(
             """SELECT COUNT(*) FROM gpkg_contents
@@ -212,21 +332,44 @@ def _embed_default_styles(delivery_path, qml_by_layer):
         connection.close()
 
 
-def write_styles(output_dir, features, delivery_path=None):
+def write_styles(
+    output_dir,
+    features,
+    delivery_path=None,
+    *,
+    coverage_policy: str = "warn",
+    coverage_allowlist: Sequence[str | Mapping[str, Any]] | None = None,
+):
+    features = list(features)
+    coverage = analyze_style_coverage(
+        features, policy=coverage_policy, allowlist=coverage_allowlist,
+    )
+    if not coverage["conversion_allowed"]:
+        raise CoverageGateError("styles", coverage)
     destination = Path(output_dir).resolve()
     destination.mkdir(parents=True, exist_ok=True)
     by_class = defaultdict(list)
     for feature in features:
         by_class[feature.feature_class].append(feature)
     manifest = {
-        "schema_version": "cad2gis-qgis-style-manifest-v2",
+        "schema_version": "cad2gis-qgis-style-manifest-v3",
         "embedded_default_styles": delivery_path is not None,
+        "geometry_simplification": "disabled_for_source_fidelity",
+        "coverage": coverage,
+        "unsupported_records": coverage["records"],
         "layers": {},
     }
     qml_by_layer = {}
     for layer_name in LAYER_ORDER:
         observed = {}
-        for feature in by_class[layer_name]:
+        # CABLE_SEGMENT inherits the effective CAD style of its immutable
+        # parent CABLE.  It is a normalised business layer, not a second audit
+        # style domain, so the categories must remain parent-style faithful.
+        style_features = (
+            by_class["CABLE"] if layer_name == "CABLE_SEGMENT"
+            else by_class[layer_name]
+        )
+        for feature in style_features:
             key = str(feature.attributes.get("delivery_style_render_key", feature.style.render_key))
             qgis_rotation = float(feature.attributes.get(
                 "delivery_style_qgis_rotation_deg", feature.style.qgis_rotation_degrees,
@@ -240,7 +383,10 @@ def write_styles(output_dir, features, delivery_path=None):
         ]
         qml_path = destination / f"{layer_name}.qml"
         qml = _qml(
-            layer_name, _contract_geometry_kind(LAYER_CONFIGS[layer_name]["geometry_type"]), styles,
+            layer_name,
+            _contract_geometry_kind(LAYER_CONFIGS[layer_name]["geometry_type"]),
+            styles,
+            label_field="length_label" if layer_name == "CABLE_SEGMENT" else "display_label",
         )
         qml_path.write_text(qml, encoding="utf-8")
         qml_by_layer[layer_name] = qml
@@ -249,7 +395,17 @@ def write_styles(output_dir, features, delivery_path=None):
             "qml_sha256": hashlib.sha256(qml.encode("utf-8")).hexdigest(),
             "aci_categories": sorted({item[1] for item in styles}),
             "render_categories": [item[0] for item in styles],
+            "label_field": (
+                "length_label" if layer_name == "CABLE_SEGMENT" else "display_label"
+            ),
             "embedded_as_default": delivery_path is not None,
+            "geometry_simplification": "disabled_for_source_fidelity",
+            "coverage_records": sum(
+                record["candidate_class"] == (
+                    "CABLE" if layer_name == "CABLE_SEGMENT" else layer_name
+                )
+                for record in coverage["records"]
+            ),
         }
     if delivery_path is not None:
         _embed_default_styles(delivery_path, qml_by_layer)

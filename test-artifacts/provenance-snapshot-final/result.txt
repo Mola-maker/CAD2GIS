@@ -1,0 +1,17 @@
+Cad2GIS runtime provenance/snapshot validation
+
+Scenario: deterministic runtime identity
+Invocation: C:\Users\22494\miniconda3\envs\cad2gis\python.exe -m pytest experiment\\py_scripts\\test_runtime_provenance_v3.py -q --basetemp=E:\\branch_CAD2GIS\\CAD2GIS\\.pytest-tmp-runtime-final3
+Observable: 3 passed
+
+Scenario: immutable conversion input/code snapshot and fail-closed verification
+Invocation: C:\Users\22494\miniconda3\envs\cad2gis\python.exe -m pytest experiment\\py_scripts\\test_implementation_provenance_v3.py -q --basetemp=E:\\branch_CAD2GIS\\CAD2GIS\\.pytest-tmp-provenance3
+Observable: 8 passed
+
+Scenario: combined implementation/runtime regression
+Invocation: C:\Users\22494\miniconda3\envs\cad2gis\python.exe -m pytest experiment\\py_scripts\\test_implementation_provenance_v3.py experiment\\py_scripts\\test_runtime_provenance_v3.py -q --basetemp=E:\\branch_CAD2GIS\\CAD2GIS\\.pytest-tmp-provenance2
+Observable: 10 passed
+
+Scenario: production import closure
+Invocation: C:\Users\22494\miniconda3\envs\cad2gis\python.exe -c "from cad2gis_v3.implementation import production_conversion_provenance; print(production_conversion_provenance()['sha256'])"
+Observable: 25 allow-listed files resolved; digest 23a9b4419b61347208ae8067ac5edfaf8706f8f7965c855962c581a25aa213b5

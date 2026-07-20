@@ -1,0 +1,182 @@
+{
+  "schema_version": "cad2gis-qgis-style-manifest-v3",
+  "embedded_default_styles": false,
+  "geometry_simplification": "disabled_for_source_fidelity",
+  "coverage": {
+    "schema_version": "cad2gis-style-coverage-v1",
+    "policy": "abstain",
+    "status": "WATCH",
+    "passed": false,
+    "conversion_allowed": true,
+    "counts": {
+      "records": 1,
+      "allowlisted": 0,
+      "non_allowlisted": 1,
+      "warned": 0,
+      "abstained": 1,
+      "failed": 0,
+      "inspected": 1
+    },
+    "by_reason": {
+      "unsupported_linetype": 1
+    },
+    "records": [
+      {
+        "source_entity_key": "style-fixture",
+        "reason": "unsupported_linetype",
+        "candidate_class": "CABLE",
+        "source_layer": "FIBER",
+        "dwg_type": "",
+        "source_handle": "style-fixture",
+        "render_key": "ACI:7|LT:VENDOR_PATTERN_X|LW:-1|ROT_QGIS:0.000000000",
+        "linetype": "VENDOR_PATTERN_X",
+        "render_fallback": "dash dot dot",
+        "allowlisted": false,
+        "action": "abstain"
+      }
+    ]
+  },
+  "unsupported_records": [
+    {
+      "source_entity_key": "style-fixture",
+      "reason": "unsupported_linetype",
+      "candidate_class": "CABLE",
+      "source_layer": "FIBER",
+      "dwg_type": "",
+      "source_handle": "style-fixture",
+      "render_key": "ACI:7|LT:VENDOR_PATTERN_X|LW:-1|ROT_QGIS:0.000000000",
+      "linetype": "VENDOR_PATTERN_X",
+      "render_fallback": "dash dot dot",
+      "allowlisted": false,
+      "action": "abstain"
+    }
+  ],
+  "layers": {
+    "BOITE": {
+      "qml": "BOITE.qml",
+      "qml_sha256": "b4ef5be928a142539c7c9c007af394822481bcee2a681d9992e2c2aa1ac59aec",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    },
+    "CABLE": {
+      "qml": "CABLE.qml",
+      "qml_sha256": "2ef64be17cc5a7b538ec2aabfc73ae5e4cac248ed748c8c2afbd13ace5aa2af8",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:VENDOR_PATTERN_X|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 1
+    },
+    "PTECH": {
+      "qml": "PTECH.qml",
+      "qml_sha256": "d892f180f57b61cd96471918f79689c861f48b8af2298666ce7de99006937db7",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    },
+    "INFRASTRUCTURE": {
+      "qml": "INFRASTRUCTURE.qml",
+      "qml_sha256": "81bd4de1f68064d2f47654b9aa16e78338b9002505d023aad01cdd0cd8c4ba91",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    },
+    "SITE": {
+      "qml": "SITE.qml",
+      "qml_sha256": "23d0b7e11cb6d4035b6e0ec80a7357494145bfeac281e2ce31f5f421e6866b4f",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    },
+    "ZNRO": {
+      "qml": "ZNRO.qml",
+      "qml_sha256": "af38a123b7d2e69e9adf3f12c3deaf988bee62c6f3068d9a29f82e9702b402d1",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    },
+    "ZPM": {
+      "qml": "ZPM.qml",
+      "qml_sha256": "af38a123b7d2e69e9adf3f12c3deaf988bee62c6f3068d9a29f82e9702b402d1",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    },
+    "IMB": {
+      "qml": "IMB.qml",
+      "qml_sha256": "a5bf7431a5e6287a4c277b5fff961d7f29dc9174ca6b6b03cc14760460c5ba93",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "display_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    },
+    "CABLE_SEGMENT": {
+      "qml": "CABLE_SEGMENT.qml",
+      "qml_sha256": "b1dfb9aa0efc7c81cee88eff07378e78dbd7a82d27b3c06d1eb6d6fb61bb0bce",
+      "aci_categories": [
+        7
+      ],
+      "render_categories": [
+        "ACI:7|LT:VENDOR_PATTERN_X|LW:-1|ROT_QGIS:0.000000000"
+      ],
+      "label_field": "length_label",
+      "embedded_as_default": false,
+      "geometry_simplification": "disabled_for_source_fidelity",
+      "coverage_records": 0
+    }
+  }
+}

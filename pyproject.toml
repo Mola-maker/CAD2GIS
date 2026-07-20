@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cad2gis"
+version = "0.1.0"
+description = "Deterministic CAD-to-GIS orchestration and verification CLI"
+readme = { text = "CAD2GIS provides a lightweight canonical API and CLI. The pinned GIS runtime and separately deployed cad2gis_v3 backend are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "CAD2GIS contributors" }]
+dependencies = []
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: Microsoft :: Windows",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "build>=1.2,<2"]
+
+[project.scripts]
+cad2gis = "cad2gis.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = false
+# cad2gis_v3 is intentionally not copied from experiment/ into this wheel.
+# It follows the installed-package / CAD2GIS_BACKEND_PATH contract reported by
+# `cad2gis doctor`; editable checkouts additionally expose the repository port.
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["cad2gis*"]
+namespaces = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

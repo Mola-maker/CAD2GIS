@@ -13,10 +13,11 @@ import json
 import math
 from dataclasses import dataclass, replace
 from pathlib import Path
-from statistics import median
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from pyproj import CRS
+
+from .units import UnitCrsContract
 
 
 Point = tuple[float, float]
@@ -41,6 +42,18 @@ THEORETICAL_MINIMUM_CONTROLS = {
     "similarity": 2,
     "affine": 3,
 }
+
+# Geometry gates are deliberately evaluated in delivery metres after centring.
+# A one-micrometre RMS radius is below useful GCP precision, while the ULP
+# multiplier rejects spreads represented by only a few dozen binary64 steps at
+# large eastings/northings.  After RMS scale normalisation, a design condition
+# cap of 1e6 limits the corresponding normal-equation condition to about 1e12;
+# this is a permissive numerical-safety gate, not a substitute for the reviewed
+# spatial-distribution gate in the profile.
+_DESIGN_MIN_RMS_SPREAD_M = 1e-6
+_DESIGN_MIN_SPREAD_ULPS = 64.0
+_DESIGN_RANK_RELATIVE_TOLERANCE = 1e-12
+_DESIGN_MAX_CONDITION_NUMBER = 1e6
 
 
 def _finite_float(value: Any, name: str) -> float:
@@ -82,7 +95,20 @@ def _crs_equal(left: str, right: str) -> bool:
         raise ValueError(f"Invalid CRS comparison: {left!r}, {right!r}") from exc
 
 
-def _metric_projected_crs(value: str, name: str) -> CRS:
+def _metric_projected_crs(
+    value: str,
+    name: str,
+    *,
+    require_metre: bool = True,
+) -> CRS:
+    """Validate a projected CRS and, when requested, its linear unit.
+
+    Source CRS axes are allowed to be feet (or another reviewed linear unit)
+    because :class:`~cad2gis_v3.units.UnitCrsContract` explicitly bridges CAD
+    drawing units to the CRS axis.  Residual calibration itself remains a
+    target-grid metric operation, so target CRS validation keeps the historical
+    metre-only gate by leaving ``require_metre=True``.
+    """
     try:
         crs = CRS.from_user_input(value)
     except Exception as exc:
@@ -92,17 +118,117 @@ def _metric_projected_crs(value: str, name: str) -> CRS:
     axes = crs.axis_info
     if len(axes) < 2:
         raise ValueError(f"{name} must expose two projected coordinate axes")
+    factors = []
     for axis in axes[:2]:
         factor = axis.unit_conversion_factor
-        unit_name = str(axis.unit_name or "").strip().lower()
-        if (
-            unit_name not in {"metre", "metres", "meter", "meters"}
-            or factor is None
-            or not math.isfinite(factor)
-            or not math.isclose(factor, 1.0, rel_tol=0.0, abs_tol=1e-12)
-        ):
-            raise ValueError(f"{name} axes must use metres")
+        if factor is None or not math.isfinite(factor) or factor <= 0.0:
+            raise ValueError(f"{name} axes must declare a finite positive linear unit")
+        factors.append(float(factor))
+    if not math.isclose(factors[0], factors[1], rel_tol=1e-12, abs_tol=0.0):
+        raise ValueError(f"{name} horizontal axes use different linear units")
+    if require_metre and not math.isclose(
+        factors[0], 1.0, rel_tol=0.0, abs_tol=1e-12
+    ):
+        raise ValueError(f"{name} axes must use metres")
     return crs
+
+
+def _validate_transformer_unit_contract(
+    transformer: Any,
+    source_crs: str,
+    target_crs: str,
+) -> float:
+    """Validate unit/CRS evidence and return target-axis metres per unit.
+
+    The nominal transformer consumes CAD coordinates and emits target CRS
+    coordinates.  A reviewed ``UnitCrsContract`` is therefore mandatory for a
+    non-metre source axis (the common State Plane/US-foot case).  The legacy
+    synthetic transformer used by the v3 calibration unit tests is retained for
+    projected metre axes, but it cannot silently authorize a non-metric or
+    unreviewed source conversion.  Target GCP residuals are always reported in
+    metres and consequently reject non-metre target axes even when the nominal
+    CRS transformer can represent them.
+    """
+
+    source = _metric_projected_crs(source_crs, "Transformer source_crs", require_metre=False)
+    target = _metric_projected_crs(target_crs, "Transformer target_crs", require_metre=True)
+    source_factor = float(source.axis_info[0].unit_conversion_factor)
+    target_factor = float(target.axis_info[0].unit_conversion_factor)
+
+    contract = getattr(transformer, "unit_contract", None)
+    if contract is None:
+        # Keep the historical test/dummy path usable only where no unit bridge
+        # is necessary.  State Plane feet without the explicit contract must
+        # fail closed instead of treating CAD coordinates as CRS coordinates.
+        if not math.isclose(source_factor, 1.0, rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError(
+                "Transformer source_crs uses a non-metre axis; a reviewed "
+                "transformer.unit_contract is required"
+            )
+        return target_factor
+
+    if not isinstance(contract, UnitCrsContract):
+        raise TypeError("transformer.unit_contract must be a UnitCrsContract")
+    if not contract.can_direct_transform:
+        raise ValueError(
+            "Transformer unit_crs_contract is not a direct reviewed CRS contract"
+        )
+    if not contract.source_crs or not _crs_equal(str(contract.source_crs), source_crs):
+        raise ValueError("Transformer unit_crs_contract source_crs does not match")
+    if not _crs_equal(str(contract.target_crs), target_crs):
+        raise ValueError("Transformer unit_crs_contract target_crs does not match")
+    contract_source_axis = contract.source_crs_axis_unit
+    if contract_source_axis is None:
+        raise ValueError(
+            "Transformer unit_crs_contract lacks a reviewed source CRS axis unit"
+        )
+    contract_source_factor = _positive_float(
+        contract_source_axis.metres_per_unit,
+        "transformer.unit_contract.source_crs_axis_unit.metres_per_unit",
+    )
+    if not math.isclose(contract_source_factor, source_factor, rel_tol=1e-12, abs_tol=0.0):
+        raise ValueError(
+            "Transformer unit_crs_contract source CRS axis unit does not match CRS"
+        )
+    source_scale = _positive_float(
+        contract.source_coordinate_scale_to_m,
+        "transformer.unit_contract.source_coordinate_scale_to_m",
+    )
+    cad_scale = _positive_float(
+        contract.cad_unit.metres_per_unit,
+        "transformer.unit_contract.cad_unit.metres_per_unit",
+    )
+    if not math.isclose(cad_scale, source_scale, rel_tol=1e-12, abs_tol=0.0):
+        raise ValueError(
+            "Transformer unit_crs_contract CAD drawing unit scale is inconsistent"
+        )
+    if not math.isclose(cad_scale, 1.0, rel_tol=0.0, abs_tol=1e-12) and not contract.source_coordinate_scale_reviewed:
+        raise ValueError(
+            "Non-metre CAD drawing requires a reviewed source coordinate scale"
+        )
+    source_to_axis = contract.source_to_crs_axis_factor
+    if source_to_axis is None or not math.isfinite(float(source_to_axis)) or float(source_to_axis) <= 0.0:
+        raise ValueError(
+            "Transformer unit_crs_contract lacks a reviewed CAD-to-source-axis scale"
+        )
+    expected_source_to_axis = source_scale / contract_source_factor
+    if not math.isclose(float(source_to_axis), expected_source_to_axis, rel_tol=1e-12, abs_tol=0.0):
+        raise ValueError(
+            "Transformer unit_crs_contract CAD-to-source-axis scale is inconsistent"
+        )
+    contract_target_factor = _positive_float(
+        contract.target_crs_axis_unit.metres_per_unit,
+        "transformer.unit_contract.target_crs_axis_unit.metres_per_unit",
+    )
+    if not math.isclose(contract_target_factor, target_factor, rel_tol=1e-12, abs_tol=0.0):
+        raise ValueError(
+            "Transformer unit_crs_contract target CRS axis unit does not match CRS"
+        )
+    if not math.isclose(contract_target_factor, 1.0, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError(
+            "Calibration target CRS axes must use metres for GCP residuals"
+        )
+    return contract_target_factor
 
 
 def _reject_duplicate_control_coordinates(
@@ -289,8 +415,8 @@ class ValidationSettings:
                 self.affine_min_improvement_ratio,
                 "validation.affine_min_improvement_ratio",
             )
-            if not 0.0 <= ratio < 1.0:
-                raise ValueError("validation.affine_min_improvement_ratio must be in [0, 1)")
+            if not 0.0 < ratio < 1.0:
+                raise ValueError("validation.affine_min_improvement_ratio must be in (0, 1)")
         if not isinstance(self.spatial_distribution_reviewed, bool):
             raise ValueError("validation.spatial_distribution_reviewed must be boolean")
         if not isinstance(self.spatial_distribution_review_source, str):
@@ -326,8 +452,8 @@ class ValidationSettings:
         ratio = None if ratio_value is None else _finite_float(
             ratio_value, "validation.affine_min_improvement_ratio"
         )
-        if ratio is not None and not 0.0 <= ratio < 1.0:
-            raise ValueError("validation.affine_min_improvement_ratio must be in [0, 1)")
+        if ratio is not None and not 0.0 < ratio < 1.0:
+            raise ValueError("validation.affine_min_improvement_ratio must be in (0, 1)")
         return cls(
             max_check_rmse_m=_optional_positive_float(
                 value["max_check_rmse_m"], "validation.max_check_rmse_m"
@@ -467,6 +593,15 @@ class ModelSelectionSettings:
         )
         if not all(isinstance(item, bool) for item in boolean_values):
             raise ValueError("model-selection gate flags must be boolean")
+        if affine_gate["require_spatially_structured_similarity_residuals"] is not True:
+            raise ValueError(
+                "Affine promotion must require reviewed spatial structure in "
+                "similarity residuals"
+            )
+        if affine_gate["require_holdout_improvement"] is not True:
+            raise ValueError(
+                "Affine promotion must require independent holdout improvement"
+            )
         reason = str(nonlinear["reason"]).strip()
         if nonlinear["enabled"] or not reason:
             raise ValueError("Nonlinear calibration must remain disabled with an explicit reason")
@@ -567,7 +702,10 @@ class GCPProfile:
                 raise ValueError("GCP profile is stale or bound to a different DWG")
         source_crs = str(value["source_crs"]).strip()
         target_crs = str(value["target_crs"]).strip()
-        _metric_projected_crs(source_crs, "GCP profile source_crs")
+        # Source axes may be feet (for example State Plane) when the delivery
+        # transformer carries the reviewed UnitCrsContract.  The target remains
+        # metric because all GCP residual fields are explicitly ``*_m``.
+        _metric_projected_crs(source_crs, "GCP profile source_crs", require_metre=False)
         _metric_projected_crs(target_crs, "GCP profile target_crs")
         requested_model = str(value["requested_model"]).strip().lower()
         if requested_model not in REQUESTED_MODELS:
@@ -621,8 +759,7 @@ class GCPProfile:
         target_crs = getattr(transformer, "target_crs", None)
         if source_crs is None or target_crs is None or not callable(getattr(transformer, "point", None)):
             raise TypeError("transformer must expose source_crs, target_crs, and point()")
-        _metric_projected_crs(str(source_crs), "Transformer source_crs")
-        _metric_projected_crs(str(target_crs), "Transformer target_crs")
+        _validate_transformer_unit_contract(transformer, str(source_crs), str(target_crs))
         if not _crs_equal(str(source_crs), self.source_crs):
             raise ValueError("GCP profile source_crs does not match DirectTransformer")
         if not _crs_equal(str(target_crs), self.target_crs):
@@ -962,6 +1099,128 @@ def _identity_transform(model: str = "disabled") -> ResidualTransform:
     return ResidualTransform(model, (0.0, 0.0), (0.0, 0.0), ((1.0, 0.0), (0.0, 1.0)))
 
 
+def _validated_normalized_design_geometry(
+    points: Sequence[Point],
+    centered: Sequence[Point],
+    weights: Sequence[float],
+    model: str,
+) -> tuple[list[Point], float]:
+    """Return centred/RMS-normalised source geometry after numeric gates.
+
+    Similarity uses its two-parameter rotation/scale design, which remains
+    full-rank for two distinct locations.  Affine uses the two coordinate
+    columns directly, so its design must span both axes and be well-conditioned.
+    """
+
+    if not (len(points) == len(centered) == len(weights)):
+        raise ValueError("Control geometry and fitting weights must have equal lengths")
+    active = [
+        (point, offset, weight)
+        for point, offset, weight in zip(points, centered, weights)
+        if weight > 0.0
+    ]
+    minimum = THEORETICAL_MINIMUM_CONTROLS[model]
+    if len(active) < minimum:
+        raise ValueError(
+            f"{model} calibration requires at least {minimum} positive-weight training controls"
+        )
+    if any(not math.isfinite(weight) for _, _, weight in active):
+        raise ValueError("Fitting weights must be finite")
+
+    total_weight = math.fsum(weight for _, _, weight in active)
+    maximum_radius = max(math.hypot(offset[0], offset[1]) for _, offset, _ in active)
+    if not math.isfinite(maximum_radius) or maximum_radius <= 0.0:
+        raise ValueError(
+            f"{model.capitalize()} controls are near-coincident in nominal delivery coordinates"
+        )
+    scaled_energy = math.fsum(
+        weight
+        * (
+            (offset[0] / maximum_radius) ** 2
+            + (offset[1] / maximum_radius) ** 2
+        )
+        for _, offset, weight in active
+    )
+    rms_spread = maximum_radius * math.sqrt(scaled_energy / total_weight)
+    coordinate_ulp = max(
+        math.ulp(coordinate)
+        for point, _, _ in active
+        for coordinate in point
+    )
+    minimum_spread = max(
+        _DESIGN_MIN_RMS_SPREAD_M,
+        _DESIGN_MIN_SPREAD_ULPS * coordinate_ulp,
+    )
+    if not math.isfinite(rms_spread) or rms_spread <= minimum_spread:
+        raise ValueError(
+            f"{model.capitalize()} controls are near-coincident: centered RMS spread "
+            f"{rms_spread!r} m <= numeric floor {minimum_spread!r} m"
+        )
+
+    normalized = [
+        (offset[0] / rms_spread, offset[1] / rms_spread)
+        for offset in centered
+    ]
+    if model == "similarity":
+        # Rows (x, -y) and (y, x) form the centred similarity design.
+        # Its Gram matrix is energy * identity when the spread is non-zero.
+        energy = math.fsum(
+            weight * (point[0] * point[0] + point[1] * point[1])
+            for point, weight in zip(normalized, weights)
+            if weight > 0.0
+        )
+        design_xx, design_xy, design_yy = energy, 0.0, energy
+    else:
+        design_xx = math.fsum(
+            weight * point[0] * point[0]
+            for point, weight in zip(normalized, weights)
+            if weight > 0.0
+        )
+        design_xy = math.fsum(
+            weight * point[0] * point[1]
+            for point, weight in zip(normalized, weights)
+            if weight > 0.0
+        )
+        design_yy = math.fsum(
+            weight * point[1] * point[1]
+            for point, weight in zip(normalized, weights)
+            if weight > 0.0
+        )
+
+    trace = design_xx + design_yy
+    discriminant = math.hypot(design_xx - design_yy, 2.0 * design_xy)
+    eigenvalue_max = (trace + discriminant) / 2.0
+    determinant = design_xx * design_yy - design_xy * design_xy
+    eigenvalue_min = (
+        max(determinant / eigenvalue_max, 0.0)
+        if eigenvalue_max > 0.0
+        else 0.0
+    )
+    singular_max = math.sqrt(max(eigenvalue_max, 0.0))
+    singular_min = math.sqrt(eigenvalue_min)
+    if (
+        singular_max <= 0.0
+        or singular_min <= _DESIGN_RANK_RELATIVE_TOLERANCE * singular_max
+    ):
+        if model == "affine":
+            raise ValueError(
+                "Affine controls must contain at least three non-collinear locations "
+                "(normalized design geometry is rank deficient)"
+            )
+        raise ValueError("Similarity control design geometry is rank deficient")
+    condition_number = singular_max / singular_min
+    if (
+        not math.isfinite(condition_number)
+        or condition_number > _DESIGN_MAX_CONDITION_NUMBER
+    ):
+        raise ValueError(
+            f"{model.capitalize()} control geometry is ill-conditioned after centering "
+            f"and scale normalization: design condition number {condition_number!r} > "
+            f"{_DESIGN_MAX_CONDITION_NUMBER}"
+        )
+    return normalized, rms_spread
+
+
 def _fit_transform(
     controls: Sequence[_ProjectedControl], model: str, weights: Sequence[float]
 ) -> ResidualTransform:
@@ -972,6 +1231,16 @@ def _fit_transform(
         raise ValueError(f"Unsupported calibration model: {model}")
     if len(controls) < minimum:
         raise ValueError(f"{model} calibration requires at least {minimum} training controls")
+    if len(weights) != len(controls):
+        raise ValueError("Control geometry and fitting weights must have equal lengths")
+    if any(not math.isfinite(weight) or weight < 0.0 for weight in weights):
+        raise ValueError("Fitting weights must be finite and non-negative")
+    maximum_weight = max(weights, default=0.0)
+    if maximum_weight <= 0.0:
+        raise ValueError("Fitting weights must contain a positive value")
+    # A common weight factor does not change WLS.  Removing it prevents the
+    # normalized design Gram matrix from inheriting an arbitrary weight scale.
+    weights = tuple(weight / maximum_weight for weight in weights)
     nominal = [item.nominal_point for item in controls]
     target = [item.control.target_point for item in controls]
     nominal_origin = _weighted_centroid(nominal, weights)
@@ -991,21 +1260,26 @@ def _fit_transform(
         (point[0] - target_origin[0], point[1] - target_origin[1])
         for point in target
     ]
+    normalized_centered, design_scale = _validated_normalized_design_geometry(
+        nominal, centered, weights, model
+    )
     if model == "similarity":
         denominator = math.fsum(
             weight * (point[0] * point[0] + point[1] * point[1])
-            for point, weight in zip(centered, weights)
+            for point, weight in zip(normalized_centered, weights)
         )
-        if denominator <= 1e-18:
-            raise ValueError("Similarity controls must contain distinct nominal locations")
         a = math.fsum(
             weight * (point[0] * ground[0] + point[1] * ground[1])
-            for point, ground, weight in zip(centered, target_centered, weights)
-        ) / denominator
+            for point, ground, weight in zip(
+                normalized_centered, target_centered, weights
+            )
+        ) / denominator / design_scale
         rotation_term = math.fsum(
             weight * (point[0] * ground[1] - point[1] * ground[0])
-            for point, ground, weight in zip(centered, target_centered, weights)
-        ) / denominator
+            for point, ground, weight in zip(
+                normalized_centered, target_centered, weights
+            )
+        ) / denominator / design_scale
         if math.hypot(a, rotation_term) <= 1e-15:
             raise ValueError("Similarity calibration produced a degenerate scale")
         return ResidualTransform(
@@ -1014,23 +1288,37 @@ def _fit_transform(
             target_origin,
             ((a, -rotation_term), (rotation_term, a)),
         )
-    sxx = math.fsum(weight * point[0] * point[0] for point, weight in zip(centered, weights))
-    sxy = math.fsum(weight * point[0] * point[1] for point, weight in zip(centered, weights))
-    syy = math.fsum(weight * point[1] * point[1] for point, weight in zip(centered, weights))
+    sxx = math.fsum(
+        weight * point[0] * point[0]
+        for point, weight in zip(normalized_centered, weights)
+    )
+    sxy = math.fsum(
+        weight * point[0] * point[1]
+        for point, weight in zip(normalized_centered, weights)
+    )
+    syy = math.fsum(
+        weight * point[1] * point[1]
+        for point, weight in zip(normalized_centered, weights)
+    )
     determinant = sxx * syy - sxy * sxy
-    if determinant <= 1e-14 * max(sxx * syy, 1.0):
-        raise ValueError("Affine controls must contain at least three non-collinear locations")
 
     def solve(component: int) -> tuple[float, float]:
         rx = math.fsum(
             weight * point[0] * ground[component]
-            for point, ground, weight in zip(centered, target_centered, weights)
+            for point, ground, weight in zip(
+                normalized_centered, target_centered, weights
+            )
         )
         ry = math.fsum(
             weight * point[1] * ground[component]
-            for point, ground, weight in zip(centered, target_centered, weights)
+            for point, ground, weight in zip(
+                normalized_centered, target_centered, weights
+            )
         )
-        return ((rx * syy - ry * sxy) / determinant, (ry * sxx - rx * sxy) / determinant)
+        return (
+            (rx * syy - ry * sxy) / determinant / design_scale,
+            (ry * sxx - rx * sxy) / determinant / design_scale,
+        )
 
     row_e = solve(0)
     row_n = solve(1)
@@ -1040,10 +1328,16 @@ def _fit_transform(
     return ResidualTransform(model, nominal_origin, target_origin, (row_e, row_n))
 
 
-def _errors(transform: ResidualTransform, controls: Sequence[_ProjectedControl]) -> list[float]:
+def _errors(
+    transform: ResidualTransform,
+    controls: Sequence[_ProjectedControl],
+    target_axis_to_m: float = 1.0,
+) -> list[float]:
     result = []
     for item in controls:
-        error = math.dist(transform.point(item.nominal_point), item.control.target_point)
+        error = target_axis_to_m * math.dist(
+            transform.point(item.nominal_point), item.control.target_point,
+        )
         result.append(_finite_float(error, f"GCP {item.control.point_id} residual error"))
     return result
 
@@ -1052,6 +1346,7 @@ def _fit_with_optional_robustness(
     controls: Sequence[_ProjectedControl],
     model: str,
     robust: RobustSettings,
+    target_axis_to_m: float = 1.0,
 ) -> tuple[ResidualTransform, list[float], int]:
     base_weights = [item.control.fitting_weight for item in controls]
     if model == "disabled" or not robust.enabled:
@@ -1064,7 +1359,7 @@ def _fit_with_optional_robustness(
     for iteration in range(1, robust.max_iterations + 1):
         weights = [base * factor for base, factor in zip(base_weights, factors)]
         transform = _fit_transform(controls, model, weights)
-        errors = _errors(transform, controls)
+        errors = _errors(transform, controls, target_axis_to_m)
         threshold = robust.outlier_threshold_m
         next_factors = [1.0 if error <= threshold else threshold / error for error in errors]
         iterations = iteration
@@ -1240,8 +1535,9 @@ def fit_calibration(
     target_crs = str(getattr(transformer, "target_crs", ""))
     if not source_crs or not target_crs or not callable(getattr(transformer, "point", None)):
         raise TypeError("transformer must expose source_crs, target_crs, and point()")
-    _metric_projected_crs(source_crs, "Transformer source_crs")
-    _metric_projected_crs(target_crs, "Transformer target_crs")
+    target_axis_to_m = _validate_transformer_unit_contract(
+        transformer, source_crs, target_crs,
+    )
     if expected_source_crs is not None and not _crs_equal(source_crs, expected_source_crs):
         raise ValueError("Transformer source CRS does not match the GCP profile")
     if not _crs_equal(target_crs, expected_target_crs):
@@ -1272,7 +1568,7 @@ def fit_calibration(
     training = tuple(item for item in projected if item.control.role == "train")
     robust = robust or RobustSettings(False, 1, None)
     transform, effective_training_weights, iterations = _fit_with_optional_robustness(
-        training, model, robust
+        training, model, robust, target_axis_to_m,
     )
     effective_by_id = {
         item.control.point_id: weight
@@ -1284,18 +1580,19 @@ def fit_calibration(
         control = item.control
         adjusted = transform.point(item.nominal_point)
         residual_e = _finite_float(
-            adjusted[0] - control.target_point[0],
+            target_axis_to_m * (adjusted[0] - control.target_point[0]),
             f"GCP {control.point_id} easting residual",
         )
         residual_n = _finite_float(
-            adjusted[1] - control.target_point[1],
+            target_axis_to_m * (adjusted[1] - control.target_point[1]),
             f"GCP {control.point_id} northing residual",
         )
         error = _finite_float(
-            math.hypot(residual_e, residual_n), f"GCP {control.point_id} residual error"
+            math.hypot(residual_e, residual_n),
+            f"GCP {control.point_id} residual error",
         )
         nominal_error = _finite_float(
-            math.dist(item.nominal_point, control.target_point),
+            target_axis_to_m * math.dist(item.nominal_point, control.target_point),
             f"GCP {control.point_id} nominal error",
         )
         is_training = control.role == "train"
@@ -1377,35 +1674,81 @@ def _affine_gate_failures(
 ) -> tuple[str, ...]:
     failures = list(affine.validation_failures)
     minimum = profile.validation.affine_min_improvement_ratio
-    if (
-        profile.model_selection.require_spatially_structured_similarity_residuals
-        and not profile.model_selection.spatial_structure_reviewed
-    ):
+    if not profile.model_selection.require_spatially_structured_similarity_residuals:
+        failures.append("affine spatial-structure gate is disabled")
+    elif not profile.model_selection.spatial_structure_reviewed:
         failures.append(
             "affine spatial structure has not been explicitly reviewed"
         )
-    if profile.model_selection.require_holdout_improvement:
-        if similarity is None or minimum is None:
-            failures.append("affine gate lacks a similarity baseline or improvement threshold")
-        else:
-            check_improvement = _improvement_ratio(
-                similarity.check_metrics.rmse_m, affine.check_metrics.rmse_m
+    check_sets_match = False
+    if similarity is None:
+        failures.append(
+            "affine gate lacks a similarity baseline for check point-id confirmation"
+        )
+    else:
+        similarity_check_ids = frozenset(
+            residual.point_id
+            for residual in similarity.residuals
+            if residual.role == "check"
+        )
+        affine_check_ids = frozenset(
+            residual.point_id
+            for residual in affine.residuals
+            if residual.role == "check"
+        )
+        check_sets_match = similarity_check_ids == affine_check_ids
+        if not check_sets_match:
+            failures.append(
+                "affine and similarity must use the same check point-id set; "
+                f"similarity={sorted(similarity_check_ids)!r}, "
+                f"affine={sorted(affine_check_ids)!r}"
             )
+    if not profile.model_selection.require_holdout_improvement:
+        failures.append("affine independent-holdout improvement gate is disabled")
+    if similarity is None or minimum is None or not 0.0 < minimum < 1.0:
+        failures.append(
+            "affine gate lacks a positive similarity holdout improvement threshold"
+        )
+    elif check_sets_match:
+        check_ids = {
+            residual.point_id
+            for residual in affine.residuals
+            if residual.role == "check"
+        }
+        if len(check_ids) < 3:
+            failures.append(
+                "affine promotion requires at least 3 independent check points"
+            )
+        check_metrics = (
+            ("RMSE", similarity.check_metrics.rmse_m, affine.check_metrics.rmse_m),
+            ("p95", similarity.check_metrics.p95_m, affine.check_metrics.p95_m),
+            ("max", similarity.check_metrics.max_m, affine.check_metrics.max_m),
+        )
+        for name, baseline, candidate in check_metrics:
+            check_improvement = _improvement_ratio(baseline, candidate)
             if check_improvement is None or check_improvement < minimum:
                 failures.append(
-                    f"affine check RMSE improvement {check_improvement!r} < required {minimum}"
+                    f"affine check {name} improvement {check_improvement!r} "
+                    f"< required {minimum}"
                 )
     return tuple(failures)
 
 
-def fit_profile(profile: GCPProfile, transformer: Any) -> CalibrationResult:
+def fit_profile(
+    profile: GCPProfile,
+    transformer: Any,
+    *,
+    candidate_validation: Callable[[CalibrationResult], Sequence[str]] | None = None,
+) -> CalibrationResult:
     """Fit a reviewed profile and apply deterministic model selection.
 
     ``enabled=false`` produces an auditable identity result.  Production
     callers may simply skip this function for a disabled profile.  A fitted
     result can intentionally carry ``validation_passed=False`` so its evidence
     remains inspectable; delivery callers must fail closed unless that value is
-    exactly ``True`` for an enabled profile.
+    exactly ``True`` for an enabled profile.  ``candidate_validation`` lets a
+    delivery orchestrator contribute deterministic post-fit gates (for example,
+    retained-inlier spatial coverage) before auto selection is finalized.
     """
 
     profile._validate_activation()
@@ -1449,16 +1792,53 @@ def fit_profile(profile: GCPProfile, transformer: Any) -> CalibrationResult:
             )
         return result
 
+    def apply_candidate_validation(result: CalibrationResult) -> CalibrationResult:
+        if candidate_validation is None:
+            return result
+        # This call intentionally sits outside the auto-mode fit exception
+        # handler.  A gate implementation error must abort selection instead
+        # of being mistaken for one unavailable model.
+        raw_failures = candidate_validation(result)
+        if isinstance(raw_failures, (str, bytes)):
+            raise TypeError(
+                "candidate_validation must return a sequence of failure strings"
+            )
+        try:
+            returned_failures = tuple(raw_failures)
+        except TypeError as exc:
+            raise TypeError(
+                "candidate_validation must return a sequence of failure strings"
+            ) from exc
+        external_failures: list[str] = []
+        for failure in returned_failures:
+            if not isinstance(failure, str) or not failure.strip():
+                raise TypeError(
+                    "candidate_validation must return non-empty failure strings"
+                )
+            external_failures.append(failure.strip())
+        if not external_failures:
+            return result
+        failures = result.validation_failures + tuple(external_failures)
+        return replace(
+            result,
+            validation_passed=False,
+            validation_failures=failures,
+        )
+
     if profile.requested_model != "auto":
         model = profile.requested_model
         if train_count < minimums[model]:
             raise ValueError(
                 f"{model} requires {minimums[model]} reviewed training controls in this profile"
             )
-        result = fit(model)
+        result = apply_candidate_validation(fit(model))
         candidates: list[CandidateSummary] = []
         if model == "affine":
-            similarity = fit("similarity") if train_count >= minimums["similarity"] else None
+            similarity = (
+                apply_candidate_validation(fit("similarity"))
+                if train_count >= minimums["similarity"]
+                else None
+            )
             failures = _affine_gate_failures(result, similarity, profile)
             result = replace(
                 result,
@@ -1493,6 +1873,7 @@ def fit_profile(profile: GCPProfile, transformer: Any) -> CalibrationResult:
                 CandidateSummary(model, False, False, None, None, (str(exc),))
             )
             continue
+        candidate = apply_candidate_validation(candidate)
         fitted[model] = candidate
         failures = candidate.validation_failures
         if model == "affine":
@@ -1507,16 +1888,7 @@ def fit_profile(profile: GCPProfile, transformer: Any) -> CalibrationResult:
         if selected is None and candidate.validation_passed:
             selected = candidate
     if selected is None:
-        available = [item for item in fitted.values()]
-        if not available:
-            raise ValueError("No calibration model can be fitted from the reviewed controls")
-        selected = min(
-            available,
-            key=lambda item: (
-                math.inf if item.check_metrics.rmse_m is None else item.check_metrics.rmse_m,
-                profile.model_selection.candidate_order.index(item.selected_model),
-            ),
-        )
+        raise ValueError("No calibration model passed independent validation")
     return replace(selected, requested_model="auto", candidates=tuple(summaries))
 
 

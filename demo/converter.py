@@ -5,11 +5,33 @@ Reads .dwg via LibreDWG, writes QGIS-ready GeoPackage.
 No intermediate formats. No GDAL DWG driver.
 """
 
+import os
+import sys
+
+
+def _require_legacy_entrypoint_opt_in():
+    """Refuse direct execution unless the historical converter is requested."""
+    if os.environ.get("CAD2GIS_ENABLE_LEGACY") != "1":
+        raise SystemExit(
+            "DEPRECATED legacy conversion entrypoint is disabled.\n"
+            "Use the canonical `cad2gis` CLI instead.\n"
+            "To run this historical implementation intentionally, set "
+            "CAD2GIS_ENABLE_LEGACY=1."
+        )
+    print(
+        "WARNING: DEPRECATED legacy converter enabled via "
+        "CAD2GIS_ENABLE_LEGACY=1; prefer the canonical `cad2gis` CLI.",
+        file=sys.stderr,
+    )
+
+
+if __name__ == "__main__":
+    _require_legacy_entrypoint_opt_in()
+
+
 import ctypes
 import math
-import os
 import subprocess
-import sys
 import tempfile
 from collections import defaultdict
 

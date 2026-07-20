@@ -19,7 +19,7 @@ import urllib.parse
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 
 BUNDLE_SCHEMA_VERSION = "cad2gis.review_bundle.v2"

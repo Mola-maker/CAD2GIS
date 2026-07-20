@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Thin executable wrapper; conversion logic lives in cad2gis_v3.pipeline."""
+"""Compatibility wrapper for the canonical :mod:`cad2gis` command line."""
 
-from cad2gis_v3.cli import main
+from cad2gis.cli import main
 
 
 if __name__ == "__main__":

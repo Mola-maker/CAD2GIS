@@ -1,0 +1,38 @@
+{
+  "annotation_families": [],
+  "block_families": {},
+  "coverage": {
+    "semantics": {
+      "allowlist": [],
+      "policy": "fail"
+    },
+    "styles": {
+      "allowlist": [],
+      "policy": "fail"
+    }
+  },
+  "decision_rules": {},
+  "display_label_rules": {},
+  "field_rules": {},
+  "labels": {},
+  "layers": {},
+  "policy": {
+    "crossing_is_connection": false,
+    "dimension_is_cable_geometry": false,
+    "force_route_components_connected": false,
+    "generic_line_is_cable": false,
+    "source_geometry_immutable": true,
+    "support_is_optical_node": false
+  },
+  "positive_route_layer_regex": "(?!)",
+  "project_id": "source-52a163db58d2",
+  "review": {
+    "status": "draft"
+  },
+  "schema_version": "cad2gis-mapping-registry-v2",
+  "source_binding": {
+    "inventory_sha256": "18189a51c820da9ff16d9087989a7fa410dccf11727af96c0aeecf767da19f61",
+    "source_sha256": "52a163db58d2115bec5d974f0dbac7d5ee62d09c3be958e4432c513fd141db10"
+  },
+  "thresholds_native_m": {}
+}
