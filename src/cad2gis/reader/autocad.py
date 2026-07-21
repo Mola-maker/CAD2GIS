@@ -1,8 +1,9 @@
-"""Direct, read-only AutoCAD DWG ingestion for the experiment pipeline.
+"""DEPRECATED: Windows-only AutoCAD canonical reader.
 
-The reader deliberately does not create DXF files.  On Windows it discovers
-an installed AutoCAD Core Console (or accepts an explicit executable), opens
-the DWG read-only, and inventories model/layout/block-definition objects.
+Use :mod:`cad2gis.reader.libredwg` for the cross-platform primary path.
+This reader is retained as opt-in fallback via ``CAD2GIS_READER_BACKEND=autocad``.
+Production robustness branch now uses libredwg; this module will be removed
+once all AutoCAD-specific dependencies are migrated.
 """
 
 from __future__ import annotations
@@ -19,8 +20,8 @@ import time
 import uuid
 from pathlib import Path
 
-from apd_rules import is_telecom_block, link_apd_annotations
-from cad2gis_v3.model import (
+from cad2gis.apd_rules import is_telecom_block, link_apd_annotations
+from cad2gis.cad2gis_v3.model import (
     CURVE_FACTS_SCHEMA,
     canonical_curve_facts,
     canonical_curve_fingerprint,

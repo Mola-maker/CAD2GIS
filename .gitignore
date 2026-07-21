@@ -50,3 +50,16 @@ ErrorReports/
 # robustness: dev replay artifacts
 experiment/py_scripts/replay_apd_libredwg_dev_report.json
 /tmp/apd_libredwg_dev_replay*/
+
+# robustness: OMC transient state
+.omc/state/
+.omc/sessions/
+.omc/project-memory.json
+.omc/.gitignore
+
+# robustness: verification output artifacts
+baselines/apd_hutabohu/output/
+
+# robustness: temp venv caches
+.pytest_cache/
+__pycache__/

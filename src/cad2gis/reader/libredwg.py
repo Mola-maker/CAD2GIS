@@ -446,7 +446,7 @@ def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, s
     order-preserving on handle value (validated against the canonical AutoCAD
     INSERT census for APD).  Results are cached under /tmp by source hash.
     """
-    cache = Path(tempfile.gettempdir()) / f"libredwg_dev_blocks_{source_sha256[:16]}.json"
+    cache = Path(tempfile.gettempdir()) / f"libredwg_blocks_{source_sha256[:16]}.json"
     if not cache.exists():
         try:
             proc = subprocess.run(
@@ -819,7 +819,7 @@ def _build_record(
 
     raw_properties = {
         "schema_version": _RAW_PROPERTIES_SCHEMA,
-        "extraction_backend": "libredwg_dev",
+        "extraction_backend": "libredwg",
         "reader_backend_status": "supported" if inventory_support_status == "full" else "unsupported",
         "object_name": object_name,
         "dwg_type_name": dwg_type_name,
@@ -992,10 +992,10 @@ def extract_dwg_records(source_path) -> DWGRecordInventory:
     anon_block_names = _read_anon_block_names_json(source, source_sha256)
     block_headers = _read_block_header_names(data, anon_fallback=anon_block_names)
     layer_styles = _read_layer_styles(data)
-    cursor_path = Path(tempfile.gettempdir()) / f"libredwg_dev_reader_{source_sha256[:16]}.json"
+    cursor_path = Path(tempfile.gettempdir()) / f"libredwg_reader_{source_sha256[:16]}.json"
 
     diagnostics: dict[str, Any] = {
-        "extraction_backend": "libredwg_dev",
+        "extraction_backend": "libredwg",
         "skipped_rows": 0,
         "inventory_complete": True,
         "metadata_evidence": "reader",
@@ -1121,7 +1121,7 @@ def extract_dwg_records(source_path) -> DWGRecordInventory:
         "native_length": None,
         "raw_properties": {
             "schema_version": _RAW_PROPERTIES_SCHEMA,
-            "extraction_backend": "libredwg_dev",
+            "extraction_backend": "libredwg",
             "reader_backend_status": "supported",
             "object_name": "DOCUMENT_METADATA",
             "dwg_type_name": "DOCUMENT_METADATA",

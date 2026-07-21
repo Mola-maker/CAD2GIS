@@ -29,10 +29,10 @@ from types import ModuleType
 from typing import Any
 
 BACKEND_PATH_ENV = "CAD2GIS_BACKEND_PATH"
-BACKEND_PACKAGE = "cad2gis_v3"
+BACKEND_PACKAGE = "cad2gis.cad2gis_v3"
 PROJECT_BACKEND_MODULES = (
-    "cad2gis_v3.project_profile",
-    "cad2gis_v3.profile_builder",
+    "cad2gis.cad2gis_v3.project_profile",
+    "cad2gis.cad2gis_v3.profile_builder",
 )
 
 
@@ -59,8 +59,8 @@ def _editable_backend_root() -> Path | None:
     repository_root = src_dir.parent
     if src_dir.name != "src" or not (repository_root / "pyproject.toml").is_file():
         return None
-    candidate = repository_root / "experiment" / "py_scripts"
-    if (candidate / BACKEND_PACKAGE / "__init__.py").is_file():
+    candidate = repository_root / "src" / "cad2gis"
+    if (candidate / "cad2gis_v3" / "__init__.py").is_file():
         return candidate.resolve()
     return None
 
@@ -70,7 +70,10 @@ def _valid_backend_root(candidate: Path) -> Path | None:
         resolved = candidate.resolve()
     except OSError:
         return None
-    if (resolved / BACKEND_PACKAGE / "__init__.py").is_file():
+    package_path = resolved
+    for part in BACKEND_PACKAGE.split("."):
+        package_path = package_path / part
+    if (package_path / "__init__.py").is_file():
         return resolved
     return None
 
@@ -91,6 +94,13 @@ def _importable_backend_location() -> str | None:
     return BACKEND_PACKAGE
 
 
+def _backend_package_path(root: Path) -> Path:
+    package_path = root
+    for part in BACKEND_PACKAGE.split("."):
+        package_path = package_path / part
+    return package_path
+
+
 def backend_deployment() -> dict[str, str | None]:
     """Describe the selected backend without importing backend code."""
 
@@ -101,7 +111,7 @@ def backend_deployment() -> dict[str, str | None]:
             if root is not None:
                 return {
                     "mode": "external_path",
-                    "location": str((root / BACKEND_PACKAGE).resolve()),
+                    "location": str(_backend_package_path(root).resolve()),
                 }
         return {
             "mode": "invalid_external_path",
@@ -116,7 +126,7 @@ def backend_deployment() -> dict[str, str | None]:
     if editable is not None:
         return {
             "mode": "editable_checkout",
-            "location": str((editable / BACKEND_PACKAGE).resolve()),
+            "location": str(_backend_package_path(editable).resolve()),
         }
     return {"mode": "missing", "location": None}
 
@@ -205,12 +215,12 @@ def call_conversion_backend(
 ) -> Any:
     """Construct the v3 request and invoke its canonical ``convert`` function."""
 
-    backend = load_backend_module("cad2gis_v3.pipeline")
+    backend = load_backend_module("cad2gis.cad2gis_v3.pipeline")
     request_type = getattr(backend, "ConversionRequest", None)
     convert = getattr(backend, "convert", None)
     if request_type is None or not callable(convert):
         raise BackendContractError(
-            "cad2gis_v3.pipeline must expose ConversionRequest and convert"
+            "cad2gis.cad2gis_v3.pipeline must expose ConversionRequest and convert"
         )
     request = request_type(
         source=Path(source),

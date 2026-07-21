@@ -21,20 +21,11 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BACKEND = ROOT / "experiment" / "py_scripts"
+BACKEND = ROOT / "src"
 SRC = ROOT / "src"
-APD_SOURCE = ROOT / "experiment" / "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg"
-APD_SOURCE_PROFILE = ROOT / "experiment" / "config" / "apd_source_profile.json"
-APD_MAPPING = ROOT / "experiment" / "config" / "apd_mapping_registry.json"
-
-
-def _backend_module(name: str):
-    """Load a backend stage without requiring an editable install."""
-
-    backend_text = str(BACKEND)
-    if backend_text not in sys.path:
-        sys.path.insert(0, backend_text)
-    return importlib.import_module(name)
+APD_SOURCE = ROOT / "baselines" / "apd_hutabohu" / "records" / "readcad_review_bundle.json"
+APD_SOURCE_PROFILE = ROOT / "baselines" / "apd_hutabohu" / "config" / "source_profile.json"
+APD_MAPPING = ROOT / "baselines" / "apd_hutabohu" / "config" / "mapping_registry.json"
 
 
 def _canonical_module(name: str):
@@ -147,7 +138,7 @@ def _draft_profile(source: Path) -> dict:
 def test_reviewed_profile_and_mapping_registry_are_bound_to_one_source_hash(tmp_path: Path):
     """A reviewed APD pack cannot be reused for a second DWG byte stream."""
 
-    config = _backend_module("cad2gis_v3.config")
+    config = _canonical_module("cad2gis.cad2gis_v3.config")
     profile = config.SourceProfile.load(APD_SOURCE_PROFILE)
     assert profile.validate_source(APD_SOURCE) == profile.source_sha256
 
@@ -168,8 +159,8 @@ def test_reviewed_profile_and_mapping_registry_are_bound_to_one_source_hash(tmp_
 def test_draft_profile_is_rejected_before_ingest(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Bootstrap output is evidence-only until a human review changes its state."""
 
-    config = _backend_module("cad2gis_v3.config")
-    pipeline = _backend_module("cad2gis_v3.pipeline")
+    config = _canonical_module("cad2gis.cad2gis_v3.config")
+    pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
     source = tmp_path / "draft.dwg"
     source.write_bytes(b"not-a-real-dwg-but-a-source-bound-fixture")
     profile_path = _write_json(tmp_path / "source_profile.json", _draft_profile(source))
@@ -205,8 +196,8 @@ def test_bootstrap_project_pack_reports_draft_and_cannot_convert(
 ):
     """The real onboarding pack remains review input, never a runnable profile."""
 
-    onboarding = _backend_module("cad2gis_v3.project_profile")
-    pipeline = _backend_module("cad2gis_v3.pipeline")
+    onboarding = _canonical_module("cad2gis.cad2gis_v3.project_profile")
+    pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
     source = tmp_path / "onboarding.dwg"
     source.write_bytes(b"source inventory fixture")
     project_dir = tmp_path / "project"
@@ -237,9 +228,9 @@ def test_bootstrap_project_pack_reports_draft_and_cannot_convert(
 
 
 def test_unknown_semantics_are_structured_coverage_not_silent_drop():
-    semantics = _backend_module("cad2gis_v3.semantics")
-    model = _backend_module("cad2gis_v3.model")
-    config = _backend_module("cad2gis_v3.config")
+    semantics = _canonical_module("cad2gis.cad2gis_v3.semantics")
+    model = _canonical_module("cad2gis.cad2gis_v3.model")
+    config = _canonical_module("cad2gis.cad2gis_v3.config")
     profile = config.SourceProfile.load(APD_SOURCE_PROFILE)
     registry = config.MappingRegistry.load(APD_MAPPING, profile.source_sha256)
 
@@ -271,8 +262,8 @@ def test_unknown_semantics_are_structured_coverage_not_silent_drop():
 
 
 def test_unknown_linetype_is_visible_style_coverage(tmp_path: Path):
-    styles = _backend_module("cad2gis_v3.styles")
-    model = _backend_module("cad2gis_v3.model")
+    styles = _canonical_module("cad2gis.cad2gis_v3.styles")
+    model = _canonical_module("cad2gis.cad2gis_v3.model")
     feature = model.Feature(
         feature_key="style-fixture",
         feature_class="CABLE",
@@ -302,7 +293,7 @@ def test_unknown_linetype_is_visible_style_coverage(tmp_path: Path):
 
 
 def test_mm_and_ft_require_reviewed_scaling_and_preserve_unit_provenance():
-    units = _backend_module("cad2gis_v3.units")
+    units = _canonical_module("cad2gis.cad2gis_v3.units")
     assert units.resolve_insunits(4).metres_per_unit == pytest.approx(0.001)
     assert units.resolve_insunits(2).metres_per_unit == pytest.approx(0.3048)
 
@@ -334,7 +325,7 @@ def test_mm_and_ft_require_reviewed_scaling_and_preserve_unit_provenance():
 
 
 def test_unknown_or_local_crs_requires_authoritative_registration():
-    units = _backend_module("cad2gis_v3.units")
+    units = _canonical_module("cad2gis.cad2gis_v3.units")
     with pytest.raises(units.UnitCrsContractError, match="cannot be guessed|registration"):
         units.build_unit_crs_contract(6, None, "EPSG:3857")
     with pytest.raises(units.UnitCrsContractError, match="cannot be guessed|registration"):
@@ -353,7 +344,7 @@ def test_unknown_or_local_crs_requires_authoritative_registration():
 
 
 def test_reader_protocol_rejects_malformed_rows_with_location():
-    reader = _backend_module("autocad_reader")
+    reader = _canonical_module("cad2gis.reader.autocad")
     with pytest.raises(reader.BulkProtocolError, match=r"bulk row 17.*field points"):
         reader._parse_bulk_points("0,1;2", line_number=17)
     with pytest.raises(reader.BulkProtocolError, match=r"bulk row 4.*field column_count"):
@@ -363,8 +354,8 @@ def test_reader_protocol_rejects_malformed_rows_with_location():
 
 
 def test_line_and_bulge_route_preserve_source_segments_and_native_length():
-    curves = _backend_module("cad2gis_v3.curve_geometry")
-    model = _backend_module("cad2gis_v3.model")
+    curves = _canonical_module("cad2gis.cad2gis_v3.curve_geometry")
+    model = _canonical_module("cad2gis.cad2gis_v3.model")
     chord = 10.0
     bulge = 0.5
     radius = chord * (1.0 + bulge * bulge) / (4.0 * abs(bulge))
@@ -435,8 +426,8 @@ def test_line_and_bulge_route_preserve_source_segments_and_native_length():
 
 
 def test_insert_transform_uses_layout_block_base_and_rotation_without_moving_route():
-    ports = _backend_module("cad2gis_v3.ports")
-    model = _backend_module("cad2gis_v3.model")
+    ports = _canonical_module("cad2gis.cad2gis_v3.ports")
+    model = _canonical_module("cad2gis.cad2gis_v3.model")
     definition = _source_entity(
         model, "def-symbol", kind="LINE", layout="BLOCKDEF:SYMBOL",
         points=((10.0, 0.0), (11.0, 0.0)),
