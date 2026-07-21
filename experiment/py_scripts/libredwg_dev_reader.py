@@ -23,6 +23,8 @@ import hashlib
 import json
 import math
 import os
+import re
+import subprocess
 import tempfile
 from collections import Counter
 from pathlib import Path
@@ -404,8 +406,13 @@ def _flush_cursor(diagnostics: dict, path: Path) -> None:
         pass
 
 
-def _read_block_header_names(data) -> dict[int, str]:
-    """Map block header handle values to UTF-8 block names."""
+def _read_block_header_names(data, anon_fallback: dict[int, str] | None = None) -> dict[int, str]:
+    """Map block header handle values to UTF-8 block names.
+
+    Anonymous headers (*U/*D) decode without the numeric suffix via dynapi on
+    this R2018 file; ``anon_fallback`` (dwgread JSON side channel) supplies the
+    full numbered name keyed by block header handle.
+    """
     headers: dict[int, str] = {}
     for i in range(data.num_objects):
         try:
@@ -418,10 +425,82 @@ def _read_block_header_names(data) -> dict[int, str]:
             bh = obj.tio.object.tio.BLOCK_HEADER
             ptr = int(bh.this)
             name = _entity_utf8_text(ptr, "BLOCK_HEADER", "name")
+            if anon_fallback:
+                name = anon_fallback.get(obj.handle.value, name)
             headers[obj.handle.value] = name
         except Exception:
             continue
     return headers
+
+
+_ANON_NAME_RE = re.compile(r"^\*[UD]\d+$")
+
+
+def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, str]:
+    """Resolve anonymous block effective names (*U##/*D##) via dwgread JSON.
+
+    LibreDWG dynapi decodes anonymous BLOCK_HEADER names without the numeric
+    suffix on this R2018 file.  The ``dwgread -O json`` side channel (see wiki
+    libredwg-swig-utf-16-r2018-dwg) carries each bare BLOCK_HEADER plus a
+    following companion entry holding the full numbered name; pairing is
+    order-preserving on handle value (validated against the canonical AutoCAD
+    INSERT census for APD).  Results are cached under /tmp by source hash.
+    """
+    cache = Path(tempfile.gettempdir()) / f"libredwg_dev_blocks_{source_sha256[:16]}.json"
+    if not cache.exists():
+        try:
+            proc = subprocess.run(
+                ["dwgread", "-O", "json", str(source)],
+                capture_output=True,
+                timeout=600,
+                check=False,
+            )
+        except Exception:
+            return {}
+        if proc.returncode != 0 or not proc.stdout:
+            return {}
+        cache.write_bytes(proc.stdout)
+    try:
+        doc = json.loads(cache.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    bare: list[int] = []
+    numbered: list[tuple[int, str]] = []
+
+    def _walk(node: Any) -> None:
+        if isinstance(node, dict):
+            name = node.get("name")
+            handle = node.get("handle")
+            if (
+                isinstance(name, str)
+                and isinstance(handle, list)
+                and len(handle) >= 3
+                and isinstance(handle[-1], int)
+            ):
+                hv = handle[-1]
+                if node.get("object") == "BLOCK_HEADER" and name in ("*U", "*D"):
+                    bare.append(hv)
+                elif _ANON_NAME_RE.match(name):
+                    numbered.append((hv, name))
+            for value in node.values():
+                _walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                _walk(value)
+
+    _walk(doc)
+    bare.sort()
+    numbered.sort()
+    mapping: dict[int, str] = {}
+    j = 0
+    for hv in bare:
+        while j < len(numbered) and numbered[j][0] <= hv:
+            j += 1
+        if j < len(numbered) and numbered[j][0] - hv <= 5:
+            mapping[hv] = numbered[j][1]
+            j += 1
+    return mapping
 
 
 def _read_layer_styles(data) -> dict[str, dict[str, Any]]:
@@ -555,6 +634,7 @@ def _build_record(
     cad_role: str,
     layer_styles: dict[str, dict[str, Any]],
     reasons: list[str],
+    anon_block_names: dict[int, str] | None = None,
 ) -> dict[str, Any] | None:
     """Build one v3-compatible record from a LibreDWG entity."""
     handle = obj.handle.value
@@ -678,6 +758,13 @@ def _build_record(
             if bh_ref and bh_ref.obj and bh_ref.obj.type == DWG_TYPE_BLOCK_HEADER:
                 bh = bh_ref.obj.tio.object.tio.BLOCK_HEADER
                 block_name = _entity_utf8_text(int(bh.this), "BLOCK_HEADER", "name")
+                if anon_block_names:
+                    # Anonymous headers decode without the numeric suffix via
+                    # dynapi; the dwgread JSON side channel carries the full
+                    # numbered/effective name keyed by block header handle.
+                    block_name = anon_block_names.get(
+                        bh_ref.obj.handle.value, block_name
+                    )
             if not block_name:
                 reasons.append("libredwg_insert_block_name_unreadable")
             geometry_status = "available"
@@ -902,9 +989,9 @@ def extract_dwg_records(source_path) -> DWGRecordInventory:
                 f"LibreDWG failed to read DWG (error {read_err}): {source}"
             )
 
-    block_headers = _read_block_header_names(data)
+    anon_block_names = _read_anon_block_names_json(source, source_sha256)
+    block_headers = _read_block_header_names(data, anon_fallback=anon_block_names)
     layer_styles = _read_layer_styles(data)
-
     cursor_path = Path(tempfile.gettempdir()) / f"libredwg_dev_reader_{source_sha256[:16]}.json"
 
     diagnostics: dict[str, Any] = {
@@ -916,6 +1003,7 @@ def extract_dwg_records(source_path) -> DWGRecordInventory:
         "total_objects": int(data.num_objects),
         "unsupported_reason_counts": {},
         "cursor_path": str(cursor_path),
+        "anon_block_names_resolved": len(anon_block_names),
     }
 
     records: list[dict[str, Any]] = []
@@ -964,6 +1052,7 @@ def extract_dwg_records(source_path) -> DWGRecordInventory:
                 cad_role=cad_role,
                 layer_styles=layer_styles,
                 reasons=list(layout_reasons),
+                anon_block_names=anon_block_names,
             )
             if record is None:
                 continue
