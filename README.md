@@ -175,3 +175,104 @@ APD 运行应从仓库根目录调用 `cad2gis convert ... --project experiment`
 `docs/APD_CAD2GIS_EXECUTION_PLAN.md` 与 `docs/APD_CAD2GIS_HANDOFF.md` 记录早期
 单图纸工作，可能包含已经被 v3 替代的命令、CRS 或八层假设；新操作以本 README、
 CLI `--help` 和 Architecture v3 为准。
+
+## robustness 分支与 LibreDWG dev-reader
+
+`robustness` 分支（基于 `newmodel@ff41501`，轻裁剪）实现了一个**非 canonical**
+的 Linux DWG 读取后端 `libredwg_dev_reader`，用于本机重放与开发测试，不替代
+AutoCAD canonical 路径。生产交付仍由 canonical `autocad_reader.py`（Windows）
+权威。
+
+### 角色与边界
+
+| 维度 | canonical (AutoCAD) | dev-reader (LibreDWG) |
+| --- | --- | --- |
+| 操作系统 | Windows | Linux/WSL2（本机） |
+| 读取能力 | 全 DWG（ACCORECONSOLE） | 受限（无 DIMENSION/HATCH 几何/部分块属性） |
+| 交付权威 | 是 | **否**（仅 dev/replay/test） |
+| `extraction_backend` 标记 | （默认/未标记） | `libredwg_dev` |
+| metadata 证据 | reader | reader 或 synthetic（开关门控） |
+
+dev-reader 走 v3 reader 契约（`extract_dwg_records` → records +
+`compatibility diagnostics`），LibreDWG 局限全部转为 typed unsupported 记录
+（`inventory_support_status="inventory_only"` +
+`raw_properties["unsupported_reasons"]`，原因码以 `libredwg_` 前缀），零静默
+丢失。`cad2gis_v3.ingest.py` 与 `autocad_reader.py` 在本分支**零改动**——
+dev-only 入口走 `cad2gis_v3.ingest_dev` wrapper，避免合并泄漏。
+
+### 本机运行（WSL2）
+
+```bash
+# 安装 LibreDWG（系统 .so）
+sudo apt install libredwg-dev    # 或本地 build；`dwgread -v` 应可执行
+
+# 创建 dev profile（已随仓库提供 apd_source_profile_dev_libredwg.json）
+# 仅当 LibreDWG 读不出 CGEOCS 时才需要 CAD2GIS_DEV_READER=1 显式开关
+PYTHONPATH=src:experiment/py_scripts CAD2GIS_DEV_READER=1 \
+  /tmp/cad2gis-venv/bin/python -c "
+from cad2gis_v3.ingest_dev import ingest
+from pathlib import Path
+from cad2gis_v3.config import SourceProfile
+import json
+p = SourceProfile.from_mapping(json.loads(Path('experiment/config/apd_source_profile_dev_libredwg.json').read_text()))
+entities, diag = ingest('experiment/APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg', p)
+print(diag['census'], diag['reader_protocol']['extraction_backend'])
+"
+
+# 跑 7 项契约测试
+PYTHONPATH=src:experiment/py_scripts \
+  /tmp/cad2gis-venv/bin/python -m pytest experiment/py_scripts/test_libredwg_dev_reader.py -v
+
+# 跑 APD DWG 端到端重放并对账
+PYTHONPATH=src:experiment/py_scripts CAD2GIS_DEV_READER=1 \
+  /tmp/cad2gis-venv/bin/python experiment/py_scripts/replay_apd_libredwg_dev.py
+```
+
+### 对账口径
+
+`replay_apd_libredwg_dev.py` 与 `experiment/runs/apd_architecture_v3_complete/`
+基线做**两层对账**：
+
+| 层 | 来源 | 期望（基线） |
+| --- | --- | --- |
+| delivery | `apd_delivery.gpkg` 表计数 | BOITE=43 / CABLE=6 / PTECH=167 / IMB=682 / SITE=2 / INFRASTRUCTURE=0 / ZNRO=0 / ZPM=0 |
+| evidence | `apd_evidence.gpkg` 表计数 | cable_span_segments=139 / physical_span_evidence=170 / source_route_evidence=6 |
+
+**当前已知偏差（2026-07-21 实测，皆 reader_fidelity）**：
+
+- `delivery.BOITE` 44 vs 43（+1）
+- `delivery.PTECH` 172 vs 167（+5）
+- `delivery.SITE` 3 vs 2（+1）
+- `evidence.physical_span_evidence` 0 vs 170（**LibreDWG 完全读不出 DIMENSION**，因此
+  跨度长度无法校准；这是 dev-reader 已知最大局限，结构性 fallback 是用拓扑反推
+  长度）
+- CABLE / IMB / cable_span_segments / source_route_evidence **完全匹配**
+
+偏差三分法（reader_fidelity / pipeline_behavior / baseline_drift）由 reader 协议
+中 `unsupported_reason_counts` 自动归因；任何"unexplained"偏差即为硬 FAIL。
+所有偏差附 typed 解释写入 `replay_apd_libredwg_dev_report.json`（gitignored）。
+
+### 合并界面（隔离声明）
+
+robustness 分支特有的变更（合并回 newmodel 时由组员评审取舍）：
+
+- `.gitignore`：增加 `.omc/` 放行（dev 知识库随分支版本化）+ `.pytest-tmp-*`
+  /`build/`/`ErrorReports/` 防垃圾
+- `.omc/` 目录：`specs/plans/wiki/notepad.md` 已提交
+- `experiment/py_scripts/libredwg_dev_reader.py`：dev-only reader
+- `experiment/py_scripts/cad2gis_v3/ingest_dev.py`：dev-only ingest wrapper
+- `experiment/py_scripts/test_libredwg_dev_reader.py`：7 项契约测试
+- `experiment/py_scripts/replay_apd_libredwg_dev.py`：dev replay driver
+- `experiment/config/apd_source_profile_dev_libredwg.json`：dev profile（保留
+  canonical `dwg_cgeocs`/`dwg_insunits` 原值并附 `_dev_note`）
+- 轻裁剪删除的旧 run bundles / `.pytest-tmp-*` / `build/` / `ErrorReports/`
+
+**canonical 零触碰**（合并泄漏风险构造性消除）：
+
+```bash
+git diff ff41501..robustness -- \
+  experiment/py_scripts/cad2gis_v3/ingest.py \
+  experiment/py_scripts/autocad_reader.py \
+  experiment/config/apd_source_profile.json
+# 预期：空输出
+```
