@@ -502,7 +502,7 @@ class SourceProfile:
             if schema_version == "cad2gis-source-profile-v1"
             else legacy_base | {"spatial_coverage_policy"}
         )
-        unknown = set(value) - required
+        unknown = {key for key in value if key not in required and not key.startswith("_")}
         missing = required - set(value)
         if missing or unknown:
             raise ValueError(f"Invalid source profile keys; missing={sorted(missing)}, unknown={sorted(unknown)}")
