@@ -46,3 +46,7 @@ demo/output/
 .pytest-tmp-*
 build/
 ErrorReports/
+
+# robustness: dev replay artifacts
+experiment/py_scripts/replay_apd_libredwg_dev_report.json
+/tmp/apd_libredwg_dev_replay*/
