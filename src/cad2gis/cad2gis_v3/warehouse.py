@@ -19,7 +19,7 @@ from pathlib import Path
 
 from osgeo import ogr
 
-from schema_config import BOITE, CABLE, IMB, INFRASTRUCTURE_FC, PTECH, SITE, ZNRO, ZPM
+from .schema_config import BOITE, CABLE, IMB, INFRASTRUCTURE_FC, PTECH, SITE, ZNRO, ZPM
 
 from .curve_geometry import delivery_points, delivery_segments
 from .georef import DirectTransformer

@@ -20,12 +20,12 @@ PRODUCTION_CONVERSION_SCOPE = "production-conversion"
 PRODUCTION_CONVERSION_SCOPE_VERSION = 3
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
-# Paths are relative to experiment/py_scripts.  Keep this list explicit: adding
+# Paths are relative to src/cad2gis.  Keep this list explicit: adding
 # a runtime conversion dependency is an architectural decision and must update
 # the recorded scope, while optional review/provider modules remain outside it.
 PRODUCTION_CONVERSION_FILES = (
     "apd_rules.py",
-    "autocad_reader.py",
+    "reader/autocad.py",
     "cad2gis_v3/__init__.py",
     "cad2gis_v3/calibration.py",
     "cad2gis_v3/cli.py",
@@ -41,14 +41,13 @@ PRODUCTION_CONVERSION_FILES = (
     "cad2gis_v3/ports.py",
     "cad2gis_v3/project_profile.py",
     "cad2gis_v3/runtime_provenance.py",
+    "cad2gis_v3/schema_config.py",
     "cad2gis_v3/semantics.py",
     "cad2gis_v3/spatial_coverage.py",
     "cad2gis_v3/styles.py",
     "cad2gis_v3/topology.py",
     "cad2gis_v3/units.py",
     "cad2gis_v3/warehouse.py",
-    "convert_v3.py",
-    "schema_config.py",
 )
 
 

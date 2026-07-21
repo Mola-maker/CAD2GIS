@@ -166,18 +166,18 @@ def collect_checks(
             detail=(
                 f"{contract['selected_mode']}: {location}"
                 if location
-                else "no supported cad2gis_v3 backend deployment was found"
+                else "no supported cad2gis.cad2gis_v3 backend deployment was found"
             ),
             remediation=(
                 None
                 if location
-                else f"Install cad2gis_v3 or set {BACKEND_PATH_ENV} to its parent directory."
+                else f"Install cad2gis.cad2gis_v3 or set {BACKEND_PATH_ENV} to its parent directory."
             ),
         )
     )
     if deep and location:
         try:
-            load_backend_module("cad2gis_v3.pipeline")
+            load_backend_module("cad2gis.cad2gis_v3.pipeline")
         except Exception as exc:  # A diagnostic must report, not crash.
             checks.append(
                 Check(
@@ -192,7 +192,7 @@ def collect_checks(
                 Check(
                     name="backend_import",
                     status="ok",
-                    detail="cad2gis_v3.pipeline imports successfully",
+                    detail="cad2gis.cad2gis_v3.pipeline imports successfully",
                 )
             )
 

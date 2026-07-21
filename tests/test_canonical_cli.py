@@ -124,7 +124,7 @@ def test_wheel_runtime_does_not_search_arbitrary_working_directory(
     fake_runtime = tmp_path / "site-packages" / "cad2gis" / "runtime.py"
     fake_runtime.parent.mkdir(parents=True)
     fake_runtime.write_text("", encoding="utf-8")
-    accidental = tmp_path / "work" / "experiment" / "py_scripts" / "cad2gis_v3"
+    accidental = tmp_path / "work" / "src" / "cad2gis" / "cad2gis_v3"
     accidental.mkdir(parents=True)
     (accidental / "__init__.py").write_text("", encoding="utf-8")
     monkeypatch.chdir(tmp_path / "work")
@@ -139,7 +139,7 @@ def test_explicit_backend_path_is_supported(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     backend_root = tmp_path / "backend"
-    package = backend_root / "cad2gis_v3"
+    package = backend_root / "cad2gis" / "cad2gis_v3"
     package.mkdir(parents=True)
     (package / "__init__.py").write_text("", encoding="utf-8")
     monkeypatch.setenv(runtime.BACKEND_PATH_ENV, str(backend_root))

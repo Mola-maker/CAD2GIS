@@ -4,17 +4,24 @@ from __future__ import annotations
 
 from collections import Counter
 from pathlib import Path
+from typing import Callable
 
-from autocad_reader import extract_dwg_records
-
+from ..reader.contracts import DWGRecordInventory
 from .config import SourceProfile
 from .model import SourceEntity
 
 
-def ingest(source: str | Path, profile: SourceProfile) -> tuple[list[SourceEntity], dict]:
+def ingest(
+    source: str | Path,
+    profile: SourceProfile,
+    *,
+    extract_records: Callable[[Path], DWGRecordInventory] | None = None,
+) -> tuple[list[SourceEntity], dict]:
     source_path = Path(source).resolve()
     source_hash = profile.validate_source(source_path)
-    records = extract_dwg_records(source_path)
+    if extract_records is None:
+        from ..reader.autocad import extract_dwg_records as extract_records
+    records = extract_records(source_path)
     reader_protocol = dict(getattr(records, "diagnostics", {}) or {})
     if (
         int(reader_protocol.get("skipped_rows", 0) or 0) != 0
