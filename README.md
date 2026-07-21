@@ -65,7 +65,7 @@ cad2gis doctor --deep --strict
 ```
 
 `--deep` 会导入原生 GIS 依赖和后端，`--strict` 会在当前部署不能转换时返回非零
-状态。安装包本身不把 `experiment/` 后端塞入 wheel；支持的后端部署方式是：已安装
+状态。安装包本身包含 `cad2gis.cad2gis_v3` 后端；支持的后端部署方式是：已安装
 且可导入的 `cad2gis.cad2gis_v3`、指向包含 `cad2gis.cad2gis_v3` 及其同级 reader 模块目录的
 `CAD2GIS_BACKEND_PATH`，或本仓库的 editable checkout。以 `doctor` 输出为准，
 不要根据当前工作目录猜测后端是否可用。
@@ -175,7 +175,7 @@ inventory-only 样本不能产生精度结论；没有 surveyed GCP 的样本在
 | 合成测试 fixtures | 只测试合同分支 | 可测试 fail-closed/curve/unit/CRS 等代码路径 | 不构成测量证据 | 不得计为第二份真实 CAD |
 
 因此当前不得声称“跨 CAD 已通过”“支持任意供应商 DWG”或“达到某个绝对精度”。
-矩阵格式和审计口径见 [验证报告](docs/verification_report.md)。
+矩阵格式和审计口径见 [对账口径说明](docs/RECONCILIATION.md)。
 
 ## 在 QGIS 中加载
 
@@ -185,33 +185,20 @@ inventory-only 样本不能产生精度结论；没有 surveyed GCP 的样本在
 `apd_evidence.gpkg`。GeoPackage 中的 `layer_styles` 可作为默认样式；若未自动
 应用，可在图层属性中从 `<NEW_RUN_DIR>/qgis/styles/<LAYER>.qml` 手动加载。
 
-`qgis_plugin/cad2gis_plugin/adapter.py` 是薄适配器：转换调用
-`cad2gis.pipeline.convert_project`，加载已有 GeoPackage 使用 QGIS OGR provider；
-它不复制另一套转换算法。QGIS 中“能显示”是交付检查之一，但不是 source geometry、
-拓扑或绝对精度通过的替代证据。
+QGIS 加载是交付检查之一，但不是 source geometry、拓扑或绝对精度通过的替代证据。
 
-## APD compatibility project pack 与旧入口
+## APD project pack 与基线
 
-[`experiment/`](docs/ARCHITECTURE.md) 保存 APD Hutabohu 的 reviewed legacy-schema
-profiles、architecture-v3 backend 和真实数据回归材料。它是 canonical package 的
-**APD project-pack/后端兼容层**，不是第二套公共 CLI，也不是新 CAD 的模板。
-APD 运行应从仓库根目录调用 `cad2gis convert ... --project experiment`。
-
-`src/cad2gis/convert_v3.py` 仅保留为委托到 `cad2gis.cli` 的兼容包装。
-`demo/` 与 `official/validation/` 下的旧 converter 默认禁用；只有显式设置
-`CAD2GIS_ENABLE_LEGACY=1` 才能进入，并会显示弃用警告。该 opt-in 只用于复现旧
-行为，不授权用旧结果作为 v3 交付或精度证明。
+[`baselines/apd_hutabohu/`](baselines/apd_hutabohu/) 保存 APD Hutabohu 的
+reviewed profiles、architecture-v3 backend 和真实数据回归材料。它是 canonical
+package 的 **APD project-pack/基线层**，不是第二套公共 CLI，也不是新 CAD 的
+模板。APD 运行应从仓库根目录调用 `cad2gis convert ... --project baselines/apd_hutabohu`。
 
 ## 文档
 
-- [APD project pack 快速说明](docs/ARCHITECTURE.md)
-- [Architecture v3 详细设计](docs/ARCHITECTURE.md)
-- [技术计划与边界](docs/technical_plan.md)
-- [验证报告与多 CAD 矩阵口径](docs/verification_report.md)
-
-`docs/APD_CAD2GIS_EXECUTION_PLAN.md` 与 `docs/APD_CAD2GIS_HANDOFF.md` 记录早期
-单图纸工作，可能包含已经被 v3 替代的命令、CRS 或八层假设；新操作以本 README、
-CLI `--help` 和 Architecture v3 为准。
+- [架构说明](docs/ARCHITECTURE.md)
+- [跨平台部署指南](docs/PORTABILITY.md)
+- [对账口径说明](docs/RECONCILIATION.md)
 
 ## Reader 与闭环比对
 

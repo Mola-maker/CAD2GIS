@@ -1,19 +1,20 @@
-"""LibreDWG dev-reader: Linux-only DWG inventory for the v3 reader contract.
+"""LibreDWG cross-platform reader: DWG inventory for the v3 reader contract.
 
-This module is intentionally isolated from ``autocad_reader.py`` and the
-Windows canonical path.  It implements ``extract_dwg_records`` so that the
-v3 ``ingest()`` boundary can be exercised on Linux using LibreDWG.
+This module is the primary cross-platform reader, replacing the legacy
+Windows-only AutoCAD canonical path.  It implements ``extract_dwg_records``
+so that the v3 ``ingest()`` boundary can be exercised on Linux, Windows,
+and macOS using LibreDWG.
 
 Ctypes bridge provenance:
 - ``_init_libredwg`` / ``_layer_name`` / ``_lwpoline_points`` are adapted
-  from the newmodel legacy ``experiment/py_scripts/converter.py``
+  from the newmodel legacy ``converter.py``
   (:244, :251 and the lazy loader).
 - ``_entity_utf8_text`` / ``_parse_dwg_color`` / ``_resolve_effective_color``
   / ``_extract_dimension`` are ported from main branch
-  ``experiment/py_scripts/converter.py``
+  ``converter.py``
   (:101-117, :291-311, :314-333, :529-547).
 - The ACI-to-RGB table is ported from main branch
-  ``experiment/py_scripts/schema_config.py`` (:2638-2680).
+  ``schema_config.py`` (:2638-2680).
 """
 
 from __future__ import annotations
@@ -446,8 +447,10 @@ def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, s
     order-preserving on handle value (validated against the canonical AutoCAD
     INSERT census for APD).  Results are cached under /tmp by source hash.
     """
-    cache = Path(tempfile.gettempdir()) / f"libredwg_blocks_{source_sha256[:16]}.json"
-    if not cache.exists():
+    fd, cache = tempfile.mkstemp(prefix="libredwg_blocks_", suffix=".json")
+    os.close(fd)
+    cache = Path(cache)
+    if cache.stat().st_size == 0:
         try:
             proc = subprocess.run(
                 ["dwgread", "-O", "json", str(source)],
@@ -456,10 +459,13 @@ def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, s
                 check=False,
             )
         except Exception:
+            cache.unlink(missing_ok=True)
             return {}
         if proc.returncode != 0 or not proc.stdout:
+            cache.unlink(missing_ok=True)
             return {}
         cache.write_bytes(proc.stdout)
+        cache.chmod(0o600)
     try:
         doc = json.loads(cache.read_text(encoding="utf-8"))
     except Exception:
@@ -992,7 +998,9 @@ def extract_dwg_records(source_path) -> DWGRecordInventory:
     anon_block_names = _read_anon_block_names_json(source, source_sha256)
     block_headers = _read_block_header_names(data, anon_fallback=anon_block_names)
     layer_styles = _read_layer_styles(data)
-    cursor_path = Path(tempfile.gettempdir()) / f"libredwg_reader_{source_sha256[:16]}.json"
+    fd, cursor_path = tempfile.mkstemp(prefix="libredwg_reader_", suffix=".json")
+    os.close(fd)
+    cursor_path = Path(cursor_path)
 
     diagnostics: dict[str, Any] = {
         "extraction_backend": "libredwg",

@@ -6,7 +6,6 @@
   "source_crs": "EPSG:3857",
   "target_crs": "EPSG:9481",
   "drawing_units": "metre",
-  "_dev_note": "LibreDWG dev-reader profile: dwg_cgeocs/dwg_insunits retained from canonical apd_source_profile.json. The dev reader synthesises DOCUMENT_METADATA when LibreDWG cannot read CGEOCS from the DWG header; use only with CAD2GIS_DEV_READER=1.",
   "spatial_coverage_policy": {
     "min_training_extent_x_ratio": 0.6,
     "min_training_extent_y_ratio": 0.6,

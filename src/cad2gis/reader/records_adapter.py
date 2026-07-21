@@ -24,10 +24,23 @@ from pathlib import Path
 from ..cad2gis_v3.config import SourceProfile
 from ..cad2gis_v3.model import SourceEntity
 
+_MAX_BUNDLE_BYTES = 256 * 1024 * 1024
+
+
+def _load_bundle(bundle_path: Path) -> dict:
+    if bundle_path.stat().st_size > _MAX_BUNDLE_BYTES:
+        raise ValueError(
+            f"records bundle exceeds maximum allowed size ({_MAX_BUNDLE_BYTES} bytes)"
+        )
+    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    if not isinstance(bundle, dict) or not isinstance(bundle.get("objects"), list):
+        raise ValueError("invalid records bundle schema")
+    return bundle
+
 
 def load_records(bundle_path: Path) -> list[SourceEntity]:
     """Materialise a records bundle into SourceEntity list."""
-    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    bundle = _load_bundle(bundle_path)
     return [
         SourceEntity.from_record(obj["facts"])
         for obj in bundle["objects"]
@@ -36,7 +49,7 @@ def load_records(bundle_path: Path) -> list[SourceEntity]:
 
 def validate_bundle_facts(bundle_path: Path, profile: SourceProfile) -> dict:
     """Verify bundle schema invariants + profile binding."""
-    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    bundle = _load_bundle(bundle_path)
     facts_count = sum(1 for o in bundle["objects"] if "facts" in o)
     return {
         "bundle_path": str(bundle_path),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections import Counter
 from pathlib import Path
 from typing import Callable
@@ -9,6 +10,22 @@ from typing import Callable
 from ..reader.contracts import DWGRecordInventory
 from .config import SourceProfile
 from .model import SourceEntity
+
+_READER_ENV = "CAD2GIS_READER_BACKEND"
+_DEFAULT_READER = "libredwg"
+
+
+def _default_extract_records(source_path: Path) -> DWGRecordInventory:
+    backend = os.environ.get(_READER_ENV, _DEFAULT_READER).strip().lower()
+    if backend == "libredwg":
+        from ..reader.libredwg import extract_dwg_records
+    elif backend == "autocad":
+        from ..reader.autocad import extract_dwg_records
+    else:
+        raise ValueError(
+            f"unknown reader backend {backend!r}; expected libredwg or autocad"
+        )
+    return extract_dwg_records(source_path)
 
 
 def ingest(
@@ -20,7 +37,7 @@ def ingest(
     source_path = Path(source).resolve()
     source_hash = profile.validate_source(source_path)
     if extract_records is None:
-        from ..reader.autocad import extract_dwg_records as extract_records
+        extract_records = _default_extract_records
     records = extract_records(source_path)
     reader_protocol = dict(getattr(records, "diagnostics", {}) or {})
     if (
