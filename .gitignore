@@ -42,3 +42,8 @@ demo/output/
 
 # Official reference Shape files
 /official/Shape/
+
+# robustness: test temp & build junk (cleaned at branch creation)
+.pytest-tmp-*
+build/
+ErrorReports/
