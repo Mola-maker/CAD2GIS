@@ -256,3 +256,11 @@
 - **Pages:** session-log-2026-07-21-5e2e5d73.md
 - **Summary:** Auto-captured session log for e22f7c30-ace4-443f-8af2-3c465e2e5d73
 
+## [2026-07-21T15:30:22.666Z] ingest
+- **Pages:** session-log-2026-07-21-2df9af87.md
+- **Summary:** Auto-captured session log for daec13ff-93f5-44a2-ab36-826d2df9af87
+
+## [2026-07-22T09:26:36.671Z] ingest
+- **Pages:** session-log-2026-07-22-65a26c4f.md
+- **Summary:** Auto-captured session log for 73f9b12e-cbe0-487e-963c-7f4a65a26c4f
+

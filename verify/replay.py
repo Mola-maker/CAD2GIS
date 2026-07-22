@@ -22,8 +22,25 @@ DELIVERY_OUT = BASELINE_DIR / "output" / "delivery.gpkg"
 EVIDENCE_OUT = BASELINE_DIR / "output" / "evidence.gpkg"
 DELIVERY_BASE = BASELINE_DIR / "delivery" / "apd_delivery.gpkg"
 EVIDENCE_BASE = BASELINE_DIR / "evidence" / "apd_evidence.gpkg"
+RULES_PATH = BASELINE_DIR / "config" / "project_rules.json"
 
-EXPECTED_DELIVERY = {"BOITE": 43, "CABLE": 6, "PTECH": 167, "IMB": 682, "SITE": 2}
+
+def _load_expected_delivery() -> dict[str, int]:
+    """Load expected delivery counts from project_rules.json (externalized)."""
+    if not RULES_PATH.is_file():
+        raise SystemExit(f"project rules missing: {RULES_PATH}")
+    rules = json.loads(RULES_PATH.read_text(encoding="utf-8"))
+    census = rules.get("expected_census", {})
+    return {
+        "BOITE": census.get("plan_fat", 0),
+        "CABLE": census.get("positive_cable_routes", 0),
+        "PTECH": census.get("plan_poles", 0),
+        "IMB": census.get("homepass_labels", 0),
+        "SITE": census.get("plan_fdt", 0),
+    }
+
+
+EXPECTED_DELIVERY = _load_expected_delivery()
 
 
 def _table_counts(gpkg_path: Path, tables: list[str]) -> dict[str, int]:

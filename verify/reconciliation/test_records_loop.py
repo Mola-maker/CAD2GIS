@@ -18,6 +18,20 @@ _BASELINE = _ROOT / "baselines" / "apd_hutabohu"
 _RECORDS = _BASELINE / "records" / "readcad_review_bundle.json"
 _DELIVERY_BASE = _BASELINE / "delivery" / "apd_delivery.gpkg"
 _EVIDENCE_BASE = _BASELINE / "evidence" / "apd_evidence.gpkg"
+_RULES_PATH = _BASELINE / "config" / "project_rules.json"
+
+
+def _load_expected_delivery() -> dict[str, int]:
+    """Load expected delivery counts from project_rules.json (externalized)."""
+    rules = json.loads(_RULES_PATH.read_text(encoding="utf-8"))
+    census = rules.get("expected_census", {})
+    return {
+        "BOITE": census.get("plan_fat", 0),
+        "CABLE": census.get("positive_cable_routes", 0),
+        "PTECH": census.get("plan_poles", 0),
+        "IMB": census.get("homepass_labels", 0),
+        "SITE": census.get("plan_fdt", 0),
+    }
 
 
 def _table_counts(gpkg_path: Path, tables: list[str]) -> dict[str, int]:
@@ -38,7 +52,7 @@ def test_records_bundle_schema_stable():
 
 
 def test_baseline_gpkg_counts():
-    expected_delivery = {"BOITE": 43, "CABLE": 6, "PTECH": 167, "IMB": 682, "SITE": 2}
+    expected_delivery = _load_expected_delivery()
     tables = list(expected_delivery)
     actual = _table_counts(_DELIVERY_BASE, tables)
     assert actual == expected_delivery
