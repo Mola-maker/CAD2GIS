@@ -59,6 +59,22 @@ def _count_mapping(value: Any, name: str, *, allow_empty: bool = True) -> dict[s
     return result
 
 
+def _load_project_rules(profile_path: Path) -> dict[str, Any] | None:
+    """Load optional project_rules.json from the profile's directory.
+
+    When present, this file externalizes project-specific values (tolerances,
+    code_prefix, expected_census, label_families, layer_pattern_map) so they
+    are not hardcoded in the profile or Python source.
+    """
+    rules_path = profile_path.parent / "project_rules.json"
+    if not rules_path.is_file():
+        return None
+    try:
+        return json.loads(rules_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 @dataclass(frozen=True)
 class ReviewRecord:
     """Explicit human-review state; draft and unreviewed are never runnable."""
@@ -538,6 +554,11 @@ class SourceProfile:
         expected_census = _count_mapping(
             value["expected_census"], "expected_census", allow_empty=False,
         )
+        rules = _load_project_rules(resolved)
+        if rules is not None and "expected_census" in rules:
+            expected_census = _count_mapping(
+                rules["expected_census"], "project_rules.expected_census", allow_empty=False,
+            )
         return cls(
             path=resolved,
             schema_version=schema_version,
