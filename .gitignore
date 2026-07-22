@@ -1,0 +1,21 @@
+# DWG inputs and GPKG outputs
+*.dwg
+*.gpkg
+*.qgz
+*_dump.json
+output/
+
+# Python
+__pycache__/
+*.pyc
+*.bak
+
+# Legacy backups
+converter_orig.py
+
+# OMC runtime state (specs/plans/wiki are committed)
+.omc/state/
+
+# Claude Code personal config
+.claude/
+CLAUDE.md
