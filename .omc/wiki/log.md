@@ -264,3 +264,55 @@
 - **Pages:** session-log-2026-07-22-65a26c4f.md
 - **Summary:** Auto-captured session log for 73f9b12e-cbe0-487e-963c-7f4a65a26c4f
 
+## [2026-07-22T10:20:02.071Z] ingest
+- **Pages:** session-log-2026-07-22-2df9af87.md
+- **Summary:** Auto-captured session log for daec13ff-93f5-44a2-ab36-826d2df9af87
+
+## [2026-07-22T10:20:29.342Z] ingest
+- **Pages:** session-log-2026-07-22-63def434.md
+- **Summary:** Auto-captured session log for 9ccaf7e6-438a-4a39-a194-cfc263def434
+
+## [2026-07-22T10:22:43.273Z] ingest
+- **Pages:** session-log-2026-07-22-2df9af87.md
+- **Summary:** Auto-captured session log for daec13ff-93f5-44a2-ab36-826d2df9af87
+
+## [2026-07-22T10:22:51.353Z] ingest
+- **Pages:** session-log-2026-07-22-74916fad.md
+- **Summary:** Auto-captured session log for 856b7baa-54e5-4d62-81cf-ede674916fad
+
+## [2026-07-22T10:25:44.254Z] ingest
+- **Pages:** session-log-2026-07-22-2df9af87.md
+- **Summary:** Auto-captured session log for daec13ff-93f5-44a2-ab36-826d2df9af87
+
+## [2026-07-22T10:25:49.954Z] ingest
+- **Pages:** session-log-2026-07-22-54f2ee7d.md
+- **Summary:** Auto-captured session log for 42a56a2b-4daf-47b8-81a0-b15054f2ee7d
+
+## [2026-07-22T10:25:58.484Z] ingest
+- **Pages:** session-log-2026-07-22-bfc1e4a7.md
+- **Summary:** Auto-captured session log for cc9a5c05-5493-4d97-ba7a-0e7bbfc1e4a7
+
+## [2026-07-22T10:26:04.987Z] ingest
+- **Pages:** session-log-2026-07-22-54f2ee7d.md
+- **Summary:** Auto-captured session log for 42a56a2b-4daf-47b8-81a0-b15054f2ee7d
+
+## [2026-07-22T10:29:36.484Z] ingest
+- **Pages:** session-log-2026-07-22-4bab2086.md
+- **Summary:** Auto-captured session log for 76d6f4ba-96e2-48ed-ac11-6c704bab2086
+
+## [2026-07-22T10:29:42.869Z] ingest
+- **Pages:** session-log-2026-07-22-8b86a1ee.md
+- **Summary:** Auto-captured session log for 9457e6f4-989b-4698-97fb-e91e8b86a1ee
+
+## [2026-07-22T10:30:45.639Z] ingest
+- **Pages:** session-log-2026-07-22-4bab2086.md
+- **Summary:** Auto-captured session log for 76d6f4ba-96e2-48ed-ac11-6c704bab2086
+
+## [2026-07-22T10:31:04.758Z] ingest
+- **Pages:** session-log-2026-07-22-16e325de.md
+- **Summary:** Auto-captured session log for 983cd83a-63fe-4307-a692-557e16e325de
+
+## [2026-07-22T10:32:16.548Z] ingest
+- **Pages:** session-log-2026-07-22-4bab2086.md
+- **Summary:** Auto-captured session log for 76d6f4ba-96e2-48ed-ac11-6c704bab2086
+
