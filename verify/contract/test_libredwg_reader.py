@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 
 import cad2gis.cad2gis_v3.ingest as canonical_ingest
-import cad2gis.reader.libredwg as libredwg_module
+import cad2gis.reader.dwg_extractor as dwg_extractor_module
 from cad2gis.cad2gis_v3.config import SourceProfile
 from cad2gis.cad2gis_v3.model import SourceEntity
-from cad2gis.ingest import ingest as libredwg_ingest
+from cad2gis.ingest import ingest as dwg_extractor_ingest
 
 _ROOT = Path(__file__).resolve().parents[2]
 _RECORDS_BUNDLE = _ROOT / "baselines" / "apd_hutabohu" / "records" / "readcad_review_bundle.json"
@@ -158,7 +158,7 @@ def test_unsupported_records_use_v3_contract():
 
 
 def test_no_windows_imports():
-    module_path = Path(libredwg_module.__file__).resolve()
+    module_path = Path(dwg_extractor_module.__file__).resolve()
     source = module_path.read_text(encoding="utf-8")
     for forbidden in ("win32com", "pythoncom", "accoreconsole"):
         assert forbidden not in source, f"windows-only dependency found: {forbidden}"

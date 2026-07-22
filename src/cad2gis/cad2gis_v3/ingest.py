@@ -18,7 +18,7 @@ _DEFAULT_READER = "libredwg"
 def _default_extract_records(source_path: Path) -> DWGRecordInventory:
     backend = os.environ.get(_READER_ENV, _DEFAULT_READER).strip().lower()
     if backend == "libredwg":
-        from ..reader.libredwg import extract_dwg_records
+        from ..reader.dwg_extractor import extract_dwg_records
     elif backend == "autocad":
         from ..reader.autocad import extract_dwg_records
     else:

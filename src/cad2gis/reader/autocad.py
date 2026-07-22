@@ -1,6 +1,6 @@
 """DEPRECATED: Windows-only AutoCAD canonical reader.
 
-Use :mod:`cad2gis.reader.libredwg` for the cross-platform primary path.
+Use :mod:`cad2gis.reader.dwg_extractor` for the cross-platform primary path.
 This reader is retained as opt-in fallback via ``CAD2GIS_READER_BACKEND=autocad``.
 Production robustness branch now uses libredwg; this module will be removed
 once all AutoCAD-specific dependencies are migrated.
