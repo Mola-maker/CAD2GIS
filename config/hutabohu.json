@@ -1,0 +1,163 @@
+{
+  "project": "hutabohu",
+  "description": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO",
+  "region_bounds_wgs84": [
+    -11.0,
+    7.0,
+    95.0,
+    141.0
+  ],
+  "source_crs": "EPSG:3857",
+  "target_crs": "EPSG:3857",
+  "label_families": [
+    {
+      "family": "fat",
+      "pattern": "^DMPH-\\d+\\.\\d+\\.[A-Z]\\d{2}$",
+      "target_fc": "BOITE"
+    },
+    {
+      "family": "pole",
+      "pattern": "^MR\\.DMPH\\.P\\d+$",
+      "target_fc": "PTECH",
+      "node_color_filter": "!#FF0000",
+      "min_distance_m": 15
+    },
+    {
+      "family": "pole_ext",
+      "pattern": "^EXT\\.MR\\.\\w+\\.\\w+\\.\\w+\\.P\\d+$",
+      "target_fc": "PTECH",
+      "node_color_filter": "#FF0000",
+      "min_distance_m": 25
+    }
+  ],
+  "layer_pattern_map": [
+    [
+      "(?i).*fat\\s*area.*|.*boundary\\s*fat.*|.*hp\\s*cover.*|.*zpm.*|.*zone.*pm.*|.*zone.*sro.*|.*distribution.*zone.*|.*service.*zone.*",
+      "ZPM",
+      "Polygon"
+    ],
+    [
+      "(?i).*fdt.*",
+      "SITE",
+      "Point"
+    ],
+    [
+      "(?i).*\\bfat\\b.*|^nap.*|.*box.*|.*slimbox.*|.*blackbox.*|.*closure.*|.*cto.*|.*dp\\b|.*ont.*|.*pedestal.*|.*splice.*|.*splitter.*|.*spliter.*|.*patch.*|.*panel.*|.*terminal.*|.*otb.*|.*fsc.*|.*boite.*|.*hw-fat.*",
+      "BOITE",
+      "Point"
+    ],
+    [
+      "(?i).*pole.*|.*poteau.*|.*chamber.*|.*chambre.*|.*manhole.*|.*handhole.*|.*anchor.*|.*guy\\b|.*vault.*|.*ptech.*|.*gaine\\s*technique.*|.*gc\\s|.*appui.*|.*ancrage.*|.*hw-handhole.*|.*iam\\s*mh.*",
+      "PTECH",
+      "Point"
+    ],
+    [
+      "(?i).*home\\s*number.*|.*home\\s*pass.*|.*building.*|.*batiment.*|.*premise.*|.*house.*|.*unit.*|.*apartment.*|.*office.*|.*mdu.*|.*sdu.*|.*imb.*|.*property.*|.*address.*|.*customer.*|.*subscriber.*|.*logement.*|.*maison.*|.*villa.*|.*immeuble.*|.*residence.*",
+      "IMB",
+      "Point"
+    ],
+    [
+      "(?i).*duct.*|.*conduit.*|.*pipe.*|.*trench.*|.*infra.*|.*pathway.*|.*route.*|.*buried.*|.*underground.*|.*aerial.*|.*fourreau.*|.*adduction.*|.*branchement.*|.*raccordement.*|.*gaine.*|.*new\\s*duct.*|.*pit.*|.*handhole.*|.*chamber.*",
+      "INFRASTRUCTURE",
+      "LineString"
+    ],
+    [
+      "(?i).*cable.*|.*fib[er]*e.*|.*feeder.*|.*trunk.*|.*distribution.*|.*drop.*|.*riser.*|.*lateral.*|.*backbone.*|.*access.*|.*span\\s*cable.*|.*micro\\s*cable.*|.*loose\\s*cable.*|.*sling\\s*wire.*|.*suspension\\s*wire.*|.*span\\s*sling.*|.*sling.*|.*fo\\s*\\d+\\s*core.*|.*fo\\s*cable.*|.*service\\s*core.*|.*expansion\\s*core.*|.*moniter\\s*core.*|.*monitor\\s*core.*|^line$",
+      "CABLE",
+      "LineString"
+    ],
+    [
+      "(?i).*site.*|.*nro.*|.*pm\\b|.*exchange.*|.*node.*|.*hub.*|.*pop\\b|.*co\\b|.*shelter.*|.*cabinet.*|.*location.*|.*olt.*|.*ftts.*|.*local.*tech.*",
+      "SITE",
+      "Point"
+    ],
+    [
+      "(?i).*znro.*|.*zone.*nro.*|.*olt.*zone.*|.*exchange.*zone.*|.*coverage.*|.*service.*area.*",
+      "ZNRO",
+      "Polygon"
+    ],
+    [
+      "(?i)^eu$|^go\\d*$|^go$",
+      "PTECH",
+      "Point"
+    ],
+    [
+      "(?i)^pln$|^telkom$",
+      "SITE",
+      "Point"
+    ],
+    [
+      "(?i).*ftts.*site.*",
+      "SITE",
+      "Point"
+    ],
+    [
+      "(?i)^text$|.*etik.*",
+      "IMB",
+      "Point"
+    ]
+  ],
+  "negative_evidence_layers": [
+    "APPROVAL",
+    "APPROVAL MATRIX",
+    "LEGEND",
+    "CARTOUCHE",
+    "TITLE",
+    "TITLE BLOCK",
+    "LEGENDE",
+    "DEFPOINTS",
+    "NORTH ARROW",
+    "SCALE BAR",
+    "GRID",
+    "Base Map",
+    "BASIC MAP",
+    "BOM",
+    "outline",
+    "BOEDER",
+    "mainlayer",
+    "Fenetres ARCHICAD",
+    "Portes ARCHICAD",
+    "CARLAGE",
+    "POMPIER",
+    "fenêtres",
+    "MURS 2",
+    "DESIGN SUMMARY",
+    "0"
+  ],
+  "fragment_aggregation_layers": [
+    [
+      "(?i).*fdt.*",
+      "SITE",
+      "PM"
+    ],
+    [
+      "(?i)^fat\\s*sp$",
+      "BOITE",
+      "PBO"
+    ]
+  ],
+  "code_prefix": {
+    "SITE": "PM",
+    "BOITE": "PBO",
+    "PTECH": "PT",
+    "IMB": "IMB",
+    "CABLE": "CBL",
+    "INFRASTRUCTURE": "INF",
+    "ZPM": "ZPM",
+    "ZNRO": "ZNR"
+  },
+  "fdt_value": {
+    "FDT-01": 48,
+    "FDT-02": 72
+  },
+  "fat_default": 16,
+  "tolerances": {
+    "fragment_cluster_m": 50.0,
+    "annotation_link_m": 15.0,
+    "boite_fusion_m": 5.0,
+    "snap_m": 5.0,
+    "isolation_m": 30.0,
+    "chain_m": 0.5,
+    "site_snap_max_m": 50.0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "cad2gis-legend-exclusions-v1",
+  "source_file": "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
+  "confirmed_clusters": [
+    {
+      "cluster_id": "LC-001",
+      "bbox": [13684556.7, 69844.7, 13685078.9, 70650.4],
+      "detected_bbox": [13684557.2, 69845.2, 13685078.4, 70649.9],
+      "detected_members": 1125,
+      "detected_confidence": 0.9207,
+      "anchor_hits": ["SPLICING"],
+      "status": "confirmed-excluded",
+      "confirmed_by": "user QGIS visual verification (SPLICING FDT / schematic panel, non-subject)",
+      "confirmed_date": "2026-07-17",
+      "note": "bbox padded +0.5 vs detected_bbox to absorb 1-decimal rounding of the reported extent"
+    },
+    {
+      "cluster_id": "LC-002",
+      "bbox": [13687811.9, 69209.1, 13688042.9, 69330.1],
+      "detected_bbox": [13687812.4, 69209.6, 13688042.4, 69329.6],
+      "detected_members": 67,
+      "detected_confidence": 0.6,
+      "anchor_hits": [],
+      "status": "confirmed-excluded",
+      "confirmed_by": "user QGIS visual verification (FDT LAYOUT / legend sample panel, non-subject)",
+      "confirmed_date": "2026-07-17",
+      "note": "bbox padded +0.5 vs detected_bbox to absorb 1-decimal rounding of the reported extent"
+    }
+  ]
+}
