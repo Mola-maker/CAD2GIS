@@ -273,8 +273,10 @@ def inventory_sha256(inventory: Mapping[str, Any]) -> str:
 
 def _extract_records(source: Path) -> Iterable[dict[str, Any]]:
     # Reader import is delayed so project/CLI help remains usable without the
-    # AutoCAD runtime and its optional Windows dependencies.
-    from autocad_reader import extract_dwg_records
+    # AutoCAD runtime and its optional Windows dependencies.  In robustness
+    # the LibreDWG cross-platform reader is the canonical primary, so the
+    # bootstrap/inspect path uses it directly.
+    from ..reader.dwg_extractor import extract_dwg_records
 
     return extract_dwg_records(source)
 
