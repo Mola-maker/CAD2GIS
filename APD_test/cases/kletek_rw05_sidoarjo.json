@@ -1,0 +1,30 @@
+{
+  "schema_version": "cad2gis-test-case-v1",
+  "case_id": "kletek_rw05_sidoarjo",
+  "source": "KLETEK RW 05 SIDOARJO.dwg",
+  "source_sha256": "756F6E5BB4FEB61FED2D86046478E0FB714434628BD0F17DB4D78FEF0B221016",
+  "size_bytes": 308753,
+  "dwg_version": "AC1032",
+  "truth_status": "not_established",
+  "allowed_test_roles": [
+    "reader",
+    "crash_resistance",
+    "generic_fidelity",
+    "determinism",
+    "performance"
+  ],
+  "claim_boundary": {
+    "domain_accuracy": "not_claimed",
+    "absolute_accuracy": "not_claimed"
+  },
+  "availability": {
+    "inventory": "not_available",
+    "reader_diagnostics": "not_available",
+    "crs": "not_available",
+    "units": "not_available",
+    "gcp": "not_available",
+    "expected_business_output": "not_available",
+    "machine_generated_profile": "not_available",
+    "reviewed_profile": "not_available"
+  }
+}

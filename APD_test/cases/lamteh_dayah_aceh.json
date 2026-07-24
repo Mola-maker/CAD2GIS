@@ -1,0 +1,30 @@
+{
+  "schema_version": "cad2gis-test-case-v1",
+  "case_id": "lamteh_dayah_aceh",
+  "source": "APD - KELURAHAN LAMTEH DAYAH ACEH.dwg",
+  "source_sha256": "D71AD87E6C0C81811725CF6238DD883621F0D09C03815C81EEBD067EEC1F8E78",
+  "size_bytes": 5253009,
+  "dwg_version": "AC1032",
+  "truth_status": "not_established",
+  "allowed_test_roles": [
+    "reader",
+    "crash_resistance",
+    "generic_fidelity",
+    "determinism",
+    "performance"
+  ],
+  "claim_boundary": {
+    "domain_accuracy": "not_claimed",
+    "absolute_accuracy": "not_claimed"
+  },
+  "availability": {
+    "inventory": "not_available",
+    "reader_diagnostics": "not_available",
+    "crs": "not_available",
+    "units": "not_available",
+    "gcp": "not_available",
+    "expected_business_output": "not_available",
+    "machine_generated_profile": "not_available",
+    "reviewed_profile": "not_available"
+  }
+}

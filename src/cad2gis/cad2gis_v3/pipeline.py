@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .calibration import GCPProfile, fit_profile
+from .accounting import account_entities, summarize_accounting
 from .config import MappingRegistry, SourceProfile
 from .evidence import write_evidence
 from .georef import (
@@ -34,6 +35,8 @@ from .spatial_coverage import (
 )
 from .styles import write_styles
 from .topology import build_topology
+from .run_status import RunStatus, derive_run_status, publish_verified_alias
+from .source_gpkg import write_source_gpkg
 from .warehouse import (
     CABLE_SEGMENT_SCHEMA_VERSION,
     CABLE_SEGMENT_UNIT,
@@ -65,6 +68,17 @@ def _implementation_digest():
     return production_conversion_provenance()["sha256"]
 
 
+_VALID_DOMAINS = frozenset({"auto", "generic", "ftth_apd"})
+_VALID_LLM_MODES = frozenset({"off", "observe", "assist"})
+
+
+def _validate_mode(value: object, allowed: frozenset[str], name: str) -> str:
+    if not isinstance(value, str) or value not in allowed:
+        choices = ", ".join(sorted(allowed))
+        raise ValueError(f"{name} must be one of: {choices}")
+    return value
+
+
 @dataclass(frozen=True)
 class ConversionRequest:
     source: Path
@@ -72,6 +86,12 @@ class ConversionRequest:
     source_profile: Path
     mapping_registry: Path
     gcp_profile: Path | None = None
+    domain: str = "auto"
+    llm: str = "off"
+
+    def __post_init__(self) -> None:
+        _validate_mode(self.domain, _VALID_DOMAINS, "domain")
+        _validate_mode(self.llm, _VALID_LLM_MODES, "llm")
 
 
 @dataclass(frozen=True)
@@ -82,6 +102,8 @@ class ConversionResult:
     run_manifest_path: Path
     counts: dict[str, int]
     diagnostics: dict
+    source_path: Path | None = None
+    run_status: str = ""
 
 
 def _write_manifest(path, payload):
@@ -888,6 +910,171 @@ def _validate_project_bindings(profile, registry):
             )
 
 
+def _status_count(mapping: Mapping, *keys: str) -> int:
+    total = 0
+    for key in keys:
+        if key not in mapping:
+            continue
+        value = mapping.get(key)
+        if isinstance(value, bool):
+            total += 1
+        elif isinstance(value, int):
+            total += value if value >= 0 else 1
+        elif isinstance(value, (list, tuple, set, frozenset, Mapping)):
+            total += len(value)
+        else:
+            total += 1
+    return total
+
+
+def _derive_conversion_status(
+    *,
+    entities,
+    ingest_diagnostics: Mapping,
+    semantic_diagnostics: Mapping,
+    style_coverage: Mapping,
+    unresolved,
+    terminal_accounting: Mapping[str, int],
+    validation_summary: Mapping,
+    georeference_diagnostics: Mapping,
+    diagnostics: Mapping | None = None,
+) -> RunStatus:
+    diagnostics = {} if diagnostics is None else diagnostics
+    serious_failures: list[str] = []
+    for domain in (
+        "source_geometry", "topology", "measurements", "segment_delivery",
+        "coordinate_accuracy",
+    ):
+        section = validation_summary.get(domain)
+        if isinstance(section, Mapping) and section.get("passed") is False:
+            serious_failures.append(f"validation:{domain}")
+
+    policy_diagnostics = diagnostics.get("policy_enforcement", {})
+    if isinstance(policy_diagnostics, Mapping):
+        validation_domains = policy_diagnostics.get("validation_domains", {})
+        if isinstance(validation_domains, Mapping):
+            for domain, section in validation_domains.items():
+                if isinstance(section, Mapping) and section.get("passed") is False:
+                    serious_failures.append(f"policy:{domain}")
+        if _status_count(policy_diagnostics, "synthetic_route_vertices"):
+            serious_failures.append("policy:synthetic_route_vertices")
+        curve_validation = policy_diagnostics.get("curve_validation")
+        if (
+            isinstance(curve_validation, Mapping)
+            and curve_validation.get("passed") is False
+        ):
+            serious_failures.append("policy:curve_validation")
+
+    project_gates = diagnostics.get("project_contract", {})
+    if isinstance(project_gates, Mapping):
+        project_gates = project_gates.get("gates", {})
+        if isinstance(project_gates, Mapping):
+            for domain, section in project_gates.items():
+                if isinstance(section, Mapping) and section.get("passed") is False:
+                    serious_failures.append(f"gate:{domain}")
+
+    topology_diagnostics = diagnostics.get("topology", {})
+    if isinstance(topology_diagnostics, Mapping):
+        if topology_diagnostics.get("passed") is False:
+            serious_failures.append("topology")
+        if str(topology_diagnostics.get("status", "")).casefold() in {
+            "fail", "failed", "unsafe",
+        }:
+            serious_failures.append("topology")
+
+    unit_contract = georeference_diagnostics.get("unit_crs_contract")
+    if (
+        isinstance(unit_contract, Mapping)
+        and unit_contract.get("coordinate_mode") not in {None, "direct_crs"}
+    ):
+        serious_failures.append("unit_crs_contract")
+    for key, threshold in (
+        ("roundtrip_max_source_m", 1e-6),
+        ("engine_crosscheck_max_target_m", 1e-6),
+    ):
+        if key not in georeference_diagnostics:
+            continue
+        value = georeference_diagnostics.get(key)
+        try:
+            metric = float(value)
+            if (
+                isinstance(value, bool)
+                or not math.isfinite(metric)
+                or metric < 0.0
+                or metric > threshold
+            ):
+                serious_failures.append(f"georeference:{key}")
+        except (TypeError, ValueError, OverflowError):
+            serious_failures.append(f"georeference:{key}")
+
+    reader_protocol = ingest_diagnostics.get("reader_protocol")
+    if not isinstance(reader_protocol, Mapping):
+        reader_protocol = {}
+    reader_inventory = ingest_diagnostics.get("reader_inventory")
+    if not isinstance(reader_inventory, Mapping):
+        reader_inventory = {}
+    reader_skips = _status_count(
+        reader_protocol, "skipped_rows", "skips", "skipped_row_errors",
+    )
+    reader_skips += _status_count(
+        reader_inventory, "skipped_rows", "skips", "skipped_row_errors",
+    )
+    reader_incomplete = (
+        reader_protocol.get("inventory_complete") is False
+        or reader_inventory.get("inventory_complete") is False
+    )
+    reader_incomplete_count = int(reader_incomplete)
+    if _status_count(reader_protocol, "errors", "error_rows", "error_count"):
+        serious_failures.append("reader_errors")
+
+    warning_count = 0
+    semantic_counts = semantic_diagnostics.get("coverage", {})
+    if not isinstance(semantic_counts, Mapping):
+        semantic_counts = {}
+    semantic_counts = semantic_counts.get("counts", {})
+    if not isinstance(semantic_counts, Mapping):
+        semantic_counts = {}
+    style_counts = style_coverage.get("counts", {})
+    if not isinstance(style_counts, Mapping):
+        style_counts = {}
+    warning_count += _status_count(semantic_counts, "warned")
+    warning_count += _status_count(style_counts, "warned")
+    semantic_coverage_status = semantic_diagnostics.get("coverage", {})
+    if (
+        isinstance(semantic_coverage_status, Mapping)
+        and semantic_coverage_status.get("status") == "WATCH"
+    ):
+        warning_count += _status_count(semantic_counts, "non_allowlisted")
+    if style_coverage.get("status") == "WATCH":
+        warning_count += _status_count(style_counts, "non_allowlisted")
+
+    if _status_count(semantic_counts, "failed") or _status_count(
+        style_counts, "failed"
+    ):
+        serious_failures.append("coverage_failure")
+
+    unresolved_total = len(unresolved) + _status_count(
+        semantic_diagnostics, "unresolved"
+    )
+    unsupported_total = _status_count(terminal_accounting, "unsupported")
+    abstained_total = _status_count(terminal_accounting, "abstained")
+    abstained_total += _status_count(semantic_counts, "abstained")
+    abstained_total += _status_count(style_counts, "abstained")
+    errored_total = _status_count(terminal_accounting, "errored")
+
+    return derive_run_status(
+        entity_count=len(entities),
+        serious_failures=serious_failures,
+        warning_count=warning_count,
+        reader_skips=reader_skips,
+        reader_incomplete=reader_incomplete_count,
+        unresolved_total=unresolved_total,
+        unsupported_total=unsupported_total,
+        abstained_total=abstained_total,
+        errored_total=errored_total,
+    )
+
+
 def convert(request: ConversionRequest) -> ConversionResult:
     source = Path(request.source).resolve()
     run_dir = Path(request.run_dir).resolve()
@@ -943,6 +1130,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
     run_dir.parent.mkdir(parents=True, exist_ok=True)
 
     entities, ingest_diagnostics = ingest(source, profile)
+    accounting_records = account_entities(entities)
+    terminal_accounting = summarize_accounting(accounting_records)
+    source_entity_count = len(entities)
+    if terminal_accounting["total"] != source_entity_count:
+        raise RuntimeError(
+            "Source entity accounting total does not match ingested source entities: "
+            f"{terminal_accounting['total']} != {source_entity_count}"
+        )
     if profile.inventory_sha256:
         from .project_profile import build_source_inventory
 
@@ -1222,6 +1417,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
     }
 
     artifact_prefix = "apd_" if profile.is_legacy else ""
+    source_path = run_dir / "source.gpkg"
     evidence_path = run_dir / f"{artifact_prefix}evidence.gpkg"
     delivery_path = run_dir / f"{artifact_prefix}delivery.gpkg"
     style_manifest_path = run_dir / "qgis" / "styles" / "style_manifest.json"
@@ -1230,9 +1426,22 @@ def convert(request: ConversionRequest) -> ConversionResult:
         prefix=f".{run_dir.name}.stage.", dir=run_dir.parent,
     )).resolve()
     try:
+        staged_source_path = staged_run_dir / source_path.name
         staged_evidence_path = staged_run_dir / evidence_path.name
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
+        source_result = write_source_gpkg(
+            staged_source_path, entities, profile.source_crs,
+        )
+        if not staged_source_path.is_file():
+            raise RuntimeError(
+                f"Source GeoPackage writer did not produce {staged_source_path}"
+            )
+        if getattr(source_result, "entity_count", source_entity_count) != source_entity_count:
+            raise RuntimeError(
+                "Source GeoPackage entity count does not match ingested source entities: "
+                f"{getattr(source_result, 'entity_count', None)} != {source_entity_count}"
+            )
         write_evidence(
             staged_evidence_path, entities, features, relations, unresolved,
             diagnostics, transformer.source,
@@ -1273,6 +1482,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "CABLE_SEGMENT manifest closure validation failed: "
                 f"{validation_summary['segment_delivery']}"
             )
+        run_status = _derive_conversion_status(
+            entities=entities,
+            ingest_diagnostics=ingest_diagnostics,
+            semantic_diagnostics=semantic_diagnostics,
+            style_coverage=written_style_coverage,
+            unresolved=unresolved,
+            terminal_accounting=terminal_accounting,
+            validation_summary=validation_summary,
+            georeference_diagnostics=diagnostics["georeference"],
+            diagnostics=diagnostics,
+        )
         implementation = production_conversion_provenance()
         reader_runtime_inventory = {
             **dict(ingest_diagnostics.get("reader_inventory") or {}),
@@ -1291,6 +1511,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "status": "complete",
                 "strategy": "same-volume-staged-run-directory-swap",
             },
+            "run_status": run_status.value,
+            "modes": {"domain": request.domain, "llm": request.llm},
             "source": {"path": str(source), "sha256": source_hash},
             "profiles": {
                 "source_profile": {"path": str(profile.path), "sha256": _sha256(profile.path)},
@@ -1298,6 +1520,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
             },
             "crs": diagnostics["georeference"],
             "artifacts": {
+                "source": {
+                    "path": str(source_path), "sha256": _sha256(staged_source_path),
+                },
                 "evidence": {
                     "path": str(evidence_path), "sha256": _sha256(staged_evidence_path),
                 },
@@ -1311,6 +1536,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             },
             "delivery_counts": counts,
             "delivery_contract_gate": delivery_gate,
+            "source_entity_count": source_entity_count,
+            "terminal_accounting": terminal_accounting,
             "semantics": semantic_coverage,
             "style": written_style_coverage,
             "source_route_components": topology_diagnostics.get(
@@ -1327,6 +1554,12 @@ def convert(request: ConversionRequest) -> ConversionResult:
         _write_manifest(staged_run_dir / manifest_path.name, manifest)
         verify_conversion_snapshot(conversion_snapshot)
         _publish_run_bundle(staged_run_dir, run_dir)
+        publish_verified_alias(
+            run_dir.parent / "latest_verified.json",
+            run_status,
+            run_dir,
+            _sha256(manifest_path),
+        )
     finally:
         if staged_run_dir.exists():
             shutil.rmtree(staged_run_dir, ignore_errors=True)
@@ -1335,6 +1568,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
         delivery_path=delivery_path,
         style_manifest_path=style_manifest_path,
         run_manifest_path=manifest_path,
+        source_path=source_path,
+        run_status=run_status.value,
         counts=counts,
         diagnostics=diagnostics,
     )

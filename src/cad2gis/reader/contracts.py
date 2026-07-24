@@ -10,7 +10,27 @@ Defines the v3 reader protocol:
 
 from __future__ import annotations
 
+import dataclasses
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
+
+
+class ReaderUnavailableError(RuntimeError):
+    """The configured reader cannot provide an authoritative inventory."""
+
+
+@dataclasses.dataclass(frozen=True)
+class ReaderCapability:
+    """Serializable availability report for an optional reader backend."""
+
+    backend: str
+    available: bool
+    detail: str
+    remediation: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation of this capability."""
+        return dataclasses.asdict(self)
 
 
 @runtime_checkable

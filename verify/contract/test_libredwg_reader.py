@@ -2,19 +2,15 @@
 
 from __future__ import annotations
 
-import os
+import hashlib
+import json
 from pathlib import Path
-
-import pytest
 
 import cad2gis.cad2gis_v3.ingest as canonical_ingest
 import cad2gis.reader.libredwg as libredwg_module
 from cad2gis.cad2gis_v3.config import SourceProfile
-from cad2gis.cad2gis_v3.model import SourceEntity
-from cad2gis.ingest import ingest as libredwg_ingest
 
 _ROOT = Path(__file__).resolve().parents[2]
-_RECORDS_BUNDLE = _ROOT / "baselines" / "apd_hutabohu" / "records" / "readcad_review_bundle.json"
 _DEV_PROFILE = _ROOT / "baselines" / "apd_hutabohu" / "config" / "source_profile_libredwg.json"
 _CANONICAL_PROFILE = _ROOT / "baselines" / "apd_hutabohu" / "config" / "source_profile.json"
 
@@ -178,8 +174,10 @@ def test_record_field_completeness_snapshot():
 
 
 def test_ingest_dev_matches_canonical_post_reader(tmp_path: Path):
-    import json
     real_profile = json.loads(_DEV_PROFILE.read_text(encoding="utf-8"))
+    source_fixture = tmp_path / "synthetic-source.dwg"
+    source_fixture.write_bytes(b"synthetic DWG source fixture")
+    real_profile["source_sha256"] = hashlib.sha256(source_fixture.read_bytes()).hexdigest()
     real_profile["expected_census"] = dict(real_profile["expected_census"])
     real_profile["expected_census"]["model_entities"] = 11
     real_profile["expected_census"]["model_inserts"] = 0
@@ -198,8 +196,19 @@ def test_ingest_dev_matches_canonical_post_reader(tmp_path: Path):
             "returned_records": 11,
         },
     )
+    for record in mock_records:
+        record["source_sha256"] = profile.source_sha256
+        record["source_file"] = str(source_fixture.resolve())
     canonical_entities, canonical_diag = canonical_ingest.ingest(
-        _RECORDS_BUNDLE, profile, extract_records=lambda _p: mock_records
+        source_fixture, profile, extract_records=lambda _p: mock_records
     )
     assert len(canonical_entities) == 11
     assert canonical_diag["census"]["model_entities"] == 11
+    assert all(
+        entity.source_sha256 == profile.source_sha256
+        for entity in canonical_entities
+    )
+    assert all(
+        Path(entity.source_file).resolve() == source_fixture.resolve()
+        for entity in canonical_entities
+    )
