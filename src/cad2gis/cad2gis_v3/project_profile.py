@@ -274,7 +274,7 @@ def inventory_sha256(inventory: Mapping[str, Any]) -> str:
 def _extract_records(source: Path) -> Iterable[dict[str, Any]]:
     # Reader import is delayed so project/CLI help remains usable without the
     # AutoCAD runtime and its optional Windows dependencies.
-    from autocad_reader import extract_dwg_records
+    from cad2gis.reader.autocad import extract_dwg_records
 
     return extract_dwg_records(source)
 
