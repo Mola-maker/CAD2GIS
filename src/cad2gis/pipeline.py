@@ -19,6 +19,10 @@ class ProjectConfigurationError(ValueError):
     """A project is missing a required config or contains an ambiguous one."""
 
 
+class SourceNotFoundError(FileNotFoundError):
+    """The source drawing required by conversion is absent."""
+
+
 @dataclass(frozen=True)
 class ProjectConfiguration:
     source_profile: Path
@@ -33,6 +37,15 @@ _CONFIG_PATTERNS: dict[str, tuple[str, ...]] = {
 }
 
 _PROJECT_MANIFEST_NAMES = ("cad2gis-project.json", "project.json")
+_VALID_DOMAINS = frozenset({"auto", "generic", "ftth_apd"})
+_VALID_LLM_MODES = frozenset({"off", "observe", "assist"})
+
+
+def _validate_mode(value: object, allowed: frozenset[str], name: str) -> str:
+    if not isinstance(value, str) or value not in allowed:
+        choices = ", ".join(sorted(allowed))
+        raise ValueError(f"{name} must be one of: {choices}")
+    return value
 
 
 def _existing_file(path: str | Path, label: str) -> Path:
@@ -45,7 +58,7 @@ def _existing_file(path: str | Path, label: str) -> Path:
 def _source_file(path: str | Path) -> Path:
     source = Path(path).expanduser().resolve()
     if not source.is_file():
-        raise FileNotFoundError(f"source drawing does not exist: {source}")
+        raise SourceNotFoundError(f"source drawing does not exist: {source}")
     return source
 
 
@@ -205,9 +218,13 @@ def convert_project(
     source_profile: str | Path | None = None,
     mapping_registry: str | Path | None = None,
     gcp_profile: str | Path | None = None,
+    domain: str = "auto",
+    llm: str = "off",
 ) -> Any:
     """Resolve project configuration and run the architecture-v3 conversion."""
 
+    _validate_mode(domain, _VALID_DOMAINS, "domain")
+    _validate_mode(llm, _VALID_LLM_MODES, "llm")
     source_path = _source_file(source)
     run_path = Path(run_dir).expanduser().resolve()
     if run_path.exists() and not run_path.is_dir():
@@ -225,6 +242,8 @@ def convert_project(
         source_profile=configuration.source_profile,
         mapping_registry=configuration.mapping_registry,
         gcp_profile=configuration.gcp_profile,
+        domain=domain,
+        llm=llm,
     )
 
 

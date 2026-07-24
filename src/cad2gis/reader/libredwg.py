@@ -20,64 +20,290 @@ Ctypes bridge provenance:
 from __future__ import annotations
 
 import ctypes
+import ctypes.util
+import importlib
+import _ctypes
 import hashlib
+from importlib.machinery import PathFinder
+from importlib.util import module_from_spec
 import json
 import math
 import os
 import re
 import subprocess
+import sys
 import tempfile
+import threading
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from .contracts import ReaderCapability, ReaderUnavailableError
+
 # ── LibreDWG SWIG location (installed system-wide on the Linux dev box) ────
 _LIBREDWG_PKG = "/usr/local/lib/python3.12/dist-packages"
-if _LIBREDWG_PKG not in os.environ.get("PYTHONPATH", ""):
-    # Try a soft insert; do not mutate caller's sys.path permanently.
-    import sys
+_PYTHON_PATH_ENV = "CAD2GIS_LIBREDWG_PYTHON_PATH"
+_LIBRARY_ENV = "CAD2GIS_LIBREDWG_LIBRARY"
+_LEGACY_LIBRARY_ENV = "CAD2GIS_LIBREDWG_DLL"
 
-    if _LIBREDWG_PKG not in sys.path:
-        sys.path.insert(0, _LIBREDWG_PKG)
+_BINDING_EXPORTS = (
+    "Dwg_Data",
+    "Dwg_Object_Array_getitem",
+    "DWG_SUPERTYPE_ENTITY",
+    "DWG_TYPE_BLOCK_HEADER",
+    "DWG_TYPE_LAYER",
+    "DWG_TYPE_LINE",
+    "DWG_TYPE_LWPOLYLINE",
+    "DWG_TYPE_CIRCLE",
+    "DWG_TYPE_ARC",
+    "DWG_TYPE_TEXT",
+    "DWG_TYPE_MTEXT",
+    "DWG_TYPE_INSERT",
+    "DWG_TYPE_POINT",
+    "DWG_TYPE_DIMENSION_ALIGNED",
+    "DWG_TYPE_DIMENSION_LINEAR",
+    "DWG_TYPE_DIMENSION_ANG2LN",
+    "DWG_TYPE_DIMENSION_ANG3PT",
+    "DWG_TYPE_DIMENSION_DIAMETER",
+    "DWG_TYPE_DIMENSION_ORDINATE",
+    "DWG_TYPE_DIMENSION_RADIUS",
+    "DWG_TYPE_DIMENSION_r11",
+    "DWG_TYPE_HATCH",
+    "DWG_TYPE_SPLINE",
+    "DWG_TYPE_ELLIPSE",
+    "DWG_TYPE_POLYLINE_2D",
+    "DWG_TYPE_POLYLINE_3D",
+    "DWG_TYPE_SEQEND",
+    "new_Dwg_Object_Array",
+    "dwg_read_file",
+)
 
-try:
-    import LibreDWG  # noqa: F401
-    from LibreDWG import (
-        Dwg_Data,
-        Dwg_Object_Array_getitem,
-        DWG_SUPERTYPE_ENTITY,
-        DWG_TYPE_BLOCK_HEADER,
-        DWG_TYPE_LAYER,
-        DWG_TYPE_LINE,
-        DWG_TYPE_LWPOLYLINE,
-        DWG_TYPE_CIRCLE,
-        DWG_TYPE_ARC,
-        DWG_TYPE_TEXT,
-        DWG_TYPE_MTEXT,
-        DWG_TYPE_INSERT,
-        DWG_TYPE_POINT,
-        DWG_TYPE_DIMENSION_ALIGNED,
-        DWG_TYPE_DIMENSION_LINEAR,
-        DWG_TYPE_DIMENSION_ANG2LN,
-        DWG_TYPE_DIMENSION_ANG3PT,
-        DWG_TYPE_DIMENSION_DIAMETER,
-        DWG_TYPE_DIMENSION_ORDINATE,
-        DWG_TYPE_DIMENSION_RADIUS,
-        DWG_TYPE_DIMENSION_r11,
-        DWG_TYPE_HATCH,
-        DWG_TYPE_SPLINE,
-        DWG_TYPE_ELLIPSE,
-        DWG_TYPE_POLYLINE_2D,
-        DWG_TYPE_POLYLINE_3D,
-        DWG_TYPE_SEQEND,
-        new_Dwg_Object_Array,
-        dwg_read_file,
+LibreDWG: Any | None = None
+Dwg_Data: Any | None = None
+Dwg_Object_Array_getitem: Any | None = None
+DWG_SUPERTYPE_ENTITY: Any | None = None
+DWG_TYPE_BLOCK_HEADER: Any | None = None
+DWG_TYPE_LAYER: Any | None = None
+DWG_TYPE_LINE: Any | None = None
+DWG_TYPE_LWPOLYLINE: Any | None = None
+DWG_TYPE_CIRCLE: Any | None = None
+DWG_TYPE_ARC: Any | None = None
+DWG_TYPE_TEXT: Any | None = None
+DWG_TYPE_MTEXT: Any | None = None
+DWG_TYPE_INSERT: Any | None = None
+DWG_TYPE_POINT: Any | None = None
+DWG_TYPE_DIMENSION_ALIGNED: Any | None = None
+DWG_TYPE_DIMENSION_LINEAR: Any | None = None
+DWG_TYPE_DIMENSION_ANG2LN: Any | None = None
+DWG_TYPE_DIMENSION_ANG3PT: Any | None = None
+DWG_TYPE_DIMENSION_DIAMETER: Any | None = None
+DWG_TYPE_DIMENSION_ORDINATE: Any | None = None
+DWG_TYPE_DIMENSION_RADIUS: Any | None = None
+DWG_TYPE_DIMENSION_r11: Any | None = None
+DWG_TYPE_HATCH: Any | None = None
+DWG_TYPE_SPLINE: Any | None = None
+DWG_TYPE_ELLIPSE: Any | None = None
+DWG_TYPE_POLYLINE_2D: Any | None = None
+DWG_TYPE_POLYLINE_3D: Any | None = None
+DWG_TYPE_SEQEND: Any | None = None
+new_Dwg_Object_Array: Any | None = None
+dwg_read_file: Any | None = None
+
+_reader_lock = threading.RLock()
+_python_bindings = None
+_python_bindings_error: BaseException | None = None
+
+
+def _python_binding_paths() -> tuple[str, ...]:
+    """Return configured binding paths, or the existing system default."""
+    configured = os.environ.get(_PYTHON_PATH_ENV)
+    if configured is None:
+        values = [_LIBREDWG_PKG]
+    else:
+        values = [item for item in configured.split(os.pathsep) if item]
+    normalized: list[str] = []
+    for value in values:
+        path = Path(value).expanduser()
+        if path.is_file():
+            path = path.parent
+        normalized.append(str(path))
+    return tuple(normalized)
+
+
+def _load_python_bindings():
+    """Load the SWIG module and install its exports into module globals."""
+    global LibreDWG, _python_bindings, _python_bindings_error
+    with _reader_lock:
+        if _python_bindings is not None:
+            return _python_bindings
+
+        paths = _python_binding_paths()
+        for path in reversed(paths):
+            if path not in sys.path:
+                sys.path.insert(0, path)
+
+        configured = os.environ.get(_PYTHON_PATH_ENV)
+        previous_module = None
+        module = None
+        configured_module = configured is not None
+        try:
+            if configured_module:
+                if not paths:
+                    raise ModuleNotFoundError(
+                        "CAD2GIS_LIBREDWG_PYTHON_PATH did not configure a search path"
+                    )
+                spec = PathFinder.find_spec("LibreDWG", list(paths))
+                if spec is None or spec.loader is None:
+                    raise ModuleNotFoundError(
+                        "LibreDWG Python bindings were not found in the configured path"
+                    )
+                previous_module = sys.modules.pop("LibreDWG", None)
+                module = module_from_spec(spec)
+                sys.modules["LibreDWG"] = module
+                try:
+                    spec.loader.exec_module(module)
+                except Exception:
+                    sys.modules.pop("LibreDWG", None)
+                    if previous_module is not None:
+                        sys.modules["LibreDWG"] = previous_module
+                    raise
+            else:
+                module = importlib.import_module("LibreDWG")
+            exports = {name: getattr(module, name) for name in _BINDING_EXPORTS}
+        except Exception as exc:
+            if configured_module and (
+                module is None or sys.modules.get("LibreDWG") is module
+            ):
+                if module is not None:
+                    sys.modules.pop("LibreDWG", None)
+                if previous_module is not None:
+                    sys.modules["LibreDWG"] = previous_module
+            _python_bindings_error = exc
+            return None
+
+        LibreDWG = module
+        for name, value in exports.items():
+            globals()[name] = value
+        _python_bindings = module
+        _python_bindings_error = None
+        _rebuild_type_maps()
+        return module
+
+
+def _library_candidates() -> tuple[str, ...]:
+    """Return the explicit library override or platform defaults."""
+    configured = os.environ.get(_LIBRARY_ENV)
+    if configured is None:
+        configured = os.environ.get(_LEGACY_LIBRARY_ENV)
+    if configured is not None:
+        return (configured,)
+    if os.name == "nt":
+        return (
+            "C:/Program Files/LibreDWG/libredwg.dll",
+            "C:/libredwg/libredwg.dll",
+            "libredwg.dll",
+        )
+    if sys.platform == "darwin":
+        return (
+            "/usr/local/lib/libredwg.dylib",
+            "/opt/homebrew/lib/libredwg.dylib",
+            "libredwg.dylib",
+        )
+    return (
+        "/usr/local/lib/libredwg.so",
+        "/usr/lib/libredwg.so",
+        "libredwg.so",
     )
-except ImportError as exc:  # pragma: no cover - runtime guard for non-Linux
-    raise RuntimeError(
-        "LibreDWG Python bindings not found; "
-        "expected at /usr/local/lib/python3.12/dist-packages"
-    ) from exc
+
+
+def _discover_library() -> str | None:
+    """Find a library name without loading or initializing it."""
+    configured = os.environ.get(_LIBRARY_ENV)
+    if configured is None:
+        configured = os.environ.get(_LEGACY_LIBRARY_ENV)
+    if configured is not None:
+        return configured or None
+    for candidate in _library_candidates():
+        if Path(candidate).is_file():
+            return candidate
+        if os.name == "nt" and candidate == "libredwg.dll":
+            return candidate
+        if Path(candidate).name == candidate:
+            found = ctypes.util.find_library("redwg")
+            if found:
+                return found
+    return None
+
+
+def libredwg_capability() -> ReaderCapability:
+    with _reader_lock:
+        return _libredwg_capability()
+
+
+def _libredwg_capability() -> ReaderCapability:
+    """Return actionable diagnostics for the optional LibreDWG backend."""
+    if _load_python_bindings() is None:
+        error_name = (
+            type(_python_bindings_error).__name__
+            if _python_bindings_error
+            else "unknown error"
+        )
+        return ReaderCapability(
+            backend="libredwg",
+            available=False,
+            detail=f"LibreDWG Python bindings are unavailable ({error_name}).",
+            remediation=(
+                "Install the LibreDWG Python bindings, optionally set "
+                "CAD2GIS_LIBREDWG_PYTHON_PATH, or use "
+                "CAD2GIS_READER_BACKEND=autocad."
+            ),
+        )
+    if _libdwg is None or _libc is None:
+        try:
+            _init_libredwg()
+        except AttributeError as exc:
+            return ReaderCapability(
+                backend="libredwg",
+                available=False,
+                detail=(
+                    "LibreDWG shared library is loadable but missing required "
+                    f"symbols ({type(exc).__name__})."
+                ),
+                remediation=(
+                    "Install a matching LibreDWG shared library, optionally set "
+                    "CAD2GIS_LIBREDWG_LIBRARY, or use "
+                    "CAD2GIS_READER_BACKEND=autocad."
+                ),
+            )
+        except Exception as exc:
+            return ReaderCapability(
+                backend="libredwg",
+                available=False,
+                detail=(
+                    "LibreDWG shared library initialization failed "
+                    f"({type(exc).__name__})."
+                ),
+                remediation=(
+                    "Install a loadable LibreDWG shared library, optionally set "
+                    "CAD2GIS_LIBREDWG_LIBRARY, or use "
+                    "CAD2GIS_READER_BACKEND=autocad."
+                ),
+            )
+    if _libdwg is None or _libc is None:
+        return ReaderCapability(
+            backend="libredwg",
+            available=False,
+            detail="LibreDWG native handles are unavailable after initialization.",
+            remediation=(
+                "Install LibreDWG or use CAD2GIS_READER_BACKEND=autocad."
+            ),
+        )
+    return ReaderCapability(
+        backend="libredwg",
+        available=True,
+        detail="LibreDWG Python bindings and shared library are discoverable.",
+        remediation="No remediation required.",
+    )
 
 
 # ── Ctypes bridge to LibreDWG ──────────────────────────────────────────────
@@ -85,46 +311,121 @@ _libdwg = None
 _libc = None
 
 
+def _release_native_handle(handle) -> None:
+    """Release a native loader handle that was opened during failed setup."""
+    with _reader_lock:
+        raw_handle = getattr(handle, "_handle", None)
+        if not raw_handle:
+            return
+        try:
+            if os.name == "nt":
+                _ctypes.FreeLibrary(raw_handle)
+            else:
+                _ctypes.dlclose(raw_handle)
+        except Exception:
+            pass
+
+
+def _require_libredwg() -> None:
+    with _reader_lock:
+        _require_libredwg_unlocked()
+
+
+def _require_libredwg_unlocked() -> None:
+    """Guard extraction behind an actionable native-runtime check."""
+    capability = libredwg_capability()
+    if not capability.available:
+        message = (
+            f"LibreDWG reader backend unavailable (backend={capability.backend}): "
+            f"{capability.detail} {capability.remediation}"
+        )
+        if "CAD2GIS_READER_BACKEND=autocad" not in message:
+            message += " Recovery choice: CAD2GIS_READER_BACKEND=autocad."
+        raise ReaderUnavailableError(message)
+    try:
+        _init_libredwg()
+    except Exception as exc:
+        raise ReaderUnavailableError(
+            "LibreDWG reader backend unavailable: shared library initialization "
+            f"failed ({type(exc).__name__}). Set CAD2GIS_READER_BACKEND=autocad."
+        ) from exc
+
+
+def _allocator_library() -> str | None:
+    if os.name == "nt":
+        return "msvcrt"
+    return ctypes.util.find_library("c")
+
+
 def _init_libredwg():
+    with _reader_lock:
+        return _init_libredwg_unlocked()
+
+
+def _init_libredwg_unlocked():
     """Lazy-init the LibreDWG ctypes bridge. Returns (libdwg, libc)."""
     global _libdwg, _libc
-    if _libdwg is not None:
+    if _libdwg is not None and _libc is not None:
         return _libdwg, _libc
+    stale_native = _libdwg
+    stale_allocator = _libc
+    _libdwg = None
+    _libc = None
+    _release_native_handle(stale_native)
+    if stale_allocator is not stale_native:
+        _release_native_handle(stale_allocator)
+    if _load_python_bindings() is None:
+        raise RuntimeError("LibreDWG Python bindings are unavailable")
+    library = _discover_library()
+    if library is None:
+        raise RuntimeError("LibreDWG shared library is unavailable")
+
+    native_handle = None
+    allocator_handle = None
+    allocator_name = None
     try:
-        _libdwg = ctypes.CDLL("/usr/local/lib/libredwg.so")
+        native_handle = ctypes.CDLL(library)
     except OSError as exc:
-        raise RuntimeError(
-            "LibreDWG shared library not found at /usr/local/lib/libredwg.so"
-        ) from exc
-    _libc = ctypes.CDLL("libc.so.6")
+        raise RuntimeError("LibreDWG shared library could not be loaded") from exc
 
-    _libdwg.dwg_ent_get_layer_name.argtypes = [
-        ctypes.c_void_p,
-        ctypes.POINTER(ctypes.c_int),
-    ]
-    _libdwg.dwg_ent_get_layer_name.restype = ctypes.c_char_p
+    try:
+        allocator_name = _allocator_library()
+        allocator_handle = ctypes.CDLL(allocator_name or None)
+        native_handle.dwg_ent_get_layer_name.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_int),
+        ]
+        native_handle.dwg_ent_get_layer_name.restype = ctypes.c_char_p
 
-    _libdwg.dwg_ent_lwpline_get_numpoints.argtypes = [
-        ctypes.c_void_p,
-        ctypes.POINTER(ctypes.c_int),
-    ]
-    _libdwg.dwg_ent_lwpline_get_numpoints.restype = ctypes.c_int
-    _libdwg.dwg_ent_lwpline_get_points.argtypes = [
-        ctypes.c_void_p,
-        ctypes.POINTER(ctypes.c_int),
-    ]
-    _libdwg.dwg_ent_lwpline_get_points.restype = ctypes.c_void_p
+        native_handle.dwg_ent_lwpline_get_numpoints.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_int),
+        ]
+        native_handle.dwg_ent_lwpline_get_numpoints.restype = ctypes.c_int
+        native_handle.dwg_ent_lwpline_get_points.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_int),
+        ]
+        native_handle.dwg_ent_lwpline_get_points.restype = ctypes.c_void_p
 
-    _libdwg.dwg_dynapi_entity_utf8text.argtypes = [
-        ctypes.c_void_p,
-        ctypes.c_char_p,
-        ctypes.c_char_p,
-        ctypes.POINTER(ctypes.c_char_p),
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.c_void_p,
-    ]
-    _libdwg.dwg_dynapi_entity_utf8text.restype = ctypes.c_bool
-    _libc.free.argtypes = [ctypes.c_void_p]
+        native_handle.dwg_dynapi_entity_utf8text.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_char_p,
+            ctypes.c_char_p,
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.c_void_p,
+        ]
+        native_handle.dwg_dynapi_entity_utf8text.restype = ctypes.c_bool
+        allocator_handle.free.argtypes = [ctypes.c_void_p]
+    except Exception:
+        _release_native_handle(native_handle)
+        if allocator_name is not None and allocator_handle is not native_handle:
+            _release_native_handle(allocator_handle)
+        raise
+
+    _libdwg = native_handle
+    _libc = allocator_handle
     return _libdwg, _libc
 
 
@@ -300,16 +601,66 @@ def aci_to_rgb(aci):
 
 
 # ── Constants and type helpers ─────────────────────────────────────────────
-_DIM_TYPES = {
-    DWG_TYPE_DIMENSION_ALIGNED,
-    DWG_TYPE_DIMENSION_LINEAR,
-    DWG_TYPE_DIMENSION_ANG2LN,
-    DWG_TYPE_DIMENSION_ANG3PT,
-    DWG_TYPE_DIMENSION_DIAMETER,
-    DWG_TYPE_DIMENSION_ORDINATE,
-    DWG_TYPE_DIMENSION_RADIUS,
-    DWG_TYPE_DIMENSION_r11,
-}
+_DIM_TYPES: set[Any] = set()
+
+_DIMENSION_TYPE_SPECS = (
+    ("DWG_TYPE_DIMENSION_ALIGNED", "DIMENSION_ALIGNED"),
+    ("DWG_TYPE_DIMENSION_LINEAR", "DIMENSION_LINEAR"),
+    ("DWG_TYPE_DIMENSION_ANG2LN", "DIMENSION_ANG2LN"),
+    ("DWG_TYPE_DIMENSION_ANG3PT", "DIMENSION_ANG3PT"),
+    ("DWG_TYPE_DIMENSION_DIAMETER", "DIMENSION_DIAMETER"),
+    ("DWG_TYPE_DIMENSION_ORDINATE", "DIMENSION_ORDINATE"),
+    ("DWG_TYPE_DIMENSION_RADIUS", "DIMENSION_RADIUS"),
+    ("DWG_TYPE_DIMENSION_r11", "DIMENSION_r11"),
+)
+_TYPE_NAME_SPECS = (
+    ("DWG_TYPE_LINE", "LINE"),
+    ("DWG_TYPE_LWPOLYLINE", "LWPOLYLINE"),
+    ("DWG_TYPE_CIRCLE", "CIRCLE"),
+    ("DWG_TYPE_ARC", "ARC"),
+    ("DWG_TYPE_TEXT", "TEXT"),
+    ("DWG_TYPE_MTEXT", "MTEXT"),
+    ("DWG_TYPE_INSERT", "INSERT"),
+    ("DWG_TYPE_POINT", "POINT"),
+    ("DWG_TYPE_POLYLINE_2D", "POLYLINE_2D"),
+    ("DWG_TYPE_POLYLINE_3D", "POLYLINE_3D"),
+    ("DWG_TYPE_HATCH", "HATCH"),
+    ("DWG_TYPE_SPLINE", "SPLINE"),
+    ("DWG_TYPE_ELLIPSE", "ELLIPSE"),
+    ("DWG_TYPE_SEQEND", "SEQEND"),
+)
+
+
+def _rebuild_type_maps() -> None:
+    with _reader_lock:
+        _rebuild_type_maps_unlocked()
+
+
+def _rebuild_type_maps_unlocked() -> None:
+    """Rebuild constant maps after the optional SWIG module is loaded."""
+    global _DIM_TYPES, _DWG_TYPE_NAME_MAP, _DIM_STRUCT_NAMES
+    _DIM_TYPES = {
+        value
+        for name, _ in _DIMENSION_TYPE_SPECS
+        if (value := globals().get(name)) is not None
+    }
+    _DWG_TYPE_NAME_MAP = {
+        value: type_name
+        for name, type_name in _TYPE_NAME_SPECS
+        if (value := globals().get(name)) is not None
+    }
+    _DWG_TYPE_NAME_MAP.update(
+        {
+            value: "DIMENSION"
+            for name, _ in _DIMENSION_TYPE_SPECS
+            if (value := globals().get(name)) is not None
+        }
+    )
+    _DIM_STRUCT_NAMES = {
+        value: struct_name
+        for name, struct_name in _DIMENSION_TYPE_SPECS
+        if (value := globals().get(name)) is not None
+    }
 
 _OBJECT_NAMES = {
     "LINE": "ACDBLINE",
@@ -934,42 +1285,10 @@ def _build_record(
     return record
 
 
-_DWG_TYPE_NAME_MAP: dict[int, str] = {
-    DWG_TYPE_LINE: "LINE",
-    DWG_TYPE_LWPOLYLINE: "LWPOLYLINE",
-    DWG_TYPE_CIRCLE: "CIRCLE",
-    DWG_TYPE_ARC: "ARC",
-    DWG_TYPE_TEXT: "TEXT",
-    DWG_TYPE_MTEXT: "MTEXT",
-    DWG_TYPE_INSERT: "INSERT",
-    DWG_TYPE_POINT: "POINT",
-    DWG_TYPE_POLYLINE_2D: "POLYLINE_2D",
-    DWG_TYPE_POLYLINE_3D: "POLYLINE_3D",
-    DWG_TYPE_HATCH: "HATCH",
-    DWG_TYPE_SPLINE: "SPLINE",
-    DWG_TYPE_ELLIPSE: "ELLIPSE",
-    DWG_TYPE_SEQEND: "SEQEND",
-    # Canonical reader collapses all dimension subtypes to "DIMENSION".
-    DWG_TYPE_DIMENSION_ALIGNED: "DIMENSION",
-    DWG_TYPE_DIMENSION_LINEAR: "DIMENSION",
-    DWG_TYPE_DIMENSION_ANG2LN: "DIMENSION",
-    DWG_TYPE_DIMENSION_ANG3PT: "DIMENSION",
-    DWG_TYPE_DIMENSION_DIAMETER: "DIMENSION",
-    DWG_TYPE_DIMENSION_ORDINATE: "DIMENSION",
-    DWG_TYPE_DIMENSION_RADIUS: "DIMENSION",
-    DWG_TYPE_DIMENSION_r11: "DIMENSION",
-}
-_DIM_STRUCT_NAMES: dict[int, str] = {
-    DWG_TYPE_DIMENSION_ALIGNED: "DIMENSION_ALIGNED",
-    DWG_TYPE_DIMENSION_LINEAR: "DIMENSION_LINEAR",
-    DWG_TYPE_DIMENSION_ANG2LN: "DIMENSION_ANG2LN",
-    DWG_TYPE_DIMENSION_ANG3PT: "DIMENSION_ANG3PT",
-    DWG_TYPE_DIMENSION_DIAMETER: "DIMENSION_DIAMETER",
-    DWG_TYPE_DIMENSION_ORDINATE: "DIMENSION_ORDINATE",
-    DWG_TYPE_DIMENSION_RADIUS: "DIMENSION_RADIUS",
-    DWG_TYPE_DIMENSION_r11: "DIMENSION_r11",
-}
+_DWG_TYPE_NAME_MAP: dict[int, str] = {}
+_DIM_STRUCT_NAMES: dict[int, str] = {}
 _DIM_TYPE_NAMES = frozenset({"DIMENSION"})
+_rebuild_type_maps()
 
 
 def extract_dwg_records(source_path) -> DWGRecordInventory:
@@ -979,6 +1298,7 @@ def extract_dwg_records(source_path) -> DWGRecordInventory:
     ``.diagnostics`` dict containing extraction_backend, skipped_rows,
     inventory_complete, metadata_evidence, and unsupported_reason_counts.
     """
+    _require_libredwg()
     source = Path(source_path).resolve()
     source_bytes = source.read_bytes()
     source_sha256 = hashlib.sha256(source_bytes).hexdigest()

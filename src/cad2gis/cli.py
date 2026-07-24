@@ -82,6 +82,18 @@ def _parser() -> argparse.ArgumentParser:
     convert.add_argument("--source-profile", type=Path)
     convert.add_argument("--mapping-registry", type=Path)
     convert.add_argument("--gcp-profile", type=Path)
+    convert.add_argument(
+        "--domain",
+        choices=("auto", "generic", "ftth_apd"),
+        default="auto",
+        help="Domain profile mode recorded for the conversion.",
+    )
+    convert.add_argument(
+        "--llm",
+        choices=("off", "observe", "assist"),
+        default="off",
+        help="LLM mode recorded for the conversion; no provider is invoked.",
+    )
     _add_json(convert)
     convert.set_defaults(handler=_convert)
 
@@ -241,6 +253,8 @@ def _convert(args: argparse.Namespace) -> tuple[Any, int]:
         source_profile=args.source_profile,
         mapping_registry=args.mapping_registry,
         gcp_profile=args.gcp_profile,
+        domain=args.domain,
+        llm=args.llm,
     )
     return _conversion_payload(result), 0
 
@@ -463,6 +477,58 @@ def _conversion_payload(result: Any) -> Any:
     return payload if found else result
 
 
+_COMMANDS = frozenset(
+    {"doctor", "inspect", "bootstrap", "validate", "convert", "gcp", "verify"}
+)
+
+
+def _active_command(arguments: Sequence[str]) -> str:
+    for argument in arguments:
+        if argument in _COMMANDS:
+            return argument
+    return "cli"
+
+
+def _error_code(exc: Exception) -> str:
+    from .pipeline import ProjectConfigurationError, SourceNotFoundError
+    from .reader.contracts import ReaderUnavailableError
+    from .runtime import BackendUnavailable
+
+    if isinstance(exc, CLIUsageError):
+        return "CLI_USAGE"
+    if isinstance(exc, SourceNotFoundError):
+        return "SOURCE_NOT_FOUND"
+    if isinstance(exc, ProjectConfigurationError):
+        return "PROJECT_CONFIG_INVALID"
+    if isinstance(exc, (ReaderUnavailableError, BackendUnavailable)):
+        return "READER_UNAVAILABLE"
+    return "CONVERSION_FAILED"
+
+
+def _artifact_status(exc: Exception) -> str:
+    value = getattr(exc, "retained_artifact_path", None)
+    if value is not None and str(value):
+        return str(value)
+    return "not_created"
+
+
+def _recovery_command(stage: str) -> str:
+    if stage in _COMMANDS:
+        return f"cad2gis {stage} --help"
+    return "cad2gis --help"
+
+
+def _error_payload(exc: Exception, *, stage: str) -> dict[str, Any]:
+    return {
+        "type": exc.__class__.__name__,
+        "message": str(exc),
+        "error_code": _error_code(exc),
+        "stage": stage,
+        "artifact_status": _artifact_status(exc),
+        "recovery_command": _recovery_command(stage),
+    }
+
+
 def _jsonable(value: Any) -> Any:
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
         return _jsonable(dataclasses.asdict(value))
@@ -511,10 +577,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     filtered, debug = _extract_debug(raw)
     parser = _parser()
-    args = parser.parse_args(filtered)
-    args.debug = bool(args.debug or debug)
-    handler: Callable[[argparse.Namespace], tuple[Any, int]] = args.handler
+    stage = _active_command(filtered)
+    args: argparse.Namespace | None = None
     try:
+        args = parser.parse_args(filtered)
+        args.debug = bool(args.debug or debug)
+        stage = str(args.command)
+        handler: Callable[[argparse.Namespace], tuple[Any, int]] = args.handler
         value, status = handler(args)
         if value is not None:
             _emit(value, compact=False)
@@ -522,16 +591,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     except BrokenPipeError:
         return 0
     except Exception as exc:
-        if args.debug:
+        if debug or bool(getattr(args, "debug", False)):
             raise
-        payload = {
-            "status": "error",
-            "error": {"type": exc.__class__.__name__, "message": str(exc)},
-        }
-        if getattr(args, "json", False):
+        error = _error_payload(exc, stage=stage)
+        payload = {"status": "error", "error": error}
+        if bool(getattr(args, "json", False)) or "--json" in filtered:
             print(json.dumps(payload, ensure_ascii=False, sort_keys=True), file=sys.stderr)
         else:
             print(f"cad2gis: error: {exc}", file=sys.stderr)
+            for field in ("error_code", "stage", "artifact_status", "recovery_command"):
+                print(f"{field}: {error[field]}", file=sys.stderr)
             print("Run with --debug for a traceback.", file=sys.stderr)
         return 2
 

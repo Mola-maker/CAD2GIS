@@ -23,9 +23,11 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "src"
 SRC = ROOT / "src"
-APD_SOURCE = ROOT / "baselines" / "apd_hutabohu" / "records" / "readcad_review_bundle.json"
+APD_READCAD_BUNDLE = ROOT / "baselines" / "apd_hutabohu" / "records" / "readcad_review_bundle.json"
 APD_SOURCE_PROFILE = ROOT / "baselines" / "apd_hutabohu" / "config" / "source_profile.json"
 APD_MAPPING = ROOT / "baselines" / "apd_hutabohu" / "config" / "mapping_registry.json"
+LEGACY_READCAD_DWG_NAME = "APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg"
+LEGACY_READCAD_DWG_SHA = "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557"
 
 
 def _canonical_module(name: str):
@@ -139,16 +141,30 @@ def test_reviewed_profile_and_mapping_registry_are_bound_to_one_source_hash(tmp_
     """A reviewed APD pack cannot be reused for a second DWG byte stream."""
 
     config = _canonical_module("cad2gis.cad2gis_v3.config")
+    profile_payload = _json(APD_SOURCE_PROFILE)
     profile = config.SourceProfile.load(APD_SOURCE_PROFILE)
-    assert profile.validate_source(APD_SOURCE) == profile.source_sha256
-
-    second_source = tmp_path / "same-layout-different-hash.dwg"
-    second_source.write_bytes(APD_SOURCE.read_bytes() + b"\nCAD2GIS-SECOND-SOURCE")
-    with pytest.raises(ValueError, match="Source hash mismatch"):
-        profile.validate_source(second_source)
-
+    registry_payload = _json(APD_MAPPING)
+    assert profile.source_sha256 == registry_payload["source_sha256"]
     registry = config.MappingRegistry.load(APD_MAPPING, profile.source_sha256)
     assert registry.source_sha256 == profile.source_sha256
+
+    readcad_bundle = _json(APD_READCAD_BUNDLE)
+    assert readcad_bundle["source"]["dwg_name"] == LEGACY_READCAD_DWG_NAME
+    assert readcad_bundle["source"]["dwg_sha256"] == LEGACY_READCAD_DWG_SHA
+    assert readcad_bundle["source"]["dwg_sha256"] != profile.source_sha256
+
+    first_source = tmp_path / "synthetic-reviewed-source.dwg"
+    first_source.write_bytes(b"synthetic reviewed source fixture")
+    profile_payload["source_sha256"] = _sha256_bytes(first_source.read_bytes())
+    synthetic_profile_path = _write_json(tmp_path / "synthetic_profile.json", profile_payload)
+    synthetic_profile = config.SourceProfile.load(synthetic_profile_path)
+    assert synthetic_profile.validate_source(first_source) == synthetic_profile.source_sha256
+
+    second_source = tmp_path / "same-layout-different-hash.dwg"
+    second_source.write_bytes(first_source.read_bytes() + b"\nCAD2GIS-SECOND-SOURCE")
+    with pytest.raises(ValueError, match="Source hash mismatch"):
+        synthetic_profile.validate_source(second_source)
+
     stale_mapping = _json(APD_MAPPING)
     stale_mapping["source_sha256"] = _sha256_bytes(b"different-reviewed-dwg")
     stale_mapping_path = _write_json(tmp_path / "stale_mapping.json", stale_mapping)
@@ -510,3 +526,427 @@ def test_ambiguous_project_configuration_has_actionable_error(tmp_path: Path):
     with pytest.raises(pipeline.ProjectConfigurationError, match="ambiguous") as error:
         pipeline.resolve_project_configuration(project_dir=tmp_path)
     assert "source_profile" in str(error.value)
+
+
+def _fake_conversion_status(*, reader_protocol=None, georeference=None):
+    pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
+    return pipeline._derive_conversion_status(
+        entities=[object()],
+        ingest_diagnostics={
+            "reader_protocol": (
+                {"inventory_complete": True, "skipped_rows": 0}
+                if reader_protocol is None
+                else reader_protocol
+            ),
+            "reader_inventory": {},
+        },
+        semantic_diagnostics={"coverage": {"counts": {}}},
+        style_coverage={"counts": {}},
+        unresolved=[],
+        terminal_accounting={
+            "accepted": 1,
+            "unsupported": 0,
+            "abstained": 0,
+            "errored": 0,
+            "total": 1,
+        },
+        validation_summary={},
+        georeference_diagnostics={} if georeference is None else georeference,
+        diagnostics={},
+    )
+
+
+def _run_fake_conversion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    alias_error: OSError | None = None,
+):
+    pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
+    model = _canonical_module("cad2gis.cad2gis_v3.model")
+    implementation = _canonical_module("cad2gis.cad2gis_v3.implementation")
+    runtime_provenance = _canonical_module("cad2gis.cad2gis_v3.runtime_provenance")
+    units = _canonical_module("cad2gis.cad2gis_v3.units")
+    styles = _canonical_module("cad2gis.cad2gis_v3.styles")
+
+    source = tmp_path / "fixture.dwg"
+    source.write_bytes(b"pipeline integration fixture")
+    run_dir = tmp_path / "runs" / "fixture"
+    source_hash = _sha256_bytes(source.read_bytes())
+    (tmp_path / "source_profile.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "mapping_registry.json").write_text("{}", encoding="utf-8")
+    entity = _source_entity(model, "source-line", kind="LINE", layer="FIBER")
+
+    class FakeProfile:
+        path = tmp_path / "source_profile.json"
+        source_sha256 = source_hash
+        source_crs = "EPSG:3857"
+        target_crs = "EPSG:3857"
+        dwg_insunits = 6
+        source_coordinate_scale_to_m = 1.0
+        source_coordinate_scale_reviewed = True
+        local_registration_strategy = None
+        local_registration_reviewed = False
+        inventory_sha256 = ""
+        project_id = ""
+        is_legacy = False
+        spatial_coverage_policy = None
+        review = SimpleNamespace(status="reviewed")
+        expectations = SimpleNamespace(
+            source_inventory={}, feature_counts={}, annotation_families=(),
+            source_geometry_gates=(), topology_gates=(), segment_gates=(),
+            delivery_counts={},
+        )
+
+        def require_reviewed(self):
+            return None
+
+        def validate_source(self, path):
+            assert Path(path).resolve() == source.resolve()
+            return source_hash
+
+    class FakeRegistry:
+        path = tmp_path / "mapping_registry.json"
+        project_id = ""
+        inventory_sha256 = ""
+        semantic_coverage_policy = "warn"
+        semantic_coverage_allowlist = ()
+        style_coverage_policy = "warn"
+        style_coverage_allowlist = ()
+        annotation_families = ()
+        positive_route_layer_regex = ".*"
+        policy = {
+            "source_geometry_immutable": True,
+            "crossing_is_connection": False,
+            "support_is_optical_node": False,
+            "force_route_components_connected": False,
+            "generic_line_is_cable": False,
+            "dimension_is_cable_geometry": False,
+        }
+        review = SimpleNamespace(status="reviewed")
+
+        def require_reviewed(self):
+            return None
+
+    monkeypatch.setattr(
+        pipeline.SourceProfile, "load", staticmethod(lambda _: FakeProfile())
+    )
+    monkeypatch.setattr(
+        pipeline.MappingRegistry,
+        "load",
+        staticmethod(lambda *_args: FakeRegistry()),
+    )
+    monkeypatch.setattr(
+        pipeline,
+        "ingest",
+        lambda *_args: (
+            [entity],
+            {
+                "census": {},
+                "reader_inventory": {},
+                "reader_protocol": {"inventory_complete": True, "skipped_rows": 0},
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        pipeline,
+        "classify_entities",
+        lambda *_args, **_kwargs: (
+            [], [], [],
+            {
+                "annotation_assignments_by_family": {},
+                "coverage": {"conversion_allowed": True},
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        pipeline,
+        "_validate_source_geometry",
+        lambda *_args, **_kwargs: {
+            "cable_sources_checked": 0,
+            "curve_facts_checked": 0,
+            "source_geometry_immutable": True,
+        },
+    )
+    monkeypatch.setattr(pipeline, "_validate_topology_policy", lambda *_args: {
+        "dimension_or_sling_promotions": 0,
+        "synthetic_route_vertices": 0,
+        "support_optical_promotions": 0,
+        "crossing_connections": 0,
+    })
+    monkeypatch.setattr(pipeline, "_evaluate_diagnostic_gates", lambda domain, *_args: {
+        "domain": domain, "passed": True, "gates": [],
+    })
+    monkeypatch.setattr(
+        pipeline,
+        "build_topology",
+        lambda _entities, _features, _registry, relations, unresolved: (
+            relations,
+            unresolved,
+            {
+                "source_route_components": 0,
+                "source_routes": 0,
+                "source_route_graph": {},
+                "source_route_native_lengths": 0,
+                "source_route_native_length_max_abs_delta_m": 0.0,
+            },
+        ),
+    )
+    curve_geometry = _canonical_module("cad2gis.cad2gis_v3.curve_geometry")
+    monkeypatch.setattr(
+        curve_geometry,
+        "materialize_cable_features",
+        lambda *_args, **_kwargs: {},
+    )
+    monkeypatch.setattr(
+        curve_geometry,
+        "validate_cable_geometry_materialization",
+        lambda *_args, **_kwargs: {},
+    )
+
+    class FakeTransformer:
+        source_crs = "EPSG:3857"
+        target_crs = "EPSG:3857"
+        source = "EPSG:3857"
+        target = "EPSG:3857"
+
+        def roundtrip_error(self, _points):
+            return 0.0
+
+        def engine_crosscheck_error(self, _points):
+            return 0.0
+
+        def operation_metadata(self, _point):
+            return {"absolute_accuracy_validation": "not_verified"}
+
+    monkeypatch.setattr(
+        pipeline,
+        "DirectTransformer",
+        lambda *_args, **_kwargs: FakeTransformer(),
+    )
+    monkeypatch.setattr(
+        units,
+        "build_unit_crs_contract",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            coordinate_mode="direct_crs",
+            to_manifest_dict=lambda: {},
+        ),
+    )
+    monkeypatch.setattr(
+        pipeline, "feature_adjustment_records", lambda *_args, **_kwargs: []
+    )
+    monkeypatch.setattr(
+        pipeline, "enrich_delivery_metrics", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(styles, "analyze_style_coverage", lambda *_args, **_kwargs: {
+        "conversion_allowed": True, "status": "PASS",
+    })
+    monkeypatch.setattr(
+        pipeline,
+        "_manifest_validation_summary",
+        lambda *_args, **_kwargs: {"segment_delivery": {"passed": True}},
+    )
+
+    def fake_evidence(path, *_args, **_kwargs):
+        Path(path).write_bytes(b"evidence")
+
+    def fake_delivery(path, *_args, **_kwargs):
+        Path(path).write_bytes(b"delivery")
+        return {}
+
+    def fake_styles(path, *_args, **_kwargs):
+        destination = Path(path)
+        destination.mkdir(parents=True, exist_ok=True)
+        manifest = destination / "style_manifest.json"
+        manifest.write_text(
+            json.dumps({"coverage": {"conversion_allowed": True}}),
+            encoding="utf-8",
+        )
+        return manifest
+
+    def fake_source(path, *_args, **_kwargs):
+        destination = Path(path)
+        destination.write_bytes(b"source")
+        return SimpleNamespace(path=destination, entity_count=1)
+
+    monkeypatch.setattr(pipeline, "write_evidence", fake_evidence)
+    monkeypatch.setattr(pipeline, "write_delivery", fake_delivery)
+    monkeypatch.setattr(pipeline, "write_styles", fake_styles)
+    monkeypatch.setattr(pipeline, "write_source_gpkg", fake_source, raising=False)
+    monkeypatch.setattr(
+        pipeline, "account_entities", lambda values: list(values), raising=False
+    )
+    monkeypatch.setattr(pipeline, "summarize_accounting", lambda values: {
+        "accepted": len(list(values)), "unsupported": 0, "abstained": 0,
+        "errored": 0, "total": 1,
+    }, raising=False)
+    monkeypatch.setattr(
+        implementation,
+        "freeze_conversion_snapshot",
+        lambda *_args, **_kwargs: {},
+    )
+    monkeypatch.setattr(
+        implementation,
+        "conversion_snapshot_manifest_fields",
+        lambda *_args, **_kwargs: {},
+    )
+    monkeypatch.setattr(
+        implementation,
+        "verify_conversion_snapshot",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        runtime_provenance, "collect_runtime_provenance", lambda **_kwargs: {}
+    )
+    monkeypatch.setattr(
+        runtime_provenance,
+        "runtime_manifest_fields",
+        lambda *_args, **_kwargs: {},
+    )
+
+    if alias_error is not None:
+        alias_path = run_dir.parent / "latest_verified.json"
+        alias_path.parent.mkdir(parents=True, exist_ok=True)
+        alias_path.write_bytes(b"previous verified alias\n")
+
+        def fail_alias(*_args, **_kwargs):
+            assert run_dir.is_dir()
+            assert (run_dir / "run_manifest.json").is_file()
+            raise alias_error
+
+        monkeypatch.setattr(pipeline, "publish_verified_alias", fail_alias)
+
+    result = pipeline.convert(
+        pipeline.ConversionRequest(
+            source=source,
+            run_dir=run_dir,
+            source_profile=FakeProfile.path,
+            mapping_registry=FakeRegistry.path,
+        )
+    )
+    return result, run_dir
+
+
+def test_conversion_publishes_source_artifact_accounting_status_and_modes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    result, run_dir = _run_fake_conversion(tmp_path, monkeypatch)
+    manifest = _json(run_dir / "run_manifest.json")
+    expected_artifacts = {
+        "source.gpkg", "delivery.gpkg", "evidence.gpkg", "style_manifest.json",
+    }
+    artifact_names = {
+        Path(item["path"]).name for item in manifest["artifacts"].values()
+    }
+    assert artifact_names == expected_artifacts
+    for item in manifest["artifacts"].values():
+        artifact = Path(item["path"])
+        assert item["sha256"] == _sha256_bytes(artifact.read_bytes())
+    assert manifest["run_status"] in {"VERIFIED", "CONDITIONAL", "UNSAFE", "FAILED"}
+    assert manifest["terminal_accounting"]["total"] == manifest["source_entity_count"]
+    assert manifest["modes"] == {"domain": "auto", "llm": "off"}
+    assert manifest["artifacts"]["source"]["sha256"] == _sha256_bytes(
+        result.source_path.read_bytes()
+    )
+
+
+def test_alias_failure_preserves_old_alias_after_bundle_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    alias_path = tmp_path / "runs" / "latest_verified.json"
+    run_dir = tmp_path / "runs" / "fixture"
+
+    with pytest.raises(OSError, match="simulated alias failure"):
+        _run_fake_conversion(
+            tmp_path,
+            monkeypatch,
+            alias_error=OSError("simulated alias failure"),
+        )
+
+    assert alias_path.read_bytes() == b"previous verified alias\n"
+    assert run_dir.is_dir()
+    assert (run_dir / "run_manifest.json").is_file()
+
+
+def test_conversion_status_preserves_incomplete_reader_as_unsafe():
+    status = _fake_conversion_status(
+        reader_protocol={"inventory_complete": False, "skipped_rows": 0}
+    )
+    assert status.value == "UNSAFE"
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -1.0])
+def test_conversion_status_rejects_invalid_roundtrip_metric(value: float):
+    status = _fake_conversion_status(
+        georeference={"roundtrip_max_source_m": value}
+    )
+    assert status.value == "UNSAFE"
+
+
+def test_conversion_status_counts_skipped_row_errors_as_unsafe():
+    status = _fake_conversion_status(
+        reader_protocol={
+            "inventory_complete": True,
+            "skipped_rows": 0,
+            "skipped_row_errors": ["row 7 malformed"],
+        }
+    )
+    assert status.value == "UNSAFE"
+
+
+def test_conversion_status_fails_closed_for_malformed_reader_count():
+    status = _fake_conversion_status(
+        reader_protocol={"inventory_complete": True, "skipped_rows": "unknown"}
+    )
+    assert status.value == "UNSAFE"
+
+
+def test_runtime_forwards_conversion_modes_to_backend_request(
+    tmp_path: Path, monkeypatch,
+):
+    runtime = _canonical_module("cad2gis.runtime")
+    captured = {}
+
+    class FakeRequest:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+            self.__dict__.update(kwargs)
+
+    class FakeBackend:
+        ConversionRequest = FakeRequest
+
+        @staticmethod
+        def convert(request):
+            return request
+
+    monkeypatch.setattr(runtime, "load_backend_module", lambda _name: FakeBackend)
+    result = runtime.call_conversion_backend(
+        source=tmp_path / "source.dwg",
+        run_dir=tmp_path / "run",
+        source_profile=tmp_path / "source_profile.json",
+        mapping_registry=tmp_path / "mapping_registry.json",
+        gcp_profile=None,
+        domain="generic",
+        llm="assist",
+    )
+    assert result.domain == "generic"
+    assert result.llm == "assist"
+    assert captured["domain"] == "generic"
+    assert captured["llm"] == "assist"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("domain", "vendor"), ("llm", "provider")],
+)
+def test_conversion_request_rejects_unknown_modes(field: str, value: str):
+    pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
+    values = {
+        "source": Path("source.dwg"),
+        "run_dir": Path("run"),
+        "source_profile": Path("source_profile.json"),
+        "mapping_registry": Path("mapping_registry.json"),
+        field: value,
+    }
+    with pytest.raises(ValueError, match=field):
+        pipeline.ConversionRequest(**values)
