@@ -19,6 +19,9 @@ from .calibration import GCPProfile, fit_profile
 from .accounting import account_entities, summarize_accounting
 from .config import MappingRegistry, SourceProfile
 from .evidence import write_evidence
+from .evidence_graph import build_stage_evidence_graph
+from .decision_executor import execute_decision_pack
+from .repair_decisions import load_decision_pack
 from .georef import (
     DeliveryTransformer,
     DirectTransformer,
@@ -37,6 +40,7 @@ from .styles import write_styles
 from .topology import build_topology
 from .run_status import RunStatus, derive_run_status, publish_verified_alias
 from .source_gpkg import write_source_gpkg
+from .visual_evidence import build_visual_evidence_bundle
 from .warehouse import (
     CABLE_SEGMENT_SCHEMA_VERSION,
     CABLE_SEGMENT_UNIT,
@@ -86,12 +90,15 @@ class ConversionRequest:
     source_profile: Path
     mapping_registry: Path
     gcp_profile: Path | None = None
+    decision_pack: Path | None = None
     domain: str = "auto"
     llm: str = "off"
 
     def __post_init__(self) -> None:
         _validate_mode(self.domain, _VALID_DOMAINS, "domain")
         _validate_mode(self.llm, _VALID_LLM_MODES, "llm")
+        if self.decision_pack is not None and self.llm == "off":
+            raise ValueError("decision_pack requires llm mode observe or assist")
 
 
 @dataclass(frozen=True)
@@ -108,6 +115,7 @@ class ConversionResult:
 
 def _write_manifest(path, payload):
     path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.{time.time_ns()}.tmp")
     try:
         temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -725,6 +733,12 @@ def _manifest_validation_summary(
         "segment_delivery": _segment_delivery_summary(features, delivery_counts),
         "coordinate_accuracy": {
             "calibration_status": calibration["status"],
+            "coordinate_domain_status": (
+                georeference_diagnostics.get("coordinate_domain") or {}
+            ).get("status"),
+            "coordinate_domain_passed": (
+                georeference_diagnostics.get("coordinate_domain") or {}
+            ).get("passed"),
             "spatial_coverage_passed": coverage.get("passed"),
             "lineage_model": lineage["model"],
             "lineage_feature_count": lineage["feature_count"],
@@ -1060,6 +1074,11 @@ def _derive_conversion_status(
     abstained_total = _status_count(terminal_accounting, "abstained")
     abstained_total += _status_count(semantic_counts, "abstained")
     abstained_total += _status_count(style_counts, "abstained")
+    reasoning = diagnostics.get("reasoning", {})
+    if isinstance(reasoning, Mapping):
+        decision_summary = reasoning.get("decision_pack", {})
+        if isinstance(decision_summary, Mapping):
+            abstained_total += _status_count(decision_summary, "unresolved_count")
     errored_total = _status_count(terminal_accounting, "errored")
 
     return derive_run_status(
@@ -1091,6 +1110,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             request.source_profile,
             request.mapping_registry,
             request.gcp_profile,
+            decision_pack=request.decision_pack,
             runtime=startup_runtime,
         )
     except FileNotFoundError:
@@ -1152,13 +1172,39 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 f"expected {profile.inventory_sha256}, got "
                 f"{observed_inventory['inventory_sha256']}"
             )
+    from .source_dependencies import assess_source_dependencies
+
+    source_dependencies = assess_source_dependencies(entities)
+    if source_dependencies["passed"] is not True:
+        raise RuntimeError(
+            "Source dependency admission failed: "
+            + "; ".join(source_dependencies["failures"])
+        )
     inventory_gate = _validate_declared_counts(
         "source inventory",
         profile.expectations.source_inventory,
         ingest_diagnostics["census"],
     )
+    from .plan_domain import build_plan_domain
+
+    plan_domain = build_plan_domain(entities)
+    semantic_entities = list(plan_domain.entities)
+    from .coordinate_domain import assess_coordinate_domain
+
+    coordinate_domain = assess_coordinate_domain(
+        semantic_entities, profile.source_crs,
+    )
+    raw_entity_keys = {entity.entity_key for entity in entities}
+    evidence_entities = [
+        *entities,
+        *(
+            entity
+            for entity in semantic_entities
+            if entity.entity_key not in raw_entity_keys
+        ),
+    ]
     features, relations, unresolved, semantic_diagnostics = classify_entities(
-        entities,
+        semantic_entities,
         registry,
         coverage_policy=registry.semantic_coverage_policy,
         coverage_allowlist=list(registry.semantic_coverage_allowlist),
@@ -1183,10 +1229,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
 
     curve_materialization = materialize_cable_features(
-        entities, features, policy=None, strict=True,
+        semantic_entities, features, policy=None, strict=True,
     )
     source_policy = _validate_source_geometry(
-        entities,
+        semantic_entities,
         features,
         registry,
         require_curve_facts=True,
@@ -1197,10 +1243,65 @@ def convert(request: ConversionRequest) -> ConversionResult:
         {**source_policy, "curve_materialization": curve_materialization},
     )
     relations, unresolved, topology_diagnostics = build_topology(
-        entities, features, registry, relations, unresolved,
+        semantic_entities, features, registry, relations, unresolved,
     )
+    base_evidence_graph = build_stage_evidence_graph(
+        source_sha256=source_hash,
+        entities=evidence_entities,
+        features=features,
+        relations=relations,
+        unresolved=unresolved,
+    )
+    visual_evidence = build_visual_evidence_bundle(
+        graph=base_evidence_graph,
+        entities=evidence_entities,
+        features=features,
+    )
+    evidence_graph = visual_evidence.graph
+    reasoning_diagnostics = {
+        "architecture": "content-addressed-evidence-graph",
+        "graph_schema_version": "cad2gis.evidence_graph.v1",
+        "graph_sha256": evidence_graph.graph_sha256,
+        "node_count": len(evidence_graph.nodes),
+        "edge_count": len(evidence_graph.edges),
+        "visual_evidence": {
+            "schema_version": "cad2gis.visual_evidence.v1",
+            "region_count": visual_evidence.region_count,
+            "manifest_path": visual_evidence.manifest_relative_path,
+            "authority": "secondary_visual_evidence_only",
+        },
+        "decision_pack": {"status": "not_provided"},
+    }
+    decision_pack = None
+    decision_execution = None
+    if request.decision_pack is not None:
+        decision_pack = load_decision_pack(request.decision_pack)
+        decision_pack.validate_against(evidence_graph)
+        if request.llm == "observe":
+            reasoning_diagnostics["decision_pack"] = {
+                "status": "validated_observe_only",
+                "pack_sha256": decision_pack.pack_sha256,
+                "operation_count": len(decision_pack.operations),
+                "applied_count": 0,
+                "unresolved_count": len(decision_pack.operations),
+            }
+        else:
+            decision_execution = execute_decision_pack(
+                graph=evidence_graph,
+                pack=decision_pack,
+                entities=semantic_entities,
+                features=features,
+                relations=relations,
+            )
+            features = list(decision_execution.features)
+            relations = list(decision_execution.relations)
+            reasoning_diagnostics["decision_pack"] = {
+                "status": "executed",
+                "pack_sha256": decision_pack.pack_sha256,
+                **decision_execution.manifest_dict(),
+            }
     curve_validation = validate_cable_geometry_materialization(
-        entities, features, policy=None, require_all=True,
+        semantic_entities, features, policy=None, require_all=True,
     )
     topology_policy = _validate_topology_policy(
         features, relations, topology_diagnostics,
@@ -1245,7 +1346,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "An enabled GCP profile requires reviewed spatial_coverage_policy gates"
             )
         gcp_profile.validate_transformer(transformer)
-        drawing_extent_points = source_entity_drawing_points(entities)
+        drawing_extent_points = source_entity_drawing_points(semantic_entities)
         prefit_spatial_coverage = (
             {
                 "schema_version": "cad2gis-spatial-coverage-v1",
@@ -1366,8 +1467,19 @@ def convert(request: ConversionRequest) -> ConversionResult:
         operation_metadata["absolute_accuracy_validation"] = (
             "nominal CRS operation only; accepted GCP validation is recorded in calibration"
         )
+    if (
+        coordinate_domain.get("passed") is not True
+        and calibration_diagnostics["status"] != "accepted"
+    ):
+        raise RuntimeError(
+            "Declared CRS coordinate-domain gate failed and no independently "
+            "validated GCP registration is active: "
+            + "; ".join(coordinate_domain.get("failures") or ())
+        )
     diagnostics = {
         "ingest": ingest_diagnostics,
+        "source_dependencies": source_dependencies,
+        "plan_domain": plan_domain.diagnostics,
         "semantics": semantic_diagnostics,
         "topology": topology_diagnostics,
         "styles": {"coverage": style_coverage},
@@ -1404,6 +1516,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "roundtrip_max_source_m": roundtrip_error,
             "engine_crosscheck_max_target_m": engine_crosscheck,
             "coordinate_operation": operation_metadata,
+            "coordinate_domain": coordinate_domain,
             "calibration": calibration_diagnostics,
             "lineage": {
                 "model": (
@@ -1414,6 +1527,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "feature_count": len(feature_displacements),
             },
         },
+        "reasoning": reasoning_diagnostics,
     }
 
     artifact_prefix = "apd_" if profile.is_legacy else ""
@@ -1421,6 +1535,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
     evidence_path = run_dir / f"{artifact_prefix}evidence.gpkg"
     delivery_path = run_dir / f"{artifact_prefix}delivery.gpkg"
     style_manifest_path = run_dir / "qgis" / "styles" / "style_manifest.json"
+    evidence_graph_path = run_dir / "reasoning" / "evidence_graph.json"
+    decision_execution_path = run_dir / "reasoning" / "decision_execution.json"
+    derived_network_path = run_dir / "reasoning" / "derived_network.json"
+    visual_manifest_path = run_dir / visual_evidence.manifest_relative_path
     manifest_path = run_dir / "run_manifest.json"
     staged_run_dir = Path(tempfile.mkdtemp(
         prefix=f".{run_dir.name}.stage.", dir=run_dir.parent,
@@ -1430,6 +1548,32 @@ def convert(request: ConversionRequest) -> ConversionResult:
         staged_evidence_path = staged_run_dir / evidence_path.name
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
+        staged_evidence_graph_path = staged_run_dir / "reasoning" / "evidence_graph.json"
+        _write_manifest(staged_evidence_graph_path, evidence_graph.to_dict())
+        staged_visual_manifest_path = visual_evidence.write(staged_run_dir)
+        staged_decision_execution_path = None
+        staged_derived_network_path = None
+        if decision_execution is not None:
+            staged_decision_execution_path = (
+                staged_run_dir / "reasoning" / "decision_execution.json"
+            )
+            staged_derived_network_path = (
+                staged_run_dir / "reasoning" / "derived_network.json"
+            )
+            _write_manifest(
+                staged_decision_execution_path,
+                decision_execution.receipt_dict(),
+            )
+            _write_manifest(
+                staged_derived_network_path,
+                decision_execution.derived_network_dict(),
+            )
+        staged_decision_pack_path = None
+        decision_pack_path = None
+        if request.decision_pack is not None:
+            decision_pack_path = run_dir / "reasoning" / "decision_pack.json"
+            staged_decision_pack_path = staged_run_dir / "reasoning" / "decision_pack.json"
+            shutil.copy2(Path(request.decision_pack).resolve(), staged_decision_pack_path)
         source_result = write_source_gpkg(
             staged_source_path, entities, profile.source_crs,
         )
@@ -1443,7 +1587,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 f"{getattr(source_result, 'entity_count', None)} != {source_entity_count}"
             )
         write_evidence(
-            staged_evidence_path, entities, features, relations, unresolved,
+            staged_evidence_path,
+            evidence_entities,
+            features,
+            relations,
+            unresolved,
             diagnostics, transformer.source,
             calibration_audit=(calibration_audit or lineage_audit),
             target_srs=transformer.target,
@@ -1470,7 +1618,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 f"Written style manifest coverage gate failed: {written_style_coverage}"
             )
         validation_summary = _manifest_validation_summary(
-            entities,
+            semantic_entities,
             features,
             policy_diagnostics,
             topology_diagnostics,
@@ -1533,10 +1681,35 @@ def convert(request: ConversionRequest) -> ConversionResult:
                     "path": str(style_manifest_path),
                     "sha256": _sha256(staged_style_manifest_path),
                 },
+                "evidence_graph": {
+                    "path": str(evidence_graph_path),
+                    "sha256": _sha256(staged_evidence_graph_path),
+                },
+                "visual_evidence": {
+                    "path": str(visual_manifest_path),
+                    "sha256": _sha256(staged_visual_manifest_path),
+                },
+                **({
+                    "decision_pack": {
+                        "path": str(decision_pack_path),
+                        "sha256": _sha256(staged_decision_pack_path),
+                    },
+                } if staged_decision_pack_path is not None else {}),
+                **({
+                    "decision_execution": {
+                        "path": str(decision_execution_path),
+                        "sha256": _sha256(staged_decision_execution_path),
+                    },
+                    "derived_network": {
+                        "path": str(derived_network_path),
+                        "sha256": _sha256(staged_derived_network_path),
+                    },
+                } if staged_decision_execution_path is not None else {}),
             },
             "delivery_counts": counts,
             "delivery_contract_gate": delivery_gate,
             "source_entity_count": source_entity_count,
+            "plan_domain": plan_domain.diagnostics,
             "terminal_accounting": terminal_accounting,
             "semantics": semantic_coverage,
             "style": written_style_coverage,
@@ -1546,13 +1719,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "unresolved_count": len(unresolved),
             "policy": dict(registry.policy),
             "validation": validation_summary,
+            "reasoning": diagnostics["reasoning"],
         }
         if gcp_profile is not None:
             manifest["profiles"]["gcp_profile"] = {
                 "path": str(gcp_profile.path), "sha256": gcp_profile.sha256,
             }
         _write_manifest(staged_run_dir / manifest_path.name, manifest)
-        verify_conversion_snapshot(conversion_snapshot)
+        verify_conversion_snapshot(
+            conversion_snapshot,
+            decision_pack=request.decision_pack,
+        )
         _publish_run_bundle(staged_run_dir, run_dir)
         publish_verified_alias(
             run_dir.parent / "latest_verified.json",

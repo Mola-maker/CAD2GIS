@@ -1,0 +1,23 @@
+{
+  "servers": {
+    "cad2gis": {
+      "type": "stdio",
+      "command": "conda",
+      "args": [
+        "run",
+        "--no-capture-output",
+        "-n",
+        "cad2gis",
+        "python",
+        "-m",
+        "cad2gis.agent_mcp",
+        "--transport",
+        "stdio"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CAD2GIS_PROJECT_ROOT": "${workspaceFolder}"
+      }
+    }
+  }
+}

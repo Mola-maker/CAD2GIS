@@ -42,6 +42,14 @@ THEORETICAL_MINIMUM_CONTROLS = {
     "similarity": 2,
     "affine": 3,
 }
+MODEL_SELECTION_POLICIES = {
+    "select_the_simplest_model_that_passes_independent_validation": (
+        "translation", "similarity", "affine",
+    ),
+    "select_shape_preserving_model_with_independent_validation": (
+        "similarity", "translation", "affine",
+    ),
+}
 
 # Geometry gates are deliberately evaluated in delivery metres after centring.
 # A one-micrometre RMS radius is below useful GCP precision, while the ULP
@@ -541,14 +549,16 @@ class ModelSelectionSettings:
             {"candidate_order", "policy", "minimum_training_controls", "affine_gate", "nonlinear_models"},
             "model_selection",
         )
-        order = tuple(str(item) for item in value["candidate_order"])
-        if order != ("translation", "similarity", "affine"):
-            raise ValueError(
-                "model_selection.candidate_order must be translation, similarity, affine"
-            )
         policy = str(value["policy"]).strip()
-        if policy != "select_the_simplest_model_that_passes_independent_validation":
+        expected_order = MODEL_SELECTION_POLICIES.get(policy)
+        if expected_order is None:
             raise ValueError("Unsupported model_selection.policy")
+        order = tuple(str(item) for item in value["candidate_order"])
+        if order != expected_order:
+            raise ValueError(
+                "model_selection.candidate_order does not match policy "
+                f"{policy!r}; expected {list(expected_order)!r}"
+            )
         minimums_value = value["minimum_training_controls"]
         if not isinstance(minimums_value, Mapping):
             raise ValueError("model_selection.minimum_training_controls must be an object")

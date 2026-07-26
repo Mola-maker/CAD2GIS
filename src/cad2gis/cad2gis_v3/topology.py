@@ -732,10 +732,58 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
     measured_cable_segments = set()
     span_measurement_max_abs_error = 0.0
     span_rule = registry.decision_rules.get("span_segment_measurement")
+
+    def unique_support_pair(points):
+        matches = [
+            _nearest_unique(point, supports, support_tolerance)
+            for point in points
+        ]
+        if any(match[0] is None for match in matches):
+            return None
+        if any(float(match[1]) > dimension_support_tolerance for match in matches):
+            return None
+        left = matches[0][0].feature_key
+        right = matches[1][0].feature_key
+        if left == right:
+            return None
+        return tuple(sorted((left, right)))
+
+    cable_segments_by_support_pair = defaultdict(list)
+    for route in routes:
+        for segment in route_source_segments[route.feature_key]:
+            points = segment["delivery_native_points"]
+            if len(points) < 2:
+                continue
+            support_pair_key = unique_support_pair((points[0], points[-1]))
+            if support_pair_key is not None:
+                cable_segments_by_support_pair[support_pair_key].append(
+                    (route.feature_key, int(segment["source_segment_index"]))
+                )
+
+    sling_segments_by_support_pair = defaultdict(list)
+    for entity in sling_entities:
+        for segment_index, points in enumerate(zip(entity.points, entity.points[1:])):
+            support_pair_key = unique_support_pair(points)
+            if support_pair_key is not None:
+                sling_segments_by_support_pair[support_pair_key].append(
+                    (entity.entity_key, segment_index)
+                )
+
     for dimension in span_dimensions:
         signature = _segment_key(dimension.points[0], dimension.points[1], exact)
         cable_matches = cable_segments.get(signature, ())
         sling_matches = sling_segments.get(signature, ())
+        match_method = "exact-segment"
+        if not cable_matches and not sling_matches:
+            support_pair_key = unique_support_pair(dimension.points)
+            if support_pair_key is not None:
+                cable_matches = cable_segments_by_support_pair.get(
+                    support_pair_key, ()
+                )
+                sling_matches = sling_segments_by_support_pair.get(
+                    support_pair_key, ()
+                )
+                match_method = "unique-support-pair"
         if len(cable_matches) == 1 and not sling_matches:
             owner_key, segment_index = cable_matches[0]
             span_role = "cable_route_span"
@@ -766,13 +814,19 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             else:
                 relations.append(_relation(
                     "measures", dimension.entity_key, target_key, "accepted",
-                    f"{span_rule['rule_id']}:{span_rule['method']}", 0.0,
+                    (
+                        f"{span_rule['rule_id']}:{span_rule['method']}:"
+                        f"{match_method}"
+                    ),
+                    0.0,
                     (dimension.entity_key, owner_key),
                 ))
         else:
             unresolved.append({
                 "kind": "span_segment_role", "entity_key": dimension.entity_key,
-                "status": "ambiguous_or_unmatched", "cable_matches": len(cable_matches),
+                "status": "ambiguous_or_unmatched",
+                "match_method": match_method,
+                "cable_matches": len(cable_matches),
                 "sling_matches": len(sling_matches),
             })
         matches = [_nearest_unique(point, supports, support_tolerance) for point in dimension.points]
@@ -969,6 +1023,21 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         )
         candidate["relation_key"] = crossing_relation.relation_key
         relations.append(crossing_relation)
+    for candidate in collinear_overlaps:
+        overlap_relation = _relation(
+            "collinear_overlap_candidate",
+            candidate["route_a_segment_key"],
+            candidate["route_b_segment_key"],
+            "candidate",
+            candidate["method"],
+            0.0,
+            (
+                candidate["route_a_source_entity_key"],
+                candidate["route_b_source_entity_key"],
+            ),
+        )
+        candidate["relation_key"] = overlap_relation.relation_key
+        relations.append(overlap_relation)
     route_to_asset_tolerance = registry.thresholds.get("route_to_asset")
     if boxes and route_to_asset_tolerance is None:
         route_assets, measures = defaultdict(list), {}

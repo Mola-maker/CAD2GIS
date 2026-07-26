@@ -16,10 +16,13 @@ except PackageNotFoundError:  # Running directly from an unpacked source tree.
 
 __all__ = [
     "__version__",
+    "apply_ai_onboarding",
+    "auto_onboard_project",
     "bootstrap_project",
     "convert",
     "convert_project",
     "inspect_source",
+    "prepare_ai_onboarding",
     "validate_project",
 ]
 

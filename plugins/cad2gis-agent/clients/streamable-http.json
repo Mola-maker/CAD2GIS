@@ -1,0 +1,20 @@
+{
+  "server_command": [
+    "conda",
+    "run",
+    "--no-capture-output",
+    "-n",
+    "cad2gis",
+    "python",
+    "-m",
+    "cad2gis.agent_mcp",
+    "--transport",
+    "streamable-http",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "8768"
+  ],
+  "mcp_url": "http://127.0.0.1:8768/mcp",
+  "accuracy_note": "Localhost only. OSM controls provide relative registration, not surveyed absolute accuracy."
+}

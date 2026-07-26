@@ -37,11 +37,11 @@
   },
   "model_selection": {
     "candidate_order": [
-      "translation",
       "similarity",
+      "translation",
       "affine"
     ],
-    "policy": "select_the_simplest_model_that_passes_independent_validation",
+    "policy": "select_shape_preserving_model_with_independent_validation",
     "minimum_training_controls": {
       "translation": 3,
       "similarity": 4,

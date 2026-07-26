@@ -1,0 +1,22 @@
+{
+  "name": "cad2gis-agent",
+  "version": "0.1.0+codex.20260726163612",
+  "description": "Evidence-first CAD/DWG to GIS conversion, LLM decision packs, and deterministic review tools.",
+  "author": {
+    "name": "CAD2GIS contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Cad2gis Agent",
+    "shortDescription": "Evidence-first CAD to GIS conversion and review.",
+    "longDescription": "Inspect content-addressed CAD evidence, create typed decision packs, run the canonical deterministic CAD2GIS pipeline, and audit delivery status.",
+    "developerName": "CAD2GIS contributors",
+    "category": "Developer Tools",
+    "capabilities": [
+      "mcp",
+      "skills"
+    ],
+    "defaultPrompt": "Inspect this CAD2GIS project and use the evidence graph and registered decision operations to produce a reproducible conversion run."
+  },
+  "mcpServers": "./.mcp.json"
+}

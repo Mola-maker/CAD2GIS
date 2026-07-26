@@ -1,9 +1,7 @@
-"""DEPRECATED: Windows-only AutoCAD canonical reader.
+"""Windows AutoCAD reader implementing the shared immutable-record contract.
 
-Use :mod:`cad2gis.reader.libredwg` for the cross-platform primary path.
-This reader is retained as opt-in fallback via ``CAD2GIS_READER_BACKEND=autocad``.
-Production robustness branch now uses libredwg; this module will be removed
-once all AutoCAD-specific dependencies are migrated.
+LibreDWG remains the cross-platform default. Set
+``CAD2GIS_READER_BACKEND=autocad`` to select this maintained Windows adapter.
 """
 
 from __future__ import annotations
@@ -32,12 +30,17 @@ AUTOCAD_PROGIDS = ("AutoCAD.Application.26", "AutoCAD.Application")
 OBJECTDBX_PROGID = "ObjectDBX.AxDbDocument.26"
 DEFAULT_ACCORECONSOLE = Path("C:/Program Files/Autodesk/AutoCAD 2027/accoreconsole.exe")
 DEFAULT_ACCORECONSOLE_TIMEOUT = 120.0
+ACCORECONSOLE_TIMEOUT_PER_MIB = 45.0
+MAX_ACCORECONSOLE_TIMEOUT = 900.0
 ACCORECONSOLE_ENV = "CAD2GIS_ACCORECONSOLE"
 ACCORECONSOLE_TIMEOUT_ENV = "CAD2GIS_ACCORECONSOLE_TIMEOUT"
 COM_FALLBACK_ENV = "CAD2GIS_ALLOW_COM_FALLBACK"
 BULK_POLICY_STRICT = "strict"
 BULK_POLICY_SKIP_MALFORMED = "skip_malformed_rows"
 BULK_PROTOCOL_SCHEMA = "cad2gis-autocad-bulk-tsv-v3"
+BULK_COMPLETION_SCHEMA = "cad2gis-autocad-bulk-completion-v1"
+ACCORECONSOLE_EXIT_GRACE_SECONDS = 5.0
+ACCORECONSOLE_POLL_SECONDS = 0.1
 _BULK_COMPATIBILITY_POLICIES = {
     BULK_POLICY_STRICT,
     BULK_POLICY_SKIP_MALFORMED,
@@ -116,6 +119,106 @@ def _resolve_accoreconsole_timeout(timeout=None, *, environ=None):
             f"AutoCAD Core Console timeout must be a positive finite number, got {value!r}"
         )
     return seconds, source
+
+
+def _resolve_extraction_timeout(dwg_path, timeout=None, *, environ=None):
+    """Scale the default timeout for large drawings without overriding policy."""
+
+    environ = os.environ if environ is None else environ
+    if timeout is not None or ACCORECONSOLE_TIMEOUT_ENV in environ:
+        return _resolve_accoreconsole_timeout(timeout, environ=environ)
+    size_bytes = max(0, Path(dwg_path).stat().st_size)
+    size_mib = math.ceil(size_bytes / (1024 * 1024))
+    seconds = min(
+        MAX_ACCORECONSOLE_TIMEOUT,
+        DEFAULT_ACCORECONSOLE_TIMEOUT
+        + size_mib * ACCORECONSOLE_TIMEOUT_PER_MIB,
+    )
+    return seconds, "adaptive_size_default"
+
+
+def _read_bulk_completion_marker(path):
+    """Return the declared row count only for a complete marker."""
+
+    try:
+        value = Path(path).read_text(encoding="ascii").strip()
+    except (FileNotFoundError, OSError, UnicodeError):
+        return None
+    fields = value.split("\t")
+    if len(fields) != 2 or fields[0] != BULK_COMPLETION_SCHEMA:
+        return None
+    try:
+        row_count = int(fields[1])
+    except ValueError:
+        return None
+    return row_count if row_count > 0 else None
+
+
+def _process_log_bytes(stream):
+    stream.flush()
+    stream.seek(0)
+    return stream.read()
+
+
+def _run_until_bulk_export_complete(
+    command,
+    *,
+    completion_path,
+    timeout_seconds,
+    exit_grace_seconds=ACCORECONSOLE_EXIT_GRACE_SECONDS,
+):
+    """Run Core Console while treating a flushed export as its own boundary."""
+
+    started = time.monotonic()
+    deadline = started + timeout_seconds
+    forced_after_export = False
+    with tempfile.TemporaryFile() as stdout_stream, tempfile.TemporaryFile() as stderr_stream:
+        process = subprocess.Popen(
+            command,
+            stdout=stdout_stream,
+            stderr=stderr_stream,
+        )
+        completion_rows = None
+        while True:
+            returncode = process.poll()
+            completion_rows = _read_bulk_completion_marker(completion_path)
+            if completion_rows is not None:
+                if returncode is None:
+                    try:
+                        returncode = process.wait(timeout=exit_grace_seconds)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        returncode = process.wait()
+                        forced_after_export = True
+                break
+            if returncode is not None:
+                break
+            if time.monotonic() >= deadline:
+                process.kill()
+                process.wait()
+                stdout = _process_log_bytes(stdout_stream)
+                stderr = _process_log_bytes(stderr_stream)
+                raise subprocess.TimeoutExpired(
+                    command,
+                    timeout_seconds,
+                    output=stdout,
+                    stderr=stderr,
+                )
+            time.sleep(ACCORECONSOLE_POLL_SECONDS)
+        stdout = _process_log_bytes(stdout_stream)
+        stderr = _process_log_bytes(stderr_stream)
+    completed = subprocess.CompletedProcess(
+        command,
+        returncode,
+        stdout=stdout,
+        stderr=stderr,
+    )
+    return {
+        "completed": completed,
+        "completion_rows": completion_rows,
+        "export_elapsed_seconds": time.monotonic() - started,
+        "forced_after_export": forced_after_export,
+    }
 
 
 def _autocad_version(path):
@@ -604,19 +707,21 @@ _AUTOLISP_EXTRACTOR = r'''
     (itoa flags) (chr 9) (c2g-escape path) (chr 9) xrefstatus (chr 9)
     "unavailable" (chr 9) "inventory_only"))
   (write-line row file))
-(defun cad2gis-export (path / file selection index entity blockdata blockname blockentity blockkind)
+(defun cad2gis-export (path / file marker selection index entity blockdata blockname blockentity blockkind rowcount)
   (setq file (open path "w" "utf8"))
   (write-line (strcat
     "DOCUMENT_METADATA" (chr 9) "" (chr 9) "0" (chr 9) "DOCUMENT" (chr 9)
     "256" (chr 9) "-1" (chr 9) "ByLayer" (chr 9) "-1" (chr 9) "0" (chr 9) "0" (chr 9)
     "" (chr 9) (c2g-escape (strcat "CGEOCS=" (getvar "CGEOCS") ";INSUNITS=" (itoa (getvar "INSUNITS"))))
     (chr 9) "" (chr 9) "" (chr 9) "0" (chr 9) "0" (chr 9) "0") file)
+  (setq rowcount 1)
   (setq selection (ssget "_X"))
   (if selection
     (progn
       (setq index 0)
       (while (< index (sslength selection))
         (c2g-write-entity file (ssname selection index) nil nil)
+        (setq rowcount (1+ rowcount))
         (setq index (1+ index)))))
   (setq blockdata (tblnext "BLOCK" T))
   (while blockdata
@@ -624,6 +729,7 @@ _AUTOLISP_EXTRACTOR = r'''
     (if (and (/= (strcase blockname) "*MODEL_SPACE") (not (wcmatch (strcase blockname) "*PAPER_SPACE*")))
       (progn
         (c2g-write-block-record file blockdata blockname)
+        (setq rowcount (1+ rowcount))
         (setq blockentity (entnext (tblobjname "BLOCK" blockname)))
         (while blockentity
           (setq blockkind (c2g-get 0 (entget blockentity) ""))
@@ -631,9 +737,16 @@ _AUTOLISP_EXTRACTOR = r'''
             (setq blockentity nil)
             (progn
               (c2g-write-entity file blockentity (strcat "BLOCKDEF:" blockname) blockname)
+              (setq rowcount (1+ rowcount))
               (setq blockentity (entnext blockentity)))))))
     (setq blockdata (tblnext "BLOCK")))
-  (close file) (princ))
+  (close file)
+  (setq marker (open (strcat path ".complete") "w"))
+  (write-line
+    (strcat "cad2gis-autocad-bulk-completion-v1" (chr 9) (itoa rowcount))
+    marker)
+  (close marker)
+  (princ))
 '''
 
 _TEXT_OBJECTS = {
@@ -1765,7 +1878,10 @@ def _extract_records_with_core_console(
     compatibility_policy=BULK_POLICY_STRICT,
 ):
     accoreconsole, accoreconsole_source = _configured_accoreconsole_path(accoreconsole)
-    timeout_seconds, timeout_source = _resolve_accoreconsole_timeout(timeout)
+    timeout_seconds, timeout_source = _resolve_extraction_timeout(
+        dwg_path,
+        timeout,
+    )
     compatibility_policy = _validate_bulk_compatibility_policy(compatibility_policy)
     diagnostics = {
         "protocol_schema": BULK_PROTOCOL_SCHEMA,
@@ -1784,6 +1900,7 @@ def _extract_records_with_core_console(
         lisp_path = workspace / "extract.lsp"
         script_path = workspace / "extract.scr"
         output_path = workspace / "entities.tsv"
+        completion_path = workspace / "entities.tsv.complete"
         lisp_path.write_text(_AUTOLISP_EXTRACTOR, encoding="utf-8")
         lisp_arg = lisp_path.as_posix()
         output_arg = output_path.as_posix()
@@ -1798,20 +1915,31 @@ def _extract_records_with_core_console(
             "/s", str(script_path),
         ]
         try:
-            completed = subprocess.run(
+            process_result = _run_until_bulk_export_complete(
                 command,
-                capture_output=True,
-                timeout=timeout_seconds,
-                check=False,
+                completion_path=completion_path,
+                timeout_seconds=timeout_seconds,
             )
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError(
                 "AutoCAD direct database extraction timed out after "
                 f"{timeout_seconds:g} seconds"
             ) from exc
-        if completed.returncode != 0 or not output_path.is_file():
+        completed = process_result["completed"]
+        completion_rows = process_result["completion_rows"]
+        diagnostics.update({
+            "completion_schema": BULK_COMPLETION_SCHEMA,
+            "completion_rows": completion_rows,
+            "export_elapsed_seconds": process_result["export_elapsed_seconds"],
+            "process_returncode": completed.returncode,
+            "process_forced_after_export": process_result["forced_after_export"],
+        })
+        if completion_rows is None or not output_path.is_file():
             detail = _process_output_detail(completed)
-            raise RuntimeError(f"AutoCAD direct database extraction failed ({completed.returncode}): {detail}")
+            raise RuntimeError(
+                "AutoCAD direct database extraction did not publish a valid "
+                f"completion marker ({completed.returncode}): {detail}"
+            )
         grouped = {}
         with output_path.open("r", encoding="utf-8-sig", errors="strict", newline="") as stream:
             for line_number, line in enumerate(stream, start=1):
@@ -1852,6 +1980,12 @@ def _extract_records_with_core_console(
                     continue
                 diagnostics["parsed_rows"] += 1
                 grouped.setdefault(record["layout"], []).append(record)
+        if diagnostics["total_rows"] != completion_rows:
+            raise BulkProtocolViolation(
+                "AutoCAD bulk protocol violation: completion marker declared "
+                f"{completion_rows} rows but the export contains "
+                f"{diagnostics['total_rows']}"
+            )
         result = []
         for layout_name in sorted(grouped, key=lambda value: (value.casefold() != "model", value.casefold())):
             records = grouped[layout_name]

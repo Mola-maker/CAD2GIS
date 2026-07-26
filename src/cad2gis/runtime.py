@@ -212,6 +212,7 @@ def call_conversion_backend(
     source_profile: Path,
     mapping_registry: Path,
     gcp_profile: Path | None,
+    decision_pack: Path | None = None,
     domain: str = "auto",
     llm: str = "off",
 ) -> Any:
@@ -230,6 +231,9 @@ def call_conversion_backend(
         source_profile=Path(source_profile),
         mapping_registry=Path(mapping_registry),
         gcp_profile=Path(gcp_profile) if gcp_profile is not None else None,
+        decision_pack=(
+            Path(decision_pack) if decision_pack is not None else None
+        ),
         domain=domain,
         llm=llm,
     )
@@ -285,5 +289,5 @@ def backend_contract() -> Mapping[str, Any]:
         "external_path_requirement": (
             "directory containing cad2gis_v3 plus sibling reader modules"
         ),
-        "wheel_bundles_backend": False,
+        "wheel_bundles_backend": True,
     }

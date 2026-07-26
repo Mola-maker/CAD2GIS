@@ -2,7 +2,7 @@
 .claude/
 CLAUDE.md
 .claudeignore
-.mcp.json
+/.mcp.json
 
 # IDE
 .vscode/
@@ -19,6 +19,7 @@ Thumbs.db
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 
 # Demo output
@@ -29,6 +30,14 @@ demo/output/
 *.bak
 /temp/
 /.firecrawl/
+/.omo/
+/.omc/
+/.playwright-cli/
+/tmp/
+/webdemo/
+/final_qgis_package/
+/final_qgis_package.zip
+/1.17
 
 # QGIS project files
 *.qgz
@@ -50,12 +59,6 @@ ErrorReports/
 # robustness: dev replay artifacts
 experiment/py_scripts/replay_apd_libredwg_dev_report.json
 /tmp/apd_libredwg_dev_replay*/
-
-# robustness: OMC transient state
-.omc/state/
-.omc/sessions/
-.omc/project-memory.json
-.omc/.gitignore
 
 # robustness: verification output artifacts
 baselines/apd_hutabohu/output/
