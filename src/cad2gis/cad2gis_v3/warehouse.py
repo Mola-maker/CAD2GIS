@@ -417,8 +417,12 @@ def _cable_segment_records(features, transformer):
                         f"CABLE_SEGMENT unmeasured span contains DIMENSION evidence for "
                         f"{route_key}:segment:{segment_index}"
                     )
-                length_value = grid_length
-                length_source = "delivery_grid_fallback_unmeasured"
+                # A missing DIMENSION annotation does not mean the segment has
+                # no length.  The immutable CAD curve supplies an independently
+                # auditable source length; delivery-grid and geodesic lengths
+                # remain separate fields and must not silently replace it.
+                length_value = source_length
+                length_source = "dwg_curve_geometry"
                 total_unmeasured += 1
             route_grid_sum += grid_length
             route_geodesic_sum += geodesic_length
@@ -452,7 +456,9 @@ def _cable_segment_records(features, transformer):
                     )
                 ),
                 "measurement_state": (
-                    "measured" if status == "measured" else "unmeasured"
+                    "dimension_measured"
+                    if status == "measured"
+                    else "cad_geometry_only"
                 ),
                 "dimension_entity_key": dimension_key,
                 "measurement_native_m": measurement,
@@ -462,9 +468,9 @@ def _cable_segment_records(features, transformer):
                 "length_value_m": length_value,
                 "status": status,
                 "length_label": (
-                    f"{length_value:.3f} m"
+                    f"{length_value:.3f} m [DWG DIMENSION]"
                     if status == "measured"
-                    else f"{length_value:.3f} m [grid; unmeasured]"
+                    else f"{length_value:.3f} m [CAD geometry; no DIMENSION]"
                 ),
                 "length_source": length_source,
                 "unit": CABLE_SEGMENT_UNIT,
@@ -473,16 +479,17 @@ def _cable_segment_records(features, transformer):
                 "parent_display_label": feature.display_label,
                 "parent_label_provenance": feature.label_provenance,
                 "display_label": (
-                    f"{length_value:.3f} m"
+                    f"{length_value:.3f} m [DWG DIMENSION]"
                     if status == "measured"
-                    else f"{length_value:.3f} m [grid; unmeasured]"
+                    else f"{length_value:.3f} m [CAD geometry; no DIMENSION]"
                 ),
                 "label_provenance": (
                     "DWG_DIRECT:SPAN-CABLE-DIMENSION;length_source=dwg_dimension"
                     if status == "measured"
                     else (
-                        "DWG_DERIVED:delivery-grid-length-unmeasured;"
-                        "length_source=delivery_grid_fallback_unmeasured"
+                        "DWG_DERIVED:source-segment-native-curve-length;"
+                        "length_source=dwg_curve_geometry;"
+                        "dimension_annotation=absent"
                     )
                 ),
                 "geometry_role": "SOURCE_ROUTE_SEGMENT",

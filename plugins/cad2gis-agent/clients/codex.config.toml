@@ -1,0 +1,17 @@
+[mcp_servers.cad2gis]
+command = "conda"
+args = [
+  "run",
+  "--no-capture-output",
+  "-n",
+  "cad2gis",
+  "python",
+  "-m",
+  "cad2gis.agent_mcp",
+  "--transport",
+  "stdio",
+]
+cwd = "E:\\branch_CAD2GIS\\CAD2GIS"
+
+[mcp_servers.cad2gis.env]
+CAD2GIS_PROJECT_ROOT = "E:\\branch_CAD2GIS"

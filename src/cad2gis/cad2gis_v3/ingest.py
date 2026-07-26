@@ -15,7 +15,9 @@ _READER_ENV = "CAD2GIS_READER_BACKEND"
 _DEFAULT_READER = "libredwg"
 
 
-def _default_extract_records(source_path: Path) -> DWGRecordInventory:
+def extract_records(source_path: Path) -> DWGRecordInventory:
+    """Extract a complete inventory with the configured canonical reader."""
+
     backend = os.environ.get(_READER_ENV, _DEFAULT_READER).strip().lower()
     if backend == "libredwg":
         from ..reader.libredwg import extract_dwg_records
@@ -28,6 +30,9 @@ def _default_extract_records(source_path: Path) -> DWGRecordInventory:
     return extract_dwg_records(source_path)
 
 
+_CANONICAL_EXTRACT_RECORDS = extract_records
+
+
 def ingest(
     source: str | Path,
     profile: SourceProfile,
@@ -37,7 +42,7 @@ def ingest(
     source_path = Path(source).resolve()
     source_hash = profile.validate_source(source_path)
     if extract_records is None:
-        extract_records = _default_extract_records
+        extract_records = _CANONICAL_EXTRACT_RECORDS
     records = extract_records(source_path)
     reader_protocol = dict(getattr(records, "diagnostics", {}) or {})
     if (

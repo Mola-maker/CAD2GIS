@@ -108,15 +108,15 @@
   },
   "artifacts": {
     "evidence": {
-      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v3_complete\\apd_evidence.gpkg",
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\baselines\\apd_hutabohu\\evidence\\apd_evidence.gpkg",
       "sha256": "251a6d97afd088b52c96c65ab995cac925a48e5b4481844a5c3722b2bbb101d3"
     },
     "delivery": {
-      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v3_complete\\apd_delivery.gpkg",
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\baselines\\apd_hutabohu\\delivery\\apd_delivery.gpkg",
       "sha256": "a6055d0911934c7199b4720d1ce621f49d98021eb1bde97714de834c0878a5d9"
     },
     "styles": {
-      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\experiment\\runs\\apd_architecture_v3_complete\\qgis\\styles\\style_manifest.json",
+      "path": "E:\\branch_CAD2GIS\\CAD2GIS\\baselines\\apd_hutabohu\\qgis\\styles\\style_manifest.json",
       "sha256": "a191f637a6b9b9d27779e946a871f13fdf945ab0c1aa5351792bb63260c9ddde"
     }
   },

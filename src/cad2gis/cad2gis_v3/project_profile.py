@@ -19,12 +19,15 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from ..reader.contracts import DWGRecordInventory
 from .config import (
     MAPPING_REGISTRY_SCHEMA_VERSION,
     PROJECT_PROFILE_SCHEMA_VERSION,
     MappingRegistry,
     SourceProfile,
 )
+from .model import SourceEntity
+from .plan_domain import PlanDomainError, build_plan_domain
 
 
 INVENTORY_SCHEMA_VERSION = "cad2gis-source-inventory-v1"
@@ -77,8 +80,9 @@ def _reader_protocol_contract(value: Mapping[str, Any] | None) -> dict[str, Any]
     if not isinstance(value, Mapping):
         return {}
     allowed = {
-        "compatibility_policy", "total_rows", "parsed_rows", "skipped_rows",
-        "skipped_row_errors", "inventory_complete",
+        "backend", "compatibility_policy", "completion_rows",
+        "completion_schema", "total_rows", "parsed_rows", "returned_records",
+        "skipped_rows", "skipped_row_errors", "inventory_complete",
     }
     return {
         key: value[key]
@@ -235,6 +239,20 @@ def build_source_inventory(
                 for record in model_records
             ),
             "unsupported_records": sum(unsupported_entity_types.values()),
+            "block_instances": len(block_instances),
+            "annotation_entities": len(annotation_carriers),
+            "annotation_entities_with_text": sum(
+                bool(item["text"]) for item in annotation_carriers
+            ),
+            "native_length_entities": sum(
+                _record_value(record, "native_length") is not None
+                for record in materialized
+            ),
+            "curve_facts_entities": sum(
+                bool(_record_value(record, "curve_facts", {}) or {})
+                for record in materialized
+            ),
+            "style_variants": len(style_facts),
         },
         "layouts": dict(sorted(layouts.items())),
         "cad_roles": dict(sorted(roles.items())),
@@ -268,15 +286,38 @@ def build_source_inventory(
 def inventory_sha256(inventory: Mapping[str, Any]) -> str:
     payload = dict(inventory)
     payload.pop("inventory_sha256", None)
+    # These fields are derived after the immutable reader inventory is built.
+    # They remain useful review evidence but are not part of the source census
+    # binding reconstructed during conversion.
+    payload.pop("plan_domain", None)
+    payload.pop("inspection_status", None)
+    payload.pop("onboarding", None)
     return _canonical_json_sha256(payload)
 
 
-def _extract_records(source: Path) -> Iterable[dict[str, Any]]:
-    # Reader import is delayed so project/CLI help remains usable without the
-    # AutoCAD runtime and its optional Windows dependencies.
-    from cad2gis.reader.autocad import extract_dwg_records
+def _extract_records(source: Path) -> DWGRecordInventory:
+    # Reader import is delayed so project/CLI help remains usable without GIS
+    # and platform-specific reader dependencies.
+    from .ingest import extract_records
 
-    return extract_dwg_records(source)
+    return extract_records(source)
+
+
+def _plan_domain_summary(diagnostics: Mapping[str, Any]) -> dict[str, Any]:
+    issues = list(diagnostics.get("issues", ()))
+    return {
+        key: value
+        for key, value in diagnostics.items()
+        if key != "issues"
+    } | {
+        "issue_count": len(issues),
+        "issue_codes": dict(sorted(Counter(
+            str(issue.get("code", "unknown"))
+            for issue in issues
+            if isinstance(issue, Mapping)
+        ).items())),
+        "issue_sample": issues[:10],
+    }
 
 
 def inspect_source(
@@ -290,7 +331,56 @@ def inspect_source(
     del project_dir  # Accepted as a stable public-port argument; inspection is read-only.
     source_path = Path(source).expanduser().resolve()
     authoritative_records = _extract_records(source_path) if records is None else records
-    return build_source_inventory(source_path, authoritative_records)
+    reader_protocol = dict(
+        getattr(authoritative_records, "diagnostics", {}) or {}
+    )
+    if records is None or reader_protocol:
+        skipped_rows = int(reader_protocol.get("skipped_rows", 0) or 0)
+        if (
+            skipped_rows != 0
+            or reader_protocol.get("inventory_complete") is not True
+        ):
+            raise ValueError(
+                "Reader inventory is not authoritative: "
+                f"skipped_rows={skipped_rows}, "
+                "inventory_complete="
+                f"{reader_protocol.get('inventory_complete')!r}"
+            )
+    materialized = list(authoritative_records)
+    inventory = build_source_inventory(
+        source_path,
+        materialized,
+        reader_protocol=reader_protocol,
+    )
+    entities = [
+        record
+        if isinstance(record, SourceEntity)
+        else SourceEntity.from_record(dict(record))
+        for record in materialized
+    ]
+    try:
+        plan_domain = build_plan_domain(entities)
+    except PlanDomainError as exc:
+        inventory["plan_domain"] = _plan_domain_summary(exc.diagnostics)
+        inventory["inspection_status"] = "FAIL"
+    else:
+        inventory["plan_domain"] = _plan_domain_summary(plan_domain.diagnostics)
+        inventory["inspection_status"] = (
+            "PASS"
+            if plan_domain.diagnostics.get("status") == "PASS"
+            else "WATCH"
+        )
+    inventory["onboarding"] = {
+        "reviewed_project_pack_present": False,
+        "conversion_allowed": False,
+        "semantic_accuracy": "not_evaluated_without_reviewed_mapping",
+        "coordinate_accuracy": (
+            "not_evaluated_without_reviewed_crs_and_independent_gcp"
+        ),
+        "next_action": "bootstrap_source_bound_project_pack",
+    }
+    inventory["inventory_sha256"] = inventory_sha256(inventory)
+    return inventory
 
 
 def _atomic_write_json(path: Path, value: Mapping[str, Any]) -> None:

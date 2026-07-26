@@ -18,6 +18,7 @@ from .claims import (
     strongest_allowed_claim,
 )
 from .matrix import (
+    ARCHITECTURE_DIMENSIONS,
     DIMENSIONS,
     MATRIX_SCHEMA_VERSION,
     REPORT_SCHEMA_VERSION,
@@ -28,6 +29,7 @@ from .matrix import (
 )
 
 __all__ = [
+    "ARCHITECTURE_DIMENSIONS",
     "CLAIM_CROSS_ABSOLUTE",
     "CLAIM_CROSS_FIDELITY",
     "CLAIM_CROSS_NOMINAL_CRS",

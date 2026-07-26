@@ -419,6 +419,13 @@ def classify_entities(
         for feature_class, names in getattr(registry, "block_families", {}).items()
         for block_name in names
     }
+    reverse_insert_layers = {
+        layer_name: feature_class
+        for feature_class, names in getattr(
+            registry, "insert_layer_families", {}
+        ).items()
+        for layer_name in names
+    }
     route_regex = str(getattr(registry, "positive_route_layer_regex", "") or "")
     route_pattern = re.compile(route_regex) if route_regex else None
     home_layers = set(getattr(registry, "layers", {}).get("homepass", ()))
@@ -431,7 +438,10 @@ def classify_entities(
         geometry_role = "SOURCE_ASSET"
         dwg_type = entity.dwg_type.upper()
         if dwg_type == "INSERT":
-            feature_class = reverse_blocks.get(entity.block_name.upper())
+            feature_class = (
+                reverse_blocks.get(entity.block_name.upper())
+                or reverse_insert_layers.get(entity.layer.upper())
+            )
             if feature_class is None:
                 coverage_records.append(_coverage_record(
                     entity, "unknown_insert_block", "UNMAPPED_INSERT",

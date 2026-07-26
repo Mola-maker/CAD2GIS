@@ -58,9 +58,7 @@ def _validate_base_url(value: str, variable: str) -> str:
 def _endpoint(base_url: str, provider: str) -> str:
     parsed = urllib.parse.urlsplit(base_url)
     path = parsed.path.rstrip("/")
-    if provider == "deepseek":
-        suffix = "/chat/completions"
-    elif path.endswith("/v1"):
+    if provider == "deepseek" or path.endswith("/v1"):
         suffix = "/chat/completions"
     else:
         suffix = "/v1/chat/completions"
@@ -163,4 +161,3 @@ def load_provider_config(
     """Create the selected provider profile from runtime-only settings."""
 
     return ProviderConfig.from_env(env, provider=provider)
-

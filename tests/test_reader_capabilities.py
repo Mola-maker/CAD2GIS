@@ -503,3 +503,90 @@ def test_missing_runtime_fails_only_when_extraction_is_requested(
 
     with pytest.raises(ReaderUnavailableError, match="CAD2GIS_READER_BACKEND=autocad"):
         libredwg.extract_dwg_records(tmp_path / "drawing.dwg")
+
+
+def test_autocad_default_extraction_timeout_scales_with_source_size(
+    tmp_path: Path,
+) -> None:
+    import cad2gis.reader.autocad as autocad
+
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"AC1032")
+
+    seconds, origin = autocad._resolve_extraction_timeout(source, environ={})
+
+    assert (
+        seconds
+        == autocad.DEFAULT_ACCORECONSOLE_TIMEOUT
+        + autocad.ACCORECONSOLE_TIMEOUT_PER_MIB
+    )
+    assert origin == "adaptive_size_default"
+
+    seconds, origin = autocad._resolve_extraction_timeout(
+        source,
+        environ={autocad.ACCORECONSOLE_TIMEOUT_ENV: "42"},
+    )
+
+    assert seconds == 42
+    assert origin == "environment"
+
+
+def test_autocad_completion_marker_is_strict(tmp_path: Path) -> None:
+    import cad2gis.reader.autocad as autocad
+
+    marker = tmp_path / "entities.tsv.complete"
+    marker.write_text(
+        f"{autocad.BULK_COMPLETION_SCHEMA}\t17\n",
+        encoding="ascii",
+    )
+    assert autocad._read_bulk_completion_marker(marker) == 17
+
+    marker.write_text(
+        f"{autocad.BULK_COMPLETION_SCHEMA}\tnot-a-count\n",
+        encoding="ascii",
+    )
+    assert autocad._read_bulk_completion_marker(marker) is None
+
+    marker.write_text("untrusted-schema\t17\n", encoding="ascii")
+    assert autocad._read_bulk_completion_marker(marker) is None
+
+
+def test_autocad_export_completion_is_independent_from_process_exit(
+    tmp_path: Path,
+) -> None:
+    import cad2gis.reader.autocad as autocad
+
+    marker = tmp_path / "entities.tsv.complete"
+    code = (
+        "from pathlib import Path; import time; "
+        f"Path({str(marker)!r}).write_text("
+        f"{(autocad.BULK_COMPLETION_SCHEMA + chr(9) + '23' + chr(10))!r},"
+        "encoding='ascii'); "
+        "time.sleep(30)"
+    )
+
+    result = autocad._run_until_bulk_export_complete(
+        [sys.executable, "-c", code],
+        completion_path=marker,
+        timeout_seconds=5,
+        exit_grace_seconds=0.1,
+    )
+
+    assert result["completion_rows"] == 23
+    assert result["forced_after_export"] is True
+    assert result["completed"].returncode != 0
+    assert result["export_elapsed_seconds"] < 3
+
+
+def test_autocad_process_timeout_without_completion_marker_fails(
+    tmp_path: Path,
+) -> None:
+    import cad2gis.reader.autocad as autocad
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        autocad._run_until_bulk_export_complete(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            completion_path=tmp_path / "missing.complete",
+            timeout_seconds=0.1,
+            exit_grace_seconds=0.1,
+        )

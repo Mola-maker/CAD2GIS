@@ -61,7 +61,7 @@ def _count_mapping(value: Any, name: str, *, allow_empty: bool = True) -> dict[s
 
 @dataclass(frozen=True)
 class ReviewRecord:
-    """Explicit human-review state; draft and unreviewed are never runnable."""
+    """Explicit admission state; draft and unreviewed are never runnable."""
 
     status: str
     reviewed_by: str = ""
@@ -70,7 +70,7 @@ class ReviewRecord:
 
     @property
     def is_reviewed(self) -> bool:
-        return self.status == "reviewed"
+        return self.status in {"reviewed", "auto_accepted"}
 
     @classmethod
     def from_mapping(cls, value: Any, name: str = "review") -> "ReviewRecord":
@@ -84,8 +84,10 @@ class ReviewRecord:
                 f"unknown={sorted(unknown)}"
             )
         status = str(value["status"]).strip().casefold()
-        if status not in {"draft", "unreviewed", "reviewed"}:
-            raise ValueError(f"{name}.status must be draft, unreviewed, or reviewed")
+        if status not in {"draft", "unreviewed", "reviewed", "auto_accepted"}:
+            raise ValueError(
+                f"{name}.status must be draft, unreviewed, reviewed, or auto_accepted"
+            )
         record = cls(
             status=status,
             reviewed_by=str(value.get("reviewed_by", "")).strip(),
@@ -753,6 +755,7 @@ class MappingRegistry:
     schema_version: str
     source_sha256: str
     block_families: dict[str, tuple[str, ...]]
+    insert_layer_families: dict[str, tuple[str, ...]]
     layers: dict[str, tuple[str, ...]]
     positive_route_layer_regex: str
     field_rules: dict[str, dict[str, dict[str, Any]]]
@@ -803,6 +806,7 @@ class MappingRegistry:
         if schema_version == "cad2gis-mapping-registry-v1":
             required = common | {"source_sha256"}
             allowed = required | {"coverage"}
+            raw_insert_layer_families: Any = {}
             review = ReviewRecord.legacy_reviewed(
                 "legacy reviewed mapping registry cad2gis-mapping-registry-v1"
             )
@@ -815,7 +819,8 @@ class MappingRegistry:
             })
         elif schema_version == MAPPING_REGISTRY_SCHEMA_VERSION:
             required = common | {"project_id", "review", "source_binding"}
-            allowed = required | {"coverage"}
+            allowed = required | {"coverage", "insert_layer_families"}
+            raw_insert_layer_families = value.get("insert_layer_families", {})
             review = ReviewRecord.from_mapping(
                 value.get("review"), "mapping registry review"
             )
@@ -861,8 +866,14 @@ class MappingRegistry:
             re.compile(value["positive_route_layer_regex"])
         except re.error as exc:
             raise ValueError(f"Invalid positive_route_layer_regex: {exc}") from exc
-        for name in ("block_families", "layers"):
-            for key, members in value[name].items():
+        if not isinstance(raw_insert_layer_families, dict):
+            raise ValueError("insert_layer_families must be a JSON object")
+        for name, raw_mapping in (
+            ("block_families", value["block_families"]),
+            ("insert_layer_families", raw_insert_layer_families),
+            ("layers", value["layers"]),
+        ):
+            for key, members in raw_mapping.items():
                 if not str(key).strip() or not isinstance(members, list):
                     raise ValueError(f"{name}.{key} must be an array")
                 if any(not isinstance(member, str) or not member.strip() for member in members):
@@ -1083,6 +1094,10 @@ class MappingRegistry:
             block_families={
                 str(feature_class): tuple(str(name).upper() for name in names)
                 for feature_class, names in value["block_families"].items()
+            },
+            insert_layer_families={
+                str(feature_class): tuple(str(name).upper() for name in names)
+                for feature_class, names in raw_insert_layer_families.items()
             },
             layers={
                 str(kind): tuple(str(name).upper() for name in names)

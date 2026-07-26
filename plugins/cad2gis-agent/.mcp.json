@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "cad2gis": {
+      "command": "conda",
+      "args": [
+        "run",
+        "--no-capture-output",
+        "-n",
+        "cad2gis",
+        "python",
+        "-m",
+        "cad2gis.agent_mcp",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}

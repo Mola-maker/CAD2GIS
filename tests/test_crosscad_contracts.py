@@ -338,6 +338,16 @@ def test_mm_and_ft_require_reviewed_scaling_and_preserve_unit_provenance():
             source_coordinate_scale_to_m=0.3048,
             source_coordinate_scale_reviewed=False,
         )
+    projected_wcs = units.build_unit_crs_contract(
+        4,
+        "EPSG:23846",
+        "EPSG:23846",
+        source_coordinate_scale_to_m=1.0,
+        source_coordinate_scale_reviewed=True,
+    )
+    assert projected_wcs.cad_unit.name == "millimetre"
+    assert projected_wcs.source_crs_axis_unit.name == "metre"
+    assert projected_wcs.source_to_crs_axis_factor == pytest.approx(1.0)
 
 
 def test_unknown_or_local_crs_requires_authoritative_registration():
@@ -834,6 +844,7 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
     manifest = _json(run_dir / "run_manifest.json")
     expected_artifacts = {
         "source.gpkg", "delivery.gpkg", "evidence.gpkg", "style_manifest.json",
+        "evidence_graph.json", "manifest.json",
     }
     artifact_names = {
         Path(item["path"]).name for item in manifest["artifacts"].values()
@@ -845,9 +856,19 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
     assert manifest["run_status"] in {"VERIFIED", "CONDITIONAL", "UNSAFE", "FAILED"}
     assert manifest["terminal_accounting"]["total"] == manifest["source_entity_count"]
     assert manifest["modes"] == {"domain": "auto", "llm": "off"}
+    assert (
+        manifest["plan_domain"]["schema_version"]
+        == "cad2gis-plan-domain-v1"
+    )
+    assert manifest["plan_domain"]["raw_entity_count"] == (
+        manifest["source_entity_count"]
+    )
     assert manifest["artifacts"]["source"]["sha256"] == _sha256_bytes(
         result.source_path.read_bytes()
     )
+    assert manifest["reasoning"]["graph_sha256"] == _json(
+        run_dir / "reasoning" / "evidence_graph.json"
+    )["graph_sha256"]
 
 
 def test_alias_failure_preserves_old_alias_after_bundle_publication(

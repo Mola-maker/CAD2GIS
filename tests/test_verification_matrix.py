@@ -53,6 +53,104 @@ def _sample(sample_id: str, seed: str, *, absolute: bool = False) -> dict:
     return value
 
 
+def _json_artifact(tmp_path: Path, name: str, payload: dict) -> dict:
+    path = tmp_path / name
+    content = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    path.write_bytes(content)
+    return {
+        "path": str(path),
+        "sha256": hashlib.sha256(content).hexdigest(),
+    }
+
+
+def _architecture_artifacts(tmp_path: Path, *, mutates_source: bool = False) -> dict:
+    graph_sha = _sha("evidence-graph")
+    pack_sha = _sha("decision-pack")
+    execution_sha = _sha("decision-execution")
+    visual_files = []
+    for name, content in (
+        ("overview.png", b"visible"),
+        ("overview.hit.png", b"hit-map"),
+        ("overview.hit-index.json", b"{}"),
+    ):
+        path = tmp_path / name
+        path.write_bytes(content)
+        visual_files.append({
+            "path": name,
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "size_bytes": len(content),
+        })
+    graph = _json_artifact(
+        tmp_path,
+        "evidence_graph.json",
+        {
+            "schema_version": "cad2gis.evidence_graph.v1",
+            "graph_sha256": graph_sha,
+            "source_sha256": _sha("architecture-source"),
+            "nodes": [],
+            "edges": [],
+        },
+    )
+    visual = _json_artifact(
+        tmp_path,
+        "visual_manifest.json",
+        {
+            "schema_version": "cad2gis.visual_evidence.v1",
+            "authority": "secondary_visual_evidence_only",
+            "model_space_only": True,
+            "paper_space_excluded": True,
+            "evidence_graph_sha256": graph_sha,
+            "region_count": 1,
+            "regions": [{"region_id": "overview"}],
+            "files": visual_files,
+        },
+    )
+    pack = _json_artifact(
+        tmp_path,
+        "decision_pack.json",
+        {
+            "schema_version": "cad2gis.decision_pack.v1",
+            "pack_sha256": pack_sha,
+            "evidence_graph_sha256": graph_sha,
+        },
+    )
+    execution = _json_artifact(
+        tmp_path,
+        "decision_execution.json",
+        {
+            "schema_version": "cad2gis.decision_execution.v1",
+            "execution_sha256": execution_sha,
+            "pack_sha256": pack_sha,
+            "evidence_graph_sha256": graph_sha,
+        },
+    )
+    derived = _json_artifact(
+        tmp_path,
+        "derived_network.json",
+        {
+            "schema_version": "cad2gis.derived_network.v1",
+            "execution_sha256": execution_sha,
+            "pack_sha256": pack_sha,
+            "evidence_graph_sha256": graph_sha,
+            "source_geometry_mutated": mutates_source,
+            "native_lengths_mutated": False,
+            "relation_count": 0,
+            "relations": [],
+        },
+    )
+    return {
+        "evidence_graph": graph,
+        "visual_evidence": visual,
+        "decision_pack": pack,
+        "decision_execution": execution,
+        "derived_network": derived,
+    }
+
+
 def test_missing_surveyed_gcp_is_hard_absolute_fail(tmp_path: Path) -> None:
     path = tmp_path / "matrix.json"
     path.write_text(
@@ -204,3 +302,74 @@ def test_run_level_unresolved_candidates_do_not_override_coverage_pass(
     assert sample["dimensions"]["semantics"] == "PASS"
     assert sample["dimensions"]["style"] == "PASS"
     assert not any("unsupported/unmatched semantics" in reason for reason in sample["reasons"])
+
+
+def test_architecture_dimensions_verify_bound_immutable_artifacts(
+    tmp_path: Path,
+) -> None:
+    sample = _sample("architecture", "architecture-source", absolute=True)
+    sample["artifacts"] = _architecture_artifacts(tmp_path)
+    sample["architecture"] = {
+        "review_isolation": {
+            "status": "PASS",
+            "evidence_ref": "tests/test_review_server.py",
+            "immutable_run_artifacts": True,
+            "separate_workspace": True,
+            "optimistic_revisions": True,
+        }
+    }
+    path = tmp_path / "matrix.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "cad2gis-verification-matrix-v2",
+                "samples": [sample],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = evaluate_matrix(path)
+
+    assert report["status"] == "PASS"
+    assert set(report["architecture_dimensions"]) == {
+        "evidence_provenance",
+        "derived_network",
+        "visual_evidence",
+        "review_isolation",
+    }
+    assert all(
+        value["status"] == "PASS"
+        for value in report["architecture_dimensions"].values()
+    )
+
+
+def test_architecture_dimensions_fail_when_derived_layer_mutates_source(
+    tmp_path: Path,
+) -> None:
+    sample = _sample("architecture", "architecture-source", absolute=True)
+    sample["artifacts"] = _architecture_artifacts(
+        tmp_path,
+        mutates_source=True,
+    )
+    path = tmp_path / "matrix.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "cad2gis-verification-matrix-v2",
+                "samples": [sample],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = evaluate_matrix(path)
+
+    assert report["status"] == "FAIL"
+    assert (
+        report["samples"][0]["architecture_dimensions"]["derived_network"]
+        == "FAIL"
+    )
+    assert "source geometry mutation" in " ".join(
+        report["samples"][0]["architecture_reasons"]["derived_network"]
+    )

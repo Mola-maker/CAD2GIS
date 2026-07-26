@@ -83,6 +83,11 @@ def _parser() -> argparse.ArgumentParser:
     convert.add_argument("--mapping-registry", type=Path)
     convert.add_argument("--gcp-profile", type=Path)
     convert.add_argument(
+        "--decision-pack",
+        type=Path,
+        help="Frozen content-addressed model decision pack to observe or execute.",
+    )
+    convert.add_argument(
         "--domain",
         choices=("auto", "generic", "ftth_apd"),
         default="auto",
@@ -92,10 +97,48 @@ def _parser() -> argparse.ArgumentParser:
         "--llm",
         choices=("off", "observe", "assist"),
         default="off",
-        help="LLM mode recorded for the conversion; no provider is invoked.",
+        help=(
+            "Reasoning mode: off, validate a decision pack without applying it, "
+            "or execute only auto-validated registered operations."
+        ),
     )
     _add_json(convert)
     convert.set_defaults(handler=_convert)
+
+    auto_convert = commands.add_parser(
+        "auto-convert",
+        help=(
+            "Bootstrap, AI-onboard, validate, and convert a new source in one "
+            "source-bound workflow."
+        ),
+    )
+    _add_source(auto_convert)
+    auto_convert.add_argument(
+        "--project",
+        dest="project_dir",
+        required=True,
+        type=Path,
+        help="Source-bound project pack directory.",
+    )
+    auto_convert.add_argument(
+        "--run-dir",
+        required=True,
+        type=Path,
+        help="New immutable run directory.",
+    )
+    auto_convert.add_argument(
+        "--provider",
+        choices=("deepseek", "new-api"),
+        default="deepseek",
+        help="OpenAI-compatible onboarding provider configured through environment variables.",
+    )
+    auto_convert.add_argument(
+        "--force-bootstrap",
+        action="store_true",
+        help="Replace only the managed project-pack files before AI onboarding.",
+    )
+    _add_json(auto_convert)
+    auto_convert.set_defaults(handler=_auto_convert)
 
     gcp = commands.add_parser(
         "gcp", help="Prepare and review operator-supplied ground control."
@@ -107,6 +150,18 @@ def _parser() -> argparse.ArgumentParser:
     _add_gcp_prepare(gcp_commands)
     _add_gcp_diagnose(gcp_commands)
     _add_gcp_export(gcp_commands)
+
+    review = commands.add_parser(
+        "review", help="Open the local real-time map overlay review workspace."
+    )
+    review.add_argument("run_dir", type=Path, metavar="RUN_DIR")
+    review.add_argument("--workspace", type=Path)
+    review.add_argument("--host", default="127.0.0.1")
+    review.add_argument("--port", type=int, default=8765)
+    review.add_argument("--qgis-server-url", default="")
+    review.add_argument("--qgis-project", default="")
+    review.add_argument("--qgis-layers", default="")
+    review.set_defaults(handler=_review)
 
     verify = commands.add_parser(
         "verify", help="Evaluate a versioned multi-CAD verification matrix."
@@ -253,10 +308,34 @@ def _convert(args: argparse.Namespace) -> tuple[Any, int]:
         source_profile=args.source_profile,
         mapping_registry=args.mapping_registry,
         gcp_profile=args.gcp_profile,
+        decision_pack=args.decision_pack,
         domain=args.domain,
         llm=args.llm,
     )
     return _conversion_payload(result), 0
+
+
+def _auto_convert(args: argparse.Namespace) -> tuple[Any, int]:
+    from .pipeline import auto_onboard_project, convert_project
+
+    source = _source(args)
+    onboarding = auto_onboard_project(
+        source=source,
+        project_dir=args.project_dir,
+        provider=args.provider,
+        force_bootstrap=args.force_bootstrap,
+    )
+    result = convert_project(
+        source=source,
+        run_dir=args.run_dir,
+        project_dir=args.project_dir,
+        llm="off",
+    )
+    return {
+        "schema_version": "cad2gis.auto_convert.v1",
+        "onboarding": onboarding,
+        "conversion": _conversion_payload(result),
+    }, 0
 
 
 def _project_directory(value: Path | None) -> Path | None:
@@ -446,6 +525,21 @@ def _verify(args: argparse.Namespace) -> tuple[Any, int]:
     return payload, 0
 
 
+def _review(args: argparse.Namespace) -> tuple[Any, int]:
+    from .review_server import run_review_server
+
+    run_review_server(
+        args.run_dir,
+        workspace_dir=args.workspace,
+        host=args.host,
+        port=args.port,
+        qgis_server_url=args.qgis_server_url,
+        qgis_project=args.qgis_project,
+        qgis_layers=args.qgis_layers,
+    )
+    return None, 0
+
+
 def _conversion_payload(result: Any) -> Any:
     if isinstance(result, Mapping):
         return result
@@ -478,7 +572,10 @@ def _conversion_payload(result: Any) -> Any:
 
 
 _COMMANDS = frozenset(
-    {"doctor", "inspect", "bootstrap", "validate", "convert", "gcp", "verify"}
+    {
+        "doctor", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
+        "review", "verify",
+    }
 )
 
 

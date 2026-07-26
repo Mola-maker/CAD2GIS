@@ -1,0 +1,8 @@
+{
+  "name": "cad2gis-agent",
+  "version": "0.1.0",
+  "description": "Evidence-first CAD/DWG to GIS conversion, LLM decision packs, and deterministic review tools.",
+  "author": {
+    "name": "CAD2GIS contributors"
+  }
+}

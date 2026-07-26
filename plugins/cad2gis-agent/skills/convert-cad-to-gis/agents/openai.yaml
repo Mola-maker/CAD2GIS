@@ -1,0 +1,4 @@
+interface:
+  display_name: "Convert CAD to GIS"
+  short_description: "Run evidence-first CAD2GIS conversion and review"
+  default_prompt: "Inspect a CAD project, build or validate a decision pack, run the deterministic conversion, and explain the evidence and run status."

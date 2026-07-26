@@ -40,6 +40,7 @@ def test_public_convert_signature_is_stable() -> None:
         "source_profile",
         "mapping_registry",
         "gcp_profile",
+        "decision_pack",
         "domain",
         "llm",
     )
@@ -115,8 +116,9 @@ def test_convert_resolves_inputs_before_calling_backend(
             "run_dir": run_dir.resolve(),
             "source_profile": source_profile.resolve(),
             "mapping_registry": mapping_registry.resolve(),
-            "gcp_profile": None,
-            "domain": "auto",
+                "gcp_profile": None,
+                "decision_pack": None,
+                "domain": "auto",
             "llm": "off",
         }
     ]
@@ -185,7 +187,7 @@ def test_doctor_report_is_structured_and_fail_closed(
             "environment_variable": "CAD2GIS_BACKEND_PATH",
             "supported_modes": (),
             "external_path_requirement": "test",
-            "wheel_bundles_backend": False,
+            "wheel_bundles_backend": True,
         },
     )
     monkeypatch.setattr(doctor.platform, "system", lambda: "Linux")
@@ -326,6 +328,75 @@ def test_convert_forwards_domain_and_llm(
     assert captured["domain"] == "auto"
     assert captured["llm"] == "observe"
     assert json.loads(capsys.readouterr().out)["status"] == "success"
+
+
+def test_convert_forwards_decision_pack(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+    pack = tmp_path / "decision-pack.json"
+    pack.write_text("{}", encoding="utf-8")
+
+    def fake_convert_project(**kwargs: object) -> dict[str, str]:
+        captured.update(kwargs)
+        return {"status": "success"}
+
+    monkeypatch.setattr(pipeline, "convert_project", fake_convert_project)
+    status = cli.main([
+        "convert", str(tmp_path / "drawing.dwg"),
+        "--run-dir", str(tmp_path / "run"),
+        "--project", str(tmp_path),
+        "--llm", "assist",
+        "--decision-pack", str(pack),
+    ])
+    assert status == 0
+    assert captured["decision_pack"] == pack
+
+
+def test_auto_convert_runs_onboarding_before_canonical_conversion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"fixture")
+    project = tmp_path / "project"
+    run = tmp_path / "run"
+
+    def fake_onboard(**kwargs: object) -> dict[str, str]:
+        calls.append(("onboard", kwargs))
+        return {"status": "auto_accepted"}
+
+    def fake_convert(**kwargs: object) -> dict[str, str]:
+        calls.append(("convert", kwargs))
+        return {"status": "success"}
+
+    monkeypatch.setattr(pipeline, "auto_onboard_project", fake_onboard)
+    monkeypatch.setattr(pipeline, "convert_project", fake_convert)
+
+    status = cli.main([
+        "auto-convert",
+        str(source),
+        "--project",
+        str(project),
+        "--run-dir",
+        str(run),
+        "--provider",
+        "new-api",
+        "--force-bootstrap",
+        "--json",
+    ])
+
+    assert status == 0
+    assert [name for name, _ in calls] == ["onboard", "convert"]
+    assert calls[0][1]["provider"] == "new-api"
+    assert calls[0][1]["force_bootstrap"] is True
+    assert calls[1][1]["llm"] == "off"
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["onboarding"]["status"] == "auto_accepted"
+    assert payload["conversion"]["status"] == "success"
 
 
 def test_convert_mode_defaults_and_choices(tmp_path: Path) -> None:
@@ -658,4 +729,4 @@ def test_packaging_declares_only_src_public_package() -> None:
     assert metadata["project"]["scripts"]["cad2gis"] == "cad2gis.cli:main"
     assert metadata["tool"]["setuptools"]["package-dir"] == {"": "src"}
     assert metadata["tool"]["setuptools"]["packages"]["find"]["where"] == ["src"]
-    assert runtime.backend_contract()["wheel_bundles_backend"] is False
+    assert runtime.backend_contract()["wheel_bundles_backend"] is True
