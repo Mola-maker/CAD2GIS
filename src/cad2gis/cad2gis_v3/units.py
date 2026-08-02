@@ -1,10 +1,10 @@
-"""Fail-closed CAD drawing-unit and CRS-axis contract.
+"""Fail-closed CAD insertion-unit and CRS-axis coordinate contract.
 
-CAD entity coordinates are expressed in drawing units (``$INSUNITS``), while
-PROJ/OSR operations consume coordinates in the source CRS axis unit and emit
-coordinates in the target CRS axis unit.  Those three facts are deliberately
-kept separate here.  A CRS identifier never supplies missing CAD unit or local
-registration evidence.
+``$INSUNITS`` controls insertion scaling and is useful evidence, but an
+assigned projected coordinate system can define a different unit for WCS
+coordinates. PROJ/OSR consume source CRS axis units and emit target CRS axis
+units. Those facts are kept separate; a reviewed source-coordinate scale says
+which unit the extracted WCS values actually use.
 """
 
 from __future__ import annotations
@@ -233,10 +233,12 @@ def build_unit_crs_contract(
 ) -> UnitCrsContract:
     """Build a unit/CRS contract, rejecting every implicit scale or CRS guess.
 
-    A metre drawing may safely derive its identity scale from ``$INSUNITS=6``.
-    Every other supported drawing unit requires an explicit reviewed scale and
-    that scale must agree with the AutoCAD enumeration.  Projected source CRSs
-    can then be used directly.  Missing, geographic, engineering/local, or
+    A metre insertion unit may safely derive its identity scale from
+    ``$INSUNITS=6``. Every other supported insertion unit requires an explicit
+    reviewed coordinate scale. The scale may differ from ``$INSUNITS`` when
+    authoritative drawing metadata establishes that WCS coordinates use the
+    projected CRS axis unit. Projected source CRSs can then be used directly.
+    Missing, geographic, engineering/local, or
     otherwise unusable source CRSs require an explicitly reviewed registration
     strategy; the returned registration contract is evidence for that separate
     stage and cannot be passed off as a direct CRS operation.
@@ -259,11 +261,13 @@ def build_unit_crs_contract(
         scale_to_m = _finite_positive(
             source_coordinate_scale_to_m, "source_coordinate_scale_to_m"
         )
-        if not math.isclose(
+        scale_matches_insunits = math.isclose(
             scale_to_m, cad_unit.metres_per_unit, rel_tol=1e-12, abs_tol=0.0
-        ):
+        )
+        if not scale_matches_insunits and not source_coordinate_scale_reviewed:
             raise UnitCrsContractError(
-                "source_coordinate_scale_to_m does not match dwg_insunits "
+                "source_coordinate_scale_to_m differs from dwg_insunits and "
+                "requires source_coordinate_scale_reviewed=true "
                 f"({scale_to_m!r} != {cad_unit.metres_per_unit!r})"
             )
         if cad_unit.metres_per_unit != 1.0 and not source_coordinate_scale_reviewed:

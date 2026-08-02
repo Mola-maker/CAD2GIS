@@ -1788,7 +1788,6 @@ FIELD_NAME_CROSSWALK = {
     "TYPE_LOG": "TYPE_LOG",
 
     # SITE truncations
-    "REF_PRODUI": "REF_PRODUIT",
     "MODE_POSE": "MODE_POSE",
 
     # ZNRO / ZPM truncations

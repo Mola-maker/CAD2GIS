@@ -16,6 +16,13 @@ import pytest
 import cad2gis.gcp_workflow as workflow
 
 
+def test_operator_backend_requires_an_explicit_path(monkeypatch):
+    monkeypatch.delenv("CAD2GIS_GCP_TOOL_PATH", raising=False)
+
+    with pytest.raises(ImportError, match="CAD2GIS_GCP_TOOL_PATH"):
+        workflow._backend_path()
+
+
 class _Backend:
     def __init__(self, tmp_path: Path) -> None:
         self.tmp_path = tmp_path

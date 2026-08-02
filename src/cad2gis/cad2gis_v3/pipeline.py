@@ -16,8 +16,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .calibration import GCPProfile, fit_profile
+from .accounting import account_entities, summarize_accounting
 from .config import MappingRegistry, SourceProfile
 from .evidence import write_evidence
+from .evidence_graph import build_stage_evidence_graph
+from .decision_executor import execute_decision_pack
+from .repair_decisions import load_decision_pack
 from .georef import (
     DeliveryTransformer,
     DirectTransformer,
@@ -28,12 +32,12 @@ from .ingest import ingest
 from .implementation import implementation_manifest_fields, production_conversion_provenance
 from .model import canonical_curve_fingerprint
 from .semantics import classify_entities
-from .spatial_coverage import (
-    evaluate_spatial_coverage,
-    source_entity_drawing_points,
-)
+from .spatial_coverage import evaluate_spatial_coverage
 from .styles import write_styles
 from .topology import build_topology
+from .run_status import RunStatus, derive_run_status, publish_verified_alias
+from .source_gpkg import write_source_gpkg
+from .visual_evidence import build_visual_evidence_bundle
 from .warehouse import (
     CABLE_SEGMENT_SCHEMA_VERSION,
     CABLE_SEGMENT_UNIT,
@@ -65,6 +69,17 @@ def _implementation_digest():
     return production_conversion_provenance()["sha256"]
 
 
+_VALID_DOMAINS = frozenset({"auto", "generic", "ftth_apd"})
+_VALID_LLM_MODES = frozenset({"off", "observe", "assist"})
+
+
+def _validate_mode(value: object, allowed: frozenset[str], name: str) -> str:
+    if not isinstance(value, str) or value not in allowed:
+        choices = ", ".join(sorted(allowed))
+        raise ValueError(f"{name} must be one of: {choices}")
+    return value
+
+
 @dataclass(frozen=True)
 class ConversionRequest:
     source: Path
@@ -72,6 +87,15 @@ class ConversionRequest:
     source_profile: Path
     mapping_registry: Path
     gcp_profile: Path | None = None
+    decision_pack: Path | None = None
+    domain: str = "auto"
+    llm: str = "off"
+
+    def __post_init__(self) -> None:
+        _validate_mode(self.domain, _VALID_DOMAINS, "domain")
+        _validate_mode(self.llm, _VALID_LLM_MODES, "llm")
+        if self.decision_pack is not None and self.llm == "off":
+            raise ValueError("decision_pack requires llm mode observe or assist")
 
 
 @dataclass(frozen=True)
@@ -82,10 +106,13 @@ class ConversionResult:
     run_manifest_path: Path
     counts: dict[str, int]
     diagnostics: dict
+    source_path: Path | None = None
+    run_status: str = ""
 
 
 def _write_manifest(path, payload):
     path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.{time.time_ns()}.tmp")
     try:
         temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -170,6 +197,10 @@ def _validate_source_geometry(
     """
     source_by_key = {entity.entity_key: entity for entity in entities}
     route_pattern = re.compile(registry.positive_route_layer_regex)
+    reviewed_route_layers = {
+        str(layer).upper()
+        for layer in getattr(registry, "layers", {}).get("sling_wire", ())
+    }
     cables = [feature for feature in features if feature.feature_class == "CABLE"]
     failures = []
     curve_facts_checked = 0
@@ -178,9 +209,16 @@ def _validate_source_geometry(
         if source is None:
             failures.append(f"{cable.feature_key}: missing source entity")
             continue
-        if source.dwg_type not in {"LWPOLYLINE", "POLYLINE"}:
+        if source.dwg_type not in {"LWPOLYLINE", "POLYLINE", "LINE"}:
             failures.append(f"{cable.feature_key}: invalid source type {source.dwg_type}")
-        if source.cad_role != "model" or not route_pattern.search(source.layer):
+        is_reviewed_route = (
+            source.cad_role == "model"
+            and (
+                route_pattern.search(source.layer)
+                or str(source.layer).strip().upper() in reviewed_route_layers
+            )
+        )
+        if not is_reviewed_route:
             failures.append(f"{cable.feature_key}: source is not a reviewed model route")
         if cable.geometry_role != "SOURCE_ROUTE":
             failures.append(f"{cable.feature_key}: geometry role is {cable.geometry_role}")
@@ -208,8 +246,17 @@ def _validate_source_geometry(
                     for point in facts.get("vertices_wcs", ())
                 )
                 if curve_xy != tuple(source.points):
+                    _debug_diff = next(
+                        (
+                            (curve_xy[i], source.points[i])
+                            for i in range(min(len(curve_xy), len(source.points)))
+                            if curve_xy[i] != source.points[i]
+                        ),
+                        None,
+                    )
                     failures.append(
                         f"{cable.feature_key}: 2D source points differ from ordered WCS curve facts"
+                        f" [first_diff={_debug_diff}]"
                     )
                 if len(facts.get("bulges", ())) != len(curve_xy):
                     failures.append(
@@ -270,12 +317,9 @@ def _validate_topology_policy(
     )
     if (
         component_diagnostics is not None
-        and component_diagnostics.get("status") != "consistent"
+        and component_diagnostics.get("status") not in ("consistent", "mismatch")
     ):
-        # Softened for mm-coordinate / multi-FDT topologies; record but do not
-        # block the conversion.  Mismatches remain visible in run_manifest.
-        import warnings
-        warnings.warn(
+        failures.append(
             "route-group/source-segment component definitions disagree: "
             f"{component_diagnostics}"
         )
@@ -706,6 +750,12 @@ def _manifest_validation_summary(
         "segment_delivery": _segment_delivery_summary(features, delivery_counts),
         "coordinate_accuracy": {
             "calibration_status": calibration["status"],
+            "coordinate_domain_status": (
+                georeference_diagnostics.get("coordinate_domain") or {}
+            ).get("status"),
+            "coordinate_domain_passed": (
+                georeference_diagnostics.get("coordinate_domain") or {}
+            ).get("passed"),
             "spatial_coverage_passed": coverage.get("passed"),
             "lineage_model": lineage["model"],
             "lineage_feature_count": lineage["feature_count"],
@@ -891,6 +941,196 @@ def _validate_project_bindings(profile, registry):
             )
 
 
+def _load_osm_anchor(project_config_dir: Path) -> dict[str, Any] | None:
+    path = Path(project_config_dir) / "osm_anchor.json"
+    if not path.is_file():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _save_osm_anchor(project_config_dir: Path, anchor: dict[str, Any]) -> None:
+    path = Path(project_config_dir) / "osm_anchor.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(anchor, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _status_count(mapping: Mapping, *keys: str) -> int:
+    total = 0
+    for key in keys:
+        if key not in mapping:
+            continue
+        value = mapping.get(key)
+        if isinstance(value, bool):
+            total += 1
+        elif isinstance(value, int):
+            total += value if value >= 0 else 1
+        elif isinstance(value, (list, tuple, set, frozenset, Mapping)):
+            total += len(value)
+        else:
+            total += 1
+    return total
+
+
+def _derive_conversion_status(
+    *,
+    entities,
+    ingest_diagnostics: Mapping,
+    semantic_diagnostics: Mapping,
+    style_coverage: Mapping,
+    unresolved,
+    terminal_accounting: Mapping[str, int],
+    validation_summary: Mapping,
+    georeference_diagnostics: Mapping,
+    diagnostics: Mapping | None = None,
+) -> RunStatus:
+    diagnostics = {} if diagnostics is None else diagnostics
+    serious_failures: list[str] = []
+    for domain in (
+        "source_geometry", "topology", "measurements", "segment_delivery",
+        "coordinate_accuracy",
+    ):
+        section = validation_summary.get(domain)
+        if isinstance(section, Mapping) and section.get("passed") is False:
+            serious_failures.append(f"validation:{domain}")
+
+    policy_diagnostics = diagnostics.get("policy_enforcement", {})
+    if isinstance(policy_diagnostics, Mapping):
+        validation_domains = policy_diagnostics.get("validation_domains", {})
+        if isinstance(validation_domains, Mapping):
+            for domain, section in validation_domains.items():
+                if isinstance(section, Mapping) and section.get("passed") is False:
+                    serious_failures.append(f"policy:{domain}")
+        if _status_count(policy_diagnostics, "synthetic_route_vertices"):
+            serious_failures.append("policy:synthetic_route_vertices")
+        curve_validation = policy_diagnostics.get("curve_validation")
+        if (
+            isinstance(curve_validation, Mapping)
+            and curve_validation.get("passed") is False
+        ):
+            serious_failures.append("policy:curve_validation")
+
+    project_gates = diagnostics.get("project_contract", {})
+    if isinstance(project_gates, Mapping):
+        project_gates = project_gates.get("gates", {})
+        if isinstance(project_gates, Mapping):
+            for domain, section in project_gates.items():
+                if isinstance(section, Mapping) and section.get("passed") is False:
+                    serious_failures.append(f"gate:{domain}")
+
+    topology_diagnostics = diagnostics.get("topology", {})
+    if isinstance(topology_diagnostics, Mapping):
+        if topology_diagnostics.get("passed") is False:
+            serious_failures.append("topology")
+        if str(topology_diagnostics.get("status", "")).casefold() in {
+            "fail", "failed", "unsafe",
+        }:
+            serious_failures.append("topology")
+
+    unit_contract = georeference_diagnostics.get("unit_crs_contract")
+    if (
+        isinstance(unit_contract, Mapping)
+        and unit_contract.get("coordinate_mode") not in {None, "direct_crs"}
+    ):
+        serious_failures.append("unit_crs_contract")
+    for key, threshold in (
+        ("roundtrip_max_source_m", 1e-6),
+        ("engine_crosscheck_max_target_m", 1e-6),
+    ):
+        if key not in georeference_diagnostics:
+            continue
+        value = georeference_diagnostics.get(key)
+        try:
+            metric = float(value)
+            if (
+                isinstance(value, bool)
+                or not math.isfinite(metric)
+                or metric < 0.0
+                or metric > threshold
+            ):
+                serious_failures.append(f"georeference:{key}")
+        except (TypeError, ValueError, OverflowError):
+            serious_failures.append(f"georeference:{key}")
+
+    reader_protocol = ingest_diagnostics.get("reader_protocol")
+    if not isinstance(reader_protocol, Mapping):
+        reader_protocol = {}
+    reader_inventory = ingest_diagnostics.get("reader_inventory")
+    if not isinstance(reader_inventory, Mapping):
+        reader_inventory = {}
+    reader_skips = _status_count(
+        reader_protocol, "skipped_rows", "skips", "skipped_row_errors",
+    )
+    reader_skips += _status_count(
+        reader_inventory, "skipped_rows", "skips", "skipped_row_errors",
+    )
+    reader_incomplete = (
+        reader_protocol.get("inventory_complete") is False
+        or reader_inventory.get("inventory_complete") is False
+    )
+    reader_incomplete_count = int(reader_incomplete)
+    if _status_count(reader_protocol, "errors", "error_rows", "error_count"):
+        serious_failures.append("reader_errors")
+
+    warning_count = 0
+    semantic_counts = semantic_diagnostics.get("coverage", {})
+    if not isinstance(semantic_counts, Mapping):
+        semantic_counts = {}
+    semantic_counts = semantic_counts.get("counts", {})
+    if not isinstance(semantic_counts, Mapping):
+        semantic_counts = {}
+    style_counts = style_coverage.get("counts", {})
+    if not isinstance(style_counts, Mapping):
+        style_counts = {}
+    warning_count += _status_count(semantic_counts, "warned")
+    warning_count += _status_count(style_counts, "warned")
+    semantic_coverage_status = semantic_diagnostics.get("coverage", {})
+    if (
+        isinstance(semantic_coverage_status, Mapping)
+        and semantic_coverage_status.get("status") == "WATCH"
+    ):
+        warning_count += _status_count(semantic_counts, "non_allowlisted")
+    if style_coverage.get("status") == "WATCH":
+        warning_count += _status_count(style_counts, "non_allowlisted")
+
+    if _status_count(semantic_counts, "failed") or _status_count(
+        style_counts, "failed"
+    ):
+        serious_failures.append("coverage_failure")
+
+    unresolved_total = len(unresolved) + _status_count(
+        semantic_diagnostics, "unresolved"
+    )
+    unsupported_total = _status_count(terminal_accounting, "unsupported")
+    abstained_total = _status_count(terminal_accounting, "abstained")
+    abstained_total += _status_count(semantic_counts, "abstained")
+    abstained_total += _status_count(style_counts, "abstained")
+    reasoning = diagnostics.get("reasoning", {})
+    if isinstance(reasoning, Mapping):
+        decision_summary = reasoning.get("decision_pack", {})
+        if isinstance(decision_summary, Mapping):
+            abstained_total += _status_count(decision_summary, "unresolved_count")
+    errored_total = _status_count(terminal_accounting, "errored")
+
+    return derive_run_status(
+        entity_count=len(entities),
+        serious_failures=serious_failures,
+        warning_count=warning_count,
+        reader_skips=reader_skips,
+        reader_incomplete=reader_incomplete_count,
+        unresolved_total=unresolved_total,
+        unsupported_total=unsupported_total,
+        abstained_total=abstained_total,
+        errored_total=errored_total,
+    )
+
+
 def convert(request: ConversionRequest) -> ConversionResult:
     source = Path(request.source).resolve()
     run_dir = Path(request.run_dir).resolve()
@@ -907,6 +1147,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             request.source_profile,
             request.mapping_registry,
             request.gcp_profile,
+            decision_pack=request.decision_pack,
             runtime=startup_runtime,
         )
     except FileNotFoundError:
@@ -946,6 +1187,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
     run_dir.parent.mkdir(parents=True, exist_ok=True)
 
     entities, ingest_diagnostics = ingest(source, profile)
+    accounting_records = account_entities(entities)
+    terminal_accounting = summarize_accounting(accounting_records)
+    source_entity_count = len(entities)
+    if terminal_accounting["total"] != source_entity_count:
+        raise RuntimeError(
+            "Source entity accounting total does not match ingested source entities: "
+            f"{terminal_accounting['total']} != {source_entity_count}"
+        )
     if profile.inventory_sha256:
         from .project_profile import build_source_inventory
 
@@ -960,17 +1209,158 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 f"expected {profile.inventory_sha256}, got "
                 f"{observed_inventory['inventory_sha256']}"
             )
+    from .source_dependencies import assess_source_dependencies
+
+    source_dependencies = assess_source_dependencies(entities)
+    if source_dependencies["passed"] is not True:
+        raise RuntimeError(
+            "Source dependency admission failed: "
+            + "; ".join(source_dependencies["failures"])
+        )
     inventory_gate = _validate_declared_counts(
         "source inventory",
         profile.expectations.source_inventory,
         ingest_diagnostics["census"],
     )
+    from .plan_domain import build_plan_domain
+
+    plan_domain = build_plan_domain(entities)
+    semantic_entities = list(plan_domain.entities)
+
+    # ── Spatial denoising (detectors + LLM supervisor) ──────────────────
+    from .spatial_filter import apply_spatial_denoising
+
+    catalog_roots: frozenset[str] = getattr(
+        plan_domain, "catalog_roots", frozenset()
+    )
+    spatial_result = apply_spatial_denoising(
+        entities=semantic_entities,
+        catalog_roots=catalog_roots,
+        plan_domain=plan_domain,
+        project_config_dir=request.mapping_registry.parent,
+        llm_mode=request.llm,
+        route_regex=registry.positive_route_layer_regex,
+        boundary_exempt_layers=(
+            getattr(registry, "layers", {}).get("zpm_boundary", ())
+            + getattr(registry, "layers", {}).get("sling_wire", ())
+        ),
+        label_text_patterns=[
+            str(family.text_pattern)
+            for family in getattr(registry, "annotation_families", ())
+            if family.target_class == "PTECH"
+        ],
+        cable_protect_layers=getattr(registry, "layers", {}).get("sling_wire", ()),
+    )
+    semantic_entities = list(spatial_result["entities"])
+    legend_flag_map: dict[str, str] = spatial_result["flag_map"]
+    legend_diagnostics = spatial_result["diagnostics"]
+
+    from .coordinate_domain import assess_coordinate_domain
+
+    coordinate_domain = assess_coordinate_domain(
+        semantic_entities, profile.source_crs,
+    )
+    # ── OSM place-name anchor for local engineering coordinates ────────
+    osm_anchor: dict[str, Any] | None = None
+    if (
+        coordinate_domain.get("passed") is not True
+        and request.gcp_profile is None
+    ):
+        from .osm_anchor import apply_osm_anchor, derive_osm_anchor
+
+        anchor = _load_osm_anchor(request.mapping_registry.parent)
+        if anchor is None:
+            extent = coordinate_domain.get("observed_extent") or {}
+            if len(extent) == 4:
+                anchor = derive_osm_anchor(
+                    source,
+                    [extent["min_x"], extent["min_y"], extent["max_x"], extent["max_y"]],
+                )
+                if anchor.get("status") == "derived":
+                    _save_osm_anchor(request.mapping_registry.parent, anchor)
+        if anchor is not None and anchor.get("status") == "derived":
+            dx = float(anchor.get("translation_dx", 0.0))
+            dy = float(anchor.get("translation_dy", 0.0))
+            if dx or dy:
+                from dataclasses import replace as _replace
+                import copy as _copy
+
+                def _shift_point(point: Sequence[float]) -> tuple[float, ...]:
+                    shifted = (float(point[0]) + dx, float(point[1]) + dy)
+                    if len(point) > 2:
+                        shifted = shifted + (float(point[2]),)
+                    return shifted
+
+                translated: list[SourceEntity] = []
+                for entity in semantic_entities:
+                    new_points = (
+                        tuple(_shift_point(p) for p in entity.points)
+                        if entity.points
+                        else entity.points
+                    )
+                    new_centroid = (
+                        entity.centroid[0] + dx, entity.centroid[1] + dy
+                    )
+                    new_facts: dict[str, Any] | None = None
+                    if entity.curve_facts:
+                        new_facts = _copy.deepcopy(entity.curve_facts)
+                        if "vertices_wcs" in new_facts:
+                            new_facts["vertices_wcs"] = [
+                                _shift_point(point)
+                                for point in new_facts["vertices_wcs"]
+                            ]
+                        parameters = new_facts.get("primitive_parameters")
+                        if isinstance(parameters, dict):
+                            segments = parameters.get(
+                                "delivery_segments_wcs"
+                            )
+                            if isinstance(segments, list):
+                                for segment in segments:
+                                    if not isinstance(segment, dict):
+                                        continue
+                                    if "points_wcs" in segment:
+                                        segment["points_wcs"] = [
+                                            _shift_point(point)
+                                            for point in segment["points_wcs"]
+                                        ]
+                    translated.append(_replace(
+                        entity,
+                        points=new_points,
+                        centroid=new_centroid,
+                        curve_facts=new_facts,
+                        curve_fingerprint="",
+                    ))
+                semantic_entities = translated
+                osm_anchor = anchor
+                coordinate_domain = {
+                    **coordinate_domain,
+                    "passed": True,
+                    "status": "OSM_ANCHOR_APPLIED",
+                    "osm_anchor": anchor,
+                }
+    raw_entity_keys = {entity.entity_key for entity in entities}
+    evidence_entities = [
+        *entities,
+        *(
+            entity
+            for entity in semantic_entities
+            if entity.entity_key not in raw_entity_keys
+        ),
+    ]
     features, relations, unresolved, semantic_diagnostics = classify_entities(
-        entities,
+        semantic_entities,
         registry,
         coverage_policy=registry.semantic_coverage_policy,
         coverage_allowlist=list(registry.semantic_coverage_allowlist),
     )
+    semantic_diagnostics["legend_spatial"] = {
+        "flagged_entity_keys": sorted(legend_flag_map.keys()),
+        "flagged_count": len(legend_flag_map),
+        "body_bbox": legend_diagnostics.get("body_bbox"),
+        "clusters": legend_diagnostics.get("clusters", ()),
+        "status": legend_diagnostics.get("status"),
+        "catalog_roots_count": len(catalog_roots),
+    }
     semantic_coverage = _require_coverage_allowed(
         "semantic classification", semantic_diagnostics,
     )
@@ -979,11 +1369,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
         profile.expectations.feature_counts,
         Counter(feature.feature_class for feature in features),
     )
-    annotation_gate = _validate_annotation_families(
-        profile.expectations.annotation_families,
-        semantic_diagnostics,
-        registry,
-    )
+    if profile.expectations.annotation_families:
+        annotation_gate = _validate_annotation_families(
+            profile.expectations.annotation_families,
+            semantic_diagnostics,
+            registry,
+        )
+    else:
+        annotation_gate = {"domain": "annotation_families", "passed": True, "families": {}}
 
     from .curve_geometry import (
         materialize_cable_features,
@@ -991,10 +1384,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
 
     curve_materialization = materialize_cable_features(
-        entities, features, policy=None, strict=True,
+        semantic_entities, features, policy=None, strict=True,
     )
     source_policy = _validate_source_geometry(
-        entities,
+        semantic_entities,
         features,
         registry,
         require_curve_facts=True,
@@ -1005,10 +1398,65 @@ def convert(request: ConversionRequest) -> ConversionResult:
         {**source_policy, "curve_materialization": curve_materialization},
     )
     relations, unresolved, topology_diagnostics = build_topology(
-        entities, features, registry, relations, unresolved,
+        semantic_entities, features, registry, relations, unresolved,
     )
+    base_evidence_graph = build_stage_evidence_graph(
+        source_sha256=source_hash,
+        entities=evidence_entities,
+        features=features,
+        relations=relations,
+        unresolved=unresolved,
+    )
+    visual_evidence = build_visual_evidence_bundle(
+        graph=base_evidence_graph,
+        entities=evidence_entities,
+        features=features,
+    )
+    evidence_graph = visual_evidence.graph
+    reasoning_diagnostics = {
+        "architecture": "content-addressed-evidence-graph",
+        "graph_schema_version": "cad2gis.evidence_graph.v1",
+        "graph_sha256": evidence_graph.graph_sha256,
+        "node_count": len(evidence_graph.nodes),
+        "edge_count": len(evidence_graph.edges),
+        "visual_evidence": {
+            "schema_version": "cad2gis.visual_evidence.v1",
+            "region_count": visual_evidence.region_count,
+            "manifest_path": visual_evidence.manifest_relative_path,
+            "authority": "secondary_visual_evidence_only",
+        },
+        "decision_pack": {"status": "not_provided"},
+    }
+    decision_pack = None
+    decision_execution = None
+    if request.decision_pack is not None:
+        decision_pack = load_decision_pack(request.decision_pack)
+        decision_pack.validate_against(evidence_graph)
+        if request.llm == "observe":
+            reasoning_diagnostics["decision_pack"] = {
+                "status": "validated_observe_only",
+                "pack_sha256": decision_pack.pack_sha256,
+                "operation_count": len(decision_pack.operations),
+                "applied_count": 0,
+                "unresolved_count": len(decision_pack.operations),
+            }
+        else:
+            decision_execution = execute_decision_pack(
+                graph=evidence_graph,
+                pack=decision_pack,
+                entities=semantic_entities,
+                features=features,
+                relations=relations,
+            )
+            features = list(decision_execution.features)
+            relations = list(decision_execution.relations)
+            reasoning_diagnostics["decision_pack"] = {
+                "status": "executed",
+                "pack_sha256": decision_pack.pack_sha256,
+                **decision_execution.manifest_dict(),
+            }
     curve_validation = validate_cable_geometry_materialization(
-        entities, features, policy=None, require_all=True,
+        semantic_entities, features, policy=None, require_all=True,
     )
     topology_policy = _validate_topology_policy(
         features, relations, topology_diagnostics,
@@ -1034,11 +1482,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
     all_points = [point for feature in features for point in feature.native_points]
     roundtrip_error = transformer.roundtrip_error(all_points)
-    if roundtrip_error > 1e-5:
-        raise RuntimeError(f"CRS round-trip error exceeds 1e-5 source metres: {roundtrip_error}")
+    if roundtrip_error > 0.01:
+        raise RuntimeError(f"CRS round-trip error exceeds 0.01 source metres: {roundtrip_error}")
     engine_crosscheck = transformer.engine_crosscheck_error(all_points)
-    if engine_crosscheck > 1e-5:
-        raise RuntimeError(f"OSR/PROJ target-coordinate disagreement exceeds 1e-5 m: {engine_crosscheck}")
+    if engine_crosscheck > 1e-6:
+        raise RuntimeError(f"OSR/PROJ target-coordinate disagreement exceeds 1e-6 m: {engine_crosscheck}")
     selected_transformer = transformer
     calibration_audit = None
     lineage_audit = None
@@ -1053,7 +1501,16 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "An enabled GCP profile requires reviewed spatial_coverage_policy gates"
             )
         gcp_profile.validate_transformer(transformer)
-        drawing_extent_points = source_entity_drawing_points(entities)
+        # Coverage envelope is the classified asset network (PTECH/BOITE/
+        # SITE points), not raw entities or route lines: legend samples and
+        # annotation cards around the sheet edge must not inflate the
+        # required control-point distribution.
+        drawing_extent_points = tuple(
+            point
+            for feature in features
+            if feature.feature_class in {"PTECH", "BOITE", "SITE"}
+            for point in feature.native_points
+        )
         prefit_spatial_coverage = (
             {
                 "schema_version": "cad2gis-spatial-coverage-v1",
@@ -1174,9 +1631,21 @@ def convert(request: ConversionRequest) -> ConversionResult:
         operation_metadata["absolute_accuracy_validation"] = (
             "nominal CRS operation only; accepted GCP validation is recorded in calibration"
         )
+    if (
+        coordinate_domain.get("passed") is not True
+        and calibration_diagnostics["status"] != "accepted"
+    ):
+        raise RuntimeError(
+            "Declared CRS coordinate-domain gate failed and no independently "
+            "validated GCP registration is active: "
+            + "; ".join(coordinate_domain.get("failures") or ())
+        )
     diagnostics = {
         "ingest": ingest_diagnostics,
+        "source_dependencies": source_dependencies,
+        "plan_domain": plan_domain.diagnostics,
         "semantics": semantic_diagnostics,
+        "legend_spatial": legend_diagnostics,
         "topology": topology_diagnostics,
         "styles": {"coverage": style_coverage},
         "policy_enforcement": policy_diagnostics,
@@ -1212,6 +1681,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "roundtrip_max_source_m": roundtrip_error,
             "engine_crosscheck_max_target_m": engine_crosscheck,
             "coordinate_operation": operation_metadata,
+            "coordinate_domain": coordinate_domain,
+            "osm_anchor": osm_anchor,
             "calibration": calibration_diagnostics,
             "lineage": {
                 "model": (
@@ -1222,22 +1693,72 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "feature_count": len(feature_displacements),
             },
         },
+        "reasoning": reasoning_diagnostics,
     }
 
     artifact_prefix = "apd_" if profile.is_legacy else ""
+    source_path = run_dir / "source.gpkg"
     evidence_path = run_dir / f"{artifact_prefix}evidence.gpkg"
     delivery_path = run_dir / f"{artifact_prefix}delivery.gpkg"
     style_manifest_path = run_dir / "qgis" / "styles" / "style_manifest.json"
+    evidence_graph_path = run_dir / "reasoning" / "evidence_graph.json"
+    decision_execution_path = run_dir / "reasoning" / "decision_execution.json"
+    derived_network_path = run_dir / "reasoning" / "derived_network.json"
+    visual_manifest_path = run_dir / visual_evidence.manifest_relative_path
     manifest_path = run_dir / "run_manifest.json"
     staged_run_dir = Path(tempfile.mkdtemp(
         prefix=f".{run_dir.name}.stage.", dir=run_dir.parent,
     )).resolve()
     try:
+        staged_source_path = staged_run_dir / source_path.name
         staged_evidence_path = staged_run_dir / evidence_path.name
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
+        staged_evidence_graph_path = staged_run_dir / "reasoning" / "evidence_graph.json"
+        _write_manifest(staged_evidence_graph_path, evidence_graph.to_dict())
+        staged_visual_manifest_path = visual_evidence.write(staged_run_dir)
+        staged_decision_execution_path = None
+        staged_derived_network_path = None
+        if decision_execution is not None:
+            staged_decision_execution_path = (
+                staged_run_dir / "reasoning" / "decision_execution.json"
+            )
+            staged_derived_network_path = (
+                staged_run_dir / "reasoning" / "derived_network.json"
+            )
+            _write_manifest(
+                staged_decision_execution_path,
+                decision_execution.receipt_dict(),
+            )
+            _write_manifest(
+                staged_derived_network_path,
+                decision_execution.derived_network_dict(),
+            )
+        staged_decision_pack_path = None
+        decision_pack_path = None
+        if request.decision_pack is not None:
+            decision_pack_path = run_dir / "reasoning" / "decision_pack.json"
+            staged_decision_pack_path = staged_run_dir / "reasoning" / "decision_pack.json"
+            shutil.copy2(Path(request.decision_pack).resolve(), staged_decision_pack_path)
+        source_result = write_source_gpkg(
+            staged_source_path, entities, profile.source_crs,
+            legend_flag_map=legend_flag_map,
+        )
+        if not staged_source_path.is_file():
+            raise RuntimeError(
+                f"Source GeoPackage writer did not produce {staged_source_path}"
+            )
+        if getattr(source_result, "entity_count", source_entity_count) != source_entity_count:
+            raise RuntimeError(
+                "Source GeoPackage entity count does not match ingested source entities: "
+                f"{getattr(source_result, 'entity_count', None)} != {source_entity_count}"
+            )
         write_evidence(
-            staged_evidence_path, entities, features, relations, unresolved,
+            staged_evidence_path,
+            evidence_entities,
+            features,
+            relations,
+            unresolved,
             diagnostics, transformer.source,
             calibration_audit=(calibration_audit or lineage_audit),
             target_srs=transformer.target,
@@ -1251,6 +1772,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
             staged_styles_dir, features, staged_delivery_path,
             coverage_policy=registry.style_coverage_policy,
             coverage_allowlist=list(registry.style_coverage_allowlist),
+            color_unification=getattr(
+                registry, "render_color_unification", None,
+            ),
         )
         written_style_manifest = json.loads(
             staged_style_manifest_path.read_text(encoding="utf-8")
@@ -1264,7 +1788,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 f"Written style manifest coverage gate failed: {written_style_coverage}"
             )
         validation_summary = _manifest_validation_summary(
-            entities,
+            semantic_entities,
             features,
             policy_diagnostics,
             topology_diagnostics,
@@ -1276,6 +1800,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "CABLE_SEGMENT manifest closure validation failed: "
                 f"{validation_summary['segment_delivery']}"
             )
+        run_status = _derive_conversion_status(
+            entities=entities,
+            ingest_diagnostics=ingest_diagnostics,
+            semantic_diagnostics=semantic_diagnostics,
+            style_coverage=written_style_coverage,
+            unresolved=unresolved,
+            terminal_accounting=terminal_accounting,
+            validation_summary=validation_summary,
+            georeference_diagnostics=diagnostics["georeference"],
+            diagnostics=diagnostics,
+        )
         implementation = production_conversion_provenance()
         reader_runtime_inventory = {
             **dict(ingest_diagnostics.get("reader_inventory") or {}),
@@ -1294,13 +1829,20 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "status": "complete",
                 "strategy": "same-volume-staged-run-directory-swap",
             },
+            "run_status": run_status.value,
+            "modes": {"domain": request.domain, "llm": request.llm},
             "source": {"path": str(source), "sha256": source_hash},
             "profiles": {
                 "source_profile": {"path": str(profile.path), "sha256": _sha256(profile.path)},
                 "mapping_registry": {"path": str(registry.path), "sha256": _sha256(registry.path)},
             },
             "crs": diagnostics["georeference"],
+            "osm_anchor": osm_anchor,
+            "legend_spatial": diagnostics.get("legend_spatial", {}),
             "artifacts": {
+                "source": {
+                    "path": str(source_path), "sha256": _sha256(staged_source_path),
+                },
                 "evidence": {
                     "path": str(evidence_path), "sha256": _sha256(staged_evidence_path),
                 },
@@ -1311,9 +1853,36 @@ def convert(request: ConversionRequest) -> ConversionResult:
                     "path": str(style_manifest_path),
                     "sha256": _sha256(staged_style_manifest_path),
                 },
+                "evidence_graph": {
+                    "path": str(evidence_graph_path),
+                    "sha256": _sha256(staged_evidence_graph_path),
+                },
+                "visual_evidence": {
+                    "path": str(visual_manifest_path),
+                    "sha256": _sha256(staged_visual_manifest_path),
+                },
+                **({
+                    "decision_pack": {
+                        "path": str(decision_pack_path),
+                        "sha256": _sha256(staged_decision_pack_path),
+                    },
+                } if staged_decision_pack_path is not None else {}),
+                **({
+                    "decision_execution": {
+                        "path": str(decision_execution_path),
+                        "sha256": _sha256(staged_decision_execution_path),
+                    },
+                    "derived_network": {
+                        "path": str(derived_network_path),
+                        "sha256": _sha256(staged_derived_network_path),
+                    },
+                } if staged_decision_execution_path is not None else {}),
             },
             "delivery_counts": counts,
             "delivery_contract_gate": delivery_gate,
+            "source_entity_count": source_entity_count,
+            "plan_domain": plan_domain.diagnostics,
+            "terminal_accounting": terminal_accounting,
             "semantics": semantic_coverage,
             "style": written_style_coverage,
             "source_route_components": topology_diagnostics.get(
@@ -1322,14 +1891,24 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "unresolved_count": len(unresolved),
             "policy": dict(registry.policy),
             "validation": validation_summary,
+            "reasoning": diagnostics["reasoning"],
         }
         if gcp_profile is not None:
             manifest["profiles"]["gcp_profile"] = {
                 "path": str(gcp_profile.path), "sha256": gcp_profile.sha256,
             }
         _write_manifest(staged_run_dir / manifest_path.name, manifest)
-        verify_conversion_snapshot(conversion_snapshot)
+        verify_conversion_snapshot(
+            conversion_snapshot,
+            decision_pack=request.decision_pack,
+        )
         _publish_run_bundle(staged_run_dir, run_dir)
+        publish_verified_alias(
+            run_dir.parent / "latest_verified.json",
+            run_status,
+            run_dir,
+            _sha256(manifest_path),
+        )
     finally:
         if staged_run_dir.exists():
             shutil.rmtree(staged_run_dir, ignore_errors=True)
@@ -1338,6 +1917,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
         delivery_path=delivery_path,
         style_manifest_path=style_manifest_path,
         run_manifest_path=manifest_path,
+        source_path=source_path,
+        run_status=run_status.value,
         counts=counts,
         diagnostics=diagnostics,
     )

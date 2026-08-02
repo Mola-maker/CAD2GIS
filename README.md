@@ -1,263 +1,200 @@
 # CAD2GIS
 
-CAD2GIS 是一个确定性、证据优先的 CAD/DWG 到 GIS 转换系统。公开入口只有安装包
-提供的 `cad2gis` 命令和 `cad2gis.pipeline` API；DWG 读取、语义映射、曲线保真、
-拓扑、坐标处理、GeoPackage 发布与验证都通过同一编排边界。
+CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Python API、
+Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
+canonical 流水线，不为某张测试图维护硬编码分支。
 
-当前仓库只有 **APD Hutabohu** 一份经过项目级规则审查的真实 DWG 回归基线。
-这可以支持该输入的回归和名义 CRS 转换检查，但不能证明系统已经跨多种 CAD 通过，
-也不能证明地面绝对精度。APD 的 GCP profile 目前为 `enabled=false`、
-`controls=[]`，因此绝对精度状态必须保持 `not_verified`。
+> DWG 中声明了 CRS，不代表实体已经正确落在该 CRS 的真实地面位置。
+> 源几何、拓扑、长度和坐标精度会分别验证。缺少可信控制点时，系统不会把
+> OSM 视觉重合宣传为测量级绝对精度。
 
-## Robustness 工作区声明
+##怎么使用呢宝贝
+直接把插件喂给AI叫它给你装就好了
 
-本工作区是 **robustness 独立工作区**，与 `newmodel` 分支解耦。它继承了
-`newmodel` 的有用文件，但不再 merge 回 `newmodel`；后续开发以此工作区为唯一
-主场。工作区仅保留三类内容：
+## 架构
 
-- **核心算法**：`src/cad2gis/` canonical 包（pipeline、reader、semantic、
-  topology、calibration、verification、CLI）
-- **架构知识**：`docs/` 设计决策、跨平台部署指南、对账口径说明
-- **闭环比对验证**：`verify/` 契约测试、跨平台等价性测试、records bundle
-  驱动的端到端对账测试
+```text
+DWG reader (AutoCAD / LibreDWG / source-bound records)
+  -> 不可变实体清单与样式、标签、曲线事实
+  -> plan-domain 与 geometry-first 场景分区
+  -> source-bound AI onboarding（只选择源中已观察到的标识）
+  -> 确定性语义编译与精确 census gates
+  -> 曲线、几何、拓扑、长度四类独立验证
+  -> 名义 CRS 转换
+  -> 可选 GCP 相似变换 + 独立检查点验证
+  -> source.gpkg + evidence.gpkg + delivery.gpkg
+  -> QML + evidence graph + run_manifest.json + run_status
+```
 
-### 目录语义
+AI 是控制平面的规划器，不是坐标或几何生成器。它可以完成实体清点、语义候选、
+证据解释和 typed Decision Pack 提议；坐标、曲线、长度、变换参数、残差和交付
+均由确定性代码计算和验证。
 
-| 目录 | 语义 |
-|------|------|
-| `src/` | 核心算法与 canonical 包 |
-| `verify/` | 闭环比对验证（契约 / 跨平台 / 对账） |
-| `docs/` | 架构知识与部署指南 |
-| `baselines/` | APD 基线（delivery / evidence / records / config） |
-| `tests/` | canonical 回归测试 |
+详细设计：
 
-### Reader 升格
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [REGISTRATION_AND_SCENE_ARCHITECTURE.md](docs/REGISTRATION_AND_SCENE_ARCHITECTURE.md)
+- [LLM_AGENT_ARCHITECTURE.md](docs/LLM_AGENT_ARCHITECTURE.md)
+- [ROBUSTNESS_VALIDATION.md](docs/ROBUSTNESS_VALIDATION.md)
 
-Reader 角色已从 Windows-only canonical 升格为跨平台 primary：
-
-- **LibreDWG**（`src/cad2gis/reader/libredwg.py`）是默认跨平台 reader
-- **AutoCAD**（`src/cad2gis/reader/autocad.py`）保留为可选 Windows-only
-  fallback，通过 `CAD2GIS_READER_BACKEND=autocad` 显式启用
-- **Contracts**（`src/cad2gis/reader/contracts.py`）定义 reader 抽象接口
-
-### 闭环比对（A 方案）
-
-闭环比对不依赖原始 DWG，以 `baselines/apd_hutabohu/records/readcad_review_bundle.json`
-为输入驱动 pipeline，输出到 `baselines/apd_hutabohu/output/`，并对账 baseline
-GPKG。入口：`verify/replay.py`。
-
-## 环境与安装
-
-目标 GIS 环境是 `env/environment.yml` 固定的 Python 3.12、GDAL、PROJ、ezdxf 与
-Shapely 栈；系统 Python 3.14 不是目标运行时。
+## 安装
 
 ```powershell
 conda env create -f env/environment.yml
 conda activate cad2gis
-pip install -e .
-cad2gis doctor
+pip install -e ".[mcp,review,test]"
+cad2gis doctor --deep --strict --json
 ```
 
-`cad2gis doctor` 是不执行转换的轻量检查。部署或 CI 可进一步运行：
+Windows 使用 AutoCAD reader：
 
 ```powershell
-cad2gis doctor --deep --strict
+$env:CAD2GIS_READER_BACKEND = "autocad"
 ```
 
-`--deep` 会导入原生 GIS 依赖和后端，`--strict` 会在当前部署不能转换时返回非零
-状态。安装包本身包含 `cad2gis.cad2gis_v3` 后端；支持的后端部署方式是：已安装
-且可导入的 `cad2gis.cad2gis_v3`、指向包含 `cad2gis.cad2gis_v3` 及其同级 reader 模块目录的
-`CAD2GIS_BACKEND_PATH`，或本仓库的 editable checkout。以 `doctor` 输出为准，
-不要根据当前工作目录猜测后端是否可用。
+## 新图纸的推荐流程
 
-## 新 CAD 的 canonical 工作流
-
-每份不同内容的 CAD 都必须单独 onboarding。不得把 APD 的 source profile 或
-mapping registry 复制给另一份 DWG；这些文件绑定源 SHA-256 和 inventory hash。
+每个新 DWG 都必须建立自己的 source-bound profile 和 mapping registry：
 
 ```powershell
 cad2gis inspect "<SOURCE.dwg>" --json
 cad2gis bootstrap "<SOURCE.dwg>" --project "<PROJECT_DIR>" --json
 cad2gis validate --project "<PROJECT_DIR>" --json
-cad2gis convert "<SOURCE.dwg>" --run-dir "<NEW_RUN_DIR>" --project "<PROJECT_DIR>" --json
+cad2gis convert "<SOURCE.dwg>" `
+  --project "<PROJECT_DIR>" `
+  --run-dir "<NEW_RUN_DIR>" `
+  --json
 ```
 
-各阶段含义：
-
-1. `inspect` 只生成只读 source inventory；它不猜业务含义、绘图单位、源 CRS 或
-   目标 CRS。
-2. `bootstrap` 写入 `config/source_profile.json`、
-   `config/mapping_registry.json`、`review/source_inventory.json` 和
-   `review/unsupported_inventory.json`。这些文件初始状态是 `draft`，明确
-   `conversion_allowed=false`。
-3. 操作员必须用权威资料审查源哈希、reader 覆盖、曲线事实、单位和比例、源/目标
-   CRS、语义与样式规则、拓扑/段落门限以及 unsupported allowlist，并补齐 reviewer、
-   时间和 provenance。`validate` 只检查这些绑定和状态，不会替人批准草稿。
-4. `convert` 只接受 reviewed 且适用于当前源的配置；`--run-dir` 应指向新的运行
-   目录。草稿、歧义配置或失配源会在昂贵的 CAD ingest 之前被拒绝。
-
-`validate` 成功生成报告不等于 `conversion_allowed=true`；自动化必须读取 JSON 的
-状态字段。同理，`gcp status` 可正常报告 `blocked/not_verified`，`verify` 可正常
-生成 `FAIL/WATCH` report；CI 应按报告内容 gate，而不是只看“命令成功执行”。
-
-如配置没有放在 project pack 内，也可显式传入已审文件：
+使用 DeepSeek 自动完成受约束的 onboarding：
 
 ```powershell
-cad2gis convert "<SOURCE.dwg>" --run-dir "<NEW_RUN_DIR>" `
-  --source-profile "<SOURCE_PROFILE.json>" `
-  --mapping-registry "<MAPPING_REGISTRY.json>" `
-  --gcp-profile "<GCP_PROFILE.json>" --json
+$env:DEEPSEEK_API_KEY = "<secret>"
+cad2gis auto-convert "<SOURCE.dwg>" `
+  --project "<PROJECT_DIR>" `
+  --run-dir "<NEW_RUN_DIR>" `
+  --provider deepseek `
+  --force-bootstrap `
+  --json
 ```
 
-`--project` 与显式 profile 参数都属于同一个 canonical CLI；不应绕过它直接调用
-`src/cad2gis` 中的实现模块。
+密钥不会写入项目、日志或 manifest。New API 聚合网关可通过
+`--provider new-api` 及对应环境变量接入。
 
-## Fail-closed、unsupported 与 abstain
+## 长度语义
 
-系统不会通过猜测把“不知道”变成“已通过”。以下情况会停止或阻止发布：
+`CABLE_SEGMENT` 同时保留三种不同含义的长度：
 
-- 源文件、profile、registry、inventory 或 manifest 的 hash/binding 不一致；
-- draft/unreviewed 配置，缺失或歧义配置；
-- reader 记录格式损坏、未声明的兼容协议或读取能力缺失；
-- 未经审查的毫米/英尺比例、未知/地理源 CRS，或缺少权威 local registration；
-- 曲线原语、顶点顺序、原生长度、段落闭合或 topology contract 无法守恒；
-- 语义/样式 unsupported 记录不在已审 allowlist，或 policy 为 `fail`；
-- 启用 GCP 后缺少训练/独立 check 点、阈值、空间覆盖、provenance，或数值门失败。
+- `source_native_length_m`：DWG 源曲线长度；
+- `measurement_native_m`：匹配到的独立 DWG `DIMENSION` 数值；
+- `delivery_grid_length_m` / `geodesic_length_m`：坐标转换后的网格与椭球长度。
 
-`unsupported` 表示 reader、语义、样式或几何事实当前无法按合同解释；它必须保留
-为结构化证据。`abstain` 表示系统有候选但没有足够证据选择；它不是错误的同义词，
-也不是成功分类。只有明确的项目 policy 与逐项 allowlist 才能让某些记录以
-`WATCH`/abstain 继续；不得静默丢弃、自动吸附、伪造端点或用默认长度填空。
+没有 `DIMENSION` 时，线段仍然具有可靠的 CAD 曲线长度。此时
+`measurement_state=cad_geometry_only`，标签显示
+`[CAD geometry; no DIMENSION]`，不再误导为“没有长度”。尺寸匹配采用：
 
-## GCP 与绝对精度
+1. 精确线段端点；
+2. 尺寸端点与缆线端点落在同一对唯一支撑设施上。
 
-GCP 是名义 CRS 转换之后、由操作员提供控制数据的独立工作流。`DIR` 应是包含
-发布 manifest、delivery/evidence GeoPackage 及相关 GCP sidecar 的工作目录；产物
-不共址时，使用各子命令 `--help` 中的显式路径参数。
+第二种规则解决真实 CAD 中尺寸延伸线与缆线端点存在偏移的问题，并保留完整
+rule/provenance。
+
+## Web 配准、坐标传送与审查
 
 ```powershell
-cad2gis gcp status --project "<DIR>" --json
-cad2gis gcp prepare --project "<DIR>" --json
-cad2gis gcp diagnose --project "<DIR>" --json
-cad2gis gcp export --project "<DIR>" --json
+cad2gis review "<RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
 ```
 
-- `prepare` 创建可在 QGIS 编辑的 control capture，不移动已发布几何。
-- `diagnose` 只比较候选模型和残差，仍不授权发布。
-- `export` 冻结人工审查后的 profile；导出本身不等于绝对精度通过。
-- 必须用真实 surveyed/approved authoritative 训练点和独立 check 点重新
-  `convert`，并由新 manifest 记录 accepted calibration 后，`status` 才可能为
-  `verified`。相对 OSM/影像目视配准即使显式允许，也只能保持
-  `not_verified`，不能转述为 survey-grade accuracy。
+打开 `http://127.0.0.1:8765/`：
 
-APD pack 当前没有 surveyed GCP，所有 APD 文档和演示都应把名义投影、PROJ
-往返误差、图层叠加观感与绝对地面精度分开。
+1. 左图点击 CAD 实体，系统吸附到最近真实几何，拒绝空白区控制点；
+2. 右图点击对应位置，或输入 EPSG:4326 经度/纬度；
+3. 服务端立即把经纬度转换到 run manifest 的目标投影 CRS；
+4. 使用至少 4 个分布合理的训练点和 3 个独立检查点；
+5. 生成 source-bound `web_gcp_profile.json` 和下一次转换命令。
 
-## 验证矩阵
+Web 修改只写独立 revision store，不会修改源文件、evidence 或原 delivery
+GeoPackage。OSM 控制点的精度类别固定为
+`RELATIVE_OSM_REFERENCE_ONLY`；若要证明绝对精度，必须替换为测量或权威控制点。
 
-跨 CAD 结论只能来自版本化矩阵，而不是从一份图纸外推：
+## MCP 与主流智能体
+
+MCP 服务支持标准 `stdio` 和 Streamable HTTP：
 
 ```powershell
-cad2gis verify "<MATRIX.json>" --json
+# stdio（通常由智能体自动启动）
+python -m cad2gis.agent_mcp --transport stdio
+
+# 本机 Streamable HTTP
+python -m cad2gis.agent_mcp `
+  --transport streamable-http `
+  --host 127.0.0.1 `
+  --port 8768
 ```
 
-验证器是只读的，并分别评估输入身份、reader/曲线、几何、拓扑、语义、样式、
-长度、名义 CRS 与 GCP 独立检查。两条路径若 SHA-256 相同，仍只算一个输入；
-inventory-only 样本不能产生精度结论；没有 surveyed GCP 的样本在绝对精度维度
-必定失败/未验证。
+HTTP endpoint 为 `http://127.0.0.1:8768/mcp`。默认只允许本机 loopback；
+网络部署必须增加认证反向代理。
 
-当前证据边界如下：
+Claude Code、Cursor、VS Code/GitHub Copilot、Codex 和通用 HTTP 客户端模板位于
+[`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients)。服务暴露
+`get_capabilities`，智能体可先读取转换边界、transport 和精度声明，再调用
+inspection、onboarding、conversion、evidence、repair 与 review 工具。
 
-| 样本/证据 | source-bound profile | 几何/拓扑/语义回归 | surveyed GCP + independent checks | 可作的最强表述 |
-| --- | --- | --- | --- | --- |
-| APD Hutabohu | 有，绑定单一真实 DWG hash | 仓库唯一真实 DWG 回归基线 | 无；profile disabled、controls 为空 | 单输入、名义 CRS 范围内的回归；绝对精度 `not_verified` |
-| 其他仓库 CAD 文件 | 未逐一建立 reviewed pack | 未形成独立真实 CAD 验证行 | 未核实 | inventory only 或未评估 |
-| 合成测试 fixtures | 只测试合同分支 | 可测试 fail-closed/curve/unit/CRS 等代码路径 | 不构成测量证据 | 不得计为第二份真实 CAD |
+MCP 只能访问下列根目录中的文件：
 
-因此当前不得声称“跨 CAD 已通过”“支持任意供应商 DWG”或“达到某个绝对精度”。
-矩阵格式和审计口径见 [对账口径说明](docs/RECONCILIATION.md)。
-
-## 在 QGIS 中加载
-
-转换成功后，在 QGIS 中选择“图层 → 添加图层 → 添加矢量图层”，打开
-`<NEW_RUN_DIR>/apd_delivery.gpkg`（项目可采用其他前缀），选择需要的业务图层。
-需要追溯来源、unsupported/abstain、拓扑或 GCP 时，再加载同目录的
-`apd_evidence.gpkg`。GeoPackage 中的 `layer_styles` 可作为默认样式；若未自动
-应用，可在图层属性中从 `<NEW_RUN_DIR>/qgis/styles/<LAYER>.qml` 手动加载。
-
-QGIS 加载是交付检查之一，但不是 source geometry、拓扑或绝对精度通过的替代证据。
-
-## APD project pack 与基线
-
-[`baselines/apd_hutabohu/`](baselines/apd_hutabohu/) 保存 APD Hutabohu 的
-reviewed profiles、architecture-v3 backend 和真实数据回归材料。它是 canonical
-package 的 **APD project-pack/基线层**，不是第二套公共 CLI，也不是新 CAD 的
-模板。APD 运行应从仓库根目录调用 `cad2gis convert ... --project baselines/apd_hutabohu`。
-
-## 文档
-
-- [架构说明](docs/ARCHITECTURE.md)
-- [跨平台部署指南](docs/PORTABILITY.md)
-- [对账口径说明](docs/RECONCILIATION.md)
-
-## Reader 与闭环比对
-
-Reader 角色已从 Windows-only canonical 升格为跨平台 primary。LibreDWG 是默认
-reader；AutoCAD 保留为可选 Windows-only fallback，通过
-`CAD2GIS_READER_BACKEND=autocad` 显式启用。
-
-### 本机运行（WSL2）
-
-```bash
-# 安装 LibreDWG（系统 .so）
-sudo apt install libredwg-dev    # 或本地 build；`dwgread -v` 应可执行
-
-# 默认使用 LibreDWG reader
-PYTHONPATH=src /tmp/cad2gis-venv/bin/python -c "
-from cad2gis.ingest import ingest
-from cad2gis.cad2gis_v3.config import SourceProfile
-p = SourceProfile.load('baselines/apd_hutabohu/config/source_profile_libredwg.json')
-entities, diag = ingest('baselines/apd_hutabohu/records/readcad_review_bundle.json', p)
-print(diag['census'], diag['reader_protocol']['extraction_backend'])
-"
-
-# 跑 7 项契约测试
-PYTHONPATH=src /tmp/cad2gis-venv/bin/python -m pytest verify/contract/ -v
-
-# 跑跨平台等价性测试
-PYTHONPATH=src /tmp/cad2gis-venv/bin/python -m pytest verify/portability/ -v
-
-# 跑 A 方案闭环对账
-PYTHONPATH=src /tmp/cad2gis-venv/bin/python verify/replay.py
+```powershell
+$env:CAD2GIS_PROJECT_ROOTS = "E:\branch_CAD2GIS"
 ```
 
-### 对账口径
+## QGIS 交付
 
-`verify/replay.py` 以 `baselines/apd_hutabohu/records/readcad_review_bundle.json`
-为输入驱动 pipeline，输出到 `baselines/apd_hutabohu/output/`，并与 baseline
-GPKG 做 SQL count 对账：
+成功 run 包含：
 
-| 层 | 来源 | 期望（基线） |
-| --- | --- | --- |
-| delivery | `apd_delivery.gpkg` 表计数 | BOITE=43 / CABLE=6 / PTECH=167 / IMB=682 / SITE=2 |
-| evidence | `apd_evidence.gpkg` 表计数 | cable_span_segments=139 / physical_span_evidence=170 / source_route_evidence=6 |
+- `source.gpkg`
+- `evidence.gpkg`
+- `delivery.gpkg`
+- QML 与 style manifest
+- evidence graph 与视觉索引
+- `run_manifest.json`
 
-### 合并界面（隔离声明）
+在 QGIS 中可直接拖入 `delivery.gpkg`，或通过“数据源管理器 → GeoPackage”连接。
+加载随包生成的 QML 后可恢复 CAD 图层颜色、线型、点符号和标签。
 
-robustness 工作区特有的变更：
+## 精度边界
 
-- `.gitignore`：增加 `.omc/state/` `.omc/sessions/` `.omc/project-memory.json`
-  transient 排除
-- `.omc/` 目录：`specs/plans/wiki/notepad.md` 已提交
-- `src/cad2gis/reader/libredwg.py`：跨平台 primary reader
-- `src/cad2gis/reader/autocad.py`：deprecated AutoCAD fallback（env opt-in）
-- `src/cad2gis/reader/contracts.py`：reader 抽象接口
-- `src/cad2gis/reader/records_adapter.py`：records bundle 适配层
-- `verify/contract/test_libredwg_reader.py`：7 项契约测试
-- `verify/portability/test_cross_platform.py`：跨平台等价性测试
-- `verify/reconciliation/test_records_loop.py`：A 方案闭环对账测试
-- `verify/replay.py`：闭环比对驱动
+系统分别报告：
 
-**canonical 边界**：`src/cad2gis/cad2gis_v3/ingest.py` 与
-`src/cad2gis/reader/autocad.py` 保留 deprecation 与 env 守卫，不删除。
+- reader/source record fidelity；
+- geometry/curve fidelity；
+- topology 与 cable segment conservation；
+- CAD 曲线长度与独立 DIMENSION 覆盖；
+- nominal CRS transformation；
+- GCP train residual 与独立 check-point 精度。
 
+`$INSUNITS` 是块插入缩放提示，不自动等同于 WCS 坐标单位。当 DWG 的
+`CGEOCS` 明确绑定投影 CRS 时，其线性轴单位控制 WCS→米的尺度，避免把 UTM
+坐标错误缩小 1000 倍。
+
+外部 `E:\branch_CAD2GIS\APD_test` 仅是兼容性压力输入，不是训练集、规则模板或
+准确率真值。没有 authoritative GCP 的结果必须保持 `CONDITIONAL` 或
+`not independently verified`。
+
+## 验证
+
+```powershell
+conda activate cad2gis
+python -m pytest -q
+
+$env:CAD2GIS_FULL_DWG_TESTS = "1"
+python -m pytest tests/test_apd_test_compatibility.py -q
+```
+
+仓库目录：
+
+- `src/cad2gis/`：唯一生产实现、CLI、reader、MCP、review server
+- `tests/`：自动化契约与回归测试
+- `baselines/`：不可变 source-bound 回归证据
+- `experiment/`：APD reviewed 兼容项目
+- `plugins/cad2gis-agent/`：智能体插件和 MCP 客户端模板
+- `docs/`：架构、鲁棒性、可移植性与对账说明
+- `env/`：固定 GIS 运行环境

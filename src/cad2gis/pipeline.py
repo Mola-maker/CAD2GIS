@@ -8,15 +8,20 @@ Configuration discovery happens here; backend discovery and invocation stay in
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from . import runtime
 
 
 class ProjectConfigurationError(ValueError):
     """A project is missing a required config or contains an ambiguous one."""
+
+
+class SourceNotFoundError(FileNotFoundError):
+    """The source drawing required by conversion is absent."""
 
 
 @dataclass(frozen=True)
@@ -31,8 +36,23 @@ _CONFIG_PATTERNS: dict[str, tuple[str, ...]] = {
     "mapping_registry": ("mapping_registry.json",),
     "gcp_profile": ("gcp_profile.json",),
 }
+_CONFIG_LABELS = {
+    "source_profile": "source profile",
+    "mapping_registry": "mapping registry",
+    "gcp_profile": "GCP profile",
+}
+_REQUIRED_CONFIGS = frozenset({"source_profile", "mapping_registry"})
 
 _PROJECT_MANIFEST_NAMES = ("cad2gis-project.json", "project.json")
+_VALID_DOMAINS = frozenset({"auto", "generic", "ftth_apd"})
+_VALID_LLM_MODES = frozenset({"off", "observe", "assist"})
+
+
+def _validate_mode(value: object, allowed: frozenset[str], name: str) -> str:
+    if not isinstance(value, str) or value not in allowed:
+        choices = ", ".join(sorted(allowed))
+        raise ValueError(f"{name} must be one of: {choices}")
+    return value
 
 
 def _existing_file(path: str | Path, label: str) -> Path:
@@ -45,7 +65,7 @@ def _existing_file(path: str | Path, label: str) -> Path:
 def _source_file(path: str | Path) -> Path:
     source = Path(path).expanduser().resolve()
     if not source.is_file():
-        raise FileNotFoundError(f"source drawing does not exist: {source}")
+        raise SourceNotFoundError(f"source drawing does not exist: {source}")
     return source
 
 
@@ -59,20 +79,26 @@ def _config_directories(project_dir: Path) -> tuple[Path, ...]:
     return tuple(unique)
 
 
-def _project_manifest(project_dir: Path) -> tuple[Path, dict[str, Any]] | None:
-    matches = [
-        (directory / name).resolve()
-        for directory in _config_directories(project_dir)
-        for name in _PROJECT_MANIFEST_NAMES
-        if (directory / name).is_file()
-    ]
-    matches = sorted(set(matches))
+def _unique_match(paths: Iterable[Path], *, ambiguous: str) -> Path | None:
+    matches = sorted({path.resolve() for path in paths})
     if len(matches) > 1:
         rendered = ", ".join(str(path) for path in matches)
-        raise ProjectConfigurationError(f"project manifest is ambiguous: {rendered}")
-    if not matches:
+        raise ProjectConfigurationError(f"{ambiguous}: {rendered}")
+    return matches[0] if matches else None
+
+
+def _project_manifest(project_dir: Path) -> tuple[Path, dict[str, Any]] | None:
+    path = _unique_match(
+        (
+            directory / name
+            for directory in _config_directories(project_dir)
+            for name in _PROJECT_MANIFEST_NAMES
+            if (directory / name).is_file()
+        ),
+        ambiguous="project manifest is ambiguous",
+    )
+    if path is None:
         return None
-    path = matches[0]
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -80,6 +106,43 @@ def _project_manifest(project_dir: Path) -> tuple[Path, dict[str, Any]] | None:
     if not isinstance(payload, dict):
         raise ProjectConfigurationError(f"project manifest must be a JSON object: {path}")
     return path, payload
+
+
+def _config_candidates(project_dir: Path, kind: str) -> Iterable[Path]:
+    for directory in _config_directories(project_dir):
+        if not directory.is_dir():
+            continue
+        yield from (
+            directory / name
+            for name in _CONFIG_PATTERNS[kind]
+            if (directory / name).is_file()
+        )
+        # Project prefixes are supported generically; no drawing/customer name
+        # is encoded in the canonical package.
+        yield from (
+            candidate
+            for candidate in directory.glob(f"*_{kind}.json")
+            if candidate.is_file()
+        )
+
+
+def _resolve_config(
+    *,
+    explicit: str | Path | None,
+    project: Path | None,
+    manifest: tuple[Path, dict[str, Any]] | None,
+    kind: str,
+) -> Path | None:
+    required = kind in _REQUIRED_CONFIGS
+    if explicit is not None:
+        return _existing_file(explicit, _CONFIG_LABELS[kind])
+    if project is not None:
+        return _discover_config(project, kind, required=required, manifest=manifest)
+    if required:
+        raise ProjectConfigurationError(
+            f"{kind} is required when project_dir is omitted"
+        )
+    return None
 
 
 def _manifest_config_path(
@@ -116,33 +179,19 @@ def _discover_config(
     selected = _manifest_config_path(manifest, kind)
     if selected is not None:
         return selected
-    patterns = _CONFIG_PATTERNS[kind]
-    matches: set[Path] = set()
-    for directory in _config_directories(project_dir):
-        if not directory.is_dir():
-            continue
-        for name in patterns:
-            candidate = directory / name
-            if candidate.is_file():
-                matches.add(candidate.resolve())
-        # Project prefixes are supported generically; no drawing/customer name
-        # is encoded in the canonical package.
-        for candidate in directory.glob(f"*_{kind}.json"):
-            if candidate.is_file():
-                matches.add(candidate.resolve())
-
-    if not matches:
+    match = _unique_match(
+        _config_candidates(project_dir, kind),
+        ambiguous=f"project config {kind!r} is ambiguous",
+    )
+    if match is None:
         if required:
-            expected = ", ".join(patterns)
+            expected = ", ".join(_CONFIG_PATTERNS[kind])
             raise ProjectConfigurationError(
                 f"project config {kind!r} was not found under {project_dir} "
                 f"(expected {expected})"
             )
         return None
-    if len(matches) > 1:
-        rendered = ", ".join(str(path) for path in sorted(matches))
-        raise ProjectConfigurationError(f"project config {kind!r} is ambiguous: {rendered}")
-    return next(iter(matches))
+    return match
 
 
 def resolve_project_configuration(
@@ -161,34 +210,30 @@ def resolve_project_configuration(
             raise ProjectConfigurationError(f"project directory does not exist: {project}")
     manifest = _project_manifest(project) if project is not None else None
 
-    if source_profile is not None:
-        resolved_source = _existing_file(source_profile, "source profile")
-    elif project is not None:
-        resolved_source = _discover_config(
-            project, "source_profile", required=True, manifest=manifest
-        )
-        assert resolved_source is not None
-    else:
-        raise ProjectConfigurationError("source_profile is required when project_dir is omitted")
-
-    if mapping_registry is not None:
-        resolved_mapping = _existing_file(mapping_registry, "mapping registry")
-    elif project is not None:
-        resolved_mapping = _discover_config(
-            project, "mapping_registry", required=True, manifest=manifest
-        )
-        assert resolved_mapping is not None
-    else:
-        raise ProjectConfigurationError("mapping_registry is required when project_dir is omitted")
-
-    if gcp_profile is not None:
-        resolved_gcp = _existing_file(gcp_profile, "GCP profile")
-    elif project is not None:
-        resolved_gcp = _discover_config(
-            project, "gcp_profile", required=False, manifest=manifest
-        )
-    else:
-        resolved_gcp = None
+    resolved_source = cast(
+        Path,
+        _resolve_config(
+            explicit=source_profile,
+            project=project,
+            manifest=manifest,
+            kind="source_profile",
+        ),
+    )
+    resolved_mapping = cast(
+        Path,
+        _resolve_config(
+            explicit=mapping_registry,
+            project=project,
+            manifest=manifest,
+            kind="mapping_registry",
+        ),
+    )
+    resolved_gcp = _resolve_config(
+        explicit=gcp_profile,
+        project=project,
+        manifest=manifest,
+        kind="gcp_profile",
+    )
 
     return ProjectConfiguration(
         source_profile=resolved_source,
@@ -205,9 +250,18 @@ def convert_project(
     source_profile: str | Path | None = None,
     mapping_registry: str | Path | None = None,
     gcp_profile: str | Path | None = None,
+    decision_pack: str | Path | None = None,
+    domain: str = "auto",
+    llm: str = "off",
 ) -> Any:
     """Resolve project configuration and run the architecture-v3 conversion."""
 
+    _validate_mode(domain, _VALID_DOMAINS, "domain")
+    _validate_mode(llm, _VALID_LLM_MODES, "llm")
+    if decision_pack is not None and llm == "off":
+        raise ProjectConfigurationError(
+            "decision_pack requires --llm observe or --llm assist"
+        )
     source_path = _source_file(source)
     run_path = Path(run_dir).expanduser().resolve()
     if run_path.exists() and not run_path.is_dir():
@@ -219,12 +273,18 @@ def convert_project(
         mapping_registry=mapping_registry,
         gcp_profile=gcp_profile,
     )
+    resolved_decision_pack = (
+        None if decision_pack is None else _existing_file(decision_pack, "decision pack")
+    )
     return runtime.call_conversion_backend(
         source=source_path,
         run_dir=run_path,
         source_profile=configuration.source_profile,
         mapping_registry=configuration.mapping_registry,
         gcp_profile=configuration.gcp_profile,
+        decision_pack=resolved_decision_pack,
+        domain=domain,
+        llm=llm,
     )
 
 
@@ -265,4 +325,52 @@ def validate_project(*, project_dir: str | Path) -> Any:
     return runtime.call_project_backend(
         "validate_project",
         project_dir=project,
+    )
+
+
+def prepare_ai_onboarding(*, project_dir: str | Path) -> Any:
+    """Return one task-bound evidence bundle and strict AI proposal schema."""
+
+    from .cad2gis_v3.onboarding import prepare_onboarding_bundle
+
+    return prepare_onboarding_bundle(project_dir)
+
+
+def apply_ai_onboarding(
+    *,
+    source: str | Path,
+    project_dir: str | Path,
+    proposal: dict[str, Any],
+    proposer: dict[str, Any],
+) -> Any:
+    """Compile a source-bound AI proposal and derive exact admission gates."""
+
+    from .cad2gis_v3.onboarding import compile_onboarding_proposal
+
+    return compile_onboarding_proposal(
+        source=_source_file(source),
+        project_dir=Path(project_dir).expanduser().resolve(),
+        proposal=proposal,
+        proposer=proposer,
+    )
+
+
+def auto_onboard_project(
+    *,
+    source: str | Path,
+    project_dir: str | Path,
+    provider: str | None = None,
+    force_bootstrap: bool = False,
+    llm_mode: str = "off",
+) -> Any:
+    """Bootstrap, request an AI proposal, compile it, and validate admission."""
+
+    from .cad2gis_v3.onboarding import auto_onboard_with_provider
+
+    return auto_onboard_with_provider(
+        source=_source_file(source),
+        project_dir=Path(project_dir).expanduser().resolve(),
+        provider_id=provider,
+        force_bootstrap=force_bootstrap,
+        llm_mode=llm_mode,
     )

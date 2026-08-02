@@ -1,64 +1,46 @@
-# CAD2GIS Portability Guide
+# CAD2GIS Portability
 
-## Cross-Platform Reader
+## Reader Selection
 
-The robustness workspace uses LibreDWG as the primary reader, making the
-conversion pipeline available on Linux, Windows, and macOS without requiring
-AutoCAD.
+LibreDWG is the cross-platform default. AutoCAD Core Console is a maintained
+Windows adapter:
 
-### Backend Selection
-
-Set the `CAD2GIS_READER_BACKEND` environment variable:
-
-- `libredwg` (default): Cross-platform LibreDWG reader
-- `autocad`: Windows-only AutoCAD fallback (requires AutoCAD Core Console)
-
-```bash
-# Linux / macOS
-export CAD2GIS_READER_BACKEND=libredwg
-
-# Windows (AutoCAD fallback)
-set CAD2GIS_READER_BACKEND=autocad
+```powershell
+$env:CAD2GIS_READER_BACKEND = "libredwg"  # default
+$env:CAD2GIS_READER_BACKEND = "autocad"   # Windows
 ```
 
-### LibreDWG Installation
+Use `CAD2GIS_LIBREDWG_DLL` for an explicit LibreDWG library path or
+`CAD2GIS_ACCORECONSOLE` for an explicit Core Console executable. Run
+`cad2gis doctor --json` to inspect the selected runtime before conversion.
 
-#### Linux
+## Runtime
 
-```bash
-# System-wide install (expected at /usr/local/lib/libredwg.so)
-sudo ldconfig
+The supported GIS dependency stack is pinned in `env/environment.yml`.
+System Python 3.14 is not the target GDAL/QGIS runtime.
+
+```powershell
+conda env create -f env/environment.yml
+conda activate cad2gis
+pip install -e .
+cad2gis doctor --deep --strict
 ```
 
-#### Windows
+## Portability Tests
 
-Place `libredwg.dll` in a directory on the system `PATH`, or set
-`CAD2GIS_LIBREDWG_DLL` to the explicit DLL path.
+All tests use the canonical suite:
 
-#### macOS
-
-```bash
-brew install libredwg
+```powershell
+python -m pytest tests/test_reader_capabilities.py -q
+python -m pytest tests/test_canonical_cli.py -q
 ```
 
-### AutoCAD Fallback
+The real-DWG suite is external and capability-gated:
 
-The AutoCAD reader is retained for legacy Windows deployments.  It requires:
-
-- AutoCAD Core Console (`accoreconsole.exe`)
-- `CAD2GIS_ACCORECONSOLE` environment variable pointing to the executable
-- Windows OS (`os.name == "nt"`)
-
-The AutoCAD reader is **deprecated** and will be removed in a future release.
-All new development should target the LibreDWG reader.
-
-### Verification
-
-Run the portability test suite:
-
-```bash
-PYTHONPATH=src pytest verify/portability/ -q
+```powershell
+$env:CAD2GIS_TEST_DATASET_ROOT = "E:\branch_CAD2GIS\APD_test"
+python -m pytest tests/test_apd_test_compatibility.py -q
 ```
 
-This verifies OS detection, ctypes library loading, and output schema
-consistency across platforms.
+A missing reader runtime may skip capability-dependent cases; malformed
+records, silent row loss, or source-hash mismatch must fail.

@@ -1067,7 +1067,18 @@ def _gcp_profile_payload(
             "outlier_threshold_m": None,
         },
         "transform_limits": {
-            "max_pivot_shift_m": 5_000_000.0,
+            # CAD-local drawings are shifted by the OSM anchor translation
+            # (millions of metres) into EPSG:3857; the pivot gate must allow
+            # that reviewed shift, not reject it.  Twice the anchor magnitude
+            # bounds the fitted translation to the known placement while
+            # still catching gross misreferences.
+            "max_pivot_shift_m": max(
+                2.0 * math.hypot(
+                    float(anchor.get("translation_dx", 0.0)),
+                    float(anchor.get("translation_dy", 0.0)),
+                ),
+                5_000_000.0,
+            ) if (anchor := (manifest.get("osm_anchor") or {})) else 5_000_000.0,
             # OSM relative references share the drawing orientation; a
             # similarity fallback may only nudge rotation, never re-orient.
             "max_abs_rotation_deg": 5.0,
@@ -1256,14 +1267,21 @@ def create_review_app(
         generated_source_profile = None
         if activate and source_profile_path is not None and source_profile_path.is_file():
             source_profile_payload = _json_object(source_profile_path)
+            # OSM visual references are coarse and drawing geometry is
+            # often concentrated in part of the sheet (e.g. poles cluster
+            # in one area while the rest is residential labels, which are
+            # unreliable on OSM).  Web registration therefore relaxes the
+            # spatial-coverage gates: controls must cover the populated
+            # region, not a uniform sheet rectangle.  Translation-only
+            # fitting and the strict rotation gate keep the result stable.
             source_profile_payload["spatial_coverage_policy"] = {
-                "min_training_extent_x_ratio": 0.35,
-                "min_training_extent_y_ratio": 0.35,
-                "min_training_hull_area_ratio": 0.08,
-                "max_drawing_vertices_outside_training_bbox_ratio": 0.30,
-                "min_check_baseline_to_drawing_diagonal_ratio": 0.10,
-                "min_check_hull_area_ratio": 0.02,
-                "max_drawing_vertices_outside_training_hull_ratio": 0.40,
+                "min_training_extent_x_ratio": 0.20,
+                "min_training_extent_y_ratio": 0.20,
+                "min_training_hull_area_ratio": 0.04,
+                "max_drawing_vertices_outside_training_bbox_ratio": 0.55,
+                "min_check_baseline_to_drawing_diagonal_ratio": 0.05,
+                "min_check_hull_area_ratio": 0.01,
+                "max_drawing_vertices_outside_training_hull_ratio": 0.70,
             }
             generated_source_profile = workspace / "web_source_profile.json"
             _write_json_atomic(

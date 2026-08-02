@@ -1,78 +1,49 @@
 {
-  "schema_version": "cad2gis-project-profile-v1",
-  "project_id": "lamteh_main",
-  "source_binding": {
-    "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78",
-    "source_size_bytes": 5253009,
-    "inventory_sha256": "1edf1a4e4f6c2c171f7aeb56521719c1275a4efe65ef345998a5e52836d7e5b7"
+  "crs": {
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "source_crs": "EPSG:3857",
+    "target_crs": "EPSG:3857"
   },
   "drawing": {
+    "drawing_units": "metre",
     "dwg_cgeocs": "WGS84.PseudoMercator",
     "dwg_insunits": 4,
-    "drawing_units": "metre",
-    "source_coordinate_scale_to_m": 0.001,
-    "source_coordinate_scale_reviewed": true
-  },
-  "crs": {
-    "source_crs": "EPSG:3857",
-    "target_crs": "EPSG:9481",
-    "local_registration_strategy": null,
-    "local_registration_reviewed": false
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0
   },
   "expectations": {
-    "source_inventory": {
-      "model_entities": 3283,
-      "model_inserts": 304,
-      "model_dimensions": 209
-    },
-    "delivery_counts": {
-      "BOITE": 0,
-      "CABLE": 62,
-      "PTECH": 0,
-      "IMB": 846,
-      "SITE": 1
-    },
+    "annotation_families": {},
+    "delivery_counts": {},
     "feature_counts": {
-      "BOITE": 0,
-      "CABLE": 62,
-      "PTECH": 0,
-      "IMB": 846,
-      "SITE": 1
+      "BOITE": 38,
+      "CABLE": 53,
+      "IMB": 419,
+      "PTECH": 208,
+      "SITE": 2,
+      "ZPM": 38
     },
-    "annotation_families": {
-      "fat": {
-        "target_assets": 0,
-        "source_annotations": 0,
-        "assigned": 0
-      },
-      "pole_new": {
-        "target_assets": 0,
-        "source_annotations": 0,
-        "assigned": 0
-      },
-      "pole_existing": {
-        "target_assets": 0,
-        "source_annotations": 0,
-        "assigned": 0
-      }
-    },
+    "segment_gates": {},
     "source_geometry_gates": {},
-    "topology_gates": {},
-    "segment_gates": {}
+    "source_inventory": {
+      "model_dimensions": 209,
+      "model_entities": 3497,
+      "model_inserts": 305
+    },
+    "topology_gates": {}
   },
-  "spatial_coverage_policy": {
-    "min_training_extent_x_ratio": 0.6,
-    "min_training_extent_y_ratio": 0.6,
-    "min_training_hull_area_ratio": 0.2,
-    "max_drawing_vertices_outside_training_bbox_ratio": 0.05,
-    "max_drawing_vertices_outside_training_hull_ratio": 0.05,
-    "min_check_baseline_to_drawing_diagonal_ratio": 0.25,
-    "min_check_hull_area_ratio": 0.05
-  },
+  "project_id": "source-d71ad87e6c0c",
   "review": {
-    "status": "reviewed",
-    "reviewed_by": "robustness-operator",
-    "reviewed_at": "2026-07-22T20:02:00Z",
-    "provenance": "MIGRATED_FROM:baselines/hutabohu_live/config/source_profile.json#DWG=raw/APD - KELURAHAN LAMTEH DAYAH ACEH.dwg | dwg_insunits=4 (mm) scale=0.001 | actual feature_counts={'BOITE': 0, 'CABLE': 62, 'PTECH': 0, 'IMB': 846, 'SITE': 1}"
-  }
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:9af09f041a003931cb89c9112a31d917136931f130cc78c6fa07e3f9b5a2715a",
+    "reviewed_at": "2026-08-03T04:19:35.568478Z",
+    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "status": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-profile-v1",
+  "source_binding": {
+    "inventory_sha256": "02bddb51df728f65469f80bc5b6ac7fd6db54dc2fe1cd1a39aec13fc41ac9c66",
+    "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78",
+    "source_size_bytes": 5253009
+  },
+  "spatial_coverage_policy": null
 }

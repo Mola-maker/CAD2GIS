@@ -29,7 +29,7 @@ def _reader_backend() -> str:
 def _extract_records(source_path: Path):
     backend = _reader_backend()
     if backend == "libredwg":
-        from .reader.dwg_extractor import extract_dwg_records
+        from .reader.libredwg import extract_dwg_records
     else:
         from .reader.autocad import extract_dwg_records
     return extract_dwg_records(source_path)

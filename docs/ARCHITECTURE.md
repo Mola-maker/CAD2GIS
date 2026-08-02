@@ -1,57 +1,117 @@
 # CAD2GIS Architecture
 
-## Workspace Layout
+The geometry-first scene partition, coordinate-domain admission gate,
+paired-GCP registration, and two-pane review workspace are specified in
+[REGISTRATION_AND_SCENE_ARCHITECTURE.md](REGISTRATION_AND_SCENE_ARCHITECTURE.md).
 
-The robustness workspace is an independent workspace decoupled from `newmodel`.
-It retains only three categories of content:
+## Boundaries
 
-- **Core algorithm**: `src/cad2gis/` canonical package (pipeline, reader, semantic, topology, calibration, verification, CLI)
-- **Architecture knowledge**: `docs/` design decisions, portability guides, reconciliation specs
-- **Closed-loop verification**: `verify/` contract tests, portability tests, reconciliation tests, and replay driver
+`src/cad2gis/` is the only production implementation. The CLI, Python API,
+MCP tools, and review server delegate to this package and do not fork
+conversion logic.
 
-Top-level directories are strictly limited to `src/`, `verify/`, `docs/`, `baselines/`, `tests/`.
+The data plane is deterministic:
 
-## Reader Elevation
+1. A selected DWG reader emits immutable CAD records.
+2. A plan-domain stage separates drawing WCS from block-definition-local
+   coordinates and materializes exact nested INSERT instances.
+3. For a new source, AI onboarding selects only observed semantic identifiers
+   and a deterministic CAD-metadata CRS/unit candidate. A deterministic dry
+   run compiles source-bound profile/registry contracts and exact gates.
+4. A source profile and mapping registry bind all rules to the source SHA-256.
+5. Classification preserves unresolved and unsupported evidence.
+6. Native curve facts, geometry, topology, and cable measurements are
+   validated independently.
+7. Nominal CRS transformation runs separately from optional GCP calibration.
+8. Delivery and evidence GeoPackages, QML, manifests, and status are published
+   atomically.
 
-The reader role has been redesigned from a Windows-only canonical path to a
-cross-platform primary path:
+The model-assisted control plane can propose a hash-bound Decision Pack over
+registered evidence IDs. It cannot author coordinates, geometry, lengths, CRS,
+or GCPs. Only registered deterministic executors can materialize a validated
+operation. See [LLM_AGENT_ARCHITECTURE.md](LLM_AGENT_ARCHITECTURE.md).
 
-- **LibreDWG** (`src/cad2gis/reader/libredwg.py`) is the primary cross-platform reader.
-- **AutoCAD** (`src/cad2gis/reader/autocad.py`) is retained as an opt-in
-  Windows-only fallback via `CAD2GIS_READER_BACKEND=autocad`.
-- **Contracts** (`src/cad2gis/reader/contracts.py`) define the shared reader protocol.
+## Reader Contract
 
-The `CAD2GIS_READER_BACKEND` environment variable selects the backend
-(default: `libredwg`).
+- `reader/libredwg.py`: cross-platform default when its runtime is available.
+- `reader/autocad.py`: maintained Windows adapter selected with
+  `CAD2GIS_READER_BACKEND=autocad`.
+- `reader/contracts.py`: shared inventory and typed reader errors.
+- `reader/records_adapter.py`: replay of a source-bound immutable record bundle.
 
-## Canonical Boundary
+A reader succeeds only when inventory is complete, zero rows were silently
+skipped, every record is bound to the source hash, and required native facts
+are retained. Capability absence and extraction failure are distinct typed
+states.
 
-The canonical ingestion boundary is `src/cad2gis/ingest.py`.  It integrates
-reader switching and delegates to `src/cad2gis/cad2gis_v3/ingest.py` for the
-core census validation.  The legacy `ingest_dev.py` wrapper has been removed;
-reader selection is now handled by the canonical `ingest.py` via the
-`CAD2GIS_READER_BACKEND` environment variable.
+The AutoCAD bulk protocol publishes a versioned completion marker only after
+the export is flushed and closed. Marker row count, TSV row count and parsed
+row count must agree exactly. Process shutdown is monitored separately so a
+Core Console hang after a valid export cannot discard the inventory.
 
-## A-Plan Closed Loop
+`$INSUNITS` is retained as block-insertion scale evidence, not automatically
+treated as the WCS coordinate unit. When authoritative DWG `CGEOCS` metadata
+identifies a projected CRS, its horizontal axis unit controls the WCS-to-metre
+scale. The manifest records both facts and the resulting source-to-axis factor.
 
-Closed-loop verification does not require the original DWG:
+## Plan-Domain Contract
 
-1. Input: `baselines/apd_hutabohu/records/readcad_review_bundle.json`
-2. Adapter: `src/cad2gis/reader/records_adapter.py` materialises bundle facts
-   into `SourceEntity` objects
-3. Pipeline: `semantic → topology → calibration → output`
-4. Reconciliation: SQL count comparison against `baselines/apd_hutabohu/delivery/`
+`cad2gis_v3/plan_domain.py` creates a derived semantic view without modifying
+the reader inventory:
 
-## Baselines
+- Model drawing WCS is preferred; plan layouts are considered only when Model
+  is absent.
+- A role fallback is explicit in diagnostics and requires complete block
+  expansion.
+- Nested INSERTs use reader-supplied insertion point, block base, scale,
+  rotation, normal and extrusion facts through the shared transform port.
+- Every derived leaf has a content-addressed ID, root/definition/instance-path
+  lineage and the exact affine matrix.
+- Missing facts/definitions, cycles, oblique transforms and unsupported
+  non-uniform curved transforms fail closed.
 
-- `baselines/apd_hutabohu/delivery/apd_delivery.gpkg` — delivery baseline
-- `baselines/apd_hutabohu/evidence/apd_evidence.gpkg` — evidence baseline
-- `baselines/apd_hutabohu/records/readcad_review_bundle.json` — canonical records bundle
-- `baselines/apd_hutabohu/config/` — source profile, mapping registry, GCP profile
+This stage is source agnostic: it contains no project filename, vendor layer,
+block-name, coordinate or expected-count rule. Semantic mapping remains a
+separate source-bound contract.
 
-## Testing Layers
+## Test Layers
 
-- **Contract layer** (`verify/contract/`): reader behavior, records integrity, env switching
-- **Portability layer** (`verify/portability/`): OS detection, ctypes cross-platform loading
-- **Reconciliation layer** (`verify/reconciliation/`): records bundle → pipeline → GPKG count
-- **Regression layer** (`tests/`): canonical contract tests
+All executable tests live under `tests/`:
+
+- focused unit and stage-contract tests;
+- canonical CLI/package tests;
+- APD records and delivery baseline reconciliation;
+- external real-DWG compatibility tests governed by
+  `tests/data/apd_test_manifest.json`.
+
+The external `APD_test` corpus is compatibility evidence, not domain or
+absolute-accuracy truth. Full extraction of complex DWGs is an explicit
+performance gate.
+
+## Repository Layout
+
+- `src/`: production package
+- `tests/`: all automated tests
+- `baselines/`: immutable regression evidence
+- `experiment/`: APD source/config compatibility project pack only
+- `docs/`: maintained architecture and operator documentation
+- `plugins/`: MCP/plugin integration
+- `env/`: pinned runtime
+- `official/`: unreviewed real-input inventory
+
+Historical OMC sessions, duplicate test assets, old verification trees, Python
+bytecode copies, build caches, and generated runs do not belong in the source
+tree.
+
+## Accuracy Claims
+
+The following must be reported separately:
+
+- source-record fidelity;
+- geometry/curve fidelity;
+- topology and segment conservation;
+- nominal CRS transformation;
+- GCP residuals and independent check-point accuracy.
+
+Without authoritative controls and independent checks, absolute accuracy is
+`not_verified`, even if an OSM overlay looks plausible.

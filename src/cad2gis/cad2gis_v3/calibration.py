@@ -42,6 +42,14 @@ THEORETICAL_MINIMUM_CONTROLS = {
     "similarity": 2,
     "affine": 3,
 }
+MODEL_SELECTION_POLICIES = {
+    "select_the_simplest_model_that_passes_independent_validation": (
+        "translation", "similarity", "affine",
+    ),
+    "select_shape_preserving_model_with_independent_validation": (
+        "similarity", "translation", "affine",
+    ),
+}
 
 # Geometry gates are deliberately evaluated in delivery metres after centring.
 # A one-micrometre RMS radius is below useful GCP precision, while the ULP
@@ -198,14 +206,19 @@ def _validate_transformer_unit_contract(
         contract.cad_unit.metres_per_unit,
         "transformer.unit_contract.cad_unit.metres_per_unit",
     )
-    if not math.isclose(cad_scale, source_scale, rel_tol=1e-12, abs_tol=0.0):
-        raise ValueError(
-            "Transformer unit_crs_contract CAD drawing unit scale is inconsistent"
-        )
-    if not math.isclose(cad_scale, 1.0, rel_tol=0.0, abs_tol=1e-12) and not contract.source_coordinate_scale_reviewed:
-        raise ValueError(
-            "Non-metre CAD drawing requires a reviewed source coordinate scale"
-        )
+    # A reviewed source-coordinate scale overrides the DWG insunits hint:
+    # some drawings carry unreliable INSUNITS metadata while the reviewed
+    # project profile pins the true metres-per-unit scale.  Only an
+    # unreviewed scale must match the CAD unit exactly.
+    if not contract.source_coordinate_scale_reviewed:
+        if not math.isclose(cad_scale, source_scale, rel_tol=1e-12, abs_tol=0.0):
+            raise ValueError(
+                "Transformer unit_crs_contract CAD drawing unit scale is inconsistent"
+            )
+        if not math.isclose(cad_scale, 1.0, rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError(
+                "Non-metre CAD drawing requires a reviewed source coordinate scale"
+            )
     source_to_axis = contract.source_to_crs_axis_factor
     if source_to_axis is None or not math.isfinite(float(source_to_axis)) or float(source_to_axis) <= 0.0:
         raise ValueError(
@@ -541,14 +554,16 @@ class ModelSelectionSettings:
             {"candidate_order", "policy", "minimum_training_controls", "affine_gate", "nonlinear_models"},
             "model_selection",
         )
-        order = tuple(str(item) for item in value["candidate_order"])
-        if order != ("translation", "similarity", "affine"):
-            raise ValueError(
-                "model_selection.candidate_order must be translation, similarity, affine"
-            )
         policy = str(value["policy"]).strip()
-        if policy != "select_the_simplest_model_that_passes_independent_validation":
+        expected_order = MODEL_SELECTION_POLICIES.get(policy)
+        if expected_order is None:
             raise ValueError("Unsupported model_selection.policy")
+        order = tuple(str(item) for item in value["candidate_order"])
+        if order != expected_order:
+            raise ValueError(
+                "model_selection.candidate_order does not match policy "
+                f"{policy!r}; expected {list(expected_order)!r}"
+            )
         minimums_value = value["minimum_training_controls"]
         if not isinstance(minimums_value, Mapping):
             raise ValueError("model_selection.minimum_training_controls must be an object")

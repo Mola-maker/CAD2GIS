@@ -44,7 +44,7 @@ class OpenAICompatibleProvider:
         payload: dict[str, Any] = {
             "model": self.config.model,
             "messages": [
-                {"role": "system", "content": request.system_prompt},
+                {"role": "system", "content": request.system_prompt + "\nRespond in JSON."},
                 {
                     "role": "user",
                     "content": json.dumps(

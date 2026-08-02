@@ -331,7 +331,7 @@ def _transform_facts(entity: Any) -> tuple[_TransformFacts | None, list[dict[str
 
 
 @dataclass(frozen=True)
-class _Affine2D:
+class Affine2D:
     m11: float = 1.0
     m12: float = 0.0
     m21: float = 0.0
@@ -345,9 +345,9 @@ class _Affine2D:
             self.m21 * float(point[0]) + self.m22 * float(point[1]) + self.ty,
         )
 
-    def compose(self, local: "_Affine2D") -> "_Affine2D":
+    def compose(self, local: "Affine2D") -> "Affine2D":
         """Return ``self(local(point))`` for a nested block reference."""
-        return _Affine2D(
+        return Affine2D(
             self.m11 * local.m11 + self.m12 * local.m21,
             self.m11 * local.m12 + self.m12 * local.m22,
             self.m21 * local.m11 + self.m22 * local.m21,
@@ -357,7 +357,7 @@ class _Affine2D:
         )
 
 
-def _affine_from_facts(facts: _TransformFacts) -> _Affine2D:
+def _affine_from_facts(facts: _TransformFacts) -> Affine2D:
     cosine, sine = math.cos(facts.rotation), math.sin(facts.rotation)
     sx, sy = facts.scale[0], facts.scale[1]
     # R*S maps definition coordinates relative to the explicit block base.
@@ -368,7 +368,7 @@ def _affine_from_facts(facts: _TransformFacts) -> _Affine2D:
     m11, m12 = orientation_x * r11, orientation_x * r12
     m21, m22 = r21, r22
     bx, by = facts.block_base[0], facts.block_base[1]
-    return _Affine2D(
+    return Affine2D(
         m11, m12, m21, m22,
         facts.insertion[0] - m11 * bx - m12 * by,
         facts.insertion[1] - m21 * bx - m22 * by,
@@ -457,7 +457,7 @@ def _transformed_segments(
             "message": "INSERT has no block reference name.",
         }]
 
-    def visit(name: str, parent_transform: _Affine2D, stack: tuple[str, ...]) -> None:
+    def visit(name: str, parent_transform: Affine2D, stack: tuple[str, ...]) -> None:
         if name in stack:
             diagnostics.append({
                 "code": "cyclic_nested_block_definition",
@@ -523,6 +523,23 @@ def _transformed_segments(
 
     visit(root_name, _affine_from_facts(root_facts), ())
     return segments, diagnostics
+
+
+def resolve_insert_affine(
+    entity: Any,
+) -> tuple[Affine2D | None, list[dict[str, Any]]]:
+    """Resolve one reader-authoritative INSERT transform for other stages.
+
+    This is the public transform boundary shared by block-footprint and
+    plan-domain materialization.  It deliberately exposes only the validated
+    affine result and structured abstention diagnostics, never the permissive
+    legacy/default reconstruction helpers.
+    """
+
+    facts, diagnostics = _transform_facts(entity)
+    if facts is None:
+        return None, diagnostics
+    return _affine_from_facts(facts), []
 
 
 def _project(point: Point, start: Point, end: Point) -> Point:
@@ -727,4 +744,4 @@ def build_port_candidates(entities, features, registry):
     )
 
 
-__all__ = ["build_port_candidates"]
+__all__ = ["Affine2D", "build_port_candidates", "resolve_insert_affine"]
