@@ -1,0 +1,9 @@
+FILEDIA
+0
+CMDDIA
+0
+SECURELOAD
+0
+(load (getenv "CAD2GIS_PROBE_LISP"))
+(c2g-probe)
+_.QUIT

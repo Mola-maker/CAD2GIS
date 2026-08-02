@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAD2GIS 配准与叠加审查</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <span class="eyebrow">CAD2GIS / REGISTRATION WORKSPACE</span>
+      <h1>配准、坐标传送与叠加审查</h1>
+    </div>
+    <div class="run-state">
+      <span id="connection-dot" class="status-dot pending"></span>
+      <span id="connection-label">正在连接</span>
+      <span id="run-status" class="badge">—</span>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="panel">
+      <section>
+        <h2>交付图层</h2>
+        <p class="muted">左侧保持不可变 CAD 坐标；右侧显示相似变换预览，不直接改写 GeoPackage。</p>
+        <div id="layer-list" class="layer-list"></div>
+      </section>
+
+      <section>
+        <h2>控制点与坐标传送</h2>
+        <ol class="steps">
+          <li>在左图点击真实缆线、道路拐点或设施，系统会吸附到最近几何。</li>
+          <li>在右图点击同一位置，或输入经纬度后点击“传送并保存”。</li>
+          <li>至少使用 4 个分布良好的训练点和 3 个独立检查点。</li>
+        </ol>
+        <label>控制点角色
+          <select id="gcp-role">
+            <option value="train">训练点</option>
+            <option value="check">独立检查点</option>
+          </select>
+        </label>
+        <div class="coordinate-inputs">
+          <label>经度 <input id="target-lon" type="number" step="any" placeholder="例如 112.700000"></label>
+          <label>纬度 <input id="target-lat" type="number" step="any" placeholder="例如 -7.450000"></label>
+        </div>
+        <button id="send-coordinate" class="wide active">传送坐标并保存</button>
+        <button id="use-map-center" class="wide secondary">填入右图中心坐标</button>
+        <button id="clear-pending" class="wide secondary">取消当前 CAD 点</button>
+        <div id="gcp-list" class="gcp-list"></div>
+        <div class="metric-card">
+          <span>模型</span><strong id="fit-model">尚未拟合</strong>
+          <span>训练 RMSE</span><strong id="fit-rmse">—</strong>
+          <span>控制点</span><strong id="fit-coverage">0 / 4 训练；0 / 3 检查</strong>
+          <span>目标坐标</span><strong id="target-coordinate">—</strong>
+        </div>
+        <button id="export-gcp" class="wide">生成 GCP 配置与转换命令</button>
+        <pre id="conversion-command">等待足够的控制点。</pre>
+        <p class="warning">OSM 选点只能形成相对地图配准，不能替代测量控制点或证明绝对定位精度。</p>
+      </section>
+
+      <section>
+        <button id="tool-fit" class="wide">缩放到数据</button>
+        <button id="open-visual" class="wide secondary">查看 CAD 视觉证据</button>
+      </section>
+    </aside>
+
+    <section class="map-grid">
+      <article class="map-pane">
+        <header><strong>CAD 原始坐标</strong><span id="cad-coordinate">—</span></header>
+        <div id="local-map" class="map"></div>
+      </article>
+      <article class="map-pane">
+        <header><strong>真实地图与配准预览</strong><span id="map-coordinate">—</span></header>
+        <div id="map" class="map"></div>
+      </article>
+      <div id="toast" class="toast" aria-live="polite"></div>
+    </section>
+
+    <aside class="panel inspector-panel">
+      <section>
+        <h2>架构诊断</h2>
+        <p class="muted">源几何、拓扑、长度与坐标精度分别验证。AI 可以解释证据，但不能替代确定性拟合和独立检查点。</p>
+        <div id="diagnosis" class="diagnosis">等待运行清单…</div>
+      </section>
+      <section>
+        <h2>运行证据</h2>
+        <dl id="run-summary"></dl>
+      </section>
+      <section>
+        <h2>选中对象</h2>
+        <pre id="feature-properties">在任一地图点击对象。</pre>
+      </section>
+    </aside>
+  </main>
+
+  <dialog id="visual-dialog">
+    <div class="dialog-head">
+      <h2>CAD 多尺度视觉证据</h2>
+      <button id="close-visual" aria-label="关闭">×</button>
+    </div>
+    <div id="visual-grid" class="visual-grid"></div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>
