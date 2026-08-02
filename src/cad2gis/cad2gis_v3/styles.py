@@ -54,11 +54,25 @@ def _option(parent, name, value):
     ET.SubElement(parent, "Option", name=name, value=str(value), type="QString")
 
 
+def _effective_linetype(feature: Feature) -> str:
+    """Resolve entity ByLayer/ByBlock through the reviewed layer linetype.
+
+    The dev reader does not dereference entity ltype references, so the
+    auditable source fact is the layer linetype.  Rendering must follow the
+    layer (Continuous -> solid) instead of falling back to an unsupported
+    dashed sentinel.
+    """
+    name = (feature.style.linetype or "").strip().upper()
+    if name in {"BYLAYER", "BYBLOCK"}:
+        return (feature.style.layer_linetype or "Continuous").strip()
+    return name
+
+
 def _qgis_pen_style(linetype):
     name = (linetype or "").strip().upper()
-    if name == "CONTINUOUS":
+    if name in {"BYLAYER", "BYBLOCK", "CONTINUOUS"}:
         return "solid"
-    if "DASHDOT" in name or "CENTER" in name:
+    if "DASHDOT" in name or "CENTER" in name or "PHANTOM" in name:
         return "dash dot"
     if "DOT" in name:
         return "dot"
@@ -115,10 +129,10 @@ def _style_coverage_records(features: Sequence[Feature]) -> list[dict[str, Any]]
                         render_fallback=_UNSUPPORTED_COLOR,
                     ))
 
-        linetype = (feature.style.linetype or "").strip()
-        if not linetype or linetype.upper() in {"BYLAYER", "BYBLOCK"}:
+        linetype = _effective_linetype(feature)
+        if not linetype:
             records.append(_style_record(
-                feature, "unresolved_linetype", linetype=linetype,
+                feature, "unresolved_linetype", linetype=feature.style.linetype,
                 render_fallback=_UNSUPPORTED_PEN_STYLE,
             ))
         elif _qgis_pen_style(linetype) is None:
@@ -339,6 +353,7 @@ def write_styles(
     *,
     coverage_policy: str = "warn",
     coverage_allowlist: Sequence[str | Mapping[str, Any]] | None = None,
+    color_unification: Mapping[str, str] | None = None,
 ):
     features = list(features)
     coverage = analyze_style_coverage(
@@ -351,6 +366,10 @@ def write_styles(
     by_class = defaultdict(list)
     for feature in features:
         by_class[feature.feature_class].append(feature)
+    # Reviewed render unification: a feature class renders in one effective
+    # colour regardless of per-entity CAD colour (e.g. BOITE always #FF7F00),
+    # so deployments are visually consistent across drawings.
+    unified_colors = dict(color_unification or {})
     manifest = {
         "schema_version": "cad2gis-qgis-style-manifest-v3",
         "embedded_default_styles": delivery_path is not None,
@@ -369,13 +388,31 @@ def write_styles(
             by_class["CABLE"] if layer_name == "CABLE_SEGMENT"
             else by_class[layer_name]
         )
+        unified_color = unified_colors.get(layer_name)
+        if unified_color is not None:
+            hex_color = unified_color.lstrip("#")
+            try:
+                if len(hex_color) != 6:
+                    raise ValueError
+                unified_rgba = (
+                    f"{int(hex_color[0:2], 16)},{int(hex_color[2:4], 16)},"
+                    f"{int(hex_color[4:6], 16)},255"
+                )
+            except ValueError:
+                unified_color = None
         for feature in style_features:
             key = str(feature.attributes.get("delivery_style_render_key", feature.style.render_key))
             qgis_rotation = float(feature.attributes.get(
                 "delivery_style_qgis_rotation_deg", feature.style.qgis_rotation_degrees,
             ))
+            if unified_color is not None:
+                # Unified render colour keeps the audit render key intact;
+                # only the visual swatch is normalised.
+                key = f"{key}|UNIFIED:{unified_color.upper().lstrip('#')}"
             observed.setdefault(key, (
-                key, feature.style.aci_color, _rgba(feature), feature.style.linetype,
+                key, feature.style.aci_color,
+                unified_rgba if unified_color is not None else _rgba(feature),
+                _effective_linetype(feature),
                 feature.style.lineweight, qgis_rotation,
             ))
         styles = [observed[key] for key in sorted(observed)] or [

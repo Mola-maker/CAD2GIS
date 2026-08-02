@@ -36,8 +36,8 @@ demo/output/
 # Worktrees
 .worktrees/
 
-# Plugincad2gis (legacy)
-/plugincad2gis/
+# Plugins
+/plugins/
 
 # Official reference Shape files
 /official/Shape/
@@ -56,6 +56,11 @@ experiment/py_scripts/replay_apd_libredwg_dev_report.json
 .omc/sessions/
 .omc/project-memory.json
 .omc/.gitignore
+
+# robustness: pipeline run outputs (generated, not source)
+baselines/*/run/
+baselines/*/run.review/
+baselines/*/review/
 
 # robustness: verification output artifacts
 baselines/apd_hutabohu/output/

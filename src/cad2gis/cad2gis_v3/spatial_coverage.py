@@ -67,14 +67,26 @@ def source_entity_drawing_points(
             raise TypeError(
                 f"source_entities[{entity_index}] must be a SourceEntity"
             )
-        layout_is_model = entity.layout.strip().casefold() == "model"
         role_is_model = entity.layout_role.strip().casefold() == "model"
-        if layout_is_model != role_is_model:
-            raise ValueError(
-                f"source_entities[{entity_index}] has inconsistent model-space "
-                f"layout metadata: layout={entity.layout!r}, "
-                f"layout_role={entity.layout_role!r}"
+        # The reader classifies any non-paper named layout tab (e.g.
+        # "APD - SF", "Layout2") as model space — drawings legitimately
+        # carry their plan in a named layout.  A named layout with model
+        # role is therefore consistent, not contradictory.
+        if role_is_model:
+            layout_is_model = (
+                entity.layout.strip().casefold() == "model"
+                or (
+                    bool(entity.layout.strip())
+                    and entity.layout.strip().casefold() != "paper"
+                    and not entity.layout.strip().upper().startswith("BLOCKDEF:")
+                )
             )
+            if not layout_is_model:
+                raise ValueError(
+                    f"source_entities[{entity_index}] has inconsistent model-space "
+                    f"layout metadata: layout={entity.layout!r}, "
+                    f"layout_role={entity.layout_role!r}"
+                )
         cad_role = entity.cad_role.strip().casefold()
         if (
             not role_is_model

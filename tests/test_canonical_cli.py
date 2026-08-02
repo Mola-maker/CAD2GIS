@@ -40,6 +40,9 @@ def test_public_convert_signature_is_stable() -> None:
         "source_profile",
         "mapping_registry",
         "gcp_profile",
+        "decision_pack",
+        "domain",
+        "llm",
     )
     assert all(
         parameter.kind is inspect.Parameter.KEYWORD_ONLY
@@ -113,7 +116,10 @@ def test_convert_resolves_inputs_before_calling_backend(
             "run_dir": run_dir.resolve(),
             "source_profile": source_profile.resolve(),
             "mapping_registry": mapping_registry.resolve(),
-            "gcp_profile": None,
+                "gcp_profile": None,
+                "decision_pack": None,
+                "domain": "auto",
+            "llm": "off",
         }
     ]
 
@@ -181,7 +187,7 @@ def test_doctor_report_is_structured_and_fail_closed(
             "environment_variable": "CAD2GIS_BACKEND_PATH",
             "supported_modes": (),
             "external_path_requirement": "test",
-            "wheel_bundles_backend": False,
+            "wheel_bundles_backend": True,
         },
     )
     monkeypatch.setattr(doctor.platform, "system", lambda: "Linux")
@@ -251,7 +257,427 @@ def test_default_error_is_friendly_and_debug_reraises(
     assert "Traceback" not in captured.err
 
     with pytest.raises(FileNotFoundError):
+        cli.main(["--debug", *arguments])
+    with pytest.raises(FileNotFoundError):
         cli.main([*arguments, "--debug"])
+
+
+def test_pipeline_source_not_found_error_is_typed(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError) as raised:
+        pipeline._source_file(tmp_path / "missing.dwg")
+
+    assert type(raised.value).__name__ == "SourceNotFoundError"
+
+
+def test_human_error_includes_operational_fields(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    status = cli.main(
+        [
+            "convert",
+            str(tmp_path / "missing.dwg"),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--source-profile",
+            str(tmp_path / "source.json"),
+            "--mapping-registry",
+            str(tmp_path / "mapping.json"),
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert status == 2
+    assert "cad2gis: error: source drawing does not exist" in captured.err
+    assert "error_code: SOURCE_NOT_FOUND" in captured.err
+    assert "stage: convert" in captured.err
+    assert "artifact_status: not_created" in captured.err
+    assert "recovery_command: cad2gis convert --help" in captured.err
+    assert "Run with --debug for a traceback." in captured.err
+
+
+def test_convert_forwards_domain_and_llm(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_convert_project(**kwargs: object) -> dict[str, str]:
+        captured.update(kwargs)
+        return {"status": "success"}
+
+    monkeypatch.setattr(pipeline, "convert_project", fake_convert_project)
+
+    status = cli.main(
+        [
+            "convert",
+            str(tmp_path / "drawing.dwg"),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--project",
+            str(tmp_path),
+            "--domain",
+            "auto",
+            "--llm",
+            "observe",
+            "--json",
+        ]
+    )
+
+    assert status == 0
+    assert captured["domain"] == "auto"
+    assert captured["llm"] == "observe"
+    assert json.loads(capsys.readouterr().out)["status"] == "success"
+
+
+def test_convert_forwards_decision_pack(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+    pack = tmp_path / "decision-pack.json"
+    pack.write_text("{}", encoding="utf-8")
+
+    def fake_convert_project(**kwargs: object) -> dict[str, str]:
+        captured.update(kwargs)
+        return {"status": "success"}
+
+    monkeypatch.setattr(pipeline, "convert_project", fake_convert_project)
+    status = cli.main([
+        "convert", str(tmp_path / "drawing.dwg"),
+        "--run-dir", str(tmp_path / "run"),
+        "--project", str(tmp_path),
+        "--llm", "assist",
+        "--decision-pack", str(pack),
+    ])
+    assert status == 0
+    assert captured["decision_pack"] == pack
+
+
+def test_auto_convert_runs_onboarding_before_canonical_conversion(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"fixture")
+    project = tmp_path / "project"
+    run = tmp_path / "run"
+
+    def fake_onboard(**kwargs: object) -> dict[str, str]:
+        calls.append(("onboard", kwargs))
+        return {"status": "auto_accepted"}
+
+    def fake_convert(**kwargs: object) -> dict[str, str]:
+        calls.append(("convert", kwargs))
+        return {"status": "success"}
+
+    monkeypatch.setattr(pipeline, "auto_onboard_project", fake_onboard)
+    monkeypatch.setattr(pipeline, "convert_project", fake_convert)
+
+    status = cli.main([
+        "auto-convert",
+        str(source),
+        "--project",
+        str(project),
+        "--run-dir",
+        str(run),
+        "--provider",
+        "new-api",
+        "--force-bootstrap",
+        "--json",
+    ])
+
+    assert status == 0
+    assert [name for name, _ in calls] == ["onboard", "convert"]
+    assert calls[0][1]["provider"] == "new-api"
+    assert calls[0][1]["force_bootstrap"] is True
+    assert calls[1][1]["llm"] == "off"
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["onboarding"]["status"] == "auto_accepted"
+    assert payload["conversion"]["status"] == "success"
+
+
+def test_convert_mode_defaults_and_choices(tmp_path: Path) -> None:
+    parser = cli._parser()
+    defaults = parser.parse_args(
+        ["convert", str(tmp_path / "drawing.dwg"), "--run-dir", str(tmp_path / "run")]
+    )
+
+    assert defaults.domain == "auto"
+    assert defaults.llm == "off"
+
+    with pytest.raises(SystemExit):
+        parser.parse_args(
+            [
+                "convert",
+                str(tmp_path / "drawing.dwg"),
+                "--run-dir",
+                str(tmp_path / "run"),
+                "--domain",
+                "unsupported",
+            ]
+        )
+    with pytest.raises(SystemExit):
+        parser.parse_args(
+            [
+                "convert",
+                str(tmp_path / "drawing.dwg"),
+                "--run-dir",
+                str(tmp_path / "run"),
+                "--llm",
+                "unsupported",
+            ]
+        )
+
+
+def _assert_json_error(
+    *,
+    args: list[str],
+    expected_code: str,
+    capsys: pytest.CaptureFixture[str],
+    expected_artifact_status: str = "not_created",
+) -> dict[str, object]:
+    status = cli.main(args)
+    payload = json.loads(capsys.readouterr().err)
+
+    assert status == 2
+    assert payload["status"] == "error"
+    error = payload["error"]
+    assert set(error) >= {
+        "type",
+        "message",
+        "error_code",
+        "stage",
+        "artifact_status",
+        "recovery_command",
+    }
+    assert error["error_code"] == expected_code
+    assert error["stage"] == "convert"
+    assert error["artifact_status"] == expected_artifact_status
+    assert error["recovery_command"] == "cad2gis convert --help"
+    return error
+
+
+def test_json_error_classifies_missing_source(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source_profile = tmp_path / "source.json"
+    mapping_registry = tmp_path / "mapping.json"
+    source_profile.write_text("{}", encoding="utf-8")
+    mapping_registry.write_text("{}", encoding="utf-8")
+
+    _assert_json_error(
+        args=[
+            "convert",
+            str(tmp_path / "missing.dwg"),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--source-profile",
+            str(source_profile),
+            "--mapping-registry",
+            str(mapping_registry),
+            "--json",
+        ],
+        expected_code="SOURCE_NOT_FOUND",
+        capsys=capsys,
+    )
+
+
+def test_source_not_found_classification_ignores_message_wording(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    failure = pipeline.SourceNotFoundError("source wording changed")
+
+    def source_file(_path: object) -> Path:
+        raise failure
+
+    monkeypatch.setattr(pipeline, "_source_file", source_file)
+    _assert_json_error(
+        args=[
+            "convert",
+            str(tmp_path / "drawing.dwg"),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--source-profile",
+            str(tmp_path / "source.json"),
+            "--mapping-registry",
+            str(tmp_path / "mapping.json"),
+            "--json",
+        ],
+        expected_code="SOURCE_NOT_FOUND",
+        capsys=capsys,
+    )
+
+
+def test_json_error_classifies_cli_usage(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _assert_json_error(
+        args=["convert", "--run-dir", str(tmp_path / "run"), "--json"],
+        expected_code="CLI_USAGE",
+        capsys=capsys,
+    )
+
+
+def test_json_error_classifies_project_config_invalid(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = tmp_path / "drawing.dwg"
+    project = tmp_path / "project"
+    source.write_bytes(b"dwg")
+    project.mkdir()
+
+    _assert_json_error(
+        args=[
+            "convert",
+            str(source),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--project",
+            str(project),
+            "--json",
+        ],
+        expected_code="PROJECT_CONFIG_INVALID",
+        capsys=capsys,
+    )
+
+
+def test_json_error_classifies_reader_unavailable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from cad2gis.reader.contracts import ReaderCapability
+    import cad2gis.reader.libredwg as libredwg
+
+    project, _, _ = _minimal_project(tmp_path)
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"dwg")
+
+    monkeypatch.setattr(
+        libredwg,
+        "libredwg_capability",
+        lambda: ReaderCapability(
+            backend="libredwg",
+            available=False,
+            detail="bindings missing",
+            remediation="Install LibreDWG or select CAD2GIS_READER_BACKEND=autocad.",
+        ),
+    )
+
+    def unavailable(**kwargs: object) -> object:
+        return libredwg.extract_dwg_records(kwargs["source"])
+
+    monkeypatch.setattr(runtime, "call_conversion_backend", unavailable)
+    _assert_json_error(
+        args=[
+            "convert",
+            str(source),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--project",
+            str(project),
+            "--json",
+        ],
+        expected_code="READER_UNAVAILABLE",
+        capsys=capsys,
+    )
+
+
+def test_json_error_classifies_conversion_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project, _, _ = _minimal_project(tmp_path)
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"dwg")
+
+    def failed(**kwargs: object) -> None:
+        raise RuntimeError("conversion failed")
+
+    monkeypatch.setattr(runtime, "call_conversion_backend", failed)
+    _assert_json_error(
+        args=[
+            "convert",
+            str(source),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--project",
+            str(project),
+            "--json",
+        ],
+        expected_code="CONVERSION_FAILED",
+        capsys=capsys,
+    )
+
+
+def test_json_error_reports_retained_artifact_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project, _, _ = _minimal_project(tmp_path)
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"dwg")
+    retained = tmp_path / "retained-run"
+    failure = RuntimeError("conversion failed after staging")
+    failure.retained_artifact_path = retained
+
+    def failed(**kwargs: object) -> None:
+        raise failure
+
+    monkeypatch.setattr(runtime, "call_conversion_backend", failed)
+    error = _assert_json_error(
+        args=[
+            "convert",
+            str(source),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--project",
+            str(project),
+            "--json",
+        ],
+        expected_code="CONVERSION_FAILED",
+        capsys=capsys,
+        expected_artifact_status=str(retained),
+    )
+
+    assert error["artifact_status"] == str(retained)
+
+
+def test_json_error_does_not_infer_generic_artifact_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project, _, _ = _minimal_project(tmp_path)
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"dwg")
+    failure = RuntimeError("conversion failed")
+    failure.artifact_path = tmp_path / "unretained-run"
+
+    def failed(**kwargs: object) -> None:
+        raise failure
+
+    monkeypatch.setattr(runtime, "call_conversion_backend", failed)
+    _assert_json_error(
+        args=[
+            "convert",
+            str(source),
+            "--run-dir",
+            str(tmp_path / "run"),
+            "--project",
+            str(project),
+            "--json",
+        ],
+        expected_code="CONVERSION_FAILED",
+        capsys=capsys,
+    )
 
 
 def test_gcp_status_is_lazy_and_uses_public_adapter(
@@ -303,4 +729,4 @@ def test_packaging_declares_only_src_public_package() -> None:
     assert metadata["project"]["scripts"]["cad2gis"] == "cad2gis.cli:main"
     assert metadata["tool"]["setuptools"]["package-dir"] == {"": "src"}
     assert metadata["tool"]["setuptools"]["packages"]["find"]["where"] == ["src"]
-    assert runtime.backend_contract()["wheel_bundles_backend"] is False
+    assert runtime.backend_contract()["wheel_bundles_backend"] is True

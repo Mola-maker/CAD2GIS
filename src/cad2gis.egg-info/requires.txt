@@ -1,4 +1,14 @@
 
+[mcp]
+mcp<2,>=1.0
+
+[review]
+fastapi<1,>=0.115
+uvicorn[standard]<1,>=0.30
+
+[review-postgis]
+psycopg[binary]<4,>=3.2
+
 [test]
 pytest<10,>=8
 build<2,>=1.2

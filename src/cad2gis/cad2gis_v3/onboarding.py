@@ -1233,6 +1233,12 @@ def compile_onboarding_proposal(
                     registry.layers.get("zpm_boundary", ())
                     + registry.layers.get("sling_wire", ())
                 ),
+                label_text_patterns=[
+                    str(family.text_pattern)
+                    for family in getattr(registry, "annotation_families", ())
+                    if family.target_class == "PTECH"
+                ],
+                cable_protect_layers=registry.layers.get("sling_wire", ()),
             )
             semantic = list(spatial_result["entities"])
 

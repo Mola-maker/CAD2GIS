@@ -1,8 +1,8 @@
 """User-facing adapter for the reviewed ground-control workflow.
 
-This module deliberately contains no calibration mathematics.  It wraps the
-operator-only implementation in ``experiment/py_scripts/gcp_tool.py`` and
-normalises its results for the canonical CLI.  In particular:
+This module deliberately contains no calibration mathematics. It normalises
+results from an optional operator backend selected with
+``CAD2GIS_GCP_TOOL_PATH`` for the canonical CLI. In particular:
 
 * capture coordinates, accuracy values, and weights are never invented here;
 * diagnostics never authorise publication or absolute-accuracy claims;
@@ -10,8 +10,8 @@ normalises its results for the canonical CLI.  In particular:
 * a project is verified only after a published manifest records an accepted
   calibration with independent checks and auditable absolute control sources.
 
-The experiment implementation is loaded lazily so that lightweight commands
-such as ``cad2gis gcp status`` do not require GDAL.
+The operator backend is loaded lazily so lightweight commands such as
+``cad2gis gcp status`` do not require GDAL.
 """
 
 from __future__ import annotations
@@ -365,15 +365,17 @@ def _conversion_command(
 
 def _backend_path() -> Path:
     override = os.environ.get("CAD2GIS_GCP_TOOL_PATH")
-    if override:
-        return Path(override).expanduser().resolve()
-    repository_root = Path(__file__).resolve().parents[2]
-    return repository_root / "experiment" / "py_scripts" / "gcp_tool.py"
+    if not override:
+        raise ImportError(
+            "GCP capture/diagnosis requires an operator backend; set "
+            "CAD2GIS_GCP_TOOL_PATH to the reviewed gcp_tool.py implementation"
+        )
+    return Path(override).expanduser().resolve()
 
 
 @lru_cache(maxsize=1)
 def _load_backend() -> ModuleType:
-    """Load the reviewed experiment tool without making GDAL a status dependency."""
+    """Load the configured operator tool without making GDAL a status dependency."""
 
     path = _backend_path()
     if not path.is_file():

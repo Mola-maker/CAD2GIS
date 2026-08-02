@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import os
 import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -50,6 +51,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     _add_source(inspect)
     inspect.add_argument("--project", dest="project_dir", type=Path)
+    inspect.add_argument(
+        "--layouts", action="store_true",
+        help="List available named layout tabs and exit.",
+    )
     _add_json(inspect)
     inspect.set_defaults(handler=_inspect)
 
@@ -60,6 +65,10 @@ def _parser() -> argparse.ArgumentParser:
     bootstrap.add_argument("project_dir", nargs="?", type=Path, metavar="PROJECT_DIR")
     bootstrap.add_argument("--project", dest="project_option", type=Path)
     bootstrap.add_argument("--force", action="store_true")
+    bootstrap.add_argument(
+        "--layout", type=str, default=None,
+        help="Named layout tab to convert (e.g. 'APD - SF', 'Layout2'). Default: Model.",
+    )
     _add_json(bootstrap)
     bootstrap.set_defaults(handler=_bootstrap)
 
@@ -82,8 +91,77 @@ def _parser() -> argparse.ArgumentParser:
     convert.add_argument("--source-profile", type=Path)
     convert.add_argument("--mapping-registry", type=Path)
     convert.add_argument("--gcp-profile", type=Path)
+    convert.add_argument(
+        "--layout", type=str, default=None,
+        help="Named layout tab to convert (e.g. 'APD - SF', 'Layout2'). Default: Model.",
+    )
+    convert.add_argument(
+        "--decision-pack",
+        type=Path,
+        help="Frozen content-addressed model decision pack to observe or execute.",
+    )
+    convert.add_argument(
+        "--domain",
+        choices=("auto", "generic", "ftth_apd"),
+        default="auto",
+        help="Domain profile mode recorded for the conversion.",
+    )
+    convert.add_argument(
+        "--llm",
+        choices=("off", "observe", "assist"),
+        default="off",
+        help=(
+            "Reasoning mode: off, validate a decision pack without applying it, "
+            "or execute only auto-validated registered operations."
+        ),
+    )
     _add_json(convert)
     convert.set_defaults(handler=_convert)
+
+    auto_convert = commands.add_parser(
+        "auto-convert",
+        help=(
+            "Bootstrap, AI-onboard, validate, and convert a new source in one "
+            "source-bound workflow."
+        ),
+    )
+    _add_source(auto_convert)
+    auto_convert.add_argument(
+        "--project",
+        dest="project_dir",
+        required=True,
+        type=Path,
+        help="Source-bound project pack directory.",
+    )
+    auto_convert.add_argument(
+        "--run-dir",
+        required=True,
+        type=Path,
+        help="New immutable run directory.",
+    )
+    auto_convert.add_argument(
+        "--provider",
+        choices=("deepseek", "new-api"),
+        default="deepseek",
+        help="OpenAI-compatible onboarding provider configured through environment variables.",
+    )
+    auto_convert.add_argument(
+        "--layout", type=str, default=None,
+        help="Named layout tab to convert (e.g. 'APD - SF', 'Layout2'). Default: Model.",
+    )
+    auto_convert.add_argument(
+        "--force-bootstrap",
+        action="store_true",
+        help="Replace only the managed project-pack files before AI onboarding.",
+    )
+    auto_convert.add_argument(
+        "--llm",
+        choices=("off", "observe", "assist"),
+        default="off",
+        help="LLM supervisor mode: off (default), observe (flag only), assist (auto-apply spatial denoising).",
+    )
+    _add_json(auto_convert)
+    auto_convert.set_defaults(handler=_auto_convert)
 
     gcp = commands.add_parser(
         "gcp", help="Prepare and review operator-supplied ground control."
@@ -95,6 +173,18 @@ def _parser() -> argparse.ArgumentParser:
     _add_gcp_prepare(gcp_commands)
     _add_gcp_diagnose(gcp_commands)
     _add_gcp_export(gcp_commands)
+
+    review = commands.add_parser(
+        "review", help="Open the local real-time map overlay review workspace."
+    )
+    review.add_argument("run_dir", type=Path, metavar="RUN_DIR")
+    review.add_argument("--workspace", type=Path)
+    review.add_argument("--host", default="127.0.0.1")
+    review.add_argument("--port", type=int, default=8765)
+    review.add_argument("--qgis-server-url", default="")
+    review.add_argument("--qgis-project", default="")
+    review.add_argument("--qgis-layers", default="")
+    review.set_defaults(handler=_review)
 
     verify = commands.add_parser(
         "verify", help="Evaluate a versioned multi-CAD verification matrix."
@@ -206,6 +296,21 @@ def _doctor(args: argparse.Namespace) -> tuple[Any, int]:
 def _inspect(args: argparse.Namespace) -> tuple[Any, int]:
     from .pipeline import inspect_source
 
+    if args.layouts:
+        from .reader.libredwg import _read_entity_layout_map_json
+        from pathlib import Path
+
+        source = _source(args)
+        import hashlib
+        dwg_bytes = Path(source).read_bytes()
+        sha = hashlib.sha256(dwg_bytes).hexdigest()
+        layout_map = _read_entity_layout_map_json(Path(source), sha)
+        unique = sorted(set(layout_map.values()))
+        return {
+            "source": str(source),
+            "layouts": unique,
+        }, 0
+
     result = inspect_source(source=_source(args), project_dir=args.project_dir)
     return result, 0
 
@@ -214,7 +319,13 @@ def _bootstrap(args: argparse.Namespace) -> tuple[Any, int]:
     from .pipeline import bootstrap_project
 
     project = _exclusive_path(args.project_dir, args.project_option, "project directory")
-    result = bootstrap_project(source=_source(args), project_dir=project, force=args.force)
+    if args.layout:
+        os.environ["CAD2GIS_LAYOUT"] = args.layout
+    try:
+        result = bootstrap_project(source=_source(args), project_dir=project, force=args.force)
+    finally:
+        if args.layout:
+            os.environ.pop("CAD2GIS_LAYOUT", None)
     return result, 0
 
 
@@ -234,15 +345,54 @@ def _validate(args: argparse.Namespace) -> tuple[Any, int]:
 def _convert(args: argparse.Namespace) -> tuple[Any, int]:
     from .pipeline import convert_project
 
-    result = convert_project(
-        source=_source(args),
-        run_dir=args.run_dir,
-        project_dir=args.project_dir,
-        source_profile=args.source_profile,
-        mapping_registry=args.mapping_registry,
-        gcp_profile=args.gcp_profile,
-    )
+    if args.layout:
+        os.environ["CAD2GIS_LAYOUT"] = args.layout
+    try:
+        result = convert_project(
+            source=_source(args),
+            run_dir=args.run_dir,
+            project_dir=args.project_dir,
+            source_profile=args.source_profile,
+            mapping_registry=args.mapping_registry,
+            gcp_profile=args.gcp_profile,
+            decision_pack=args.decision_pack,
+            domain=args.domain,
+            llm=args.llm,
+        )
+    finally:
+        if args.layout:
+            os.environ.pop("CAD2GIS_LAYOUT", None)
     return _conversion_payload(result), 0
+
+
+def _auto_convert(args: argparse.Namespace) -> tuple[Any, int]:
+    from .pipeline import auto_onboard_project, convert_project
+
+    source = _source(args)
+    if args.layout:
+        os.environ["CAD2GIS_LAYOUT"] = args.layout
+    try:
+        onboarding = auto_onboard_project(
+            source=source,
+            project_dir=args.project_dir,
+            provider=args.provider,
+            force_bootstrap=args.force_bootstrap,
+            llm_mode=args.llm,
+        )
+        result = convert_project(
+            source=source,
+            run_dir=args.run_dir,
+            project_dir=args.project_dir,
+            llm=args.llm,
+        )
+    finally:
+        if args.layout:
+            os.environ.pop("CAD2GIS_LAYOUT", None)
+    return {
+        "schema_version": "cad2gis.auto_convert.v1",
+        "onboarding": onboarding,
+        "conversion": _conversion_payload(result),
+    }, 0
 
 
 def _project_directory(value: Path | None) -> Path | None:
@@ -432,6 +582,21 @@ def _verify(args: argparse.Namespace) -> tuple[Any, int]:
     return payload, 0
 
 
+def _review(args: argparse.Namespace) -> tuple[Any, int]:
+    from .review_server import run_review_server
+
+    run_review_server(
+        args.run_dir,
+        workspace_dir=args.workspace,
+        host=args.host,
+        port=args.port,
+        qgis_server_url=args.qgis_server_url,
+        qgis_project=args.qgis_project,
+        qgis_layers=args.qgis_layers,
+    )
+    return None, 0
+
+
 def _conversion_payload(result: Any) -> Any:
     if isinstance(result, Mapping):
         return result
@@ -461,6 +626,61 @@ def _conversion_payload(result: Any) -> Any:
             }
             found = True
     return payload if found else result
+
+
+_COMMANDS = frozenset(
+    {
+        "doctor", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
+        "review", "verify",
+    }
+)
+
+
+def _active_command(arguments: Sequence[str]) -> str:
+    for argument in arguments:
+        if argument in _COMMANDS:
+            return argument
+    return "cli"
+
+
+def _error_code(exc: Exception) -> str:
+    from .pipeline import ProjectConfigurationError, SourceNotFoundError
+    from .reader.contracts import ReaderUnavailableError
+    from .runtime import BackendUnavailable
+
+    if isinstance(exc, CLIUsageError):
+        return "CLI_USAGE"
+    if isinstance(exc, SourceNotFoundError):
+        return "SOURCE_NOT_FOUND"
+    if isinstance(exc, ProjectConfigurationError):
+        return "PROJECT_CONFIG_INVALID"
+    if isinstance(exc, (ReaderUnavailableError, BackendUnavailable)):
+        return "READER_UNAVAILABLE"
+    return "CONVERSION_FAILED"
+
+
+def _artifact_status(exc: Exception) -> str:
+    value = getattr(exc, "retained_artifact_path", None)
+    if value is not None and str(value):
+        return str(value)
+    return "not_created"
+
+
+def _recovery_command(stage: str) -> str:
+    if stage in _COMMANDS:
+        return f"cad2gis {stage} --help"
+    return "cad2gis --help"
+
+
+def _error_payload(exc: Exception, *, stage: str) -> dict[str, Any]:
+    return {
+        "type": exc.__class__.__name__,
+        "message": str(exc),
+        "error_code": _error_code(exc),
+        "stage": stage,
+        "artifact_status": _artifact_status(exc),
+        "recovery_command": _recovery_command(stage),
+    }
 
 
 def _jsonable(value: Any) -> Any:
@@ -511,10 +731,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     filtered, debug = _extract_debug(raw)
     parser = _parser()
-    args = parser.parse_args(filtered)
-    args.debug = bool(args.debug or debug)
-    handler: Callable[[argparse.Namespace], tuple[Any, int]] = args.handler
+    stage = _active_command(filtered)
+    args: argparse.Namespace | None = None
     try:
+        args = parser.parse_args(filtered)
+        args.debug = bool(args.debug or debug)
+        stage = str(args.command)
+        handler: Callable[[argparse.Namespace], tuple[Any, int]] = args.handler
         value, status = handler(args)
         if value is not None:
             _emit(value, compact=False)
@@ -522,16 +745,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     except BrokenPipeError:
         return 0
     except Exception as exc:
-        if args.debug:
+        if debug or bool(getattr(args, "debug", False)):
             raise
-        payload = {
-            "status": "error",
-            "error": {"type": exc.__class__.__name__, "message": str(exc)},
-        }
-        if getattr(args, "json", False):
+        error = _error_payload(exc, stage=stage)
+        payload = {"status": "error", "error": error}
+        if bool(getattr(args, "json", False)) or "--json" in filtered:
             print(json.dumps(payload, ensure_ascii=False, sort_keys=True), file=sys.stderr)
         else:
             print(f"cad2gis: error: {exc}", file=sys.stderr)
+            for field in ("error_code", "stage", "artifact_status", "recovery_command"):
+                print(f"{field}: {error[field]}", file=sys.stderr)
             print("Run with --debug for a traceback.", file=sys.stderr)
         return 2
 

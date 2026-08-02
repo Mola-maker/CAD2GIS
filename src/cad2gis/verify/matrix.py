@@ -49,6 +49,12 @@ DIMENSIONS = (
     "nominal_crs",
     "absolute_accuracy",
 )
+ARCHITECTURE_DIMENSIONS = (
+    "evidence_provenance",
+    "derived_network",
+    "visual_evidence",
+    "review_isolation",
+)
 STATUSES = frozenset({"PASS", "WATCH", "FAIL"})
 _HASH_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
@@ -123,6 +129,211 @@ def _copy_json(value: Any) -> Any:
         return deepcopy(value)
     except Exception:  # pragma: no cover - exotic custom Mapping fallback
         return value
+
+
+def _artifact_json(
+    sample: Mapping[str, Any],
+    name: str,
+    *,
+    base_dir: Path,
+    schema_version: str,
+) -> tuple[str, dict[str, Any] | None, list[str]]:
+    artifacts = _dict(sample.get("artifacts"))
+    record = _dict(artifacts.get(name))
+    if not record:
+        return "WATCH", None, [f"{name} artifact is absent"]
+    digest = record.get("sha256")
+    if not _valid_hash(digest):
+        return "FAIL", None, [f"{name} artifact SHA-256 is missing or malformed"]
+    raw_path = record.get("path")
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        return "FAIL", None, [f"{name} artifact path is absent"]
+    path = Path(raw_path).expanduser()
+    if not path.is_absolute():
+        path = base_dir / path
+    path = path.resolve()
+    if not path.is_file():
+        return "FAIL", None, [f"{name} artifact file is missing"]
+    try:
+        content = path.read_bytes()
+        payload = json.loads(content.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return "FAIL", None, [f"{name} artifact cannot be read: {exc.__class__.__name__}"]
+    actual = hashlib.sha256(content).hexdigest()
+    if actual.lower() != str(digest).lower():
+        return "FAIL", None, [f"{name} artifact SHA-256 does not match"]
+    if not isinstance(payload, Mapping):
+        return "FAIL", None, [f"{name} artifact root is not an object"]
+    value = dict(payload)
+    if value.get("schema_version") != schema_version:
+        return "FAIL", value, [f"{name} artifact schema is unsupported"]
+    return "PASS", value, []
+
+
+def _explicit_architecture_evidence(
+    sample: Mapping[str, Any],
+    root: Mapping[str, Any],
+    dimension: str,
+) -> tuple[str, list[str]] | None:
+    for container in (
+        _dict(sample.get("architecture")),
+        _dict(root.get("architecture_contracts")),
+    ):
+        record = _dict(container.get(dimension))
+        if not record:
+            continue
+        status = _status(record)
+        if status == "FAIL":
+            return "FAIL", [f"{dimension} contract explicitly failed"]
+        evidence_present = any(
+            key in record
+            for key in (
+                "evidence",
+                "evidence_ref",
+                "verified_by",
+                "check_id",
+                "immutable_run_artifacts",
+                "separate_workspace",
+                "optimistic_revisions",
+            )
+        )
+        if status == "PASS" and evidence_present:
+            return "PASS", []
+        return "WATCH", [f"{dimension} contract lacks independent evidence"]
+    return None
+
+
+def _architecture_dimension(
+    sample: Mapping[str, Any],
+    root: Mapping[str, Any],
+    dimension: str,
+    *,
+    base_dir: Path,
+) -> tuple[str, list[str]]:
+    explicit = _explicit_architecture_evidence(sample, root, dimension)
+    if explicit is not None:
+        return explicit
+
+    if dimension == "review_isolation":
+        return "WATCH", ["review workspace isolation evidence is absent"]
+
+    graph_status, graph, graph_reasons = _artifact_json(
+        sample,
+        "evidence_graph",
+        base_dir=base_dir,
+        schema_version="cad2gis.evidence_graph.v1",
+    )
+    if dimension == "evidence_provenance":
+        return graph_status, graph_reasons
+
+    if dimension == "visual_evidence":
+        status, manifest, reasons = _artifact_json(
+            sample,
+            "visual_evidence",
+            base_dir=base_dir,
+            schema_version="cad2gis.visual_evidence.v1",
+        )
+        if status != "PASS" or manifest is None:
+            return status, reasons
+        if graph_status != "PASS" or graph is None:
+            return graph_status, graph_reasons
+        if manifest.get("authority") != "secondary_visual_evidence_only":
+            return "FAIL", ["visual evidence is incorrectly declared authoritative"]
+        if manifest.get("model_space_only") is not True:
+            return "FAIL", ["visual evidence is not restricted to model space"]
+        if manifest.get("paper_space_excluded") is not True:
+            return "FAIL", ["visual evidence does not exclude paper space"]
+        region_count = _as_count(manifest.get("region_count"))
+        regions = manifest.get("regions")
+        if (
+            region_count is None
+            or region_count < 1
+            or not isinstance(regions, Sequence)
+            or isinstance(regions, (str, bytes, bytearray))
+            or len(regions) != region_count
+        ):
+            return "FAIL", ["visual evidence region inventory is inconsistent"]
+        if manifest.get("evidence_graph_sha256") != graph.get("graph_sha256"):
+            return "FAIL", ["visual evidence is not bound to the evidence graph"]
+        file_records = manifest.get("files")
+        if (
+            not isinstance(file_records, Sequence)
+            or isinstance(file_records, (str, bytes, bytearray))
+            or len(file_records) < region_count * 3
+        ):
+            return "FAIL", ["visual evidence file inventory is incomplete"]
+        root = base_dir.resolve()
+        for raw_record in file_records:
+            record = _dict(raw_record)
+            relative_path = record.get("path")
+            expected_sha = record.get("sha256")
+            if (
+                not isinstance(relative_path, str)
+                or not relative_path
+                or not _valid_hash(expected_sha)
+            ):
+                return "FAIL", ["visual evidence file record is invalid"]
+            path = (root / relative_path).resolve()
+            if root != path.parent and root not in path.parents:
+                return "FAIL", ["visual evidence file escapes the run directory"]
+            if not path.is_file():
+                return "FAIL", ["visual evidence file is missing"]
+            if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha:
+                return "FAIL", ["visual evidence file SHA-256 does not match"]
+        return "PASS", []
+
+    if dimension == "derived_network":
+        artifacts = _dict(sample.get("artifacts"))
+        has_pack = bool(_dict(artifacts.get("decision_pack")))
+        has_execution = bool(_dict(artifacts.get("decision_execution")))
+        has_derived = bool(_dict(artifacts.get("derived_network")))
+        if not has_pack and not has_execution and not has_derived:
+            if graph_status == "PASS":
+                return "PASS", ["no decision pack was applied"]
+            return graph_status, graph_reasons
+        if not (has_pack and has_execution and has_derived):
+            return "FAIL", ["decision artifacts are incomplete"]
+        pack_status, pack, pack_reasons = _artifact_json(
+            sample,
+            "decision_pack",
+            base_dir=base_dir,
+            schema_version="cad2gis.decision_pack.v1",
+        )
+        if pack_status != "PASS" or pack is None:
+            return pack_status, pack_reasons
+        execution_status, execution, execution_reasons = _artifact_json(
+            sample,
+            "decision_execution",
+            base_dir=base_dir,
+            schema_version="cad2gis.decision_execution.v1",
+        )
+        if execution_status != "PASS" or execution is None:
+            return execution_status, execution_reasons
+        derived_status, derived, derived_reasons = _artifact_json(
+            sample,
+            "derived_network",
+            base_dir=base_dir,
+            schema_version="cad2gis.derived_network.v1",
+        )
+        if derived_status != "PASS" or derived is None:
+            return derived_status, derived_reasons
+        if derived.get("source_geometry_mutated") is not False:
+            return "FAIL", ["derived network reports source geometry mutation"]
+        if derived.get("native_lengths_mutated") is not False:
+            return "FAIL", ["derived network reports native length mutation"]
+        if execution.get("execution_sha256") != derived.get("execution_sha256"):
+            return "FAIL", ["decision execution and derived network are not bound"]
+        if execution.get("pack_sha256") != pack.get("pack_sha256"):
+            return "FAIL", ["decision execution is not bound to the decision pack"]
+        if graph_status != "PASS" or graph is None:
+            return graph_status, graph_reasons
+        if pack.get("evidence_graph_sha256") != graph.get("graph_sha256"):
+            return "FAIL", ["decision pack is not bound to the evidence graph"]
+        if derived.get("evidence_graph_sha256") != graph.get("graph_sha256"):
+            return "FAIL", ["derived network is not bound to the evidence graph"]
+        return "PASS", []
+
+    return "WATCH", [f"{dimension} architecture evidence is absent"]
 
 
 def _source_record(sample: Mapping[str, Any]) -> dict[str, Any]:
@@ -459,7 +670,13 @@ def _absolute_accuracy(sample: Mapping[str, Any]) -> tuple[str, list[str]]:
     return "WATCH", reasons
 
 
-def _normalise_sample(raw: Mapping[str, Any], index: int, root: Mapping[str, Any]) -> dict[str, Any]:
+def _normalise_sample(
+    raw: Mapping[str, Any],
+    index: int,
+    root: Mapping[str, Any],
+    *,
+    base_dir: Path,
+) -> dict[str, Any]:
     sample = dict(raw)
     source = _source_record(sample)
     reasons: list[str] = []
@@ -486,6 +703,25 @@ def _normalise_sample(raw: Mapping[str, Any], index: int, root: Mapping[str, Any
             dim_reasons[dimension] = detail
             reasons.extend(detail)
 
+    architecture_dims: dict[str, str] = {}
+    architecture_reasons: dict[str, list[str]] = {}
+    for dimension in ARCHITECTURE_DIMENSIONS:
+        if inventory:
+            architecture_dims[dimension] = "WATCH"
+            architecture_reasons[dimension] = [
+                "inventory-only row is not an architecture evaluation"
+            ]
+        else:
+            status, detail = _architecture_dimension(
+                sample,
+                root,
+                dimension,
+                base_dir=base_dir,
+            )
+            architecture_dims[dimension] = status
+            architecture_reasons[dimension] = detail
+            reasons.extend(detail)
+
     if not input_verified:
         reasons.append("input content is not verified")
     if not evaluated and not inventory:
@@ -493,9 +729,15 @@ def _normalise_sample(raw: Mapping[str, Any], index: int, root: Mapping[str, Any
 
     if inventory:
         status = "INVENTORY_ONLY"
-    elif any(value == "FAIL" for value in dims.values()) or not input_verified:
+    elif (
+        any(value == "FAIL" for value in (*dims.values(), *architecture_dims.values()))
+        or not input_verified
+    ):
         status = "FAIL"
-    elif any(value == "WATCH" for value in dims.values()) or not evaluated:
+    elif (
+        any(value == "WATCH" for value in (*dims.values(), *architecture_dims.values()))
+        or not evaluated
+    ):
         status = "WATCH"
     else:
         status = "PASS"
@@ -543,6 +785,8 @@ def _normalise_sample(raw: Mapping[str, Any], index: int, root: Mapping[str, Any
         "status": status,
         "dimensions": dims,
         "dimension_reasons": dim_reasons,
+        "architecture_dimensions": architecture_dims,
+        "architecture_reasons": architecture_reasons,
         "reasons": sorted(set(str(reason) for reason in reasons if reason)),
     }
     # Include stable source/schema metadata without exposing arbitrary mutable
@@ -641,7 +885,10 @@ def evaluate_matrix(path: str | Path) -> dict[str, Any]:
     if explicit_matrix and str(matrix_schema) not in SUPPORTED_MATRIX_SCHEMAS:
         errors.append(f"unsupported matrix schema: {matrix_schema}")
 
-    samples = [_normalise_sample(row, index, root) for index, row in enumerate(rows)]
+    samples = [
+        _normalise_sample(row, index, root, base_dir=matrix_path.parent)
+        for index, row in enumerate(rows)
+    ]
     hashes = {
         str(sample.get("input_sha256")).lower()
         for sample in samples
@@ -675,6 +922,10 @@ def evaluate_matrix(path: str | Path) -> dict[str, Any]:
             dimension: _aggregate_dimension(samples, dimension)
             for dimension in DIMENSIONS
         },
+        "architecture_dimensions": {
+            dimension: _aggregate_architecture_dimension(samples, dimension)
+            for dimension in ARCHITECTURE_DIMENSIONS
+        },
         "errors": errors,
     }
     # Claim calculation intentionally consumes only normalized sample evidence.
@@ -700,7 +951,35 @@ def _aggregate_dimension(samples: Sequence[Mapping[str, Any]], dimension: str) -
     return {"status": status, "evaluated_samples": len(values), "pass_count": values.count("PASS"), "watch_count": values.count("WATCH"), "fail_count": values.count("FAIL")}
 
 
+def _aggregate_architecture_dimension(
+    samples: Sequence[Mapping[str, Any]],
+    dimension: str,
+) -> dict[str, Any]:
+    values = [
+        _status(_dict(sample.get("architecture_dimensions")).get(dimension))
+        for sample in samples
+        if sample.get("evaluated") is True and not sample.get("inventory_only")
+    ]
+    values = [value for value in values if value]
+    if not values:
+        return {"status": "WATCH", "evaluated_samples": 0}
+    if "FAIL" in values:
+        status = "FAIL"
+    elif "WATCH" in values:
+        status = "WATCH"
+    else:
+        status = "PASS"
+    return {
+        "status": status,
+        "evaluated_samples": len(values),
+        "pass_count": values.count("PASS"),
+        "watch_count": values.count("WATCH"),
+        "fail_count": values.count("FAIL"),
+    }
+
+
 __all__ = [
+    "ARCHITECTURE_DIMENSIONS",
     "DIMENSIONS",
     "MATRIX_SCHEMA_VERSION",
     "REPORT_SCHEMA_VERSION",

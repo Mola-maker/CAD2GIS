@@ -15,10 +15,12 @@ _READER_ENV = "CAD2GIS_READER_BACKEND"
 _DEFAULT_READER = "libredwg"
 
 
-def _default_extract_records(source_path: Path) -> DWGRecordInventory:
+def extract_records(source_path: Path) -> DWGRecordInventory:
+    """Extract a complete inventory with the configured canonical reader."""
+
     backend = os.environ.get(_READER_ENV, _DEFAULT_READER).strip().lower()
     if backend == "libredwg":
-        from ..reader.dwg_extractor import extract_dwg_records
+        from ..reader.libredwg import extract_dwg_records
     elif backend == "autocad":
         from ..reader.autocad import extract_dwg_records
     else:
@@ -28,16 +30,20 @@ def _default_extract_records(source_path: Path) -> DWGRecordInventory:
     return extract_dwg_records(source_path)
 
 
+_CANONICAL_EXTRACT_RECORDS = extract_records
+
+
 def ingest(
     source: str | Path,
     profile: SourceProfile,
     *,
     extract_records: Callable[[Path], DWGRecordInventory] | None = None,
+    skip_census_check: bool = False,
 ) -> tuple[list[SourceEntity], dict]:
     source_path = Path(source).resolve()
     source_hash = profile.validate_source(source_path)
     if extract_records is None:
-        extract_records = _default_extract_records
+        extract_records = _CANONICAL_EXTRACT_RECORDS
     records = extract_records(source_path)
     reader_protocol = dict(getattr(records, "diagnostics", {}) or {})
     if (
@@ -49,7 +55,7 @@ def ingest(
             f"skips cannot enter conversion: {reader_protocol}"
         )
     entities = [SourceEntity.from_record(record) for record in records]
-    model = [entity for entity in entities if entity.layout.casefold() == "model"]
+    model = [entity for entity in entities if entity.cad_role == "model"]
     metadata = next((entity.text for entity in entities if entity.dwg_type == "DOCUMENT_METADATA"), "")
     if profile.dwg_cgeocs is not None:
         expected_cgeocs = f"CGEOCS={profile.dwg_cgeocs}"
@@ -68,10 +74,11 @@ def ingest(
         "model_inserts": sum(entity.dwg_type == "INSERT" for entity in model),
         "model_dimensions": sum(entity.dwg_type == "DIMENSION" for entity in model),
     }
-    for key in ("model_entities", "model_inserts", "model_dimensions"):
-        expected = profile.expected_census.get(key)
-        if expected is not None and census[key] != expected:
-            raise ValueError(f"Authoritative census mismatch for {key}: expected {expected}, got {census[key]}")
+    if not skip_census_check:
+        for key in ("model_entities", "model_inserts", "model_dimensions"):
+            expected = profile.expected_census.get(key)
+            if expected is not None and census[key] != expected:
+                raise ValueError(f"Authoritative census mismatch for {key}: expected {expected}, got {census[key]}")
 
     annotation_carriers = {
         "TEXT", "MTEXT", "ATTRIB", "ATTDEF", "MLEADER", "MULTILEADER",

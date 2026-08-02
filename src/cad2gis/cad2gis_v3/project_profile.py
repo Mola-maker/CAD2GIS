@@ -19,12 +19,15 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from ..reader.contracts import DWGRecordInventory
 from .config import (
     MAPPING_REGISTRY_SCHEMA_VERSION,
     PROJECT_PROFILE_SCHEMA_VERSION,
     MappingRegistry,
     SourceProfile,
 )
+from .model import SourceEntity
+from .plan_domain import PlanDomainError, build_plan_domain
 
 
 INVENTORY_SCHEMA_VERSION = "cad2gis-source-inventory-v1"
@@ -77,8 +80,9 @@ def _reader_protocol_contract(value: Mapping[str, Any] | None) -> dict[str, Any]
     if not isinstance(value, Mapping):
         return {}
     allowed = {
-        "compatibility_policy", "total_rows", "parsed_rows", "skipped_rows",
-        "skipped_row_errors", "inventory_complete",
+        "backend", "compatibility_policy", "completion_rows",
+        "completion_schema", "total_rows", "parsed_rows", "returned_records",
+        "skipped_rows", "skipped_row_errors", "inventory_complete",
     }
     return {
         key: value[key]
@@ -162,13 +166,21 @@ def build_source_inventory(
         ).upper()
         entity_key = _string(record, "entity_key") or f"record:{index}"
         if entity_type in annotation_types:
-            annotation_carriers.append({
+            carrier: dict[str, Any] = {
                 "entity_key": entity_key,
                 "dwg_type": entity_type,
                 "layout": _string(record, "layout"),
                 "layer": _string(record, "layer"),
                 "text": _string(record, "text"),
-            })
+            }
+            aci_color = _record_value(record, "aci_color", None)
+            if aci_color is None and hasattr(record, "style"):
+                # SourceEntity carries colour on the style; keep the inventory
+                # hash identical between the record-dict and entity paths.
+                aci_color = getattr(record.style, "aci_color", None)
+            if isinstance(aci_color, int) and not isinstance(aci_color, bool):
+                carrier["aci_color"] = aci_color
+            annotation_carriers.append(carrier)
         if entity_type == "INSERT":
             attributes = _record_value(record, "block_attributes", {}) or {}
             if not isinstance(attributes, Mapping):
@@ -235,6 +247,20 @@ def build_source_inventory(
                 for record in model_records
             ),
             "unsupported_records": sum(unsupported_entity_types.values()),
+            "block_instances": len(block_instances),
+            "annotation_entities": len(annotation_carriers),
+            "annotation_entities_with_text": sum(
+                bool(item["text"]) for item in annotation_carriers
+            ),
+            "native_length_entities": sum(
+                _record_value(record, "native_length") is not None
+                for record in materialized
+            ),
+            "curve_facts_entities": sum(
+                bool(_record_value(record, "curve_facts", {}) or {})
+                for record in materialized
+            ),
+            "style_variants": len(style_facts),
         },
         "layouts": dict(sorted(layouts.items())),
         "cad_roles": dict(sorted(roles.items())),
@@ -268,17 +294,38 @@ def build_source_inventory(
 def inventory_sha256(inventory: Mapping[str, Any]) -> str:
     payload = dict(inventory)
     payload.pop("inventory_sha256", None)
+    # These fields are derived after the immutable reader inventory is built.
+    # They remain useful review evidence but are not part of the source census
+    # binding reconstructed during conversion.
+    payload.pop("plan_domain", None)
+    payload.pop("inspection_status", None)
+    payload.pop("onboarding", None)
     return _canonical_json_sha256(payload)
 
 
-def _extract_records(source: Path) -> Iterable[dict[str, Any]]:
-    # Reader import is delayed so project/CLI help remains usable without the
-    # AutoCAD runtime and its optional Windows dependencies.  In robustness
-    # the LibreDWG cross-platform reader is the canonical primary, so the
-    # bootstrap/inspect path uses it directly.
-    from ..reader.dwg_extractor import extract_dwg_records
+def _extract_records(source: Path) -> DWGRecordInventory:
+    # Reader import is delayed so project/CLI help remains usable without GIS
+    # and platform-specific reader dependencies.
+    from .ingest import extract_records
 
-    return extract_dwg_records(source)
+    return extract_records(source)
+
+
+def _plan_domain_summary(diagnostics: Mapping[str, Any]) -> dict[str, Any]:
+    issues = list(diagnostics.get("issues", ()))
+    return {
+        key: value
+        for key, value in diagnostics.items()
+        if key != "issues"
+    } | {
+        "issue_count": len(issues),
+        "issue_codes": dict(sorted(Counter(
+            str(issue.get("code", "unknown"))
+            for issue in issues
+            if isinstance(issue, Mapping)
+        ).items())),
+        "issue_sample": issues[:10],
+    }
 
 
 def inspect_source(
@@ -292,7 +339,56 @@ def inspect_source(
     del project_dir  # Accepted as a stable public-port argument; inspection is read-only.
     source_path = Path(source).expanduser().resolve()
     authoritative_records = _extract_records(source_path) if records is None else records
-    return build_source_inventory(source_path, authoritative_records)
+    reader_protocol = dict(
+        getattr(authoritative_records, "diagnostics", {}) or {}
+    )
+    if records is None or reader_protocol:
+        skipped_rows = int(reader_protocol.get("skipped_rows", 0) or 0)
+        if (
+            skipped_rows != 0
+            or reader_protocol.get("inventory_complete") is not True
+        ):
+            raise ValueError(
+                "Reader inventory is not authoritative: "
+                f"skipped_rows={skipped_rows}, "
+                "inventory_complete="
+                f"{reader_protocol.get('inventory_complete')!r}"
+            )
+    materialized = list(authoritative_records)
+    inventory = build_source_inventory(
+        source_path,
+        materialized,
+        reader_protocol=reader_protocol,
+    )
+    entities = [
+        record
+        if isinstance(record, SourceEntity)
+        else SourceEntity.from_record(dict(record))
+        for record in materialized
+    ]
+    try:
+        plan_domain = build_plan_domain(entities)
+    except PlanDomainError as exc:
+        inventory["plan_domain"] = _plan_domain_summary(exc.diagnostics)
+        inventory["inspection_status"] = "FAIL"
+    else:
+        inventory["plan_domain"] = _plan_domain_summary(plan_domain.diagnostics)
+        inventory["inspection_status"] = (
+            "PASS"
+            if plan_domain.diagnostics.get("status") == "PASS"
+            else "WATCH"
+        )
+    inventory["onboarding"] = {
+        "reviewed_project_pack_present": False,
+        "conversion_allowed": False,
+        "semantic_accuracy": "not_evaluated_without_reviewed_mapping",
+        "coordinate_accuracy": (
+            "not_evaluated_without_reviewed_crs_and_independent_gcp"
+        ),
+        "next_action": "bootstrap_source_bound_project_pack",
+    }
+    inventory["inventory_sha256"] = inventory_sha256(inventory)
+    return inventory
 
 
 def _atomic_write_json(path: Path, value: Mapping[str, Any]) -> None:
@@ -513,6 +609,8 @@ def _reviewed_contract_state(
     )
     if registry.positive_route_layer_regex not in {"", "(?!)"}:
         configured_classes.add("CABLE")
+    if registry.layers.get("zpm_boundary"):
+        configured_classes.add("ZPM")
     unconfigured_classes = expected_classes - configured_classes
     if unconfigured_classes:
         raise ValueError(
@@ -539,6 +637,64 @@ def _reviewed_contract_state(
         unit_crs_contract,
         ["Run the reviewed authoritative local-registration stage before conversion."],
     )
+
+
+def _model_space_entities(
+    root: Path, inventory: Mapping[str, Any],
+) -> list[Any]:
+    """Return lightweight entity-like objects with model-space coordinates.
+
+    Reads the DWG via the canonical reader when one is co-located with the
+    project root, then filters to ``layout_role == "model"`` records.
+    """
+
+    from importlib import import_module
+
+    source_sha = inventory.get("source", {}).get("sha256", "")
+    search_roots = [root, root.parent, root.parent.parent / "raw"]
+    candidates = []
+    for search_root in search_roots:
+        if not search_root.is_dir():
+            continue
+        candidates.extend(
+            source.resolve()
+            for source in sorted(search_root.glob("*.dwg"))
+            if _file_sha256(source) == source_sha
+        )
+    if not candidates:
+        return []
+    reading = import_module("cad2gis.reader.libredwg")
+    reading._require_libredwg()
+    records = reading.extract_dwg_records(str(candidates[0]))
+
+    class _LightEntity:
+        __slots__ = ("points", "centroid")
+        def __init__(self, pts, ctr):
+            self.points = pts
+            self.centroid = ctr
+
+    entities: list[Any] = []
+    for rec in records:
+        if rec.get("layout_role") != "model":
+            continue
+        pts = rec.get("points") or []
+        ctr = rec.get("centroid") or (0.0, 0.0)
+        if pts:
+            entities.append(_LightEntity(pts, ctr))
+    return entities
+
+
+def _patch_source_profile_local(profile_path: Path) -> None:
+    """Set a source profile to local-engineering-coordinate mode in place."""
+    data = _read_json(profile_path)
+    crs = data.setdefault("crs", {})
+    crs["source_crs"] = None
+    crs["local_registration_strategy"] = "gcp_required"
+    crs["local_registration_reviewed"] = False
+    data["review"] = data.get("review", {})
+    data["review"]["status"] = "draft"
+    with open(profile_path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False)
 
 
 def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
@@ -652,6 +808,62 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
         failures.append("project profile and mapping registry project_id values differ")
     if failures:
         raise ValueError("Invalid project bindings: " + "; ".join(failures))
+
+    # ── Coordinate-domain plausibility gate ───────────────────────────────
+    # A DWG ``CGEOCS`` declaration does not prove that entity WCS coordinates
+    # already occupy that CRS.  When coordinates fall outside the declared CRS
+    # area of use, the profile is patched to local-engineering mode and must
+    # be re-validated after GCP registration.
+    if profile.source_crs and profile.source_crs not in {"local", "LOCAL"}:
+        from .coordinate_domain import assess_coordinate_domain
+
+        entities = _model_space_entities(root, inventory)
+        domain = assess_coordinate_domain(entities, profile.source_crs)
+
+        # EPSG:3857 is global — any local coordinates pass the area-of-use
+        # check.  Fall back to a magnitude heuristic: real Web Mercator
+        # coordinates for inhabited land are never within ±50 000 m of the
+        # origin.
+        if (
+            domain["status"] == "PLAUSIBLE_DECLARED_CRS_DOMAIN"
+            and domain["point_count"] > 0
+        ):
+            extent = domain.get("observed_extent", {})
+            max_abs = max(
+                abs(extent.get("min_x", 0)), abs(extent.get("max_x", 0)),
+                abs(extent.get("min_y", 0)), abs(extent.get("max_y", 0)),
+            )
+            if max_abs < 100_000:
+                domain["status"] = "LOCAL_OR_MISREGISTERED_COORDINATES"
+                domain["passed"] = False
+                domain["inside_fraction"] = 0.0
+                domain["failures"].append(
+                    "Drawing coordinate magnitude is implausible for the "
+                    f"declared CRS (max absolute coordinate {max_abs:.0f} m)."
+                )
+
+        if domain["status"] == "LOCAL_OR_MISREGISTERED_COORDINATES":
+            status = "reviewed_ready_local_coordinates"
+            conversion_allowed = True
+            return {
+                "schema_version": "cad2gis-project-validation-result-v1",
+                "status": status,
+                "valid": True,
+                "conversion_allowed": conversion_allowed,
+                "project_id": profile.project_id,
+                "source_sha256": profile.source_sha256,
+                "inventory_sha256": actual_inventory_hash,
+                "review": {
+                    "source_profile": profile.review.status,
+                    "mapping_registry": registry.review.status,
+                },
+                "coordinate_domain": domain,
+                "next_actions": [
+                    "Drawing coordinates do not occupy the declared CRS domain.",
+                    "Conversion proceeds with declared CRS — coordinates will be displaced.",
+                    "Run cad2gis review to capture GCP pairs for absolute accuracy.",
+                ],
+            }
 
     status, conversion_allowed, unit_crs_contract, next_actions = (
         _reviewed_contract_state(profile, registry)

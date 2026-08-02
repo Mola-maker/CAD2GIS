@@ -17,7 +17,7 @@ from typing import Any
 
 IMPLEMENTATION_SCHEMA_VERSION = "cad2gis-implementation-provenance-v1"
 PRODUCTION_CONVERSION_SCOPE = "production-conversion"
-PRODUCTION_CONVERSION_SCOPE_VERSION = 3
+PRODUCTION_CONVERSION_SCOPE_VERSION = 4
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
 # Paths are relative to src/cad2gis.  Keep this list explicit: adding
@@ -31,7 +31,10 @@ PRODUCTION_CONVERSION_FILES = (
     "cad2gis_v3/cli.py",
     "cad2gis_v3/config.py",
     "cad2gis_v3/curve_geometry.py",
+    "cad2gis_v3/decision_executor.py",
+    "cad2gis_v3/decision_validation.py",
     "cad2gis_v3/evidence.py",
+    "cad2gis_v3/evidence_graph.py",
     "cad2gis_v3/georef.py",
     "cad2gis_v3/gpkg_metadata.py",
     "cad2gis_v3/implementation.py",
@@ -40,6 +43,7 @@ PRODUCTION_CONVERSION_FILES = (
     "cad2gis_v3/pipeline.py",
     "cad2gis_v3/ports.py",
     "cad2gis_v3/project_profile.py",
+    "cad2gis_v3/repair_decisions.py",
     "cad2gis_v3/runtime_provenance.py",
     "cad2gis_v3/schema_config.py",
     "cad2gis_v3/semantics.py",
@@ -189,6 +193,7 @@ def freeze_conversion_snapshot(
     mapping_registry: str | os.PathLike[str],
     gcp_profile: str | os.PathLike[str] | None = None,
     *,
+    decision_pack: str | os.PathLike[str] | None = None,
     code_root: str | os.PathLike[str] | None = None,
     code_paths: Iterable[str] | None = None,
     runtime: Mapping[str, Any] | None = None,
@@ -220,6 +225,10 @@ def freeze_conversion_snapshot(
         "gcp_profile": (
             None if gcp_profile is None else _artifact_record(gcp_profile, kind="gcp_profile")
         ),
+        "decision_pack": (
+            None if decision_pack is None
+            else _artifact_record(decision_pack, kind="decision_pack")
+        ),
     }
     snapshot: dict[str, Any] = {
         "schema_version": CONVERSION_SNAPSHOT_SCHEMA_VERSION,
@@ -233,6 +242,10 @@ def freeze_conversion_snapshot(
         "mapping_registry_sha256": artifacts["mapping_registry"]["sha256"],
         "gcp_profile_sha256": (
             None if artifacts["gcp_profile"] is None else artifacts["gcp_profile"]["sha256"]
+        ),
+        "decision_pack_sha256": (
+            None if artifacts["decision_pack"] is None
+            else artifacts["decision_pack"]["sha256"]
         ),
     }
     if runtime is not None:
@@ -280,6 +293,7 @@ def verify_conversion_snapshot(
     source_profile: str | os.PathLike[str] | None = None,
     mapping_registry: str | os.PathLike[str] | None = None,
     gcp_profile: str | os.PathLike[str] | None = None,
+    decision_pack: str | os.PathLike[str] | None = None,
     code_root: str | os.PathLike[str] | None = None,
 ) -> dict[str, Any]:
     """Re-read and verify every frozen byte before publication.
@@ -323,6 +337,7 @@ def verify_conversion_snapshot(
         "source_profile": source_profile,
         "mapping_registry": mapping_registry,
         "gcp_profile": gcp_profile,
+        "decision_pack": decision_pack,
     }
     checked: list[str] = []
     for name in ("source", "source_profile", "mapping_registry"):
@@ -339,6 +354,22 @@ def verify_conversion_snapshot(
     else:
         ok, detail = _verify_artifact(
             "gcp_profile", expected_gcp, override=overrides["gcp_profile"]
+        )
+        if not ok:
+            mismatches.append(detail)
+
+    expected_decision_pack = artifacts.get("decision_pack")
+    checked.append("decision_pack")
+    if expected_decision_pack is None:
+        if overrides["decision_pack"] is not None:
+            mismatches.append(
+                "artifacts.decision_pack: snapshot has no decision pack"
+            )
+    else:
+        ok, detail = _verify_artifact(
+            "decision_pack",
+            expected_decision_pack,
+            override=overrides["decision_pack"],
         )
         if not ok:
             mismatches.append(detail)

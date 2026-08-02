@@ -1,4 +1,4 @@
-"""Reader contract shared by autocad (legacy) and libredwg (cross-platform).
+"""Reader contract shared by AutoCAD and LibreDWG adapters.
 
 Defines the v3 reader protocol:
 - ``extract_dwg_records(source_path) -> DWGRecordInventory``
@@ -10,7 +10,28 @@ Defines the v3 reader protocol:
 
 from __future__ import annotations
 
+import dataclasses
+from collections.abc import Iterator
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
+
+
+class ReaderUnavailableError(RuntimeError):
+    """The configured reader cannot provide an authoritative inventory."""
+
+
+@dataclasses.dataclass(frozen=True)
+class ReaderCapability:
+    """Serializable availability report for an optional reader backend."""
+
+    backend: str
+    available: bool
+    detail: str
+    remediation: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable representation of this capability."""
+        return dataclasses.asdict(self)
 
 
 @runtime_checkable
@@ -19,9 +40,9 @@ class DWGRecordInventory(Protocol):
 
     diagnostics: dict[str, Any]
 
-    def __iter__(self): ...
-    def __len__(self): ...
-    def __getitem__(self, idx): ...
+    def __iter__(self) -> Iterator[dict[str, Any]]: ...
+    def __len__(self) -> int: ...
+    def __getitem__(self, idx: int) -> dict[str, Any]: ...
 
 
 @runtime_checkable

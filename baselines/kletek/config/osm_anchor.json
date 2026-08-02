@@ -1,0 +1,32 @@
+{
+  "schema_version": "cad2gis-osm-anchor-v1",
+  "status": "derived",
+  "place_name": "KLETEK RW 05 SIDOARJO",
+  "display_name": "Kletek, Taman, Sidoarjo, Jawa Timur, 60221, Indonesia",
+  "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - KLETEK RW 05 SIDOARJO.dwg",
+  "local_entity_bbox": [
+    -262.95095403325365,
+    -299.89140770956135,
+    274.88019829319086,
+    265.6166386930446
+  ],
+  "local_centre": [
+    5.964622129968603,
+    -17.13738450825838
+  ],
+  "target_epsg3857_centre": [
+    12543757.016753819,
+    -821471.8822444176
+  ],
+  "translation_dx": 12543751.0521,
+  "translation_dy": -821454.7449,
+  "source": "OPENSTREETMAP_NOMINATIM",
+  "precision": "coarse_bbox_centre",
+  "refinement": "gcp_optional",
+  "target_epsg3857_bbox": {
+    "min_x": 12541530.626938263,
+    "min_y": -823716.8140836926,
+    "max_x": 12545983.406569375,
+    "max_y": -819227.0516095968
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema_version": "cad2gis-osm-anchor-v1",
+  "status": "derived",
+  "place_name": "LAMTEH DAYAH ACEH",
+  "display_name": "Lamteh Dayah, Suka Makmur, Aceh Besar, Aceh, Sumatera, 23242, Indonesia",
+  "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - KELURAHAN LAMTEH DAYAH ACEH.dwg",
+  "local_entity_bbox": [
+    2074.9872228322647,
+    -9831.602118449955,
+    24322.510439064466,
+    158.2604148586289
+  ],
+  "local_centre": [
+    13198.748830948365,
+    -4836.670851795663
+  ],
+  "target_epsg3857_centre": [
+    10616116.487453239,
+    609905.8874086541
+  ],
+  "translation_dx": 10602917.7386,
+  "translation_dy": 614742.5583,
+  "source": "OPENSTREETMAP_NOMINATIM",
+  "precision": "coarse_bbox_centre",
+  "refinement": "gcp_optional",
+  "target_epsg3857_bbox": {
+    "min_x": 10613890.097637683,
+    "min_y": 607669.3480773186,
+    "max_x": 10618342.877268793,
+    "max_y": 612142.5015090349
+  }
+}
