@@ -472,6 +472,12 @@ $("#export-gcp").addEventListener("click", async () => {
       body: JSON.stringify({ activate: true }),
     });
     $("#conversion-command").textContent = result.conversion_command;
+    const sourceNote = $("#preview-source-note");
+    if (sourceNote) {
+      sourceNote.textContent = result.registered_delivery
+        ? `修正结果已存在：${result.registered_delivery}。当前预览仍为配准前的原始 run。`
+        : `已生成修正命令（llm=${result.source_run_modes?.llm || "off"}）。执行后在 ${result.next_run_dir}/delivery.gpkg 查看修正结果；当前预览仍为配准前的原始 run。`;
+    }
     toast("GCP 配置已通过规范校验并生成");
   } catch (error) {
     toast(error.message, true);

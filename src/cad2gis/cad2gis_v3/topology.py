@@ -905,6 +905,10 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
                     segment["delivery_chord_length_native"]
                 ),
                 "dimension_entity_key": dimension_key,
+                "dimension_text_override": (
+                    dimension.dimension_text_override
+                    if dimension_key is not None else None
+                ),
                 "measurement_native_m": measurement,
                 "measurement_delta_m": measurement_delta,
                 "status": status,

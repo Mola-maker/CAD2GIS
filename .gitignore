@@ -62,9 +62,14 @@ baselines/*/run/
 baselines/*/run.review/
 baselines/*/review/
 
+# robustness: regenerate_runs.py log output
+scripts/logs/
+
 # robustness: verification output artifacts
 baselines/apd_hutabohu/output/
 
 # robustness: temp venv caches
 .pytest_cache/
 __pycache__/
+
+.dsh-funnel/

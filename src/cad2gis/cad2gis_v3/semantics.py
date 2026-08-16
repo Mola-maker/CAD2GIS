@@ -11,7 +11,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from .config import MappingRegistry
 from .model import Feature, Relation, SourceEntity
-from .spatial_filter import is_placeholder_text
+from .spatial_filter import is_placeholder_text, is_pole_identifier_shape
 
 
 _ANNOTATION_CARRIER_TYPES = frozenset({
@@ -233,6 +233,26 @@ def _generated_code(feature_class: str, handle: str) -> str:
     return f"{feature_class}-CAD-{handle.upper()}"
 
 
+_GENERATED_CODE_PROVENANCE = "DWG_DERIVED:stable-handle-id"
+
+
+def _annotation_target_eligible(feature: Feature) -> bool:
+    """A target may receive a DWG text label only when its current label is
+    not semantic evidence.
+
+    ``classify_entities`` always pre-populates ``CODE`` with a stable
+    handle-derived fallback (``PTECH-CAD-1A2B3C``) so targets would otherwise
+    look permanently labelled and the annotation matcher would skip every
+    real DWG text.  Eligibility is provenance-based, not label-content based:
+    UNAVAILABLE and stable-handle-derived labels are replaceable; any label
+    already carried by a DWG text/attribute/decision-pack assignment is not.
+    """
+    if feature.label_provenance == "UNAVAILABLE":
+        return True
+    code_provenance = str(feature.field_provenance.get("CODE", "") or "")
+    return code_provenance == _GENERATED_CODE_PROVENANCE
+
+
 def _minimum_cost_assignment(costs):
     """Rectangular Hungarian assignment; rows must not outnumber columns."""
     if not costs:
@@ -294,7 +314,7 @@ def _assign_family_annotations(
     """Maximum-cardinality, minimum-distance one-to-one annotation matching."""
     annotations = sorted(annotations, key=lambda item: (item.text.casefold(), item.entity_key))
     targets = sorted(
-        (target for target in targets if not target.display_label),
+        (target for target in targets if _annotation_target_eligible(target)),
         key=lambda item: (item.source_handle, item.feature_key),
     )
     candidate_records, eligible, failures = [], [], []
@@ -588,6 +608,7 @@ def classify_entities(
         for family in annotation_families
     ]
     annotations_by_family = defaultdict(list)
+    unclaimed_pole_annotations: list[SourceEntity] = []
     annotation_discovery_failures = []
     label_rules = getattr(registry, "labels", {})
     suspected_pattern = str(label_rules.get("suspected_asset_id", "") or "")
@@ -658,6 +679,19 @@ def classify_entities(
             # source layer was named after a legend sample).  The semantic
             # fallback carries the same reviewed assignment contract.
             annotations_by_family[POLE_LABEL_FAMILY_ID].append(entity)
+            continue
+        elif (
+            not text_matches
+            and pole_label_layer.search(entity.layer)
+            and is_pole_identifier_shape(text)
+            and not is_placeholder_text(text)
+        ):
+            # The reviewed registry families miss this project's actual
+            # POLE-semantic label shape (observed on lamteh POLE ID and
+            # kletek EXT POLE).  Claim it for the same semantic pole-label
+            # fallback instead of silently leaving the PTECH CODE as a
+            # generated handle.
+            unclaimed_pole_annotations.append(entity)
             continue
         elif text_matches:
             annotation_discovery_failures.append({
@@ -747,6 +781,7 @@ def classify_entities(
                 text=str(failure.get("text", "")),
             ))
     fallback_annotations = annotations_by_family.pop(POLE_LABEL_FAMILY_ID, [])
+    fallback_annotations.extend(unclaimed_pole_annotations)
     fallback_targets: list[Feature] = []
     fallback_failure_annotations: list[SourceEntity] = []
     for family, _, _, target_layer_pattern in compiled_families:
@@ -852,7 +887,7 @@ def classify_entities(
         family_targets = [
             target
             for target in by_class["PTECH"]
-            if not target.display_label
+            if _annotation_target_eligible(target)
         ]
         if family_targets:
             fallback_rule = (

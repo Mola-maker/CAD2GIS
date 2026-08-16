@@ -38,6 +38,7 @@ def _run_fixture(tmp_path) -> tuple:
     manifest = {
         "schema_version": "cad2gis-run-manifest-v4",
         "run_status": "CONDITIONAL",
+        "modes": {"domain": "auto", "llm": "assist"},
         "source": {"path": "fixture.dwg", "sha256": "a" * 64},
         "artifacts": {
             "delivery": {"path": str(delivery), "sha256": "fixture"},
@@ -183,6 +184,9 @@ def test_review_app_transfers_coordinates_and_exports_active_profile(
     assert result["profile"]["enabled"] is True
     assert result["absolute_accuracy_verified"] is False
     assert "--gcp-profile" in result["conversion_command"]
+    assert "--llm assist" in result["conversion_command"]
+    assert "--domain auto" in result["conversion_command"]
+    assert result["source_run_modes"] == {"domain": "auto", "llm": "assist"}
     assert (workspace / "web_gcp_profile.json").is_file()
 
 

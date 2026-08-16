@@ -1250,6 +1250,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
             if family.target_class == "PTECH"
         ],
         cable_protect_layers=getattr(registry, "layers", {}).get("sling_wire", ()),
+        dimension_protect_layers=getattr(registry, "layers", {}).get(
+            "span_dimension", ()
+        ),
     )
     semantic_entities = list(spatial_result["entities"])
     legend_flag_map: dict[str, str] = spatial_result["flag_map"]
