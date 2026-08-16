@@ -118,6 +118,11 @@ def detect_annotation_frames(
 _PLACEHOLDER_RE = re.compile(r"(.)\1{2,}")
 _DENOISE_LABEL_RADIUS_M = 50.0
 
+# Structural shape shared by the four reviewed APD pole-identifier families:
+# dot-separated fields ending in ``P<digits>``.  Used only for unclaimed text
+# on POLE-semantic layers so legend notes like ``SLACK - 2 EXT`` never count.
+_POLE_IDENTIFIER_SHAPE = re.compile(r"(?i)\.\s*P\d+$")
+
 
 def is_placeholder_text(text: str) -> bool:
     """AI/annotation placeholders repeat a single character (XXX, NNN, ...).
@@ -127,6 +132,11 @@ def is_placeholder_text(text: str) -> bool:
     unlabelled-asset rule or wrongly survive boundary-band denoising.
     """
     return _PLACEHOLDER_RE.search(text) is not None
+
+
+def is_pole_identifier_shape(text: str) -> bool:
+    """True for the reviewed APD pole-label shape (e.g. ``MR.KLDYA.P017``)."""
+    return _POLE_IDENTIFIER_SHAPE.search(str(text).strip()) is not None
 
 
 def apply_spatial_denoising(
@@ -140,6 +150,7 @@ def apply_spatial_denoising(
     boundary_exempt_layers: Sequence[str] = (),
     label_text_patterns: Sequence[str] = (),
     cable_protect_layers: Sequence[str] = (),
+    dimension_protect_layers: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Run both spatial detectors, optionally call LLM, and exclude noise.
 
@@ -166,6 +177,10 @@ def apply_spatial_denoising(
             cluster-based exclusion even when reviewed label patterns are
             unavailable (e.g. an AI onboarding pass generated placeholder-only
             patterns).
+        dimension_protect_layers: Reviewed span-dimension layer names
+            (registry).  DIMENSION entities on these layers are independent
+            measurement evidence and are never removed by spatial denoising,
+            even inside a cached legend cluster.
 
     Returns:
         ``{"entities": list, "flag_map": dict, "diagnostics": dict}``
@@ -190,20 +205,30 @@ def apply_spatial_denoising(
         for pattern in label_text_patterns
         if str(pattern).strip()
     ]
-    label_centroids: list[tuple[float, float]] = [
-        (float(entity.centroid[0]), float(entity.centroid[1]))
-        for entity in original_entities
-        if entity.dwg_type in _ANNOTATION_FRAME_TYPES
-        and (entity.text or "").strip()
-        and not is_placeholder_text(entity.text)
-        and any(
-            pattern.fullmatch(entity.text.strip())
-            for pattern in label_patterns
+    label_centroids: list[tuple[float, float]] = []
+    label_evidence_keys: set[str] = set()
+    for entity in original_entities:
+        if entity.dwg_type not in _ANNOTATION_FRAME_TYPES:
+            continue
+        text = (entity.text or "").strip()
+        if not text or is_placeholder_text(text):
+            continue
+        reviewed_label = any(
+            pattern.fullmatch(text) for pattern in label_patterns
         )
-    ]
+        pole_shape_label = (
+            "POLE" in str(entity.layer).upper()
+            and is_pole_identifier_shape(text)
+        )
+        if reviewed_label or pole_shape_label:
+            label_centroids.append(
+                (float(entity.centroid[0]), float(entity.centroid[1]))
+            )
+            label_evidence_keys.add(entity.entity_key)
     if label_patterns:
         diagnostics["label_text_pattern_count"] = len(label_patterns)
         diagnostics["label_text_centroid_count"] = len(label_centroids)
+    diagnostics["label_evidence_key_count"] = len(label_evidence_keys)
 
     # Route/sling polylines: deployed assets hug the cable; a legend column
     # sits far from it.  Proximity to a cable polyline protects an INSERT
@@ -222,6 +247,17 @@ def apply_spatial_denoising(
     ]
     if cable_lines:
         diagnostics["cable_protect_line_count"] = len(cable_lines)
+
+    dimension_layer_upper = {
+        str(layer).strip().upper() for layer in dimension_protect_layers
+    }
+    dimension_evidence_keys: set[str] = {
+        entity.entity_key
+        for entity in original_entities
+        if entity.dwg_type.upper() == "DIMENSION"
+        and str(entity.layer).strip().upper() in dimension_layer_upper
+    }
+    diagnostics["dimension_evidence_key_count"] = len(dimension_evidence_keys)
 
     def _near_cable(point: tuple[float, float]) -> bool:
         x, y = point
@@ -377,6 +413,9 @@ def apply_spatial_denoising(
             diagnostics["route_exempt_length_floor_m"] = 10.0
 
         noise_keys: set[str] = set()
+        evidence_exempt = (
+            route_exempt | label_evidence_keys | dimension_evidence_keys
+        )
         exempt_layers_upper = {str(layer).upper() for layer in boundary_exempt_layers}
         entity_by_key = {entity.entity_key: entity for entity in entities}
 
@@ -399,7 +438,7 @@ def apply_spatial_denoising(
             return False
 
         for key, source in flag_map.items():
-            if key in route_exempt:
+            if key in evidence_exempt:
                 continue
             disp = source
             for prefix in ("llm_",):
@@ -445,7 +484,7 @@ def apply_spatial_denoising(
             if str(region.get("disposition", "")) not in _NOISE_DISPOSITIONS:
                 continue
             for mid in region.get("member_ids", ()):
-                if str(mid) in route_exempt:
+                if str(mid) in evidence_exempt:
                     continue
                 if _label_protected_insert(str(mid)):
                     # A cached legend verdict must not kill a deployed asset:
@@ -457,6 +496,9 @@ def apply_spatial_denoising(
 
         if route_exempt:
             diagnostics["route_exempt_count"] = len(route_exempt)
+        diagnostics["evidence_exempt_count"] = len(evidence_exempt)
+        diagnostics["label_evidence_protected_count"] = len(label_evidence_keys)
+        diagnostics["dimension_evidence_protected_count"] = len(dimension_evidence_keys)
         if noise_keys:
             pre_count = len(entities)
             entities[:] = [e for e in entities if e.entity_key not in noise_keys]

@@ -11,6 +11,7 @@ import gc
 import hashlib
 import math
 import os
+import re
 import shutil
 import sqlite3
 import tempfile
@@ -58,7 +59,7 @@ CABLE_SEGMENT = {
         {"full_name": "delivery_vertex_count", "type": "Integer"},
         {"full_name": "delivery_chord_length_native", "type": "Double"},
         {"full_name": "materialization_policy_version", "type": "Text", "length": 64},
-        {"full_name": "measurement_state", "type": "Text", "length": 16},
+        {"full_name": "measurement_state", "type": "Text", "length": 24},
         {"full_name": "dimension_entity_key", "type": "Text", "length": 120},
         {"full_name": "measurement_native_m", "type": "Double"},
         {"full_name": "measurement_delta_m", "type": "Double"},
@@ -268,6 +269,24 @@ def _finite_metric(value, name, *, allow_none=False):
     return result
 
 
+_DIMENSION_DISPLAY_NUMBER_RE = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?")
+
+
+def _dimension_measurement_label(text: Any, value: float) -> str:
+    """Use the rendered DWG dimension text when present (``50m`` stays ``50 m``).
+
+    The reader stores the anonymous dimension block's MTEXT as
+    ``dimension_text_override``.  A ``<>`` placeholder means the default
+    measurement was rendered, so the numeric fallback keeps its normal
+    three-decimal formatting.
+    """
+    if isinstance(text, str) and text and "<>" not in text:
+        tokens = _DIMENSION_DISPLAY_NUMBER_RE.findall(text)
+        if tokens:
+            return f"{tokens[-1]} m [DWG DIMENSION]"
+    return f"{float(value):.3f} m [DWG DIMENSION]"
+
+
 def _cable_segment_records(features, transformer):
     """Build and validate normalised delivery rows for every CABLE occurrence.
 
@@ -386,6 +405,7 @@ def _cable_segment_records(features, transformer):
             measurement_delta = _finite_metric(
                 metric.get("measurement_delta_m"), "measurement_delta_m", allow_none=True
             )
+            dimension_text_override = metric.get("dimension_text_override")
             dimension_key = metric.get("dimension_entity_key")
             if dimension_key is not None:
                 dimension_key = str(dimension_key)
@@ -405,6 +425,9 @@ def _cable_segment_records(features, transformer):
                     )
                 length_value = measurement
                 length_source = "dwg_dimension"
+                dimension_label = _dimension_measurement_label(
+                    dimension_text_override, length_value,
+                )
                 total_measured += 1
                 route_measured += 1
                 route_dimension_sum += measurement
@@ -423,6 +446,9 @@ def _cable_segment_records(features, transformer):
                 # remain separate fields and must not silently replace it.
                 length_value = source_length
                 length_source = "dwg_curve_geometry"
+                dimension_label = (
+                    f"{length_value:.3f} m [CAD geometry; no DIMENSION]"
+                )
                 total_unmeasured += 1
             route_grid_sum += grid_length
             route_geodesic_sum += geodesic_length
@@ -466,23 +492,20 @@ def _cable_segment_records(features, transformer):
                 "delivery_grid_length_m": grid_length,
                 "geodesic_length_m": geodesic_length,
                 "length_value_m": length_value,
+                # Segment-level source CAD length follows the same nominal
+                # authority as ``length_value_m``: the reviewed DWG DIMENSION
+                # value when measured, otherwise the immutable CAD curve
+                # length.  It must never fall back to grid/geodesic length.
+                "source_cad_length_m": length_value,
                 "status": status,
-                "length_label": (
-                    f"{length_value:.3f} m [DWG DIMENSION]"
-                    if status == "measured"
-                    else f"{length_value:.3f} m [CAD geometry; no DIMENSION]"
-                ),
+                "length_label": dimension_label,
                 "length_source": length_source,
                 "unit": CABLE_SEGMENT_UNIT,
                 "schema_version": CABLE_SEGMENT_SCHEMA_VERSION,
                 "parent_cable_code": feature.attributes.get("CODE"),
                 "parent_display_label": feature.display_label,
                 "parent_label_provenance": feature.label_provenance,
-                "display_label": (
-                    f"{length_value:.3f} m [DWG DIMENSION]"
-                    if status == "measured"
-                    else f"{length_value:.3f} m [CAD geometry; no DIMENSION]"
-                ),
+                "display_label": dimension_label,
                 "label_provenance": (
                     "DWG_DIRECT:SPAN-CABLE-DIMENSION;length_source=dwg_dimension"
                     if status == "measured"

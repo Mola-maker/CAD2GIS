@@ -14,7 +14,7 @@ import threading
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 
 REVIEW_SCHEMA = "cad2gis.review_workspace.v1"
@@ -1308,12 +1308,29 @@ def create_review_app(
             f'--run-dir "{next_run}"',
             f'--gcp-profile "{profile_path}"',
         ]
+        # The registered re-run must reproduce the reviewed source run's
+        # supervision mode.  The web workflow edits coordinates only; it must
+        # not silently downgrade an ``--llm assist`` source run to the CLI
+        # default ``off`` (a different denoising path can drop PTECH/CABLE).
+        source_modes = manifest.get("modes")
+        source_modes = dict(source_modes) if isinstance(source_modes, Mapping) else {}
+        inherited_llm = str(source_modes.get("llm", "") or "").strip().casefold()
+        inherited_domain = str(source_modes.get("domain", "") or "").strip().casefold()
+        if inherited_llm not in {"off", "observe", "assist"}:
+            inherited_llm = ""
+        if inherited_domain not in {"auto", "generic", "ftth_apd"}:
+            inherited_domain = ""
+        if inherited_llm:
+            command_parts.append(f"--llm {inherited_llm}")
+        if inherited_domain:
+            command_parts.append(f"--domain {inherited_domain}")
         if generated_source_profile is not None:
             command_parts.append(
                 f'--source-profile "{generated_source_profile}"'
             )
         if mapping_path is not None:
             command_parts.append(f'--mapping-registry "{mapping_path}"')
+        registered_delivery = next_run / "delivery.gpkg"
         return {
             **capture,
             "profile": {
@@ -1325,11 +1342,18 @@ def create_review_app(
                 str(generated_source_profile)
                 if generated_source_profile is not None else None
             ),
+            "source_run_modes": source_modes,
             "next_run_dir": str(next_run),
+            "registered_delivery": (
+                str(registered_delivery)
+                if registered_delivery.is_file() else None
+            ),
             "conversion_command": " ".join(command_parts),
             "warning": (
                 "OSM controls improve relative placement only; absolute "
-                "survey accuracy remains unverified."
+                "survey accuracy remains unverified. The web preview layers "
+                "always show the pre-registration run; open next_run_dir/"
+                "delivery.gpkg in QGIS to inspect the corrected output."
             ),
         }
 

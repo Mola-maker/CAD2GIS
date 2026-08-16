@@ -86,7 +86,8 @@ cad2gis auto-convert "<SOURCE.dwg>" `
 `CABLE_SEGMENT` 同时保留三种不同含义的长度：
 
 - `source_native_length_m`：DWG 源曲线长度；
-- `measurement_native_m`：匹配到的独立 DWG `DIMENSION` 数值；
+- `measurement_native_m`：匹配到的独立 DWG `DIMENSION` 数值；当 DWG 标注文本存在时使用**渲染后的标注值**（例如黄色整数 `50 m`），而不是 `act_measurement` 的未舍入小数；
+- `source_cad_length_m`：CABLE_SEGMENT 的名义源长度——有 DIMENSION 时等于标注值，无 DIMENSION 时回退为不可变 CAD 曲线长度；
 - `delivery_grid_length_m` / `geodesic_length_m`：坐标转换后的网格与椭球长度。
 
 没有 `DIMENSION` 时，线段仍然具有可靠的 CAD 曲线长度。此时

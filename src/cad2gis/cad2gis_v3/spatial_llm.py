@@ -184,6 +184,7 @@ def classify_layer_semantics(
         schema_name="cad2gis_layer_semantics",
     )
     try:
+        provider = OpenAICompatibleProvider(config)
         response = provider.review(request)
         parsed = json.loads(response.content)
         verdicts = list(parsed.get("verdicts", ()))

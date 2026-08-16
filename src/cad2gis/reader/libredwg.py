@@ -551,6 +551,29 @@ def _extract_dimension(dim_struct, union_name):
     return rec
 
 
+_DIMENSION_DISPLAY_NUMBER_RE = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?")
+
+
+def _dimension_display_value(text: str) -> float | None:
+    """Parse the rendered DIMENSION text (e.g. ``{\\H0.75x;50m}``) to metres.
+
+    ``<>`` means "render the default measurement", so the raw
+    ``act_measurement`` remains authoritative for those entities.  Custom
+    display text may carry formatting codes whose last numeric token is the
+    displayed value (AutoCAD never places a format-code number after it).
+    """
+    if not text or "<>" in text:
+        return None
+    tokens = _DIMENSION_DISPLAY_NUMBER_RE.findall(text)
+    if not tokens:
+        return None
+    try:
+        value = float(tokens[-1])
+    except ValueError:
+        return None
+    return value if math.isfinite(value) and value > 0.0 else None
+
+
 # ── AutoCAD ACI palette (ported from main schema_config.py) ────────────────
 def _hsv_bytes(hue_deg, sat, val):
     """HSV → RGB with AutoCAD's floor rounding (val is 0..255)."""
@@ -794,15 +817,19 @@ def _read_block_header_names(data, anon_fallback: dict[int, str] | None = None) 
 _ANON_NAME_RE = re.compile(r"^\*[UD]\d+$")
 
 
-def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, str]:
-    """Resolve anonymous block effective names (*U##/*D##) via dwgread JSON.
+def _read_anon_block_names_json(
+    source: Path, source_sha256: str,
+) -> tuple[dict[int, str], dict[int, str]]:
+    """Resolve anonymous block names and DIMENSION display text via dwgread JSON.
 
     LibreDWG dynapi decodes anonymous BLOCK_HEADER names without the numeric
     suffix on this R2018 file.  The ``dwgread -O json`` side channel (see wiki
     libredwg-swig-utf-16-r2018-dwg) carries each bare BLOCK_HEADER plus a
     following companion entry holding the full numbered name; pairing is
     order-preserving on handle value (validated against the canonical AutoCAD
-    INSERT census for APD).  Results are cached under /tmp by source hash.
+    INSERT census for APD).  The same document also links each DIMENSION to
+    its anonymous text block, whose MTEXT is the rendered display value (the
+    rounded integer shown in CAD, not the raw ``act_measurement``).
     """
     fd, cache = tempfile.mkstemp(prefix="libredwg_blocks_", suffix=".json")
     os.close(fd)
@@ -817,22 +844,25 @@ def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, s
             )
         except Exception:
             cache.unlink(missing_ok=True)
-            return {}
+            return {}, {}
         if proc.returncode != 0 or not proc.stdout:
             cache.unlink(missing_ok=True)
-            return {}
+            return {}, {}
         cache.write_bytes(proc.stdout)
         cache.chmod(0o600)
     try:
         doc = json.loads(cache.read_text(encoding="utf-8"))
     except Exception:
-        return {}
+        return {}, {}
 
     bare: list[int] = []
     numbered: list[tuple[int, str]] = []
+    dimension_blocks: dict[int, int] = {}
+    block_texts: dict[int, str] = {}
 
     def _walk(node: Any) -> None:
         if isinstance(node, dict):
+            entity = node.get("entity")
             name = node.get("name")
             handle = node.get("handle")
             if (
@@ -846,6 +876,28 @@ def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, s
                     bare.append(hv)
                 elif _ANON_NAME_RE.match(name):
                     numbered.append((hv, name))
+            if (
+                isinstance(entity, str)
+                and entity.startswith("DIMENSION")
+                and isinstance(handle, list)
+                and len(handle) >= 3
+                and isinstance(handle[-1], int)
+            ):
+                block = node.get("block")
+                if (
+                    isinstance(block, list)
+                    and len(block) >= 3
+                    and isinstance(block[-1], int)
+                ):
+                    dimension_blocks[handle[-1]] = block[-1]
+            if entity in {"MTEXT", "TEXT"} and isinstance(node.get("text"), str):
+                owner = node.get("ownerhandle")
+                if (
+                    isinstance(owner, list)
+                    and len(owner) >= 3
+                    and isinstance(owner[-1], int)
+                ):
+                    block_texts.setdefault(owner[-1], node["text"])
             for value in node.values():
                 _walk(value)
         elif isinstance(node, list):
@@ -863,7 +915,12 @@ def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, s
         if j < len(numbered) and numbered[j][0] - hv <= 5:
             mapping[hv] = numbered[j][1]
             j += 1
-    return mapping
+    dimension_texts = {
+        handle: block_texts[block]
+        for handle, block in dimension_blocks.items()
+        if block in block_texts
+    }
+    return mapping, dimension_texts
 
 
 def _read_layer_styles(data) -> dict[str, dict[str, Any]]:
@@ -1099,6 +1156,7 @@ def _build_record(
     reasons: list[str],
     anon_block_names: dict[int, str] | None = None,
     owner_attribs: dict[int, list] | None = None,
+    dimension_display_texts: dict[int, str] | None = None,
 ) -> dict[str, Any] | None:
     """Build one v3-compatible record from a LibreDWG entity."""
     if dwg_type_name in _CONTROL_TYPE_NAMES:
@@ -1266,18 +1324,34 @@ def _build_record(
         try:
             dim_struct = getattr(entity.tio, struct_name)
             dim = _extract_dimension(dim_struct, struct_name)
-            dimension_value = dim["measurement"]
-            pts = [dim["def_pt"]]
-            if dim["xline1"]:
-                pts.append(dim["xline1"])
-            if dim["xline2"]:
-                pts.append(dim["xline2"])
-            points = pts
+            dimension_display_text = (
+                str((dimension_display_texts or {}).get(handle, "") or "")
+            )
+            displayed_value = _dimension_display_value(dimension_display_text)
+            dimension_value = (
+                displayed_value
+                if displayed_value is not None
+                else dim["measurement"]
+            )
+            # The span dimension geometry is the xline1→xline2 witness line,
+            # not def_pt→xline2.  Downstream exact segment matching requires
+            # exactly those two endpoints; emitting three points made every
+            # reviewed DIMENSION abstain as ``no_exact_span_dimension``.
+            if dim["xline1"] and dim["xline2"]:
+                points = [dim["xline1"], dim["xline2"]]
+            else:
+                points = [dim["def_pt"]]
+                if dim["xline1"]:
+                    points.append(dim["xline1"])
+                if dim["xline2"]:
+                    points.append(dim["xline2"])
             centroid = _centroid(points)
-            if struct_ptr:
+            if struct_ptr and not dimension_display_text:
                 dimension_text_override = _entity_utf8_text(
                     struct_ptr, struct_name, "text_value"
                 )
+            elif dimension_display_text:
+                dimension_text_override = dimension_display_text
             geometry_status = "available"
         except Exception as exc:
             reasons.append(f"libredwg_dimension_error[{type(exc).__name__}]")
@@ -1443,7 +1517,9 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
                 f"LibreDWG failed to read DWG (error {read_err}): {source}"
             )
 
-    anon_block_names = _read_anon_block_names_json(source, source_sha256)
+    anon_block_names, dimension_display_texts = _read_anon_block_names_json(
+        source, source_sha256,
+    )
     entity_layout_map = _read_entity_layout_map_json(source, source_sha256)
     block_headers = _read_block_header_names(data, anon_fallback=anon_block_names)
     layer_styles = _read_layer_styles(data)
@@ -1541,6 +1617,7 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
                 reasons=list(layout_reasons),
                 anon_block_names=anon_block_names,
                 owner_attribs=owner_attribs,
+                dimension_display_texts=dimension_display_texts,
             )
             if record is None:
                 continue
