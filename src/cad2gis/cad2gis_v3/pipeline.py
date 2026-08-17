@@ -11,7 +11,7 @@ import shutil
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -71,6 +71,25 @@ def _implementation_digest():
 
 _VALID_DOMAINS = frozenset({"auto", "generic", "ftth_apd"})
 _VALID_LLM_MODES = frozenset({"off", "observe", "assist"})
+
+
+def _is_materialized_block_entity(entity: Any) -> bool:
+    plan_domain = getattr(entity, "raw_properties", {}).get("plan_domain")
+    return (
+        isinstance(plan_domain, Mapping)
+        and plan_domain.get("materialization") == "nested-insert-affine"
+    )
+
+
+def _drawing_space_entities(entities: Iterable[Any]) -> list[Any]:
+    """Issue 4: block-definition members are evidence, not drawing roots.
+
+    Coordinate-domain admission must run on drawing-space entities only;
+    otherwise a title/frame block's far-away definition coordinates can make
+    a local engineering drawing look like a plausible EPSG:3857 domain and
+    suppress the reviewed OSM anchor.
+    """
+    return [entity for entity in entities if not _is_materialized_block_entity(entity)]
 
 
 def _validate_mode(value: object, allowed: frozenset[str], name: str) -> str:
@@ -1261,7 +1280,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
     from .coordinate_domain import assess_coordinate_domain
 
     coordinate_domain = assess_coordinate_domain(
-        semantic_entities, profile.source_crs,
+        _drawing_space_entities(semantic_entities), profile.source_crs,
     )
     # ── OSM place-name anchor for local engineering coordinates ────────
     osm_anchor: dict[str, Any] | None = None
