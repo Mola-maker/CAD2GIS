@@ -1,17 +1,6 @@
 {
   "annotation_families": [
     {
-      "family_id": "auto_fat_2_kmz_fdt_2",
-      "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_2_KMZ_FDT_2-001",
-      "require_same_layer": false,
-      "rule_id": "AI-ANNOTATION-AUTO_FAT_2_KMZ_FDT_2-001",
-      "source_layer_pattern": "(?i)^FAT\\ 2\\ KMZ\\ FDT\\ 2$",
-      "target_class": "BOITE",
-      "target_layer_pattern": "(?i)^(?:CLOSURE|FAT\\ CODE|FAT\\ F2|FAT_Info|FAT_Info\\ FDT\\ 2)$",
-      "text_pattern": "^KTK\\d+\\.\\d+\\.[A-Za-z]+\\d+$"
-    },
-    {
       "family_id": "auto_pole_id_2_5",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_2_5-001",
@@ -20,7 +9,7 @@
       "source_layer_pattern": "(?i)^POLE\\ ID\\ 2\\.5$",
       "target_class": "PTECH",
       "target_layer_pattern": "(?i)^(?:EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ FDT\\ 1|NEW\\ POLE\\ RW\\ 4)$",
-      "text_pattern": "^MR\\.KLK\\d+\\.P\\d+$"
+      "text_pattern": "^MR[^A-Za-z0-9]+KLK\\d+[^A-Za-z0-9]+P\\d+$"
     },
     {
       "family_id": "auto_pole_id_fdt_2_73",
@@ -31,7 +20,29 @@
       "source_layer_pattern": "(?i)^POLE\\ ID\\ FDT\\ 2\\ 73$",
       "target_class": "PTECH",
       "target_layer_pattern": "(?i)^(?:EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ FDT\\ 1|NEW\\ POLE\\ RW\\ 4)$",
-      "text_pattern": "^MR\\.KLK\\d+\\.P\\d+$"
+      "text_pattern": "^MR[^A-Za-z0-9]+KLK\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_fat_2_kmz_fdt_2",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_2_KMZ_FDT_2-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_FAT_2_KMZ_FDT_2-001",
+      "source_layer_pattern": "(?i)^FAT\\ 2\\ KMZ\\ FDT\\ 2$",
+      "target_class": "BOITE",
+      "target_layer_pattern": "(?i)^(?:CLOSURE|FAT\\ CODE|FAT\\ F2|FAT_Info|FAT_Info\\ FDT\\ 2)$",
+      "text_pattern": "^KTK\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+[A-Za-z]+\\d+$"
+    },
+    {
+      "family_id": "auto_fat_code_fdt2",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_CODE_FDT2-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_FAT_CODE_FDT2-001",
+      "source_layer_pattern": "(?i)^FAT\\ Code\\-FDT2$",
+      "target_class": "BOITE",
+      "target_layer_pattern": "(?i)^(?:CLOSURE|FAT\\ CODE|FAT\\ F2|FAT_Info|FAT_Info\\ FDT\\ 2)$",
+      "text_pattern": "^FAT[^A-Za-z0-9]+[A-Za-z]+\\d+$"
     }
   ],
   "block_families": {
@@ -78,12 +89,6 @@
       "kind": "attribute-field",
       "provenance": "DWG_DIRECT:text|RULE:AI-IMB-LABEL-001",
       "rule_id": "AI-IMB-LABEL-001"
-    },
-    "PTECH": {
-      "field": "CODE",
-      "kind": "attribute-field",
-      "provenance": "DWG_DERIVED:pole-label|RULE:REVIEWED-PTECH-LABEL-001",
-      "rule_id": "REVIEWED-PTECH-LABEL-001"
     }
   },
   "field_rules": {
@@ -144,21 +149,19 @@
   },
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-756f6e5bb4fe",
-  "render_color_unification": {
-    "BOITE": "#FF7F00"
-  },
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:bb812694a24f745f535198fff9b16a39fee805b9404c8bc247bdbcd2afe0c27b",
-    "reviewed_at": "2026-08-17T12:24:00.177216Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:7f5c9b4863578d517ddc68e63718e624b740d48ac59767bd392f78e5a481497c",
+    "reviewed_at": "2026-08-17T14:44:54.851952Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-mapping-registry-v2",
   "source_binding": {
-    "inventory_sha256": "28991c0724a266e9d6de552f8b1a937bb939794ec945d5268c9de0e94a06053e",
+    "inventory_sha256": "257a1978eba963f3d5947c42963d26c69315d5fb4b93f2ca8f7a26af8696886d",
     "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016"
   },
   "thresholds_native_m": {
+    "device_collocation_to_support_m": 15.0,
     "device_to_support_candidate": 8.0,
     "dimension_to_support": 2.0,
     "exact": 1e-06,

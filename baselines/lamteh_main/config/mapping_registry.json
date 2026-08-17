@@ -1,48 +1,48 @@
 {
   "annotation_families": [
     {
-      "family_id": "auto_pole_id_hc",
+      "family_id": "auto_fat",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_HC-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT-001",
       "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_HC-001",
-      "source_layer_pattern": "(?i)^Pole\\ ID\\ HC$",
-      "target_class": "PTECH",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^MR\\.XXX\\.P\\d+\\.HC$"
-    },
-    {
-      "family_id": "auto_new_pole_hc",
-      "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_HC-001",
-      "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_HC-001",
-      "source_layer_pattern": "(?i)^NEW\\ POLE\\ HC$",
-      "target_class": "PTECH",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^MR\\.XXX\\.P\\d+\\.HC$"
-    },
-    {
-      "family_id": "auto_fat_code",
-      "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_CODE-001",
-      "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_FAT_CODE-001",
-      "source_layer_pattern": "(?i)^FAT\\ CODE$",
+      "rule_id": "AI-ANNOTATION-AUTO_FAT-001",
+      "source_layer_pattern": "(?i)^FAT$",
       "target_class": "BOITE",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^FAT\\.[A-Za-z]+\\d+$"
+      "target_layer_pattern": "(?i)^FAT$",
+      "text_pattern": "^[A-Za-z]+\\d+$"
     },
     {
-      "family_id": "auto_sling_wire",
+      "family_id": "auto_fat_2",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_SLING_WIRE-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_2-001",
       "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_SLING_WIRE-001",
-      "source_layer_pattern": "(?i)^SLING\\ WIRE$",
+      "rule_id": "AI-ANNOTATION-AUTO_FAT_2-001",
+      "source_layer_pattern": "(?i)^FAT$",
+      "target_class": "BOITE",
+      "target_layer_pattern": "(?i)^FAT$",
+      "text_pattern": "^KLDYA[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+[A-Za-z]+\\d+$"
+    },
+    {
+      "family_id": "auto_pole_id",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_POLE_ID-001",
+      "source_layer_pattern": "(?i)^POLE\\ ID$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^MR\\.XXX\\.HC\\.P\\d+$"
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7M\\ 2\\.5INCH|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^MR[^A-Za-z0-9]+KLDYA[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_pole_id_2",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_2-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_2-001",
+      "source_layer_pattern": "(?i)^POLE\\ ID$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7M\\ 2\\.5INCH|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+IJY[^A-Za-z0-9]+KLDYA[^A-Za-z0-9]+P\\d+$"
     }
   ],
   "block_families": {
@@ -89,12 +89,6 @@
       "kind": "attribute-field",
       "provenance": "DWG_DIRECT:text|RULE:AI-IMB-LABEL-001",
       "rule_id": "AI-IMB-LABEL-001"
-    },
-    "PTECH": {
-      "field": "CODE",
-      "kind": "attribute-field",
-      "provenance": "DWG_DERIVED:pole-label|RULE:REVIEWED-PTECH-LABEL-001",
-      "rule_id": "REVIEWED-PTECH-LABEL-001"
     }
   },
   "field_rules": {
@@ -161,21 +155,19 @@
   },
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 24\\ CORE\\ LINE\\ A\\ \\-\\ FDT\\ 1|FO\\ 24\\ CORE\\ LINE\\ B\\ \\-\\ FDT\\ 1|FO\\ 24\\ CORE\\ LINE\\ C\\ \\-\\ FDT\\ 1|FO\\ 24\\ CORE\\ LINE\\ C\\ \\-\\ FDT\\ 2|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\ LINE\\ A\\ \\-\\ FDT\\ 2|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-d71ad87e6c0c",
-  "render_color_unification": {
-    "BOITE": "#FF7F00"
-  },
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:9af09f041a003931cb89c9112a31d917136931f130cc78c6fa07e3f9b5a2715a",
-    "reviewed_at": "2026-08-03T04:19:35.568478Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:026a4c3291962c194bd82ca043351565ea21b2cc4bb77e38e5d14f9923721a1b",
+    "reviewed_at": "2026-08-17T14:46:24.737772Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-mapping-registry-v2",
   "source_binding": {
-    "inventory_sha256": "02bddb51df728f65469f80bc5b6ac7fd6db54dc2fe1cd1a39aec13fc41ac9c66",
+    "inventory_sha256": "7e7e14910d66e9ff6e49cb2110355d8955d6abe7f483cdc1ca85e4d31e7b1604",
     "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78"
   },
   "thresholds_native_m": {
+    "device_collocation_to_support_m": 15.0,
     "device_to_support_candidate": 8.0,
     "dimension_to_support": 2.0,
     "exact": 1e-06,
