@@ -34,14 +34,14 @@
   },
   "project_id": "source-756f6e5bb4fe",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:bb812694a24f745f535198fff9b16a39fee805b9404c8bc247bdbcd2afe0c27b",
-    "reviewed_at": "2026-08-17T12:24:00.177216Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:7f5c9b4863578d517ddc68e63718e624b740d48ac59767bd392f78e5a481497c",
+    "reviewed_at": "2026-08-17T14:44:54.851952Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "28991c0724a266e9d6de552f8b1a937bb939794ec945d5268c9de0e94a06053e",
+    "inventory_sha256": "257a1978eba963f3d5947c42963d26c69315d5fb4b93f2ca8f7a26af8696886d",
     "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
     "source_size_bytes": 308753
   },

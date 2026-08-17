@@ -1,48 +1,37 @@
 {
   "annotation_families": [
     {
-      "family_id": "auto_pole_id_hc",
+      "family_id": "auto_pole_id",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_HC-001",
-      "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_HC-001",
-      "source_layer_pattern": "(?i)^Pole\\ ID\\ HC$",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_POLE_ID-001",
+      "source_layer_pattern": "(?i)^POLE\\ ID$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^MR\\.XXX\\.P\\d+\\.HC$"
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^[A-Za-z]+[^A-Za-z0-9]+[A-Za-z]+[^A-Za-z0-9]+[A-Za-z]+[^A-Za-z0-9]+P\\d+$"
     },
     {
-      "family_id": "auto_new_pole_hc",
+      "family_id": "auto_ext_fm_pole",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_HC-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_EXT_FM_POLE-001",
       "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_HC-001",
-      "source_layer_pattern": "(?i)^NEW\\ POLE\\ HC$",
+      "rule_id": "AI-ANNOTATION-AUTO_EXT_FM_POLE-001",
+      "source_layer_pattern": "(?i)^EXT\\ FM\\ POLE$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^MR\\.XXX\\.P\\d+\\.HC$"
+      "target_layer_pattern": "(?i)^EXT\\ FM\\ POLE$",
+      "text_pattern": "^fArial[^A-Za-z0-9]+b\\d+[^A-Za-z0-9]+i\\d+[^A-Za-z0-9]+c\\d+[^A-Za-z0-9]+p\\d+[^A-Za-z0-9]+SLACK[^A-Za-z0-9]+\\d+$"
     },
     {
-      "family_id": "auto_fat_code",
+      "family_id": "auto_ext_fm_pole_2",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_CODE-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_EXT_FM_POLE_2-001",
       "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_FAT_CODE-001",
-      "source_layer_pattern": "(?i)^FAT\\ CODE$",
-      "target_class": "BOITE",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^FAT\\.[A-Za-z]+\\d+$"
-    },
-    {
-      "family_id": "auto_sling_wire",
-      "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_SLING_WIRE-001",
-      "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_SLING_WIRE-001",
-      "source_layer_pattern": "(?i)^SLING\\ WIRE$",
+      "rule_id": "AI-ANNOTATION-AUTO_EXT_FM_POLE_2-001",
+      "source_layer_pattern": "(?i)^EXT\\ FM\\ POLE$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i).+",
-      "text_pattern": "^MR\\.XXX\\.HC\\.P\\d+$"
+      "target_layer_pattern": "(?i)^EXT\\ FM\\ POLE$",
+      "text_pattern": "^fArial[^A-Za-z0-9]+b\\d+[^A-Za-z0-9]+i\\d+[^A-Za-z0-9]+c\\d+[^A-Za-z0-9]+p\\d+[^A-Za-z0-9]+SLACK[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+EXT$"
     }
   ],
   "block_families": {
@@ -89,12 +78,6 @@
       "kind": "attribute-field",
       "provenance": "DWG_DIRECT:text|RULE:AI-IMB-LABEL-001",
       "rule_id": "AI-IMB-LABEL-001"
-    },
-    "PTECH": {
-      "field": "CODE",
-      "kind": "attribute-field",
-      "provenance": "DWG_DERIVED:pole-label|RULE:REVIEWED-PTECH-LABEL-001",
-      "rule_id": "REVIEWED-PTECH-LABEL-001"
     }
   },
   "field_rules": {
@@ -160,21 +143,19 @@
   },
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 24\\ CORE\\ LINE\\ C\\ \\-\\ FDT\\ 1|FO\\ 24\\ CORE\\ LINE\\ C\\ \\-\\ FDT\\ 2|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-5b0872935a07",
-  "render_color_unification": {
-    "BOITE": "#FF7F00"
-  },
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:6e4e76e2cedd873a8848cc2363989294321a2d209d8f1dce6faa2289822ab333",
-    "reviewed_at": "2026-08-03T04:23:03.812481Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:3c48539e80f06fc117d237547b9c6d9f18109bf36f896d1dc54ffcaeafea94b7",
+    "reviewed_at": "2026-08-17T14:51:58.694169Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-mapping-registry-v2",
   "source_binding": {
-    "inventory_sha256": "4da9763883d080c4da1d90aa62ff3014d4422c4bf420d313a3dc6a044f9a82ae",
+    "inventory_sha256": "308883cc2c56d1ae3b7484019b531eab5e54cc191a42073ac9d3e6875c3aa2db",
     "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735"
   },
   "thresholds_native_m": {
+    "device_collocation_to_support_m": 15.0,
     "device_to_support_candidate": 8.0,
     "dimension_to_support": 2.0,
     "exact": 1e-06,
