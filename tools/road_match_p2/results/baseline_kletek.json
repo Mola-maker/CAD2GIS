@@ -1,0 +1,230 @@
+{
+  "experiment": "road-match P2 Route B: 粗锚先验 + 旋转×平移扫描（无独立真值）",
+  "baseline": "kletek",
+  "route": "B_anchor_scan",
+  "route_reason": "名义 footprint 位于几内亚湾大洋（3857 原点 0.2 km 内），该海域 OSM highway way 数 = 0 ⇒ 恒等假设 F1=0，delivery 实为本地工程坐标，无独立真值，残余不可量化。",
+  "unit_contract": {
+    "coordinate_mode": "direct_crs",
+    "source_crs": "EPSG:3857",
+    "insunits": 6,
+    "metres_per_unit": 1.0,
+    "source_coordinate_scale_to_m": 1.0,
+    "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied",
+    "coordinate_domain_status": "PLAUSIBLE_DECLARED_CRS_DOMAIN",
+    "coordinate_domain_passed": true
+  },
+  "scale_assumption": 1.0,
+  "coordinate_interpretation": "delivery 图层声明 CRS 与 manifest source_crs=EPSG:3857 不符：坐标数值量级 ≤ ~10.6km，按 EPSG:3857 解释位于 Null Island 附近几内亚湾（大洋），不可能是印尼 FTTH 现场 ⇒ 判定为本地工程坐标。数值按米处理（scale=1）：kletek insunits=6(m) 与量级一致；lamteh/lamteh_sf insunits=4(mm) 但若按 mm 解释缆线总长仅数米，与村级 FTTH 规模矛盾，而按米解释缆线跨度数 km、与 Nominatim 村级 bbox(约4.5km) 同量级 ⇒ scale=1 为唯一合理假设；该假设最终由扫描峰强度经验检验。",
+  "anchor": {
+    "git_ref": "origin/robustness @ 78f5d1a7086108045d6dae8ff707b3c5d08b7c49",
+    "target_centre_3857": [
+      12543757.016753819,
+      -821471.8822444176
+    ],
+    "t_anchor_3857": [
+      12543751.0521,
+      -821454.7449
+    ],
+    "precision": "coarse_bbox_centre",
+    "source": "OPENSTREETMAP_NOMINATIM"
+  },
+  "cables": {
+    "count": 3,
+    "vertices": 30,
+    "total_length_m": 876.2482682656135,
+    "half_span_m": 159.2188069920576
+  },
+  "osm": {
+    "cache": "overpass_way_highway_kletek_259bc5941c.json",
+    "region": "kletek"
+  },
+  "prior_anchor_theta0": {
+    "c_w_3857": [
+      12543717.604835702,
+      -821292.8208181395
+    ],
+    "exact_coverage": 0.49134780308671294,
+    "exact_dice_f1": 0.0029419617710404623
+  },
+  "recovered_best": {
+    "theta_deg": 7.2,
+    "c_w_3857": [
+      12543295.104835702,
+      -820900.3208181395
+    ],
+    "t_3857": [
+      12543348.582827102,
+      -821056.7760264619
+    ],
+    "exact_coverage": 0.9899493313097639,
+    "exact_dice_f1": 0.005927355469316091,
+    "dist2prior_m": 576.6823215601463
+  },
+  "separation": {
+    "coverage_top1_over_top2": 1.00956133563693,
+    "coverage_top1_over_rotationally_distinct": 1.0108452766016756,
+    "rotationally_distinct_competitor": {
+      "theta_deg": 355.0,
+      "c_w_3857": [
+        12543307.604835702,
+        -820880.3208181395
+      ],
+      "exact_coverage": 0.9793282456023725,
+      "dtheta_from_top1": 12.200000000000045
+    },
+    "coverage_top1_over_coarse_median": 0.9899493313097639,
+    "coverage_top1_over_prior": 2.0147629135426457,
+    "mode_dedup_radius": {
+      "dtheta_deg": 5.0,
+      "dist_m": 350.0
+    }
+  },
+  "top5_coarse": [
+    {
+      "theta_deg": 10.0,
+      "coverage": 1.0000000000000004,
+      "dice_f1": 0.006329188729198187,
+      "c_w_3857": [
+        12543262.604835702,
+        -820890.3208181395
+      ],
+      "dist2prior_m": 607.4794235198424
+    },
+    {
+      "theta_deg": 0.0,
+      "coverage": 1.0000000000000002,
+      "dice_f1": 0.006158337839794566,
+      "c_w_3857": [
+        12543302.604835702,
+        -820882.8208181395
+      ],
+      "dist2prior_m": 583.373808119631
+    },
+    {
+      "theta_deg": 5.0,
+      "coverage": 1.0000000000000002,
+      "dice_f1": 0.006217255247286601,
+      "c_w_3857": [
+        12543332.604835702,
+        -820880.3208181395
+      ],
+      "dist2prior_m": 564.2528245387878
+    },
+    {
+      "theta_deg": 15.0,
+      "coverage": 1.0000000000000002,
+      "dice_f1": 0.006246712645308466,
+      "c_w_3857": [
+        12543347.604835702,
+        -820880.3208181395
+      ],
+      "dist2prior_m": 554.1265649650809
+    },
+    {
+      "theta_deg": 20.0,
+      "coverage": 1.0000000000000002,
+      "dice_f1": 0.00614655394044344,
+      "c_w_3857": [
+        12543362.604835702,
+        -820880.3208181395
+      ],
+      "dist2prior_m": 544.2253669207271
+    }
+  ],
+  "top5_fine_modes": [
+    {
+      "rank": 1,
+      "theta_deg": 7.2,
+      "c_w_3857": [
+        12543295.104835702,
+        -820900.3208181395
+      ],
+      "t_3857": [
+        12543348.582827102,
+        -821056.7760264619
+      ],
+      "raster_coverage": 1.0000000000000004,
+      "exact_coverage": 0.9899493313097639,
+      "exact_dice_f1": 0.005927355469316091,
+      "polished": true
+    },
+    {
+      "rank": 2,
+      "theta_deg": 14.0,
+      "c_w_3857": [
+        12543315.104835702,
+        -820890.3208181395
+      ],
+      "t_3857": [
+        12543386.731554134,
+        -821039.3434371684
+      ],
+      "raster_coverage": 1.0000000000000002,
+      "exact_coverage": 0.9805737366964506,
+      "exact_dice_f1": 0.005871218776000194,
+      "polished": false
+    },
+    {
+      "rank": 3,
+      "theta_deg": 355.0,
+      "c_w_3857": [
+        12543307.604835702,
+        -820880.3208181395
+      ],
+      "t_3857": [
+        12543326.812209439,
+        -821044.5438511451
+      ],
+      "raster_coverage": 1.0000000000000002,
+      "exact_coverage": 0.9793282456023725,
+      "exact_dice_f1": 0.005863761355481323,
+      "polished": false
+    },
+    {
+      "rank": 4,
+      "theta_deg": 0.0,
+      "c_w_3857": [
+        12543302.604835702,
+        -820882.8208181395
+      ],
+      "t_3857": [
+        12543336.0521,
+        -821044.7449
+      ],
+      "raster_coverage": 1.0000000000000002,
+      "exact_coverage": 0.9803926560286329,
+      "exact_dice_f1": 0.005870134549346998,
+      "polished": false
+    }
+  ],
+  "scan_config": {
+    "res_m_per_px": 5.0,
+    "grid_radius_m": 2200.0,
+    "search_radius_m": 1500.0,
+    "buffer_m": 15.0,
+    "grid_px": 880,
+    "template_px": 78,
+    "fft_size": 1024,
+    "coarse_theta_step_deg": 5.0,
+    "fine_theta_range_deg": 5.0,
+    "fine_theta_step_deg": 1.0,
+    "region": "kletek"
+  },
+  "boundary_flags": {
+    "search_radius_m": 1500.0,
+    "top1_dist2prior_m": 576.6823215601463,
+    "near_boundary": false
+  },
+  "timing_s": {
+    "polish": 1.27,
+    "mode_exact_scores": 0.03,
+    "polish_evals": 217
+  },
+  "provenance": {
+    "delivery_gpkg": "E:\\branch_CAD2GIS\\APD_test\\runs\\kletek\\delivery.gpkg",
+    "delivery_sha256": "a747fd755dddd50da781919a7442f97f944415dab341b37aa05cfe95f7b42e05",
+    "run_manifest_sha256": "e8c4f966dc5f197cd4a1a3238316efada8524440b85e5b9ddd8f52d4b3782188",
+    "anchor_git_ref": "origin/robustness @ 78f5d1a7086108045d6dae8ff707b3c5d08b7c49",
+    "truth": "无独立真值（manifest: absolute_accuracy not independently verified; no surveyed GCP）——残余不可量化，结论仅依赖分数分离度与人眼复核。"
+  }
+}

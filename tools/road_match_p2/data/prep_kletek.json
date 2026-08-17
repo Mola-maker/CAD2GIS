@@ -1,0 +1,14 @@
+{
+  "baseline": "kletek",
+  "region": "kletek",
+  "osm_cache": "overpass_way_highway_kletek_259bc5941c.json",
+  "osm_ways_region": 2896,
+  "roads_in_domain": 2898,
+  "road_buffer_area_m2": 7821423.741727131,
+  "domain_3857": [
+    12541517.604835702,
+    -823492.8208181395,
+    12545917.604835702,
+    -819092.8208181395
+  ]
+}

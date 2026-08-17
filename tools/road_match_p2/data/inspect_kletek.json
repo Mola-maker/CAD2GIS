@@ -1,0 +1,337 @@
+{
+  "baseline": "kletek",
+  "delivery_gpkg": "E:\\branch_CAD2GIS\\APD_test\\runs\\kletek\\delivery.gpkg",
+  "layers": [
+    {
+      "name": "BOITE",
+      "feature_count_read": 14,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {
+        "POINT": 14
+      },
+      "bbox": [
+        -161.602407967102,
+        33.55241265370305,
+        104.3048515976587,
+        265.6166386930446
+      ]
+    },
+    {
+      "name": "CABLE",
+      "feature_count_read": 3,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {
+        "LINESTRING": 3
+      },
+      "bbox": [
+        -168.6037271044411,
+        77.76138785893237,
+        101.7091985085581,
+        246.0867758621612
+      ]
+    },
+    {
+      "name": "PTECH",
+      "feature_count_read": 33,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {
+        "POINT": 33
+      },
+      "bbox": [
+        -173.8250464114198,
+        77.76138785893237,
+        101.7091985085581,
+        246.0867758621611
+      ]
+    },
+    {
+      "name": "SITE",
+      "feature_count_read": 2,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {
+        "POINT": 2
+      },
+      "bbox": [
+        -213.4225108233449,
+        248.8550112076549,
+        -93.9832400109327,
+        258.1879477901258
+      ]
+    },
+    {
+      "name": "IMB",
+      "feature_count_read": 167,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {
+        "POINT": 167
+      },
+      "bbox": [
+        -167.3512309554973,
+        -270.2154916178609,
+        251.8382960024171,
+        231.7192379469176
+      ]
+    },
+    {
+      "name": "CABLE_SEGMENT",
+      "feature_count_read": 27,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {
+        "LINESTRING": 27
+      },
+      "bbox": [
+        -168.6037271044411,
+        77.76138785893237,
+        101.7091985085581,
+        246.0867758621612
+      ]
+    },
+    {
+      "name": "INFRASTRUCTURE",
+      "feature_count_read": 0,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {}
+    },
+    {
+      "name": "ZNRO",
+      "feature_count_read": 0,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {}
+    },
+    {
+      "name": "ZPM",
+      "feature_count_read": 0,
+      "epsg": "7030",
+      "auth": "3857",
+      "linear_unit": "metre",
+      "geom_types": {}
+    },
+    {
+      "name": "layer_styles",
+      "feature_count_read": 0,
+      "epsg": null,
+      "auth": null,
+      "linear_unit": null,
+      "geom_types": {}
+    }
+  ],
+  "manifest_hits": [
+    {
+      "key": "crs.source_crs",
+      "value": "EPSG:3857"
+    },
+    {
+      "key": "crs.target_crs",
+      "value": "EPSG:3857"
+    },
+    {
+      "key": "crs.unit_crs_contract.coordinate_mode",
+      "value": "direct_crs"
+    },
+    {
+      "key": "crs.unit_crs_contract.source_geometry_unit.insunits",
+      "value": 6
+    },
+    {
+      "key": "crs.unit_crs_contract.source_geometry_unit.metres_per_unit",
+      "value": 1.0
+    },
+    {
+      "key": "crs.unit_crs_contract.source_coordinate_scale_to_m",
+      "value": 1.0
+    },
+    {
+      "key": "crs.unit_crs_contract.source_coordinate_scale_reviewed",
+      "value": true
+    },
+    {
+      "key": "crs.unit_crs_contract.source_coordinate_scale_origin",
+      "value": "PROJECT_PROFILE:reviewed-source-coordinate-scale"
+    },
+    {
+      "key": "crs.unit_crs_contract.source_crs",
+      "value": "EPSG:3857"
+    },
+    {
+      "key": "crs.unit_crs_contract.source_crs_kind",
+      "value": "projected"
+    },
+    {
+      "key": "crs.unit_crs_contract.source_crs_axis_unit.metres_per_unit",
+      "value": 1.0
+    },
+    {
+      "key": "crs.unit_crs_contract.source_to_crs_axis_factor",
+      "value": 1.0
+    },
+    {
+      "key": "crs.unit_crs_contract.target_crs",
+      "value": "EPSG:3857"
+    },
+    {
+      "key": "crs.unit_crs_contract.target_crs_axis_unit.metres_per_unit",
+      "value": 1.0
+    },
+    {
+      "key": "crs.unit_crs_contract.provenance.dwg_insunits",
+      "value": "DWG_DIRECT:$INSUNITS"
+    },
+    {
+      "key": "crs.unit_crs_contract.provenance.source_coordinate_scale",
+      "value": "PROJECT_PROFILE:reviewed-source-coordinate-scale"
+    },
+    {
+      "key": "crs.unit_crs_contract.provenance.source_crs",
+      "value": "PROJECT_PROFILE:reviewed"
+    },
+    {
+      "key": "crs.unit_crs_contract.provenance.target_crs",
+      "value": "PROJECT_PROFILE:reviewed"
+    },
+    {
+      "key": "crs.coordinate_operation.declared_accuracy_m",
+      "value": 0.0
+    },
+    {
+      "key": "crs.coordinate_operation.absolute_accuracy_validation",
+      "value": "not independently verified; no surveyed GCP supplied"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.coordinate_mode",
+      "value": "direct_crs"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_geometry_unit.insunits",
+      "value": 6
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_geometry_unit.metres_per_unit",
+      "value": 1.0
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_coordinate_scale_to_m",
+      "value": 1.0
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_coordinate_scale_reviewed",
+      "value": true
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_coordinate_scale_origin",
+      "value": "PROJECT_PROFILE:reviewed-source-coordinate-scale"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_crs",
+      "value": "EPSG:3857"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_crs_kind",
+      "value": "projected"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_crs_axis_unit.metres_per_unit",
+      "value": 1.0
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.source_to_crs_axis_factor",
+      "value": 1.0
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.target_crs",
+      "value": "EPSG:3857"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.target_crs_axis_unit.metres_per_unit",
+      "value": 1.0
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.provenance.dwg_insunits",
+      "value": "DWG_DIRECT:$INSUNITS"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.provenance.source_coordinate_scale",
+      "value": "PROJECT_PROFILE:reviewed-source-coordinate-scale"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.provenance.source_crs",
+      "value": "PROJECT_PROFILE:reviewed"
+    },
+    {
+      "key": "crs.coordinate_operation.unit_crs_contract.provenance.target_crs",
+      "value": "PROJECT_PROFILE:reviewed"
+    },
+    {
+      "key": "crs.coordinate_domain.source_crs",
+      "value": "EPSG:3857"
+    },
+    {
+      "key": "plan_domain.scene_partition.coordinate_tolerance",
+      "value": 5.988145872552707e-07
+    },
+    {
+      "key": "validation.segment_delivery.unit",
+      "value": "m"
+    },
+    {
+      "key": "validation.segment_delivery.unit_passed",
+      "value": true
+    },
+    {
+      "key": "validation.coordinate_accuracy.coordinate_domain_status",
+      "value": "PLAUSIBLE_DECLARED_CRS_DOMAIN"
+    },
+    {
+      "key": "validation.coordinate_accuracy.coordinate_domain_passed",
+      "value": true
+    },
+    {
+      "key": "validation.coordinate_accuracy.absolute_accuracy_validation",
+      "value": "not independently verified; no surveyed GCP supplied"
+    }
+  ],
+  "manifest_top_keys": [
+    "schema_version",
+    "pipeline",
+    "implementation_sha256",
+    "implementation",
+    "conversion_snapshot_sha256",
+    "conversion_snapshot",
+    "runtime_provenance_sha256",
+    "runtime_provenance",
+    "publication",
+    "run_status",
+    "modes",
+    "source",
+    "profiles",
+    "crs",
+    "artifacts",
+    "delivery_counts",
+    "delivery_contract_gate",
+    "source_entity_count",
+    "plan_domain",
+    "terminal_accounting",
+    "semantics",
+    "style",
+    "source_route_components",
+    "unresolved_count",
+    "policy",
+    "validation",
+    "reasoning"
+  ]
+}

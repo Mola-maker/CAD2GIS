@@ -1,0 +1,98 @@
+{
+  "baseline": "lamteh_sf",
+  "delivery_gpkg": "E:\\branch_CAD2GIS\\APD_test\\runs\\lamteh_sf\\delivery.gpkg",
+  "delivery_sha256": "7ee4b15fad1e95f71fbc4b73f2ee210faada67dcb6c05d47ed3a82fdd7748be5",
+  "run_manifest": "E:\\branch_CAD2GIS\\APD_test\\runs\\lamteh_sf\\run_manifest.json",
+  "run_manifest_sha256": "9121a7fa20ee35a9746faa75830f6298b75d28b2b2b1c555230469add0eb1f0a",
+  "unit_contract": {
+    "coordinate_mode": "direct_crs",
+    "source_crs": "EPSG:3857",
+    "insunits": 4,
+    "metres_per_unit": 0.001,
+    "source_coordinate_scale_to_m": 1.0,
+    "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied",
+    "coordinate_domain_status": "PLAUSIBLE_DECLARED_CRS_DOMAIN",
+    "coordinate_domain_passed": true
+  },
+  "anchor_config": {
+    "schema_version": "cad2gis-osm-anchor-v1",
+    "status": "derived",
+    "place_name": "LAMTEH DAYAH ACEH",
+    "display_name": "Lamteh Dayah, Suka Makmur, Aceh Besar, Aceh, Sumatera, 23242, Indonesia",
+    "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - KELURAHAN LAMTEH DAYAH ACEH - SF.dwg",
+    "local_entity_bbox": [
+      2374.3258967601732,
+      -9672.192306430752,
+      10551.928355029457,
+      254.47603299534276
+    ],
+    "local_centre": [
+      6463.1271258948145,
+      -4708.858136717705
+    ],
+    "target_epsg3857_centre": [
+      10616116.487453239,
+      609905.8874086541
+    ],
+    "translation_dx": 10609653.3603,
+    "translation_dy": 614614.7455,
+    "source": "OPENSTREETMAP_NOMINATIM",
+    "precision": "coarse_bbox_centre",
+    "refinement": "gcp_optional",
+    "target_epsg3857_bbox": {
+      "min_x": 10613890.097637683,
+      "min_y": 607669.3480773186,
+      "max_x": 10618342.877268793,
+      "max_y": 612142.5015090349
+    }
+  },
+  "anchor_git_ref": "origin/robustness @ 78f5d1a7086108045d6dae8ff707b3c5d08b7c49",
+  "coordinate_interpretation": "delivery 图层声明 CRS 与 manifest source_crs=EPSG:3857 不符：坐标数值量级 ≤ ~10.6km，按 EPSG:3857 解释位于 Null Island 附近几内亚湾（大洋），不可能是印尼 FTTH 现场 ⇒ 判定为本地工程坐标。数值按米处理（scale=1）：kletek insunits=6(m) 与量级一致；lamteh/lamteh_sf insunits=4(mm) 但若按 mm 解释缆线总长仅数米，与村级 FTTH 规模矛盾，而按米解释缆线跨度数 km、与 Nominatim 村级 bbox(约4.5km) 同量级 ⇒ scale=1 为唯一合理假设；该假设最终由扫描峰强度经验检验。",
+  "scale_assumption": 1.0,
+  "cable_count": 9,
+  "cable_vertex_count": 42,
+  "cable_total_length_local_m": 2427.325762435074,
+  "cable_bbox_local": [
+    2652.866471957732,
+    -9636.465427999125,
+    10551.92835502945,
+    -8822.878186175776
+  ],
+  "cable_centroid_local": [
+    6602.397413493591,
+    -9229.67180708745
+  ],
+  "cable_half_span_m": 3970.425129399062,
+  "cable_segment_layer_stats": {
+    "line_count": 33,
+    "vertex_count": 66,
+    "total_length_units": 2427.325762435074
+  },
+  "t_anchor_3857": [
+    10609653.3603,
+    614614.7455
+  ],
+  "search_centre_prior_3857": [
+    10616255.757713495,
+    605385.0736929125
+  ],
+  "search_centre_prior_4326": [
+    95.36744807275902,
+    5.430119446306807
+  ],
+  "scan": {
+    "res_m_per_px": 8.0,
+    "grid_radius_m": 7000.0,
+    "search_radius_m": 2900.0,
+    "buffer_m": 15.0,
+    "grid_px": 1750,
+    "template_px": 1005,
+    "fft_size": 3072,
+    "coarse_theta_step_deg": 5.0,
+    "fine_theta_range_deg": 5.0,
+    "fine_theta_step_deg": 1.0,
+    "region": "lamteh"
+  },
+  "model_convention": "world = R(theta) @ (local - c_l) + c_w ; t = c_w - R(theta) @ c_l",
+  "search_radius_note": "搜索半径由默认 2500.0m 外扩至 2900.0m：粗扫描峰距先验中心约 2.4km，接近原掩膜边界，外扩以防截断峰。"
+}

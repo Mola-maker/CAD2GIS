@@ -1,0 +1,14 @@
+{
+  "baseline": "lamteh",
+  "region": "lamteh",
+  "osm_cache": "overpass_way_highway_lamteh_6c0d313019.json",
+  "osm_ways_region": 2714,
+  "roads_in_domain": 1348,
+  "road_buffer_area_m2": 8913936.24870572,
+  "domain_3857": [
+    10602131.63019505,
+    599209.3635518465,
+    10616131.63019505,
+    613209.3635518465
+  ]
+}

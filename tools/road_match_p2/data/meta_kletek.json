@@ -1,0 +1,97 @@
+{
+  "baseline": "kletek",
+  "delivery_gpkg": "E:\\branch_CAD2GIS\\APD_test\\runs\\kletek\\delivery.gpkg",
+  "delivery_sha256": "a747fd755dddd50da781919a7442f97f944415dab341b37aa05cfe95f7b42e05",
+  "run_manifest": "E:\\branch_CAD2GIS\\APD_test\\runs\\kletek\\run_manifest.json",
+  "run_manifest_sha256": "e8c4f966dc5f197cd4a1a3238316efada8524440b85e5b9ddd8f52d4b3782188",
+  "unit_contract": {
+    "coordinate_mode": "direct_crs",
+    "source_crs": "EPSG:3857",
+    "insunits": 6,
+    "metres_per_unit": 1.0,
+    "source_coordinate_scale_to_m": 1.0,
+    "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied",
+    "coordinate_domain_status": "PLAUSIBLE_DECLARED_CRS_DOMAIN",
+    "coordinate_domain_passed": true
+  },
+  "anchor_config": {
+    "schema_version": "cad2gis-osm-anchor-v1",
+    "status": "derived",
+    "place_name": "KLETEK RW 05 SIDOARJO",
+    "display_name": "Kletek, Taman, Sidoarjo, Jawa Timur, 60221, Indonesia",
+    "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - KLETEK RW 05 SIDOARJO.dwg",
+    "local_entity_bbox": [
+      -262.95095403325365,
+      -299.89140770956135,
+      274.88019829319086,
+      265.6166386930446
+    ],
+    "local_centre": [
+      5.964622129968603,
+      -17.13738450825838
+    ],
+    "target_epsg3857_centre": [
+      12543757.016753819,
+      -821471.8822444176
+    ],
+    "translation_dx": 12543751.0521,
+    "translation_dy": -821454.7449,
+    "source": "OPENSTREETMAP_NOMINATIM",
+    "precision": "coarse_bbox_centre",
+    "refinement": "gcp_optional",
+    "target_epsg3857_bbox": {
+      "min_x": 12541530.626938263,
+      "min_y": -823716.8140836926,
+      "max_x": 12545983.406569375,
+      "max_y": -819227.0516095968
+    }
+  },
+  "anchor_git_ref": "origin/robustness @ 78f5d1a7086108045d6dae8ff707b3c5d08b7c49",
+  "coordinate_interpretation": "delivery 图层声明 CRS 与 manifest source_crs=EPSG:3857 不符：坐标数值量级 ≤ ~10.6km，按 EPSG:3857 解释位于 Null Island 附近几内亚湾（大洋），不可能是印尼 FTTH 现场 ⇒ 判定为本地工程坐标。数值按米处理（scale=1）：kletek insunits=6(m) 与量级一致；lamteh/lamteh_sf insunits=4(mm) 但若按 mm 解释缆线总长仅数米，与村级 FTTH 规模矛盾，而按米解释缆线跨度数 km、与 Nominatim 村级 bbox(约4.5km) 同量级 ⇒ scale=1 为唯一合理假设；该假设最终由扫描峰强度经验检验。",
+  "scale_assumption": 1.0,
+  "cable_count": 3,
+  "cable_vertex_count": 30,
+  "cable_total_length_local_m": 876.2482682656135,
+  "cable_bbox_local": [
+    -168.6037271044411,
+    77.76138785893237,
+    101.7091985085581,
+    246.0867758621612
+  ],
+  "cable_centroid_local": [
+    -33.4472642979415,
+    161.92408186054678
+  ],
+  "cable_half_span_m": 159.2188069920576,
+  "cable_segment_layer_stats": {
+    "line_count": 27,
+    "vertex_count": 54,
+    "total_length_units": 876.2482682656137
+  },
+  "t_anchor_3857": [
+    12543751.0521,
+    -821454.7449
+  ],
+  "search_centre_prior_3857": [
+    12543717.604835702,
+    -821292.8208181395
+  ],
+  "search_centre_prior_4326": [
+    112.68213244103026,
+    -7.357494609671666
+  ],
+  "scan": {
+    "res_m_per_px": 5.0,
+    "grid_radius_m": 2200.0,
+    "search_radius_m": 1500.0,
+    "buffer_m": 15.0,
+    "grid_px": 880,
+    "template_px": 78,
+    "fft_size": 1024,
+    "coarse_theta_step_deg": 5.0,
+    "fine_theta_range_deg": 5.0,
+    "fine_theta_step_deg": 1.0,
+    "region": "kletek"
+  },
+  "model_convention": "world = R(theta) @ (local - c_l) + c_w ; t = c_w - R(theta) @ c_l"
+}

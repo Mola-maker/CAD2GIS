@@ -1,0 +1,571 @@
+{
+  "experiment": "road-match P2: Li&Briggs 拓扑点模式匹配播种 + Top-10 精确 F1 抛光",
+  "seed": 20240818,
+  "channel": "baseline",
+  "T_true": {
+    "theta_deg": 41.30792995503212,
+    "t_3857": [
+      13682720.826866277,
+      69268.43435032154
+    ],
+    "scale": 1.0,
+    "convention": "truth = R(theta) @ local + t ; local = R(-theta) @ (truth - t)"
+  },
+  "T_recovered": {
+    "theta_deg": 41.39577293262204,
+    "t_3857": [
+      13682726.517245194,
+      69272.91204718407
+    ],
+    "scale": 1.0,
+    "exact_f1": 0.1117060845451749,
+    "from_seed_rank": 1,
+    "seed_invariant_score": 22.43258636625681,
+    "seed_diag": {
+      "channel": "baseline",
+      "cable_nodes": [
+        2,
+        7
+      ],
+      "osm_members": [
+        [
+          5601114133
+        ],
+        [
+          5601010181,
+          5601114001
+        ]
+      ],
+      "baseline_cable_m": 1628.8954104323589,
+      "baseline_osm_m": 1629.0867187997512,
+      "ang_res_mean_deg": 7.392103335932125,
+      "ang_res_max_deg": 15.105451021392753,
+      "length_penalty": 0.0
+    }
+  },
+  "residuals": {
+    "translation_m": 7.240868830199417,
+    "rotation_deg": 0.08784297758990078,
+    "rotation_deg_abs": 0.08784297758990078
+  },
+  "success_criteria": {
+    "translation_residual_lt_50m": true,
+    "rotation_residual_lt_5deg": true,
+    "exact_f1_evals_le_5pct_of_p1": true,
+    "pass": true
+  },
+  "graphs": {
+    "cable_junctions_deg_ge3": [
+      {
+        "id": 2,
+        "pos_local": [
+          -425.6970644735804,
+          868.1378893876921
+        ],
+        "degree": 3,
+        "bearings": [
+          44.5,
+          204.49,
+          306.58
+        ],
+        "edge_lengths_m": [
+          1671.0,
+          330.9,
+          1945.1
+        ]
+      },
+      {
+        "id": 7,
+        "pos_local": [
+          258.5132631878725,
+          -610.0895916344306
+        ],
+        "degree": 3,
+        "bearings": [
+          28.14,
+          198.32,
+          302.37
+        ],
+        "edge_lengths_m": [
+          510.6,
+          695.2,
+          332.2
+        ]
+      }
+    ],
+    "osm_junctions_deg_ge3": 217,
+    "osm_super_junctions_deg_ge3": 170,
+    "osm_cluster_radius_m": 30.0,
+    "angle_tol_deg": 25.0,
+    "baseline_tol": {
+      "rtol": 0.08,
+      "atol_m": 30.0
+    }
+  },
+  "hypotheses": {
+    "generated_top_n": 50,
+    "polished_top_k": 10,
+    "top10": [
+      {
+        "seed_rank": 0,
+        "theta_deg": 234.64860086026613,
+        "t_3857": [
+          13682245.825342821,
+          71160.16598590535
+        ],
+        "invariant_score": 22.1870632285592,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            7,
+            2
+          ],
+          "osm_members": [
+            [
+              5705272228
+            ],
+            [
+              5591690413
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1628.947150237536,
+          "ang_res_mean_deg": 7.681438735310531,
+          "ang_res_max_deg": 13.596631710699029,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.03841308132008941,
+        "polished": {
+          "theta_deg": 234.94860086026614,
+          "t_3857": [
+            13682245.825342821,
+            71152.16598590535
+          ],
+          "exact_f1": 0.038790245835756534,
+          "polish_evals": 163
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 1950.4550823727652,
+          "rotation_deg_abs": 166.659329094766
+        }
+      },
+      {
+        "seed_rank": 1,
+        "theta_deg": 41.39577293262204,
+        "t_3857": [
+          13682721.517245194,
+          69279.91204718407
+        ],
+        "invariant_score": 22.43258636625681,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            2,
+            7
+          ],
+          "osm_members": [
+            [
+              5601114133
+            ],
+            [
+              5601010181,
+              5601114001
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1629.0867187997512,
+          "ang_res_mean_deg": 7.392103335932125,
+          "ang_res_max_deg": 15.105451021392753,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.10302090145797368,
+        "polished": {
+          "theta_deg": 41.39577293262204,
+          "t_3857": [
+            13682726.517245194,
+            69272.91204718407
+          ],
+          "exact_f1": 0.1117060845451749,
+          "polish_evals": 109
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 11.49844112555548,
+          "rotation_deg_abs": 0.08784297758990078
+        }
+      },
+      {
+        "seed_rank": 2,
+        "theta_deg": 37.66508421224634,
+        "t_3857": [
+          13682693.830307886,
+          69223.46804768009
+        ],
+        "invariant_score": 26.461247924338412,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            7,
+            2
+          ],
+          "osm_members": [
+            [
+              5601113753
+            ],
+            [
+              5601114133
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1626.9389216194618,
+          "ang_res_mean_deg": 8.032466823502824,
+          "ang_res_max_deg": 18.83613974176845,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.052146588057129205,
+        "polished": {
+          "theta_deg": 41.365084212246344,
+          "t_3857": [
+            13682725.830307886,
+            69273.46804768009
+          ],
+          "exact_f1": 0.11167339982829952,
+          "polish_evals": 298
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 52.44790308656002,
+          "rotation_deg_abs": 3.6428457427857666
+        }
+      },
+      {
+        "seed_rank": 3,
+        "theta_deg": 54.64860086026613,
+        "t_3857": [
+          13682553.025203077,
+          71147.22020495169
+        ],
+        "invariant_score": 28.521971510429225,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            2,
+            7
+          ],
+          "osm_members": [
+            [
+              5705272228
+            ],
+            [
+              5591690413
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1628.947150237536,
+          "ang_res_mean_deg": 9.479163385585395,
+          "ang_res_max_deg": 19.075549673339623,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.035199624584816944,
+        "polished": {
+          "theta_deg": 54.64860086026613,
+          "t_3857": [
+            13682570.025203077,
+            71140.22020495169
+          ],
+          "exact_f1": 0.03587325267512718,
+          "polish_evals": 217
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 1886.2644792634119,
+          "rotation_deg_abs": 13.340670905233992
+        }
+      },
+      {
+        "seed_rank": 4,
+        "theta_deg": 319.16925895528095,
+        "t_3857": [
+          13682748.280048234,
+          70124.21265356851
+        ],
+        "invariant_score": 29.310515575363944,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            7,
+            2
+          ],
+          "osm_members": [
+            [
+              13051627528
+            ],
+            [
+              5591690623
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1631.9883045808938,
+          "ang_res_mean_deg": 8.372222749479786,
+          "ang_res_max_deg": 22.03924600427382,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.024364425426415152,
+        "polished": {
+          "theta_deg": 322.56925895528093,
+          "t_3857": [
+            13682801.280048234,
+            70085.21265356851
+          ],
+          "exact_f1": 0.031121403223232688,
+          "polish_evals": 325
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 856.2185360688471,
+          "rotation_deg_abs": 82.13867099975118
+        }
+      },
+      {
+        "seed_rank": 5,
+        "theta_deg": 233.79140447751553,
+        "t_3857": [
+          13682531.754644122,
+          71104.8227154864
+        ],
+        "invariant_score": 29.511373775233206,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            7,
+            2
+          ],
+          "osm_members": [
+            [
+              5705272224
+            ],
+            [
+              5591689976
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1637.231267194532,
+          "ang_res_mean_deg": 8.827245387443332,
+          "ang_res_max_deg": 15.377909238520004,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.03386304358214915,
+        "polished": {
+          "theta_deg": 233.29140447751553,
+          "t_3857": [
+            13682531.754644122,
+            71094.8227154864
+          ],
+          "exact_f1": 0.034569616108117374,
+          "polish_evals": 109
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 1846.096024832771,
+          "rotation_deg_abs": 167.5165254775166
+        }
+      },
+      {
+        "seed_rank": 6,
+        "theta_deg": 233.79140447751556,
+        "t_3857": [
+          13682539.926873395,
+          71103.17918980241
+        ],
+        "invariant_score": 29.511373775233196,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            2,
+            7
+          ],
+          "osm_members": [
+            [
+              5591689976
+            ],
+            [
+              5705272224
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1637.231267194532,
+          "ang_res_mean_deg": 8.827245387443341,
+          "ang_res_max_deg": 15.377909238519948,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.031740995378254186,
+        "polished": {
+          "theta_deg": 233.29140447751556,
+          "t_3857": [
+            13682531.926873395,
+            71096.17918980241
+          ],
+          "exact_f1": 0.034561250181067406,
+          "polish_evals": 109
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 1843.6413516262237,
+          "rotation_deg_abs": 167.51652547751655
+        }
+      },
+      {
+        "seed_rank": 7,
+        "theta_deg": 312.03149540181533,
+        "t_3857": [
+          13681526.967952752,
+          70359.18177674817
+        ],
+        "invariant_score": 29.6266297249796,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            2,
+            7
+          ],
+          "osm_members": [
+            [
+              5705272224
+            ],
+            [
+              5655278111
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1618.5496660132083,
+          "ang_res_mean_deg": 7.8209855860607815,
+          "ang_res_max_deg": 17.623572686565467,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.024742698732552283,
+        "polished": {
+          "theta_deg": 312.03149540181533,
+          "t_3857": [
+            13681526.967952752,
+            70356.18177674817
+          ],
+          "exact_f1": 0.0253731863129794,
+          "polish_evals": 109
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 1617.1051461352831,
+          "rotation_deg_abs": 89.2764345532168
+        }
+      },
+      {
+        "seed_rank": 8,
+        "theta_deg": 312.03149540181533,
+        "t_3857": [
+          13681531.032126954,
+          70368.69581456897
+        ],
+        "invariant_score": 29.6266297249796,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            7,
+            2
+          ],
+          "osm_members": [
+            [
+              5655278111
+            ],
+            [
+              5705272224
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1618.5496660132083,
+          "ang_res_mean_deg": 7.8209855860607815,
+          "ang_res_max_deg": 17.623572686565467,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.021690411245721224,
+        "polished": {
+          "theta_deg": 312.03149540181533,
+          "t_3857": [
+            13681526.032126954,
+            70355.69581456897
+          ],
+          "exact_f1": 0.025334941160879056,
+          "polish_evals": 109
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 1620.5513911715273,
+          "rotation_deg_abs": 89.2764345532168
+        }
+      },
+      {
+        "seed_rank": 9,
+        "theta_deg": 133.58377913494343,
+        "t_3857": [
+          13682015.419453131,
+          70575.60506904071
+        ],
+        "invariant_score": 31.87045465304746,
+        "diag": {
+          "channel": "baseline",
+          "cable_nodes": [
+            7,
+            2
+          ],
+          "osm_members": [
+            [
+              5705272634
+            ],
+            [
+              5601114131
+            ]
+          ],
+          "baseline_cable_m": 1628.8954104323589,
+          "baseline_osm_m": 1618.4286277408762,
+          "ang_res_mean_deg": 8.67740870297915,
+          "ang_res_max_deg": 18.56449180269567,
+          "length_penalty": 0.0
+        },
+        "exact_f1_seed": 0.018126618088517763,
+        "polished": {
+          "theta_deg": 133.58377913494343,
+          "t_3857": [
+            13682015.419453131,
+            70588.60506904071
+          ],
+          "exact_f1": 0.019715778649159577,
+          "polish_evals": 109
+        },
+        "seed_residual_vs_true": {
+          "translation_m": 1485.3601941608233,
+          "rotation_deg_abs": 92.27584917991129
+        }
+      }
+    ]
+  },
+  "eval_counts": {
+    "p2_exact_f1_evals_total": 1667,
+    "p2_seed_scoring_evals": 10,
+    "p2_polish_evals": 1657,
+    "p1_total_f1_evals": 17446963,
+    "p1_raster_evals": {
+      "valid_translations_per_map": 166160,
+      "coarse_maps": 72,
+      "fine_maps": 33,
+      "raster_evals": 17446800
+    },
+    "p1_exact_polish_evals_replayed": 163,
+    "p2_over_p1_ratio": 9.554671492110117e-05,
+    "speedup_x": 10466.084583083384,
+    "eval_counting_convention": "1 次评估 = 对 1 个 (θ,t) 假设做 1 次 F1 评分。P1 全程评估量 = 栅格 F1 假设评估（粗扫 72 + 细扫 33 幅 FFT 相关图，每幅对搜索域掩膜内 全部 5m 像素平移评分，有效平移数由 P1 的索引公式精确重算）+ P1 抛光阶段的 精确 F1 评估（从 result.json top5_fine[0] 按同一爬山调度确定性重放计数）。P2 = Top-10 种子的精确 F1 评分 + 10 次抛光的全部爬山评估。"
+  },
+  "timing_s": {
+    "seed_generation": 0.38,
+    "seed_scoring_and_polish": 12.99,
+    "total": 13.56
+  },
+  "provenance": {
+    "delivery_gpkg": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\robustness\\baselines\\apd_hutabohu\\delivery\\apd_delivery.gpkg",
+    "delivery_sha256": "a6055d0911934c7199b4720d1ce621f49d98021eb1bde97714de834c0878a5d9",
+    "osm_cache": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p1\\data\\overpass_way_highway_d2b40ddb11.json",
+    "truth_frame": "EPSG:3857",
+    "p1_result": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p1\\results\\result.json",
+    "p1_reuse": "sys.path 只读 import road_match_p1（未修改 P1 任何文件）"
+  }
+}

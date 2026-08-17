@@ -1,0 +1,246 @@
+{
+  "experiment": "road-match P2 Route B: 粗锚先验 + 旋转×平移扫描（无独立真值）",
+  "baseline": "lamteh_sf",
+  "route": "B_anchor_scan",
+  "route_reason": "名义 footprint 位于几内亚湾大洋（3857 原点 10.6 km 内），该海域 OSM highway way 数 = 0 ⇒ 恒等假设 F1=0，delivery 实为本地工程坐标，无独立真值，残余不可量化。",
+  "unit_contract": {
+    "coordinate_mode": "direct_crs",
+    "source_crs": "EPSG:3857",
+    "insunits": 4,
+    "metres_per_unit": 0.001,
+    "source_coordinate_scale_to_m": 1.0,
+    "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied",
+    "coordinate_domain_status": "PLAUSIBLE_DECLARED_CRS_DOMAIN",
+    "coordinate_domain_passed": true
+  },
+  "scale_assumption": 1.0,
+  "coordinate_interpretation": "delivery 图层声明 CRS 与 manifest source_crs=EPSG:3857 不符：坐标数值量级 ≤ ~10.6km，按 EPSG:3857 解释位于 Null Island 附近几内亚湾（大洋），不可能是印尼 FTTH 现场 ⇒ 判定为本地工程坐标。数值按米处理（scale=1）：kletek insunits=6(m) 与量级一致；lamteh/lamteh_sf insunits=4(mm) 但若按 mm 解释缆线总长仅数米，与村级 FTTH 规模矛盾，而按米解释缆线跨度数 km、与 Nominatim 村级 bbox(约4.5km) 同量级 ⇒ scale=1 为唯一合理假设；该假设最终由扫描峰强度经验检验。",
+  "anchor": {
+    "git_ref": "origin/robustness @ 78f5d1a7086108045d6dae8ff707b3c5d08b7c49",
+    "target_centre_3857": [
+      10616116.487453239,
+      609905.8874086541
+    ],
+    "t_anchor_3857": [
+      10609653.3603,
+      614614.7455
+    ],
+    "precision": "coarse_bbox_centre",
+    "source": "OPENSTREETMAP_NOMINATIM"
+  },
+  "cables": {
+    "count": 9,
+    "vertices": 42,
+    "total_length_m": 2427.325762435074,
+    "half_span_m": 3970.425129399062
+  },
+  "osm": {
+    "cache": "overpass_way_highway_lamteh_6c0d313019.json",
+    "region": "lamteh"
+  },
+  "prior_anchor_theta0": {
+    "c_w_3857": [
+      10616255.757713495,
+      605385.0736929125
+    ],
+    "exact_coverage": 0.024115625273303923,
+    "exact_dice_f1": 0.0002608754698763528
+  },
+  "recovered_best": {
+    "theta_deg": 324.0,
+    "c_w_3857": [
+      10617685.186284924,
+      607836.7660006047
+    ],
+    "t_3857": [
+      10617768.799545497,
+      619184.5191744673
+    ],
+    "exact_coverage": 0.6084386387181717,
+    "exact_dice_f1": 0.006581903391202257,
+    "dist2prior_m": 2837.967796225887
+  },
+  "separation": {
+    "coverage_top1_over_top2": 1.035857844788424,
+    "coverage_top1_over_rotationally_distinct": 1.035857844788424,
+    "rotationally_distinct_competitor": {
+      "theta_deg": 126.0,
+      "c_w_3857": [
+        10616713.997713495,
+        607117.0736929125
+      ],
+      "exact_coverage": 0.5873765804635543,
+      "dtheta_from_top1": 162.0
+    },
+    "coverage_top1_over_coarse_median": 1.6049701474598497,
+    "coverage_top1_over_prior": 25.230058595731926,
+    "mode_dedup_radius": {
+      "dtheta_deg": 5.0,
+      "dist_m": 350.0
+    }
+  },
+  "top5_coarse": [
+    {
+      "theta_deg": 125.0,
+      "coverage": 0.5375874125874128,
+      "dice_f1": 0.0059416845400266675,
+      "c_w_3857": [
+        10616775.757713495,
+        607080.502264341
+      ],
+      "dist2prior_m": 1773.3803993549036
+    },
+    {
+      "theta_deg": 85.0,
+      "coverage": 0.4990636704119851,
+      "dice_f1": 0.005151351142382187,
+      "c_w_3857": [
+        10616339.757713495,
+        605164.1848040236
+      ],
+      "dist2prior_m": 236.32160551790898
+    },
+    {
+      "theta_deg": 325.0,
+      "coverage": 0.49319727891156473,
+      "dice_f1": 0.005602673827785399,
+      "c_w_3857": [
+        10618147.157713495,
+        607405.5898219447
+      ],
+      "dist2prior_m": 2767.648711032679
+    },
+    {
+      "theta_deg": 135.0,
+      "coverage": 0.4718804920913884,
+      "dice_f1": 0.005188255412886583,
+      "c_w_3857": [
+        10616313.149017842,
+        606722.3536929125
+      ],
+      "dist2prior_m": 1338.5109488587686
+    },
+    {
+      "theta_deg": 240.0,
+      "coverage": 0.47124463519313325,
+      "dice_f1": 0.005303502340206636,
+      "c_w_3857": [
+        10617793.274954874,
+        604463.518137357
+      ],
+      "dist2prior_m": 1792.54676633935
+    }
+  ],
+  "top5_fine_modes": [
+    {
+      "rank": 1,
+      "theta_deg": 324.0,
+      "c_w_3857": [
+        10617685.186284924,
+        607836.7660006047
+      ],
+      "t_3857": [
+        10617768.799545497,
+        619184.5191744673
+      ],
+      "raster_coverage": 0.5810928013876845,
+      "exact_coverage": 0.6084386387181717,
+      "exact_dice_f1": 0.006581903391202257,
+      "polished": true
+    },
+    {
+      "rank": 2,
+      "theta_deg": 126.0,
+      "c_w_3857": [
+        10616713.997713495,
+        607117.0736929125
+      ],
+      "t_3857": [
+        10613127.828198483,
+        596350.5570100733
+      ],
+      "raster_coverage": 0.5579773321708806,
+      "exact_coverage": 0.5873765804635543,
+      "exact_dice_f1": 0.00635406047682294,
+      "polished": false
+    },
+    {
+      "rank": 3,
+      "theta_deg": 85.0,
+      "c_w_3857": [
+        10616339.757713495,
+        605164.1848040236
+      ],
+      "t_3857": [
+        10606569.770743659,
+        599391.3304076705
+      ],
+      "raster_coverage": 0.4990636704119851,
+      "exact_coverage": 0.5286189209411732,
+      "exact_dice_f1": 0.005718438059239964,
+      "polished": false
+    },
+    {
+      "rank": 4,
+      "theta_deg": 325.0,
+      "c_w_3857": [
+        10618147.157713495,
+        607405.5898219447
+      ],
+      "t_3857": [
+        10618032.712638823,
+        618753.0739306419
+      ],
+      "raster_coverage": 0.49319727891156473,
+      "exact_coverage": 0.5113496820897813,
+      "exact_dice_f1": 0.00553162470698142,
+      "polished": false
+    },
+    {
+      "rank": 5,
+      "theta_deg": 327.0,
+      "c_w_3857": [
+        10616686.691046828,
+        608238.4736929125
+      ],
+      "t_3857": [
+        10616176.29420477,
+        619575.0511453833
+      ],
+      "raster_coverage": 0.46453287197231846,
+      "exact_coverage": 0.47644634579971934,
+      "exact_dice_f1": 0.005154051073677284,
+      "polished": false
+    }
+  ],
+  "scan_config": {
+    "res_m_per_px": 8.0,
+    "grid_radius_m": 7000.0,
+    "search_radius_m": 2900.0,
+    "buffer_m": 15.0,
+    "grid_px": 1750,
+    "template_px": 1005,
+    "fft_size": 3072,
+    "coarse_theta_step_deg": 5.0,
+    "fine_theta_range_deg": 5.0,
+    "fine_theta_step_deg": 1.0,
+    "region": "lamteh"
+  },
+  "boundary_flags": {
+    "search_radius_m": 2900.0,
+    "top1_dist2prior_m": 2837.967796225887,
+    "near_boundary": true
+  },
+  "timing_s": {
+    "polish": 5.05,
+    "mode_exact_scores": 0.35,
+    "polish_evals": 82
+  },
+  "provenance": {
+    "delivery_gpkg": "E:\\branch_CAD2GIS\\APD_test\\runs\\lamteh_sf\\delivery.gpkg",
+    "delivery_sha256": "7ee4b15fad1e95f71fbc4b73f2ee210faada67dcb6c05d47ed3a82fdd7748be5",
+    "run_manifest_sha256": "9121a7fa20ee35a9746faa75830f6298b75d28b2b2b1c555230469add0eb1f0a",
+    "anchor_git_ref": "origin/robustness @ 78f5d1a7086108045d6dae8ff707b3c5d08b7c49",
+    "truth": "无独立真值（manifest: absolute_accuracy not independently verified; no surveyed GCP）——残余不可量化，结论仅依赖分数分离度与人眼复核。"
+  }
+}

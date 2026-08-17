@@ -1,0 +1,319 @@
+{
+  "experiment": "road-match P2: abstention gate (ACCEPT/AMBIGUOUS/NO_MATCH) tests",
+  "deterministic": true,
+  "score_definition": "变换后缆线 15m 缓冲 ∩ OSM 道路 15m 缓冲的 Dice F1（同 P1）",
+  "coverage_definition": "Top1 假设下落入道路缓冲的缆线长度 / 缆线总长",
+  "thresholds": {
+    "tau_min": 0.08,
+    "tau_margin": 0.03,
+    "min_coverage": 0.5,
+    "mode_theta_tol_deg": 2.0,
+    "mode_translation_tol_m": 30.0,
+    "threshold_source": "P1 hutabohu 实测：真模式 F1=0.114 vs 最佳错误模式 0.053；sanity 恒等覆盖率 87.7%（tools/road_match_p1/results/）。"
+  },
+  "cases": {
+    "A_grid_city_ambiguous": {
+      "description": "合成网格城市：晶格周期平移产生 15 个完全同分的竞争假设",
+      "expected": "AMBIGUOUS",
+      "decision": "AMBIGUOUS",
+      "pass": true,
+      "false_pass": false,
+      "top_scores": [
+        {
+          "theta_deg": 0.0,
+          "t": [
+            0.0,
+            -400.0
+          ],
+          "score": 0.200777,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 0.0,
+          "t": [
+            0.0,
+            0.0
+          ],
+          "score": 0.200777,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 0.0,
+          "t": [
+            0.0,
+            400.0
+          ],
+          "score": 0.200777,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 0.0,
+          "t": [
+            -400.0,
+            -400.0
+          ],
+          "score": 0.200777,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 0.0,
+          "t": [
+            -400.0,
+            0.0
+          ],
+          "score": 0.200777,
+          "coverage": 1.0
+        }
+      ],
+      "n_tied_top": 15,
+      "verdict": {
+        "decision": "AMBIGUOUS",
+        "reasons": [
+          "R4: Top1=0.2008 与 Top2（不同模式）=0.2008 分离度 0.0000 < TAU_MARGIN=0.03，竞争假设不可区分，弃权"
+        ],
+        "evidence": {
+          "n_hypotheses": 10,
+          "n_distinct_modes": 10,
+          "top1_score": 0.20077669681460777,
+          "top2_distinct_score": 0.20077669681460777,
+          "margin_top1_top2": 0.0,
+          "coverage_top1": 1.0,
+          "n_roads": 25
+        },
+        "thresholds": {
+          "tau_min": 0.08,
+          "tau_margin": 0.03,
+          "min_coverage": 0.5,
+          "mode_theta_tol_deg": 2.0,
+          "mode_translation_tol_m": 30.0,
+          "threshold_source": "P1 hutabohu 实测：真模式 F1=0.114 vs 最佳错误模式 0.053；sanity 恒等覆盖率 87.7%（tools/road_match_p1/results/）。"
+        }
+      }
+    },
+    "B_empty_osm_no_match": {
+      "description": "无道路区域/空 OSM：R1（无假设）与 R2（零分假设）两条路径都须 NO_MATCH",
+      "expected": "NO_MATCH",
+      "decision": "NO_MATCH",
+      "pass": true,
+      "sub_verdicts": {
+        "no_hypotheses": {
+          "decision": "NO_MATCH",
+          "reasons": [
+            "R1: 路网为空（OSM 未覆盖测区或缓存缺失），无匹配对象"
+          ],
+          "evidence": {
+            "n_hypotheses": 0,
+            "n_distinct_modes": 0,
+            "top1_score": null,
+            "top2_distinct_score": null,
+            "margin_top1_top2": null,
+            "coverage_top1": 0.0,
+            "n_roads": 0
+          },
+          "thresholds": {
+            "tau_min": 0.08,
+            "tau_margin": 0.03,
+            "min_coverage": 0.5,
+            "mode_theta_tol_deg": 2.0,
+            "mode_translation_tol_m": 30.0,
+            "threshold_source": "P1 hutabohu 实测：真模式 F1=0.114 vs 最佳错误模式 0.053；sanity 恒等覆盖率 87.7%（tools/road_match_p1/results/）。"
+          }
+        },
+        "zero_score_hypotheses": {
+          "decision": "NO_MATCH",
+          "reasons": [
+            "R1: 路网为空（OSM 未覆盖测区或缓存缺失），无匹配对象"
+          ],
+          "evidence": {
+            "n_hypotheses": 1,
+            "n_distinct_modes": 1,
+            "top1_score": 0.0,
+            "top2_distinct_score": null,
+            "margin_top1_top2": null,
+            "coverage_top1": 0.0,
+            "n_roads": 0
+          },
+          "thresholds": {
+            "tau_min": 0.08,
+            "tau_margin": 0.03,
+            "min_coverage": 0.5,
+            "mode_theta_tol_deg": 2.0,
+            "mode_translation_tol_m": 30.0,
+            "threshold_source": "P1 hutabohu 实测：真模式 F1=0.114 vs 最佳错误模式 0.053；sanity 恒等覆盖率 87.7%（tools/road_match_p1/results/）。"
+          }
+        }
+      }
+    },
+    "C_hutabohu_normal_accept": {
+      "description": "hutabohu 真实数据正常案例：P1 top5_fine + 抛光假设精确重评分",
+      "expected": "ACCEPT",
+      "decision": "ACCEPT",
+      "pass": true,
+      "top_scores": [
+        {
+          "theta_deg": 41.3,
+          "t": [
+            13682727.3,
+            69271.76
+          ],
+          "score": 0.116048,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 41.0,
+          "t": [
+            13682725.3,
+            69270.76
+          ],
+          "score": 0.113342,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 42.0,
+          "t": [
+            13682728.23,
+            69279.78
+          ],
+          "score": 0.103439,
+          "coverage": 0.9172
+        },
+        {
+          "theta_deg": 40.0,
+          "t": [
+            13682722.77,
+            69264.38
+          ],
+          "score": 0.085974,
+          "coverage": 0.7653
+        },
+        {
+          "theta_deg": 43.0,
+          "t": [
+            13682735.41,
+            69297.61
+          ],
+          "score": 0.081563,
+          "coverage": 0.6745
+        }
+      ],
+      "p1_reference": {
+        "osm_cache": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p1\\data\\overpass_way_highway_d2b40ddb11.json",
+        "p1_top1_raster_f1": 0.11444014288653245,
+        "p1_polished_exact_f1": 0.11161891529068915
+      },
+      "verdict": {
+        "decision": "ACCEPT",
+        "reasons": [
+          "R5: Top1=0.1160 ≥ TAU_MIN，覆盖度与分离度达标，通过",
+          "次优不同模式 0.0745，分离度 0.0416"
+        ],
+        "evidence": {
+          "n_hypotheses": 6,
+          "n_distinct_modes": 2,
+          "top1_score": 0.11604845225694994,
+          "top2_distinct_score": 0.07448971355821718,
+          "margin_top1_top2": 0.041558738698732764,
+          "coverage_top1": 1.000000000000551,
+          "n_roads": 216
+        },
+        "thresholds": {
+          "tau_min": 0.08,
+          "tau_margin": 0.03,
+          "min_coverage": 0.5,
+          "mode_theta_tol_deg": 2.0,
+          "mode_translation_tol_m": 30.0,
+          "threshold_source": "P1 hutabohu 实测：真模式 F1=0.114 vs 最佳错误模式 0.053；sanity 恒等覆盖率 87.7%（tools/road_match_p1/results/）。"
+        }
+      }
+    },
+    "D_hutabohu_perturbed_50pct": {
+      "description": "注入扰动：删 50% 缆线（保留索引 0,2,4），观察分数下降时门禁行为",
+      "expected": "记录实际判定（分数显著下降时 NO_MATCH/AMBIGUOUS 均符合弃权语义）",
+      "decision": "NO_MATCH",
+      "pass": true,
+      "kept_cable_indices": [
+        0,
+        2,
+        4
+      ],
+      "kept_length_share": 0.425548323085692,
+      "top_scores": [
+        {
+          "theta_deg": 41.3,
+          "t": [
+            13682727.3,
+            69271.76
+          ],
+          "score": 0.052045,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 41.0,
+          "t": [
+            13682725.3,
+            69270.76
+          ],
+          "score": 0.047872,
+          "coverage": 1.0
+        },
+        {
+          "theta_deg": 42.0,
+          "t": [
+            13682728.23,
+            69279.78
+          ],
+          "score": 0.045206,
+          "coverage": 0.9244
+        },
+        {
+          "theta_deg": 43.0,
+          "t": [
+            13682735.41,
+            69297.61
+          ],
+          "score": 0.037402,
+          "coverage": 0.6963
+        },
+        {
+          "theta_deg": 44.0,
+          "t": [
+            13682744.3,
+            69316.75
+          ],
+          "score": 0.032164,
+          "coverage": 0.6131
+        }
+      ],
+      "verdict": {
+        "decision": "NO_MATCH",
+        "reasons": [
+          "R2: Top1 分数 0.0520 < TAU_MIN=0.08，无任何可靠匹配"
+        ],
+        "evidence": {
+          "n_hypotheses": 6,
+          "n_distinct_modes": 2,
+          "top1_score": 0.05204520050513777,
+          "top2_distinct_score": 0.032163958162759666,
+          "margin_top1_top2": 0.019881242342378105,
+          "coverage_top1": 1.0000000000013043,
+          "n_roads": 216
+        },
+        "thresholds": {
+          "tau_min": 0.08,
+          "tau_margin": 0.03,
+          "min_coverage": 0.5,
+          "mode_theta_tol_deg": 2.0,
+          "mode_translation_tol_m": 30.0,
+          "threshold_source": "P1 hutabohu 实测：真模式 F1=0.114 vs 最佳错误模式 0.053；sanity 恒等覆盖率 87.7%（tools/road_match_p1/results/）。"
+        }
+      }
+    }
+  },
+  "hard_criteria": {
+    "ambiguous_false_pass_count": 0,
+    "ambiguous_false_pass_must_be_0": true,
+    "normal_case_accepted": true,
+    "empty_osm_no_match": true
+  },
+  "overall_pass": true
+}

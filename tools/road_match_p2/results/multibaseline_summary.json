@@ -1,0 +1,164 @@
+{
+  "title": "road-match 多基线对比（P1 hutabohu + P2 kletek/lamteh/lamteh_sf）",
+  "generated_by": "tools/road_match_p2/road_match_p2.py summary",
+  "baselines": [
+    {
+      "baseline": "hutabohu",
+      "stage": "P1（引用）",
+      "route": "A_strip_recover",
+      "truth_available": true,
+      "cable_km": 5.465,
+      "identity_overlap_ratio": 0.8770592034608159,
+      "identity_note": "恒等假设下缆线缓冲 87.7% 落在 OSM 道路缓冲内（sanity_identity.json）",
+      "primary_metric": "exact_dice_f1",
+      "best_score": 0.11161891529068915,
+      "separation": "真模式细扫 F1=0.114 vs 最佳错误模式 0.053（≈2.2×）",
+      "residual": {
+        "translation_m": 7.283813089530142,
+        "rotation_deg": -0.007929955032125235
+      },
+      "verdict": "PASS — 残差 7.28m/0.008°（标准 <50m/<5°）",
+      "result_json": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p1\\results\\result.json"
+    },
+    {
+      "baseline": "kletek",
+      "stage": "P2",
+      "route": "B_anchor_scan",
+      "truth_available": false,
+      "cable_km": 0.876,
+      "identity_overlap_ratio": 0.0,
+      "identity_note": "恒等假设 F1=0（名义坐标在几内亚湾大洋，nullisland 区域 highway way=0）",
+      "primary_metric": "exact_coverage（cable-recall 型；Dice F1 受道路总量稀释，作辅证）",
+      "best_score": 0.9899493313097639,
+      "best_dice_f1": 0.005927355469316091,
+      "best_theta_deg": 7.2,
+      "best_c_w_3857": [
+        12543295.104835702,
+        -820900.3208181395
+      ],
+      "prior_coverage": 0.49134780308671294,
+      "separation": {
+        "coverage_top1_over_top2": 1.00956133563693,
+        "coverage_top1_over_rotationally_distinct": 1.0108452766016756,
+        "rotationally_distinct_competitor": {
+          "theta_deg": 355.0,
+          "c_w_3857": [
+            12543307.604835702,
+            -820880.3208181395
+          ],
+          "exact_coverage": 0.9793282456023725,
+          "dtheta_from_top1": 12.200000000000045
+        },
+        "coverage_top1_over_coarse_median": 0.9899493313097639,
+        "coverage_top1_over_prior": 2.0147629135426457,
+        "mode_dedup_radius": {
+          "dtheta_deg": 5.0,
+          "dist_m": 350.0
+        }
+      },
+      "boundary_flags": {
+        "search_radius_m": 1500.0,
+        "top1_dist2prior_m": 576.6823215601463,
+        "near_boundary": false
+      },
+      "verdict": "INCONCLUSIVE — 村级路网密度相对 270m 缆线簇在 ±15m 容差下趋饱和：全角度 coverage≈1.0，道路通道对旋转×平移无鉴别力；需更小容差或第二通道（IMB 建筑点），见 sens 实验。",
+      "result_json": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p2\\results\\baseline_kletek.json"
+    },
+    {
+      "baseline": "lamteh",
+      "stage": "P2",
+      "route": "B_anchor_scan",
+      "truth_available": false,
+      "cable_km": 6.587,
+      "identity_overlap_ratio": 0.0,
+      "identity_note": "恒等假设 F1=0（名义坐标在几内亚湾大洋，nullisland 区域 highway way=0）",
+      "primary_metric": "exact_coverage（cable-recall 型；Dice F1 受道路总量稀释，作辅证）",
+      "best_score": 0.35751702683574654,
+      "best_dice_f1": 0.014060492660837488,
+      "best_theta_deg": 62.0,
+      "best_c_w_3857": [
+        10611297.159606814,
+        607639.716493023
+      ],
+      "prior_coverage": 0.0,
+      "separation": {
+        "coverage_top1_over_top2": 1.0827608059968317,
+        "coverage_top1_over_rotationally_distinct": 0.9988460695194511,
+        "rotationally_distinct_competitor": {
+          "theta_deg": 90.0,
+          "c_w_3857": [
+            10609476.658766478,
+            609034.9885518465
+          ],
+          "exact_coverage": 0.35793005323407784,
+          "dtheta_from_top1": 28.0
+        },
+        "coverage_top1_over_coarse_median": 2.2340617967998995,
+        "coverage_top1_over_prior": null,
+        "mode_dedup_radius": {
+          "dtheta_deg": 5.0,
+          "dist_m": 350.0
+        }
+      },
+      "boundary_flags": {
+        "search_radius_m": 2900.0,
+        "top1_dist2prior_m": 2595.2701534812795,
+        "near_boundary": false
+      },
+      "verdict": "INCONCLUSIVE — 峰分离度<1.15×，扫描未能找到显著最优假设；无独立真值，残余不可量化。 旋转迥异竞争模式 θ=90.0°（Δθ=28.0°）exact coverage=0.3579，对 Top-1 分离度 0.999×。",
+      "result_json": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p2\\results\\baseline_lamteh.json"
+    },
+    {
+      "baseline": "lamteh_sf",
+      "stage": "P2",
+      "route": "B_anchor_scan",
+      "truth_available": false,
+      "cable_km": 2.427,
+      "identity_overlap_ratio": 0.0,
+      "identity_note": "恒等假设 F1=0（名义坐标在几内亚湾大洋，nullisland 区域 highway way=0）",
+      "primary_metric": "exact_coverage（cable-recall 型；Dice F1 受道路总量稀释，作辅证）",
+      "best_score": 0.6084386387181717,
+      "best_dice_f1": 0.006581903391202257,
+      "best_theta_deg": 324.0,
+      "best_c_w_3857": [
+        10617685.186284924,
+        607836.7660006047
+      ],
+      "prior_coverage": 0.024115625273303923,
+      "separation": {
+        "coverage_top1_over_top2": 1.035857844788424,
+        "coverage_top1_over_rotationally_distinct": 1.035857844788424,
+        "rotationally_distinct_competitor": {
+          "theta_deg": 126.0,
+          "c_w_3857": [
+            10616713.997713495,
+            607117.0736929125
+          ],
+          "exact_coverage": 0.5873765804635543,
+          "dtheta_from_top1": 162.0
+        },
+        "coverage_top1_over_coarse_median": 1.6049701474598497,
+        "coverage_top1_over_prior": 25.230058595731926,
+        "mode_dedup_radius": {
+          "dtheta_deg": 5.0,
+          "dist_m": 350.0
+        }
+      },
+      "boundary_flags": {
+        "search_radius_m": 2900.0,
+        "top1_dist2prior_m": 2837.967796225887,
+        "near_boundary": true
+      },
+      "verdict": "INCONCLUSIVE — 峰分离度<1.15×，扫描未能找到显著最优假设；无独立真值，残余不可量化。 另：Top-1 距先验中心 2838m，达搜索半径 2900m 的 98%——峰被搜索域截断，真实最优可能在域外，需扩大区域重扫。 旋转迥异竞争模式 θ=126.0°（Δθ=162.0°）exact coverage=0.5874，对 Top-1 分离度 1.036×。",
+      "result_json": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p2\\results\\baseline_lamteh_sf.json"
+    }
+  ],
+  "cross_baseline_notes": [
+    "交叉一致性检查：lamteh 最优 c_w 与 lamteh_sf 最优 c_w 相距 6391 m（θ 分别为 62.0° 与 324.0°）。二者同属 Lamteh Dayah，真实网络位置应接近 ⇒ 至少一个扫描结果是伪匹配，两个 Route B 结论均不可单独采信。",
+    "三个 P2 delivery 的图层/manifest 虽声明 EPSG:3857，坐标量级（≤10.6km）却落在 Null Island 附近大洋（该海域单次 Overpass 查询 highway way=0）——全部为本地工程坐标，恒等假设 F1=0，无一可走 P1 的剥离-恢复残差协议（Route A）。",
+    "上游 manifest 自检 coordinate_domain_status=PLAUSIBLE_DECLARED_CRS_DOMAIN(passed=true) 与本实验证据矛盾：该检查未识别坐标域错误，值得在 CAD2GIS 主流程中修正。",
+    "lamteh 双基线 manifest insunits=4(mm) 但数值按米解释才与村级 FTTH 规模/Nominatim bbox 同量级；scale=1 假设由扫描结构支持（lamteh_sf 出现明显角度峰），但未由独立真值证实。",
+    "kletek 证明方法学边界：缆线簇过小（876m）+ 村级路网密集时，±15m 缓冲重叠指标（Dice 与 coverage 皆然）失去鉴别力——自动定位须先过'信号充分性'门禁。",
+    "所有 Route B 结论均无独立真值：分数与分离度只是候选排序依据，残余不可量化，落地必须经 gcp_workflow 人工确认。"
+  ]
+}

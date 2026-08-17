@@ -1,0 +1,70 @@
+{
+  "purpose": "检验各 delivery 名义位置（按声明 CRS=EPSG:3857 直读）是否可能与 OSM 路网对齐",
+  "null_bbox_swne_4326": [
+    -0.11,
+    -0.11,
+    0.11,
+    0.11
+  ],
+  "osm_cache": "overpass_way_highway_nullisland_16316914b1.json",
+  "osm_highway_way_count_in_null_bbox": 0,
+  "baselines": {
+    "kletek": {
+      "nominal_bbox_3857": [
+        -168.6037271044411,
+        77.76138785893237,
+        101.7091985085581,
+        246.0867758621612
+      ],
+      "nominal_bbox_4326": [
+        -0.0015145930501743628,
+        0.0006985424322629458,
+        0.0009136692755578418,
+        0.002210635119218271
+      ],
+      "max_abs_coord_m_from_3857_origin": 246.0867758621612,
+      "nominal_footprint_inside_null_bbox": true,
+      "identity_f1": 0.0,
+      "decision": "route_B_anchor_scan",
+      "reason": "名义 footprint 位于几内亚湾大洋（3857 原点 0.2 km 内），该海域 OSM highway way 数 = 0 ⇒ 恒等假设 F1=0，delivery 实为本地工程坐标，无独立真值，残余不可量化。"
+    },
+    "lamteh": {
+      "nominal_bbox_3857": [
+        2353.527798029823,
+        -9171.20718834214,
+        10074.25539206917,
+        -7895.18230796499
+      ],
+      "nominal_bbox_4326": [
+        0.02114209992570352,
+        -0.0823863275209006,
+        0.09049857594819237,
+        -0.07092361126914268
+      ],
+      "max_abs_coord_m_from_3857_origin": 10074.25539206917,
+      "nominal_footprint_inside_null_bbox": true,
+      "identity_f1": 0.0,
+      "decision": "route_B_anchor_scan",
+      "reason": "名义 footprint 位于几内亚湾大洋（3857 原点 10.1 km 内），该海域 OSM highway way 数 = 0 ⇒ 恒等假设 F1=0，delivery 实为本地工程坐标，无独立真值，残余不可量化。"
+    },
+    "lamteh_sf": {
+      "nominal_bbox_3857": [
+        2652.866471957732,
+        -9636.465427999125,
+        10551.92835502945,
+        -8822.878186175776
+      ],
+      "nominal_bbox_4326": [
+        0.023831104984878622,
+        -0.0865658088547292,
+        0.09478958518257113,
+        -0.07925723796895727
+      ],
+      "max_abs_coord_m_from_3857_origin": 10551.92835502945,
+      "nominal_footprint_inside_null_bbox": true,
+      "identity_f1": 0.0,
+      "decision": "route_B_anchor_scan",
+      "reason": "名义 footprint 位于几内亚湾大洋（3857 原点 10.6 km 内），该海域 OSM highway way 数 = 0 ⇒ 恒等假设 F1=0，delivery 实为本地工程坐标，无独立真值，残余不可量化。"
+    }
+  }
+}
