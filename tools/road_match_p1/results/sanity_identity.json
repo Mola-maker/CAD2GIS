@@ -1,0 +1,12 @@
+{
+  "osm_cache": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p1\\data\\overpass_way_highway_d2b40ddb11.json",
+  "osm_way_count": 216,
+  "osm_way_in_domain": 216,
+  "domain": "truth_center ± 3000.0 m (EPSG:3857)",
+  "buffer_m": 15.0,
+  "identity_f1": 0.11103565942449616,
+  "intersection_m2": 135200.90960167954,
+  "cable_buffer_m2": 154152.5464508963,
+  "road_buffer_m2": 2281117.533493388,
+  "interpretation": "F1≈0 说明基线名义位置未与 OSM 路网配准（或缆线不沿路）；F1 越高，‘缆线沿路’前提越强。"
+}

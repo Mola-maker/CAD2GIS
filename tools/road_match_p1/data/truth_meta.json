@@ -1,0 +1,36 @@
+{
+  "source_delivery_gpkg": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\robustness\\baselines\\apd_hutabohu\\delivery\\apd_delivery.gpkg",
+  "source_delivery_sha256": "a6055d0911934c7199b4720d1ce621f49d98021eb1bde97714de834c0878a5d9",
+  "run_manifest": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\robustness\\baselines\\apd_hutabohu\\run_manifest.json",
+  "run_manifest_sha256": "ee8a3cbcc9e5f9587d8b55de244ac49fed7812c0f4aee5d70483e855e9e4f639",
+  "delivery_crs": "EPSG:9481 (SRGI2013 / UTM zone 51N)",
+  "cable_count": 6,
+  "cable_vertex_count": 145,
+  "cable_total_length_epsg9481_m": 5465.112206179336,
+  "truth_frame": "EPSG:3857",
+  "truth_bbox_3857": [
+    13680903.196341598,
+    68440.58562781669,
+    13683528.957524668,
+    70208.33700727906
+  ],
+  "truth_center_3857": [
+    13682216.076933134,
+    69324.46131754787
+  ],
+  "truth_center_4326": [
+    122.90943822534872,
+    0.6227399703485634
+  ],
+  "cable_first_vertex_4326": [
+    122.90595199999966,
+    0.6255703000000286
+  ],
+  "overpass_bbox_4326": [
+    0.6047737468487431,
+    122.89147094060209,
+    0.6407061938483838,
+    122.92740551009535
+  ],
+  "note": "manifest 声明 absolute_accuracy 未经独立验证；本原型把 delivery 名义位置当作实验真值，sanity 阶段用 OSM 重叠独立检验该前提。"
+}

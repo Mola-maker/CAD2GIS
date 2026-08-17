@@ -1,0 +1,140 @@
+{
+  "experiment": "road-match P1: buffer-overlap F1 + grid scan recovers known similarity transform",
+  "seed": 20240818,
+  "T_true": {
+    "theta_deg": 41.30792995503212,
+    "t_3857": [
+      13682720.826866277,
+      69268.43435032154
+    ],
+    "scale": 1.0,
+    "convention": "truth = R(theta) @ local + t ; local = R(-theta) @ (truth - t)"
+  },
+  "T_recovered": {
+    "theta_deg": 41.3,
+    "t_3857": [
+      13682727.304575412,
+      69271.76499852947
+    ],
+    "scale": 1.0,
+    "exact_f1": 0.11161891529068915
+  },
+  "residuals": {
+    "translation_m": 7.283813089530142,
+    "rotation_deg": -0.007929955032125235,
+    "rotation_deg_abs": 0.007929955032125235
+  },
+  "success_criteria": {
+    "translation_residual_lt_50m": true,
+    "rotation_residual_lt_5deg": true
+  },
+  "top5_coarse": [
+    {
+      "theta_deg": 40.0,
+      "t_3857": [
+        13682723.576933134,
+        69261.96131754787
+      ],
+      "raster_f1": 0.0905724598380431
+    },
+    {
+      "theta_deg": 45.0,
+      "t_3857": [
+        13682743.576933134,
+        69316.96131754787
+      ],
+      "raster_f1": 0.06930646804295211
+    },
+    {
+      "theta_deg": 35.0,
+      "t_3857": [
+        13683018.576933134,
+        69071.96131754787
+      ],
+      "raster_f1": 0.056410256410256446
+    },
+    {
+      "theta_deg": 125.0,
+      "t_3857": [
+        13682918.576933134,
+        68491.96131754787
+      ],
+      "raster_f1": 0.05277933745087033
+    },
+    {
+      "theta_deg": 210.0,
+      "t_3857": [
+        13683028.576933134,
+        68546.96131754787
+      ],
+      "raster_f1": 0.052420563549160706
+    }
+  ],
+  "top5_fine": [
+    {
+      "theta_deg": 41.0,
+      "t_3857": [
+        13682725.304575412,
+        69270.76499852947
+      ],
+      "raster_f1": 0.11444014288653245
+    },
+    {
+      "theta_deg": 42.0,
+      "t_3857": [
+        13682728.229107046,
+        69279.7764435983
+      ],
+      "raster_f1": 0.10521296884933255
+    },
+    {
+      "theta_deg": 40.0,
+      "t_3857": [
+        13682722.768109605,
+        69264.37511065132
+      ],
+      "raster_f1": 0.0905724598380431
+    },
+    {
+      "theta_deg": 43.0,
+      "t_3857": [
+        13682735.405792195,
+        69297.61092384708
+      ],
+      "raster_f1": 0.08576451226810299
+    },
+    {
+      "theta_deg": 44.0,
+      "t_3857": [
+        13682744.298409645,
+        69316.75298421454
+      ],
+      "raster_f1": 0.07880714218939894
+    }
+  ],
+  "scan_config": {
+    "res_m_per_px": 5.0,
+    "grid_radius_m": 3000.0,
+    "search_radius_m": 1200.0,
+    "buffer_m": 15.0,
+    "coarse_theta_step_deg": 5.0,
+    "fine_theta_range_deg": 5.0,
+    "fine_theta_step_deg": 1.0,
+    "fft_size": 2560,
+    "grid_px": 1200,
+    "template_px": 771,
+    "translation_eval": "FFT 互相关，在搜索域内对全部 5m 像素平移评分（优于 50m 步长）"
+  },
+  "timing_s": {
+    "coarse_scan": 143.24,
+    "fine_scan": 66.22,
+    "exact_polish": 2.41,
+    "total_scan": 212.88
+  },
+  "provenance": {
+    "delivery_gpkg": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\robustness\\baselines\\apd_hutabohu\\delivery\\apd_delivery.gpkg",
+    "delivery_sha256": "a6055d0911934c7199b4720d1ce621f49d98021eb1bde97714de834c0878a5d9",
+    "osm_cache": "E:\\branch_CAD2GIS\\CAD2GIS\\.worktrees\\road-match\\tools\\road_match_p1\\data\\overpass_way_highway_d2b40ddb11.json",
+    "truth_frame": "EPSG:3857"
+  }
+}
