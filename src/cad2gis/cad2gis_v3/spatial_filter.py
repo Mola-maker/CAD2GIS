@@ -149,6 +149,7 @@ def apply_spatial_denoising(
     route_regex: str | None = None,
     boundary_exempt_layers: Sequence[str] = (),
     label_text_patterns: Sequence[str] = (),
+    reviewed_insert_layers: Sequence[str] = (),
     cable_protect_layers: Sequence[str] = (),
     dimension_protect_layers: Sequence[str] = (),
 ) -> dict[str, Any]:
@@ -165,12 +166,18 @@ def apply_spatial_denoising(
             reviewed ZPM boundary layers); the annotation-frame band never
             excludes them.
         label_text_patterns: Reviewed asset-identifier regexes (from the
-            project registry ``annotation_families``, target class PTECH).
+            project registry ``annotation_families``, every target class).
             Text entities matching one of these patterns are real deployed
             labels — never annotation-frame noise — and INSERT assets within
             ``_DENOISE_LABEL_RADIUS_M`` of such a label are protected from
             cached-region exclusion.  Placeholder texts (``MR.XXX.P001``)
             never count.
+        reviewed_insert_layers: Layer names reviewed as INSERT targets in
+            ``mapping_registry.insert_layer_families`` (all feature classes).
+            An INSERT on one of these layers is deployed infrastructure and
+            is never removed by noise dispositions — a lone FAT/CLOSURE box
+            is a real device even when no nearby reviewed label or cable
+            exists to corroborate it.
         cable_protect_layers: Sling-wire layer names (registry).  INSERT
             assets within ``_DENOISE_LABEL_RADIUS_M`` of a route/sling cable
             polyline are deployed infrastructure and are protected from
@@ -278,6 +285,18 @@ def apply_spatial_denoising(
         and str(entity.layer).strip().upper() in dimension_layer_upper
     }
     diagnostics["dimension_evidence_key_count"] = len(dimension_evidence_keys)
+    reviewed_insert_layer_upper = {
+        str(layer).strip().upper() for layer in reviewed_insert_layers
+    }
+    reviewed_insert_evidence_keys: set[str] = {
+        entity.entity_key
+        for entity in drawing_entities
+        if entity.dwg_type.upper() == "INSERT"
+        and str(entity.layer).strip().upper() in reviewed_insert_layer_upper
+    }
+    diagnostics["reviewed_insert_evidence_key_count"] = len(
+        reviewed_insert_evidence_keys
+    )
 
     def _near_cable(point: tuple[float, float]) -> bool:
         x, y = point
@@ -465,7 +484,10 @@ def apply_spatial_denoising(
 
     noise_keys: set[str] = set()
     evidence_exempt = (
-        route_exempt | label_evidence_keys | dimension_evidence_keys
+        route_exempt
+        | label_evidence_keys
+        | dimension_evidence_keys
+        | reviewed_insert_evidence_keys
     )
     exempt_layers_upper = {str(layer).upper() for layer in boundary_exempt_layers}
     entity_by_key = {entity.entity_key: entity for entity in entities}
