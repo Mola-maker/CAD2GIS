@@ -282,6 +282,34 @@ def test_compile_annotation_families_fail_closed_without_target_layers() -> None
     assert families[0]["target_layer_pattern"] == "(?!)"
 
 
+def test_compile_annotation_families_repairs_target_class_from_layer_semantics() -> None:
+    from cad2gis.cad2gis_v3.family_validation import infer_target_class
+
+    assert infer_target_class("POLE ID FDT 2 73") == "PTECH"
+
+    families = onboarding._compile_annotation_families(
+        [
+            {
+                "family_id": "pole_fdt_area",
+                "text_pattern": r"^MR\.KLK\d+\.P\d+$",
+                "target_class": "SITE",
+                "max_distance_native_m": 15.0,
+                "source_layer": "POLE ID FDT 2 73",
+            }
+        ],
+        {
+            "PTECH": ["EXT POLE", "NEW POLE FDT 1"],
+            "SITE": ["FDT"],
+        },
+    )
+
+    family = families[0]
+    assert family["target_class"] == "PTECH"
+    assert re.fullmatch(family["target_layer_pattern"], "NEW POLE FDT 1")
+    assert not re.fullmatch(family["target_layer_pattern"], "FDT")
+    assert "LAYER-TARGET-CLASS-REPAIR:PTECH" in family["provenance"]
+
+
 def test_insert_layer_mapping_classifies_anonymous_dynamic_block() -> None:
     source_sha256 = "a" * 64
     entity = SourceEntity.from_record(
