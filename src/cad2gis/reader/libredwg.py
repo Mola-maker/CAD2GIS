@@ -1214,6 +1214,7 @@ def _build_record(
     text = ""
     block_name = ""
     block_attributes: dict[str, str] = {}
+    owned_attribute_texts: list[str] = []
     dimension_value: float | None = None
     dimension_text_override = ""
     native_length: float | None = None
@@ -1422,13 +1423,20 @@ def _build_record(
                 for aobj in attrs:
                     try:
                         attr = aobj.tio.entity.tio.ATTRIB
-                        tag = str(attr.tag or "").strip()
-                        value = str(attr.text_value or "").strip()
+                        attr_ptr = int(attr.this)
+                        tag = str(_entity_utf8_text(
+                            attr_ptr, "ATTRIB", "tag"
+                        ) or "").strip()
+                        value = str(_entity_utf8_text(
+                            attr_ptr, "ATTRIB", "text_value"
+                        ) or "").strip()
+                        if value:
+                            owned_attribute_texts.append(value)
                         if tag:
                             block_attributes[tag] = value
                     except Exception:
                         pass
-                if not block_attributes:
+                if not block_attributes and not owned_attribute_texts:
                     reasons.append("libredwg_block_attributes_unread")
             else:
                 block_attributes = {}
@@ -1513,6 +1521,7 @@ def _build_record(
         "text_source": "entity_text" if dwg_type_name in ("TEXT", "MTEXT") else "",
         "attribute_tags": sorted(block_attributes),
         "block_attributes": block_attributes,
+        "owned_attribute_texts": owned_attribute_texts,
         "dynamic_block_properties": {},
         "dynamic_block_properties_status": "not_applicable",
         "dimension_measurement": dimension_value,
