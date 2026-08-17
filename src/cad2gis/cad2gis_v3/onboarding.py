@@ -694,12 +694,17 @@ def _extend_route_regex(current: str, added_layers: list[str]) -> str:
 
 def _compile_annotation_families(
     proposal_families: list[dict[str, Any]],
+    insert_layer_families: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
     """Expand AI-onboarding annotation families to the full registry format.
 
     The model provides the core fields (family_id, text_pattern, target_class,
-    max_distance_native_m).  Layer patterns default to ".*" (match any) so the
-    family gates on text alone; rule_id and provenance are synthesised.
+    max_distance_native_m, optional source_layer).  ``source_layer`` is the
+    layer that carries the annotation text; ``target_layer_pattern`` must be
+    derived from the reviewed INSERT-layer mapping for ``target_class``, never
+    from the label layer.  ``require_same_layer`` is only true when the label
+    layer is itself a reviewed target layer (e.g. ``EXISTING POLE`` text and
+    INSERT share that layer).
     """
     result: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -711,25 +716,39 @@ def _compile_annotation_families(
         target_class = str(entry.get("target_class", "")).strip()
         text_pattern = str(entry.get("text_pattern", "")).strip()
         distance = float(entry.get("max_distance_native_m", 15.0))
+        raw_layer = str(entry.get("source_layer", "")).strip()
+        target_layers = [
+            str(layer).strip()
+            for layer in insert_layer_families.get(target_class, ())
+            if str(layer).strip()
+        ]
+        target_pattern = _exact_layer_regex(target_layers)
+        source_is_target = bool(
+            raw_layer
+            and any(
+                raw_layer.casefold() == layer.casefold()
+                for layer in target_layers
+            )
+        )
         family: dict[str, Any] = {
             "family_id": fid,
             "target_class": target_class,
             "text_pattern": text_pattern,
-            "target_layer_pattern": r"(?i).+",
-            "require_same_layer": False,
+            "source_layer_pattern": (
+                r"(?i)^" + re.escape(raw_layer) + r"$"
+                if raw_layer
+                else r"(?i).+"
+            ),
+            "target_layer_pattern": (
+                r"(?i)^" + re.escape(raw_layer) + r"$"
+                if source_is_target
+                else target_pattern
+            ),
+            "require_same_layer": source_is_target,
             "max_distance_native_m": distance,
             "rule_id": f"AI-ANNOTATION-{fid.upper()}-001",
             "provenance": f"DWG_DERIVED:AI-ANNOTATION-{fid.upper()}-001",
         }
-        raw_layer = str(entry.get("source_layer", "")).strip()
-        if raw_layer:
-            # L1 cross-layer isolation: family applies to its declared layer only.
-            family["source_layer_pattern"] = (
-                r"(?i)^" + re.escape(raw_layer) + r"$"
-            )
-            family["require_same_layer"] = True
-        else:
-            family["source_layer_pattern"] = r"(?i).+"
         if entry.get("aci_color") is not None:
             family["aci_color"] = int(entry["aci_color"])
         result.append(family)
@@ -951,7 +970,8 @@ def _compile_registry(
             },
         ),
         "annotation_families": _compile_annotation_families(
-            proposal.get("annotation_families", [])
+            proposal.get("annotation_families", []),
+            proposal.get("insert_layer_families", {}),
         ),
         "decision_rules": {
             "annotation_assignment": {
@@ -1239,6 +1259,9 @@ def compile_onboarding_proposal(
                     if family.target_class == "PTECH"
                 ],
                 cable_protect_layers=registry.layers.get("sling_wire", ()),
+                dimension_protect_layers=registry.layers.get(
+                    "span_dimension", ()
+                ),
             )
             semantic = list(spatial_result["entities"])
 
