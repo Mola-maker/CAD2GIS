@@ -110,3 +110,75 @@ def test_pole_identifier_shape_accepts_reviewed_apd_shapes_only() -> None:
     assert is_pole_identifier_shape("EXT. MR.KSRA.P008") is True
     assert is_pole_identifier_shape("SLACK - 2 EXT") is False
     assert is_pole_identifier_shape("IJY - KLDYA - 48C") is False
+
+
+def test_owner_relation_wins_over_equidistant_nearest_neighbour() -> None:
+    annotation = _annotation("entity:label", "10B", "MR.DMPH.P104", (10.0, 0.0))
+    object.__setattr__(annotation, "owner_handle", "10A")
+    owner_target = _target(feature_key="feature:A", handle="10A")
+    other_target = _target(feature_key="feature:B", handle="10B")
+    # Both targets are equidistant: without owner evidence this is the legacy
+    # 0.01 m multiple-optima abstention.
+    owner_target.native_points = [(10.0, 0.0)]
+    other_target.native_points = [(10.0, 0.0)]
+
+    assignments, failures, candidates = _assign_family_annotations(
+        [annotation], [owner_target, other_target], 15.0,
+        family_id="test-family",
+    )
+
+    assert not failures
+    assert len(assignments) == 1
+    assert assignments[0][1] is owner_target
+    selected = [item for item in candidates if item["selected"]]
+    assert selected[0]["link_kind"] == "owner"
+    assert selected[0]["relation_priority"] == 0
+
+
+def test_block_path_relation_wins_over_equidistant_nearest_neighbour() -> None:
+    annotation = _annotation("entity:label", "10B", "MR.DMPH.P104", (10.0, 0.0))
+    object.__setattr__(
+        annotation,
+        "raw_properties",
+        {
+            "plan_domain": {
+                "materialization": "nested-insert-affine",
+                "root_entity_key": "entity:10A",
+                "instance_path": ["entity:10A"],
+            }
+        },
+    )
+    path_target = _target(feature_key="feature:A", handle="10A")
+    other_target = _target(feature_key="feature:B", handle="10B")
+    path_target.native_points = [(10.0, 0.0)]
+    other_target.native_points = [(10.0, 0.0)]
+
+    assignments, failures, candidates = _assign_family_annotations(
+        [annotation], [path_target, other_target], 15.0,
+        family_id="test-family",
+    )
+
+    assert not failures
+    assert len(assignments) == 1
+    assert assignments[0][1] is path_target
+    selected = [item for item in candidates if item["selected"]]
+    assert selected[0]["link_kind"] == "block_path"
+    assert selected[0]["relation_priority"] == 1
+
+
+def test_legacy_relation_priority_off_keeps_geometric_tie_abstention() -> None:
+    annotation = _annotation("entity:label", "10B", "MR.DMPH.P104", (10.0, 0.0))
+    object.__setattr__(annotation, "owner_handle", "10A")
+    owner_target = _target(feature_key="feature:A", handle="10A")
+    other_target = _target(feature_key="feature:B", handle="10B")
+    owner_target.native_points = [(10.0, 0.0)]
+    other_target.native_points = [(10.0, 0.0)]
+
+    assignments, failures, _ = _assign_family_annotations(
+        [annotation], [owner_target, other_target], 15.0,
+        family_id="test-family",
+        relation_priority=False,
+    )
+
+    assert not assignments
+    assert failures and failures[0]["status"] == "multiple_optima"

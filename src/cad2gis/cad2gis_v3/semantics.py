@@ -308,10 +308,47 @@ def _minimum_cost_assignment(costs):
     return assignment
 
 
+def _annotation_link_kind(annotation: SourceEntity, target: Feature) -> tuple[int, str]:
+    """Rank one annotation→target candidate by evidence strength.
+
+    DSH-010 priority (strongest first):
+
+    0. ``owner``     — materialized text owner handle equals the target INSERT handle;
+    1. ``block_path`` — materialized ``instance_path`` points at the same root INSERT;
+    2. ``family_contract`` — reviewed layer + text pattern + ACI family;
+    3. ``distance``  — pure coordinate nearest neighbour (last fallback).
+    """
+    annotation_owner = str(getattr(annotation, "owner_handle", "") or "").strip()
+    target_handle = str(target.source_handle or "").strip()
+    if annotation_owner and target_handle and annotation_owner.casefold() == target_handle.casefold():
+        return 0, "owner"
+    plan_domain = annotation.raw_properties.get("plan_domain")
+    if isinstance(plan_domain, Mapping):
+        root_key = str(plan_domain.get("root_entity_key", "") or "")
+        instance_path = plan_domain.get("instance_path", ())
+        if isinstance(instance_path, (list, tuple)) and any(
+            str(item) == target.source_entity_key for item in instance_path
+        ):
+            return 1, "block_path"
+        if root_key and root_key == target.source_entity_key:
+            return 1, "block_path"
+    return 2, "family_contract"
+
+
 def _assign_family_annotations(
     annotations, targets, tolerance, *, family_id="", require_same_layer=False,
+    relation_priority: bool = True,
 ):
-    """Maximum-cardinality, minimum-distance one-to-one annotation matching."""
+    """Maximum-cardinality, minimum-distance one-to-one annotation matching.
+
+    With ``relation_priority`` (the default, DSH-010) candidates are ranked
+    owner > block path > reviewed family contract > coordinate distance.
+    A unique owner/block-path candidate is assigned directly: explicit DWG
+    ownership is not a geometric ambiguity, so it is exempt from the legacy
+    0.01 m multiple-optima abstention.  ``relation_priority=False`` restores
+    the legacy pure-distance behaviour for fixtures that predate the relation
+    contract.
+    """
     annotations = sorted(annotations, key=lambda item: (item.text.casefold(), item.entity_key))
     targets = sorted(
         (target for target in targets if _annotation_target_eligible(target)),
@@ -320,35 +357,73 @@ def _assign_family_annotations(
     candidate_records, eligible, failures = [], [], []
     distances = {}
     for annotation in annotations:
-        ranked = sorted(
-            (math.dist(annotation.centroid, target.native_centroid), target.feature_key, target)
-            for target in targets
-            if not require_same_layer
-            or annotation.layer.strip().casefold() == target.source_layer.strip().casefold()
-        )
-        within = [item for item in ranked if item[0] <= tolerance]
-        for distance, _, target in within:
-            distances[(annotation.entity_key, target.feature_key)] = distance
+        candidates: list[tuple[int, float, str, str, Feature]] = []
+        for target in targets:
+            if (
+                require_same_layer
+                and annotation.layer.strip().casefold()
+                != target.source_layer.strip().casefold()
+            ):
+                continue
+            distance = math.dist(annotation.centroid, target.native_centroid)
+            if distance > tolerance:
+                continue
+            if relation_priority:
+                rank, link_kind = _annotation_link_kind(annotation, target)
+            else:
+                rank, link_kind = 3, "distance"
+            candidates.append((
+                rank, distance, target.feature_key, link_kind, target,
+            ))
+        candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+
+        for rank, distance, target_key, link_kind, target in candidates:
             candidate_records.append({
                 "annotation_key": annotation.entity_key,
                 "family_id": family_id,
                 "text": annotation.text.strip(),
                 "source_layer": annotation.layer,
-                "target_key": target.feature_key,
+                "target_key": target_key,
                 "target_handle": target.source_handle,
                 "target_layer": target.source_layer,
                 "distance_native_m": distance,
+                "link_kind": link_kind,
+                "relation_priority": rank,
                 "selected": False,
                 "status": "candidate",
             })
-        if not within:
+
+        if not candidates:
             failures.append({
                 "kind": "annotation", "entity_key": annotation.entity_key,
                 "family_id": family_id, "text": annotation.text,
                 "source_layer": annotation.layer,
                 "status": "outside_tolerance",
             })
-        elif len(within) > 1 and within[1][0] - within[0][0] <= 0.01:
+            continue
+
+        best_rank = candidates[0][0]
+        best_group = [item for item in candidates if item[0] == best_rank]
+        if best_rank in (0, 1):
+            if len(best_group) == 1:
+                # Explicit DWG ownership/path wins without a geometry tie test.
+                rank, distance, target_key, link_kind, target = best_group[0]
+                distances[(annotation.entity_key, target_key)] = distance
+                eligible.append(annotation)
+                continue
+            failures.append({
+                "kind": "annotation", "entity_key": annotation.entity_key,
+                "family_id": family_id, "text": annotation.text,
+                "source_layer": annotation.layer,
+                "status": "multiple_optima",
+                "link_kind": best_group[0][3],
+            })
+            for record in candidate_records:
+                if record["annotation_key"] == annotation.entity_key:
+                    record["status"] = "ambiguous"
+            continue
+
+        if len(best_group) > 1 and best_group[1][1] - best_group[0][1] <= 0.01:
             failures.append({
                 "kind": "annotation", "entity_key": annotation.entity_key,
                 "family_id": family_id, "text": annotation.text,
@@ -358,8 +433,10 @@ def _assign_family_annotations(
             for record in candidate_records:
                 if record["annotation_key"] == annotation.entity_key:
                     record["status"] = "ambiguous"
-        else:
-            eligible.append(annotation)
+            continue
+        for _rank, distance, target_key, _link_kind, _target in best_group:
+            distances[(annotation.entity_key, target_key)] = distance
+        eligible.append(annotation)
 
     if not eligible:
         return [], failures, candidate_records
@@ -395,9 +472,14 @@ def _assign_family_annotations(
                 "status": "assignment_conflict",
             })
     for record in candidate_records:
-        if (record["annotation_key"], record["target_key"]) in selected_pairs:
+        pair = (record["annotation_key"], record["target_key"])
+        if pair in selected_pairs:
             record["selected"] = True
             record["status"] = "selected"
+        elif record["status"] != "ambiguous" and relation_priority:
+            # Remaining candidates lost to a stronger-evidence link for the
+            # same annotation, not to a geometric ambiguity.
+            record["status"] = "ranked_lower_priority"
     return assignments, failures, candidate_records
 
 
@@ -494,7 +576,26 @@ def classify_entities(
     model_entities = [entity for entity in entities if entity.cad_role == "model"]
     entity_by_key = {entity.entity_key: entity for entity in model_entities}
 
+    def _is_materialized_block_entity(entity: SourceEntity) -> bool:
+        plan_domain = entity.raw_properties.get("plan_domain")
+        return (
+            isinstance(plan_domain, Mapping)
+            and plan_domain.get("materialization") == "nested-insert-affine"
+        )
+
     for entity in model_entities:
+        if _is_materialized_block_entity(entity) and entity.dwg_type.upper() not in _ANNOTATION_CARRIER_TYPES:
+            # Issue 4 materializes block-definition members as evidence so
+            # their TEXT/MTEXT labels can enter semantics.  Non-annotation
+            # block geometry (title-frame swatches, hatch, sample lines) is
+            # evidence-only: classifying it would silently change reviewed
+            # feature inventories and legend detectors.
+            coverage_records.append(_coverage_record(
+                entity,
+                "materialized_block_geometry_evidence_only",
+                "EVIDENCE_ONLY",
+            ))
+            continue
         feature_class = None
         geometry_kind = "Point"
         geometry_role = "SOURCE_ASSET"
