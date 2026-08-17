@@ -4,33 +4,33 @@
       "family_id": "auto_fat_2_kmz_fdt_2",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_2_KMZ_FDT_2-001",
-      "require_same_layer": true,
+      "require_same_layer": false,
       "rule_id": "AI-ANNOTATION-AUTO_FAT_2_KMZ_FDT_2-001",
       "source_layer_pattern": "(?i)^FAT\\ 2\\ KMZ\\ FDT\\ 2$",
       "target_class": "BOITE",
-      "target_layer_pattern": "(?i).+",
+      "target_layer_pattern": "(?i)^(?:CLOSURE|FAT\\ CODE|FAT\\ F2|FAT_Info|FAT_Info\\ FDT\\ 2)$",
       "text_pattern": "^KTK\\d+\\.\\d+\\.[A-Za-z]+\\d+$"
     },
     {
       "family_id": "auto_pole_id_2_5",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_2_5-001",
-      "require_same_layer": true,
+      "require_same_layer": false,
       "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_2_5-001",
       "source_layer_pattern": "(?i)^POLE\\ ID\\ 2\\.5$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i).+",
+      "target_layer_pattern": "(?i)^(?:EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ FDT\\ 1|NEW\\ POLE\\ RW\\ 4)$",
       "text_pattern": "^MR\\.KLK\\d+\\.P\\d+$"
     },
     {
       "family_id": "auto_pole_id_fdt_2_73",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_FDT_2_73-001",
-      "require_same_layer": true,
+      "require_same_layer": false,
       "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_FDT_2_73-001",
       "source_layer_pattern": "(?i)^POLE\\ ID\\ FDT\\ 2\\ 73$",
-      "target_class": "SITE",
-      "target_layer_pattern": "(?i).+",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ FDT\\ 1|NEW\\ POLE\\ RW\\ 4)$",
       "text_pattern": "^MR\\.KLK\\d+\\.P\\d+$"
     }
   ],
@@ -142,14 +142,14 @@
     "source_geometry_immutable": true,
     "support_is_optical_node": false
   },
-  "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 48\\ LINE\\ B|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
+  "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-756f6e5bb4fe",
   "render_color_unification": {
     "BOITE": "#FF7F00"
   },
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:c8138d9e62b958655612a4038d7ff14fa433dbac4e6550381fb9b39c55ab29c9",
-    "reviewed_at": "2026-08-03T04:32:20.803563Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:bb812694a24f745f535198fff9b16a39fee805b9404c8bc247bdbcd2afe0c27b",
+    "reviewed_at": "2026-08-17T12:24:00.177216Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },

@@ -34,8 +34,8 @@
   },
   "project_id": "source-756f6e5bb4fe",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:c8138d9e62b958655612a4038d7ff14fa433dbac4e6550381fb9b39c55ab29c9",
-    "reviewed_at": "2026-08-03T04:32:20.803563Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:bb812694a24f745f535198fff9b16a39fee805b9404c8bc247bdbcd2afe0c27b",
+    "reviewed_at": "2026-08-17T12:24:00.177216Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
