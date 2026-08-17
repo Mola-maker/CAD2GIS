@@ -685,8 +685,45 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         for index, (start, end) in enumerate(zip(entity.points, entity.points[1:]))
     })
 
+    # APD BOITE/SITE INSERTs are annotation blocks offset from the pole they
+    # are mounted on.  Their physical location is the unique reviewed PTECH
+    # support within this tolerance; collocation is recorded as a derived
+    # lineage operation, never as a source mutation.  A large second-nearest
+    # gap (>= 2 m) is required so ambiguous cases stay fail-closed.
+    collocation_tolerance = float(
+        registry.thresholds.get("device_collocation_to_support_m", 15.0)
+    )
+    _COLLOCATION_MIN_SECOND_GAP_M = 2.0
+
+    def _collocated_support(asset):
+        ranked = sorted(
+            (
+                math.dist(asset.native_centroid, support.native_centroid),
+                support,
+            )
+            for support in supports
+            if support.native_points
+        )
+        within = [item for item in ranked if item[0] <= collocation_tolerance]
+        if not within:
+            return None
+        if len(within) > 1 and within[1][0] - within[0][0] < _COLLOCATION_MIN_SECOND_GAP_M:
+            return None
+        return within[0]
+
     for asset in boxes + sites:
         support, distance, status = _nearest_unique(asset.native_centroid, supports, support_tolerance)
+        collocated = _collocated_support(asset)
+        if support is None and collocated is not None:
+            # The BOITE/SITE INSERT is an annotation frame: its reviewed
+            # collocation window (15 m) is authoritative even when the
+            # generic support-candidate window (8 m) rejects the same pole.
+            # Without this, boxes mounted 9-12 m from their pole keep their
+            # annotation-frame offset while their neighbours snap to PTECH.
+            original_distance, collocation_support = collocated
+            support = collocation_support
+            distance = original_distance
+            status = "unique_collocation_support"
         if support is None:
             unresolved.append({"kind": "supported_by", "asset": asset.feature_key, "status": status})
             continue
@@ -697,6 +734,18 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             distance,
             (asset.source_entity_key, support.source_entity_key),
         ))
+        if collocated is not None:
+            original_distance, collocation_support = collocated
+            asset.native_points = [collocation_support.native_centroid]
+            asset.lineage.append({
+                "operation": "collocate_with_support",
+                "source_entity_key": asset.source_entity_key,
+                "support_feature_key": collocation_support.feature_key,
+                "support_handle": collocation_support.source_handle,
+                "max_displacement_m": original_distance,
+            })
+            asset.field_provenance["X"] = "DWG_DERIVED:collocate-with-unique-support"
+            asset.field_provenance["Y"] = "DWG_DERIVED:collocate-with-unique-support"
 
     route_vertex_support = Counter()
     for route in routes:
