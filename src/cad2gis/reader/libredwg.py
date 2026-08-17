@@ -787,14 +787,26 @@ def _flush_cursor(diagnostics: dict, path: Path) -> None:
         pass
 
 
-def _read_block_header_names(data, anon_fallback: dict[int, str] | None = None) -> dict[int, str]:
-    """Map block header handle values to UTF-8 block names.
+def _read_block_header_metadata(
+    data,
+    anon_fallback: dict[int, str] | None = None,
+) -> tuple[dict[int, str], dict[int, tuple[float, float, float]], dict[int, str]]:
+    """Map block header handles to names, base points, and read statuses.
 
-    Anonymous headers (*U/*D) decode without the numeric suffix via dynapi on
-    this R2018 file; ``anon_fallback`` (dwgread JSON side channel) supplies the
-    full numbered name keyed by block header handle.
+    The dynapi BLOCK_HEADER field is ``base_pt`` (probed on all four APD R2018
+    files; see ``tools/diagnostics/libredwg_insert_probe.py``).  Anonymous
+    headers (*U/*D) decode without the numeric suffix via dynapi on this R2018
+    file; ``anon_fallback`` (dwgread JSON side channel) supplies the full
+    numbered name keyed by block header handle.
+
+    Returns ``(names, base_points, base_point_statuses)`` keyed by block
+    header handle.  A missing/unreadable base point is recorded with
+    ``base_point_status == "unavailable"`` and a ``None`` value is never
+    invented.
     """
-    headers: dict[int, str] = {}
+    names: dict[int, str] = {}
+    base_points: dict[int, tuple[float, float, float]] = {}
+    base_point_statuses: dict[int, str] = {}
     for i in range(data.num_objects):
         try:
             obj = Dwg_Object_Array_getitem(data.object, i)
@@ -802,16 +814,33 @@ def _read_block_header_names(data, anon_fallback: dict[int, str] | None = None) 
             continue
         if obj.type != DWG_TYPE_BLOCK_HEADER:
             continue
+        handle = obj.handle.value
         try:
             bh = obj.tio.object.tio.BLOCK_HEADER
             ptr = int(bh.this)
             name = _entity_utf8_text(ptr, "BLOCK_HEADER", "name")
             if anon_fallback:
-                name = anon_fallback.get(obj.handle.value, name)
-            headers[obj.handle.value] = name
+                name = anon_fallback.get(handle, name)
+            names[handle] = name
         except Exception:
-            continue
-    return headers
+            names[handle] = ""
+        try:
+            base = bh.base_pt
+            base_points[handle] = (
+                float(base.x),
+                float(base.y),
+                float(base.z),
+            )
+            base_point_statuses[handle] = "available"
+        except Exception:
+            base_point_statuses[handle] = "unavailable"
+    return names, base_points, base_point_statuses
+
+
+def _read_block_header_names(data, anon_fallback: dict[int, str] | None = None) -> dict[int, str]:
+    """Backward-compatible wrapper around :func:`_read_block_header_metadata`."""
+    names, _base_points, _statuses = _read_block_header_metadata(data, anon_fallback)
+    return names
 
 
 _ANON_NAME_RE = re.compile(r"^\*[UD]\d+$")
@@ -1155,6 +1184,8 @@ def _build_record(
     layer_styles: dict[str, dict[str, Any]],
     reasons: list[str],
     anon_block_names: dict[int, str] | None = None,
+    block_base_points: dict[int, tuple[float, float, float]] | None = None,
+    block_base_point_statuses: dict[int, str] | None = None,
     owner_attribs: dict[int, list] | None = None,
     dimension_display_texts: dict[int, str] | None = None,
 ) -> dict[str, Any] | None:
@@ -1190,6 +1221,19 @@ def _build_record(
     rotation = 0.0
     owner_handle = ""
     curve_facts: dict[str, Any] | None = None
+    transform_facts: dict[str, Any] = {}
+    transform_facts_provenance: dict[str, str] = {}
+    insertion_point: list[float] | None = None
+    insertion_point_status = "not_applicable"
+    block_base_point: list[float] | None = None
+    block_base_point_status = "not_applicable"
+    insert_scale: list[float] | None = None
+    scale_status = "not_applicable"
+    rotation_status = "not_applicable"
+    insert_normal: list[float] | None = None
+    normal_status = "not_applicable"
+    insert_extrusion: list[float] | None = None
+    extrusion_status = "not_applicable"
     geometry_status = "unavailable"
     inventory_support_status = "full"
 
@@ -1270,27 +1314,108 @@ def _build_record(
     elif dwg_type_name == "INSERT":
         try:
             ent = entity.tio.INSERT
-            x, y = ent.ins_pt.x, ent.ins_pt.y
+            x = float(ent.ins_pt.x)
+            y = float(ent.ins_pt.y)
             points = [(x, y)]
             centroid = (x, y)
-            scale_x = float(ent.scale.x)
-            scale_y = float(ent.scale.y)
-            scale_z = float(ent.scale.z)
-            rotation = float(ent.rotation)
+            try:
+                insertion_point = [x, y, float(ent.ins_pt.z)]
+                insertion_point_status = "available"
+            except Exception:
+                insertion_point_status = "unavailable"
+                reasons.append("libredwg_insert_insertion_z_unavailable")
+
+            try:
+                insert_scale = [
+                    float(ent.scale.x),
+                    float(ent.scale.y),
+                    float(ent.scale.z),
+                ]
+                scale_x, scale_y, scale_z = insert_scale
+                scale_status = "available"
+            except Exception:
+                insert_scale = None
+                scale_status = "unavailable"
+                reasons.append("libredwg_insert_scale_unavailable")
+
+            try:
+                rotation = float(ent.rotation)
+                rotation_status = "available"
+            except Exception:
+                rotation = 0.0
+                rotation_status = "unavailable"
+                reasons.append("libredwg_insert_rotation_unavailable")
+
+            try:
+                ext = ent.extrusion
+                insert_extrusion = [float(ext.x), float(ext.y), float(ext.z)]
+                insert_normal = list(insert_extrusion)
+                extrusion_status = "available"
+                normal_status = "available"
+            except Exception:
+                insert_extrusion = None
+                insert_normal = None
+                extrusion_status = "unavailable"
+                normal_status = "unavailable"
+                reasons.append("libredwg_insert_extrusion_unavailable")
+
             # Block name from block header reference (INSERT.block_name is empty).
+            bh_handle: int | None = None
             bh_ref = ent.block_header
             if bh_ref and bh_ref.obj and bh_ref.obj.type == DWG_TYPE_BLOCK_HEADER:
                 bh = bh_ref.obj.tio.object.tio.BLOCK_HEADER
                 block_name = _entity_utf8_text(int(bh.this), "BLOCK_HEADER", "name")
-                if anon_block_names:
+                try:
+                    bh_handle = int(bh_ref.obj.handle.value)
+                except Exception:
+                    bh_handle = None
+                if anon_block_names and bh_handle is not None:
                     # Anonymous headers decode without the numeric suffix via
                     # dynapi; the dwgread JSON side channel carries the full
                     # numbered/effective name keyed by block header handle.
-                    block_name = anon_block_names.get(
-                        bh_ref.obj.handle.value, block_name
-                    )
+                    block_name = anon_block_names.get(bh_handle, block_name)
             if not block_name:
                 reasons.append("libredwg_insert_block_name_unreadable")
+
+            if bh_handle is not None:
+                base = (block_base_points or {}).get(bh_handle)
+                base_status = (block_base_point_statuses or {}).get(
+                    bh_handle, "unavailable"
+                )
+                if base is not None and base_status == "available":
+                    block_base_point = list(base)
+                    block_base_point_status = "available"
+                else:
+                    block_base_point_status = base_status or "unavailable"
+                    if block_base_point_status != "available":
+                        reasons.append("libredwg_insert_block_base_unavailable")
+            else:
+                block_base_point_status = "unavailable"
+                reasons.append("libredwg_insert_block_base_unavailable")
+
+            transform_facts = {
+                "schema_version": "cad2gis.reader-transform-facts.v1",
+                "insertion_point": insertion_point,
+                "insertion_point_status": insertion_point_status,
+                "block_base_point": block_base_point,
+                "block_base_point_status": block_base_point_status,
+                "scale": insert_scale,
+                "scale_status": scale_status,
+                "rotation": rotation,
+                "rotation_status": rotation_status,
+                "normal": insert_normal,
+                "normal_status": normal_status,
+                "extrusion": insert_extrusion,
+                "extrusion_status": extrusion_status,
+            }
+            transform_facts_provenance = {
+                "insertion_point": "DWG_DIRECT:LibreDWG:INSERT.ins_pt",
+                "block_base_point": "DWG_DIRECT:LibreDWG:BLOCK_HEADER.base_pt",
+                "scale": "DWG_DIRECT:LibreDWG:INSERT.scale",
+                "rotation": "DWG_DIRECT:LibreDWG:INSERT.rotation",
+                "normal": "DWG_DIRECT:LibreDWG:INSERT.extrusion",
+                "extrusion": "DWG_DIRECT:LibreDWG:INSERT.extrusion",
+            }
             geometry_status = "available"
             if owner_attribs:
                 attrs = owner_attribs.get(handle, [])
@@ -1396,15 +1521,15 @@ def _build_record(
         "native_length_source": "libredwg_chord_length" if native_length is not None else "",
         "curve_facts": curve_facts or {},
         "curve_fingerprint": "",
-        "insertion_point": None,
-        "insertion_point_wcs": None,
-        "insertion_point_status": "not_applicable",
-        "block_base_point": None,
-        "block_base_point_status": "not_applicable",
-        "normal": None,
-        "normal_status": "not_applicable",
-        "extrusion": None,
-        "extrusion_status": "not_applicable",
+        "insertion_point": insertion_point,
+        "insertion_point_wcs": insertion_point,
+        "insertion_point_status": insertion_point_status,
+        "block_base_point": block_base_point,
+        "block_base_point_status": block_base_point_status,
+        "normal": insert_normal,
+        "normal_status": normal_status,
+        "extrusion": insert_extrusion,
+        "extrusion_status": extrusion_status,
         "container_block_name": "",
         "nesting_context": "drawing_space",
         "block_definition_handle": "",
@@ -1413,7 +1538,8 @@ def _build_record(
         "external_reference_status": "not_external",
         "geometry_status": geometry_status,
         "inventory_support_status": inventory_support_status,
-        "transform_facts": {},
+        "transform_facts": transform_facts,
+        "transform_facts_provenance": transform_facts_provenance,
         "scale_x": scale_x,
         "scale_y": scale_y,
         "scale_z": scale_z,
@@ -1521,7 +1647,9 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
         source, source_sha256,
     )
     entity_layout_map = _read_entity_layout_map_json(source, source_sha256)
-    block_headers = _read_block_header_names(data, anon_fallback=anon_block_names)
+    block_headers, block_base_points, block_base_point_statuses = (
+        _read_block_header_metadata(data, anon_fallback=anon_block_names)
+    )
     layer_styles = _read_layer_styles(data)
     fd, cursor_path = tempfile.mkstemp(prefix="libredwg_reader_", suffix=".json")
     os.close(fd)
@@ -1538,6 +1666,10 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
         "cursor_path": str(cursor_path),
         "anon_block_names_resolved": len(anon_block_names),
         "layout_names_resolved": len(entity_layout_map),
+        "block_base_points_resolved": sum(
+            1 for status in block_base_point_statuses.values()
+            if status == "available"
+        ),
     }
 
     # Pre-index ATTRIB entities by ownerhandle for INSERT attribute traversal.
@@ -1616,6 +1748,8 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
                 layer_styles=layer_styles,
                 reasons=list(layout_reasons),
                 anon_block_names=anon_block_names,
+                block_base_points=block_base_points,
+                block_base_point_statuses=block_base_point_statuses,
                 owner_attribs=owner_attribs,
                 dimension_display_texts=dimension_display_texts,
             )
