@@ -10,6 +10,7 @@ from fnmatch import fnmatchcase
 from typing import Any, Iterable, Mapping, Sequence
 
 from .config import MappingRegistry
+from .family_validation import annotation_pattern_specificity
 from .model import Feature, Relation, SourceEntity
 from .spatial_filter import is_placeholder_text, is_pole_identifier_shape
 
@@ -234,6 +235,23 @@ def _generated_code(feature_class: str, handle: str) -> str:
 
 
 _GENERATED_CODE_PROVENANCE = "DWG_DERIVED:stable-handle-id"
+_DEVICE_NUMBER_ATTRIBUTE_RE = re.compile(r"^\d+$")
+
+
+def _device_number_attribute(entity: SourceEntity) -> str | None:
+    """Return the numeric owned block-attribute text (e.g. FAT capacity).
+
+    APD device blocks carry two independent labels: a text code from a
+    nearby annotation layer and a bare numeric ATTRIB owned by the INSERT.
+    The reader stores that ATTRIB text even when its tag is empty; this
+    function recovers the numeric one without guessing from layer names.
+    """
+    values = list(entity.raw_properties.get("owned_attribute_texts") or ())
+    for value in reversed(values):
+        text = str(value).strip()
+        if _DEVICE_NUMBER_ATTRIBUTE_RE.fullmatch(text):
+            return text
+    return None
 
 
 def _annotation_target_eligible(feature: Feature) -> bool:
@@ -667,6 +685,11 @@ def classify_entities(
         )
         attributes.update(reviewed_attributes)
         provenance.update(reviewed_provenance)
+        if feature_class in {"BOITE", "SITE"}:
+            device_number = _device_number_attribute(entity)
+            if device_number is not None:
+                attributes["DEVICE_NUMBER"] = device_number
+                provenance["DEVICE_NUMBER"] = "DWG_DIRECT:block-attribute-text"
         if feature_class == "CABLE" and entity.native_length is not None:
             attributes["source_autocad_native_length_m"] = float(entity.native_length)
             provenance["source_autocad_native_length_m"] = (
@@ -699,15 +722,23 @@ def classify_entities(
     for feature in features:
         by_class[feature.feature_class].append(feature)
     annotation_families = tuple(getattr(registry, "annotation_families", ()))
-    compiled_families = [
-        (
-            family,
-            re.compile(family.text_pattern),
-            re.compile(family.source_layer_pattern),
-            re.compile(family.target_layer_pattern),
-        )
-        for family in annotation_families
-    ]
+    compiled_families = sorted(
+        [
+            (
+                family,
+                re.compile(family.text_pattern),
+                re.compile(family.source_layer_pattern),
+                re.compile(family.target_layer_pattern),
+            )
+            for family in annotation_families
+        ],
+        # Richer patterns first: a FAT block can carry both a subordinate
+        # short label (``A07``) and the full BOITE identifier
+        # (``KLDYA.011.C01``).  The more specific family must claim the
+        # target first so the delivery label is the full asset identifier,
+        # not the port/slot stub.  Registry order remains the tie-break.
+        key=lambda item: -annotation_pattern_specificity(item[0].text_pattern),
+    )
     annotations_by_family = defaultdict(list)
     unclaimed_pole_annotations: list[SourceEntity] = []
     annotation_discovery_failures = []
@@ -838,60 +869,22 @@ def classify_entities(
         raise ValueError(
             "annotation_assignment decision rule is required when annotation_families are configured"
         )
-    # Target membership follows the family's effective layer semantics.  A
-    # reviewed require_same_layer family owns only targets on its source
-    # layer; a permissive "(?i).+" target pattern must not claim every
-    # target of the class (which would overlap-exclude them all).
-    target_memberships = defaultdict(list)
-    for family, _, source_layer_pattern, target_layer_pattern in compiled_families:
-        for target in by_class[family.target_class]:
-            target_layer = target.source_layer.strip()
-            if family.require_same_layer:
-                matched = bool(source_layer_pattern.fullmatch(target_layer))
-            else:
-                matched = bool(target_layer_pattern.fullmatch(target_layer))
-            if matched:
-                target_memberships[target.feature_key].append(family.family_id)
-    overlapping_target_keys = {
-        target_key
-        for target_key, family_ids in target_memberships.items()
-        if len(family_ids) > 1
-    }
-    for target_key in sorted(overlapping_target_keys):
-        target = next(
-            feature for feature in features if feature.feature_key == target_key
-        )
-        annotation_discovery_failures.append({
-            "kind": "annotation",
-            "entity_key": target.source_entity_key,
-            "family_id": "|".join(sorted(target_memberships[target_key])),
-            "text": "",
-            "source_layer": target.source_layer,
-            "target_key": target_key,
-            "status": "target_in_multiple_annotation_families",
-        })
-    unresolved.extend(annotation_discovery_failures)
-    for failure in annotation_discovery_failures:
-        source_entity = entity_by_key.get(failure.get("entity_key"))
-        if source_entity is not None:
-            coverage_records.append(_coverage_record(
-                source_entity,
-                f"annotation_{failure['status']}",
-                str(failure.get("target_class", "LABEL")),
-                family_id=str(failure.get("family_id", "")),
-                text=str(failure.get("text", "")),
-            ))
     fallback_annotations = annotations_by_family.pop(POLE_LABEL_FAMILY_ID, [])
     fallback_annotations.extend(unclaimed_pole_annotations)
     fallback_targets: list[Feature] = []
     fallback_failure_annotations: list[SourceEntity] = []
     for family, _, _, target_layer_pattern in compiled_families:
         annotations = annotations_by_family[family.family_id]
+        # Families that share a target layer are assigned sequentially: the
+        # first family claims eligible targets, the next family only sees the
+        # remaining eligible targets.  Blanket overlap exclusion used to make
+        # two reviewed BOITE text families (``DMPH-...`` and ``MR.XXX...``)
+        # mutually annihilate each other and leave every target labelled by a
+        # generated handle.
         family_targets = [
             target
             for target in by_class[family.target_class]
             if target_layer_pattern.fullmatch(target.source_layer.strip())
-            and target.feature_key not in overlapping_target_keys
         ]
         assignments, failures, candidates = _assign_family_annotations(
             annotations,
@@ -1070,6 +1063,17 @@ def classify_entities(
                 aggregate[key] += annotation_assignments_by_family[POLE_LABEL_FAMILY_ID][key]
 
     feature_by_key = {feature.feature_key: feature for feature in features}
+    target_memberships = defaultdict(list)
+    for family, _, source_layer_pattern, target_layer_pattern in compiled_families:
+        for target in by_class[family.target_class]:
+            target_layer = target.source_layer.strip()
+            matched = (
+                bool(source_layer_pattern.fullmatch(target_layer))
+                if family.require_same_layer
+                else bool(target_layer_pattern.fullmatch(target_layer))
+            )
+            if matched:
+                target_memberships[target.feature_key].append(family.family_id)
     for target_key, family_ids in sorted(target_memberships.items()):
         target = feature_by_key[target_key]
         if not target.display_label:
@@ -1319,6 +1323,17 @@ def classify_entities(
                 group.append(feature)
             if _is_specimen_column(group):
                 legend_core_keys.update(f.feature_key for f in group)
+
+    for feature in features:
+        device_number = feature.attributes.get("DEVICE_NUMBER")
+        if device_number:
+            text_label = feature.display_label.strip()
+            feature.display_label = (
+                f"{text_label} · {device_number}" if text_label else str(device_number)
+            )
+            feature.label_provenance = (
+                f"{feature.label_provenance}|DWG_DIRECT:block-attribute-text"
+            )
 
     retained: list[Feature] = []
     for feature in features:

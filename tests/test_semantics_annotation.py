@@ -5,6 +5,7 @@ from cad2gis.cad2gis_v3.semantics import (
     _GENERATED_CODE_PROVENANCE,
     _annotation_target_eligible,
     _assign_family_annotations,
+    _device_number_attribute,
 )
 from cad2gis.cad2gis_v3.spatial_filter import is_pole_identifier_shape
 
@@ -102,6 +103,14 @@ def test_assignment_overwrites_generated_handle_but_not_reviewed_label() -> None
     assert entity is annotation
     assert target is generated
     assert distance == ((11.0 - 10.0) ** 2 + (0.5 - 0.0) ** 2) ** 0.5
+
+
+def test_device_number_attribute_reads_untagged_numeric_attrib() -> None:
+    entity = _annotation("entity:device", "10C", "KTK5.086.B02", (1.0, 2.0))
+    object.__setattr__(
+        entity, "raw_properties", {"owned_attribute_texts": ["16", "- dB"]},
+    )
+    assert _device_number_attribute(entity) == "16"
 
 
 def test_pole_identifier_shape_accepts_reviewed_apd_shapes_only() -> None:

@@ -1266,7 +1266,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
         label_text_patterns=[
             str(family.text_pattern)
             for family in getattr(registry, "annotation_families", ())
-            if family.target_class == "PTECH"
+        ],
+        reviewed_insert_layers=[
+            str(layer)
+            for layers in getattr(registry, "insert_layer_families", {}).values()
+            for layer in layers
         ],
         cable_protect_layers=getattr(registry, "layers", {}).get("sling_wire", ()),
         dimension_protect_layers=getattr(registry, "layers", {}).get(
