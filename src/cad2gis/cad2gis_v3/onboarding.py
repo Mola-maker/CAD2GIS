@@ -243,12 +243,15 @@ def _text_samples(
     limit_per_layer: int = 8,
     max_layers: int = 80,
 ) -> dict[str, list[dict[str, Any]]]:
-    """Collect per-layer text samples with colour, scaling to prefix families.
+    """Collect drawing-space text samples with colour, scaling to prefix families.
 
-    Output shape: ``{layer: [{"text": ..., "aci_color": N}, ...]}``.  When a
-    layer's samples share a common prefix (e.g. ``EXT.MR.MF.LBB.S02.P``) the
-    sample limit is extended so every prefix family is represented, mirroring
-    the runtime requirement that each label family needs sufficient evidence.
+    Output shape: ``{layer: [{"text": ..., "aci_color": N}, ...]}``.  Only
+    Model/plan carriers are sampled (block-definition copies are skipped) so
+    validation mirrors the entities ``classify_entities`` actually consumes.
+    When a layer's samples share a common prefix (e.g.
+    ``EXT.MR.MF.LBB.S02.P``) the sample limit is extended so every prefix
+    family is represented, mirroring the runtime requirement that each label
+    family needs sufficient evidence.
     """
     if not isinstance(carriers, list):
         return {}
@@ -259,6 +262,15 @@ def _text_samples(
         text = str(raw.get("text") or "").strip()
         layer = str(raw.get("layer") or "").strip()
         if not text or not layer:
+            continue
+        # Family validation must mirror the runtime drawing-space view:
+        # ``classify_entities`` only sees Model/plan entities, while
+        # block-definition ATTRIB/TEXT copies repeat the same labels as
+        # template documentation.  Sampling those copies makes a physical
+        # layer like FAT look like prose (``\\pxqc;FAT A014``, ``A07``
+        # template text) and hides its real ``KLDYA.011.C01`` family.
+        layout = str(raw.get("layout") or "").strip()
+        if layout.startswith("BLOCKDEF"):
             continue
         aci_color = raw.get("aci_color")
         raw_by_layer[layer].append((text[:160], aci_color))
@@ -285,17 +297,26 @@ def _text_samples(
         if len(samples) <= limit_per_layer:
             grouped[layer] = samples
             continue
-        # Prefix-family aware scaling: group by the longest common token prefix
-        # (split on non-alphanumeric separators), then take up to
-        # limit_per_layer samples per prefix family.
-        families: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        # Prefix-family aware scaling: group by token width, then by the
+        # longest common token prefix (split on non-alphanumeric separators),
+        # and take up to ``limit_per_layer`` samples per prefix family.
+        # Multi-field asset identifiers are sampled before single-token
+        # stubs (``A07`` beside ``KLDYA.011.C01``) so the stub families
+        # cannot consume the whole layer budget and starve the full
+        # identifiers out of the derivation evidence.
+        families: dict[tuple[int, str], list[dict[str, Any]]] = defaultdict(list)
         for sample in samples:
             tokens = re.split(r"[^A-Za-z0-9]+", sample["text"])
-            prefix = ".".join(tokens[:-1]) if len(tokens) > 1 else sample["text"]
-            families[prefix].append(sample)
+            width = len(tokens)
+            prefix = (
+                ".".join(tokens[:-1]) if width > 1 else "\x00single-token"
+            )
+            families[(width, prefix)].append(sample)
         expanded: list[dict[str, Any]] = []
-        for prefix in sorted(families):
-            expanded.extend(families[prefix][:limit_per_layer])
+        for (width, prefix) in sorted(
+            families, key=lambda item: (-item[0], item[1])
+        ):
+            expanded.extend(families[(width, prefix)][:limit_per_layer])
         grouped[layer] = expanded[: limit_per_layer * 4]
     ranked = sorted(
         grouped,
@@ -1012,6 +1033,7 @@ def _compile_registry(
             "exact": 0.000001,
             "dimension_to_support": 2.0,
             "device_to_support_candidate": 8.0,
+            "device_collocation_to_support_m": 15.0,
             "route_to_asset": 8.0,
         },
         "coverage": {
@@ -1062,6 +1084,7 @@ def compile_onboarding_proposal(
 
     # ── L1/L2 annotation-family validation with structural repair loop ──
     from .family_validation import (
+        derive_family_from_samples,
         l1_validate_family,
         l2_validate_family_group,
         structural_failure_evidence,
@@ -1130,7 +1153,6 @@ def compile_onboarding_proposal(
                     provider_id=os.environ.get("CAD2GIS_LLM_PROVIDER") or None,
                     missing_only=True,
                 )
-                from .family_validation import derive_family_from_samples
                 llm_accepted: list[dict[str, Any]] = []
                 for repaired_family in repaired_payload:
                     if not repaired_family.get("family_id"):
@@ -1218,6 +1240,34 @@ def compile_onboarding_proposal(
             )
             raw_families = kept + repaired
 
+        # Deterministic cover for asset-label layers that still have no
+        # surviving family.  This catches both layers the model never
+        # proposed and layers whose proposed/repair families all failed
+        # validation and were dropped by ``raw_families = kept + repaired``.
+        surviving_layers = {
+            str(family.get("source_layer", "")).strip()
+            for family in raw_families
+            if str(family.get("source_layer", "")).strip()
+        }
+        fallback_families: list[dict[str, Any]] = []
+        for layer, samples in samples_by_layer.items():
+            if (
+                _ASSET_LABEL_LAYER_HINTS.search(layer)
+                and samples
+                and layer not in surviving_layers
+            ):
+                derived = derive_family_from_samples(layer, samples)
+                if derived:
+                    family_validation.setdefault(
+                        "deterministic_fallback_layers", []
+                    ).append(layer)
+                    fallback_families.extend(derived)
+        if fallback_families:
+            raw_families.extend(fallback_families)
+            family_validation["deterministic_fallback_families"] = [
+                family.get("family_id", "") for family in fallback_families
+            ]
+
         # Apply validated families back into the proposal
         validated = {
             **dict(validated),
@@ -1275,7 +1325,13 @@ def compile_onboarding_proposal(
                 label_text_patterns=[
                     str(family.text_pattern)
                     for family in getattr(registry, "annotation_families", ())
-                    if family.target_class == "PTECH"
+                ],
+                reviewed_insert_layers=[
+                    str(layer)
+                    for layers in getattr(
+                        registry, "insert_layer_families", {}
+                    ).values()
+                    for layer in layers
                 ],
                 cable_protect_layers=registry.layers.get("sling_wire", ()),
                 dimension_protect_layers=registry.layers.get(
