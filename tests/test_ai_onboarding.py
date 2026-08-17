@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -231,6 +232,54 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
     assert profile["review"] == registry["review"]
     assert profile["crs"]["source_crs"] == "EPSG:32749"
     assert profile["expectations"]["feature_counts"] == {"CABLE": 1}
+
+
+def test_compile_annotation_families_targets_insert_layers_not_label_layers() -> None:
+    families = onboarding._compile_annotation_families(
+        [
+            {
+                "family_id": "pole_label",
+                "text_pattern": r"^MR\.KLK\d+\.P\d+$",
+                "target_class": "PTECH",
+                "max_distance_native_m": 15.0,
+                "source_layer": "POLE ID 2.5",
+            },
+            {
+                "family_id": "same_layer_pole",
+                "text_pattern": r"^EXT\.MR\.BDR\.P\d+$",
+                "target_class": "PTECH",
+                "max_distance_native_m": 15.0,
+                "source_layer": "EXT POLE",
+            },
+        ],
+        {"PTECH": ["EXT POLE", "NEW POLE"]},
+    )
+
+    pole, same = families
+    assert pole["require_same_layer"] is False
+    assert re.fullmatch(pole["target_layer_pattern"], "EXT POLE")
+    assert re.fullmatch(pole["target_layer_pattern"], "NEW POLE")
+    assert not re.fullmatch(pole["target_layer_pattern"], "POLE ID 2.5")
+
+    assert same["require_same_layer"] is True
+    assert re.fullmatch(same["target_layer_pattern"], "EXT POLE")
+    assert not re.fullmatch(same["target_layer_pattern"], "NEW POLE")
+
+
+def test_compile_annotation_families_fail_closed_without_target_layers() -> None:
+    families = onboarding._compile_annotation_families(
+        [
+            {
+                "family_id": "orphan_label",
+                "text_pattern": r"^X+$",
+                "target_class": "PTECH",
+                "source_layer": "POLE ID",
+            }
+        ],
+        {"PTECH": []},
+    )
+    assert families[0]["require_same_layer"] is False
+    assert families[0]["target_layer_pattern"] == "(?!)"
 
 
 def test_insert_layer_mapping_classifies_anonymous_dynamic_block() -> None:
