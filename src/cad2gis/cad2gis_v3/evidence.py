@@ -414,6 +414,7 @@ def _write_staged(
         ("target_class", ogr.OFTString), ("target_key", ogr.OFTString),
         ("target_handle", ogr.OFTString), ("target_layer", ogr.OFTString),
         ("distance_native_m", ogr.OFTReal),
+        ("link_kind", ogr.OFTString), ("relation_priority", ogr.OFTInteger),
         ("selected", ogr.OFTInteger), ("status", ogr.OFTString),
         ("rule_id", ogr.OFTString), ("provenance", ogr.OFTString),
     ])

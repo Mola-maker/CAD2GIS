@@ -341,6 +341,7 @@ def build_plan_domain(
         "definition_count": len(definitions),
         "derived_entity_count": 0,
         "expanded_insert_count": 0,
+        "expanded_nested_insert_count": 0,
         "root_layouts": sorted({entity.layout for entity in roots}),
         "issues": [],
         "status": "PASS",
@@ -445,7 +446,13 @@ def build_plan_domain(
                 block_name=name,
             )
             return
-        diagnostics["expanded_insert_count"] += 1
+        if parent is None:
+            # DoD issue 4: expanded_insert_count reports exactly the drawing-
+            # space (model) INSERT roots.  Nested block INSERTs are accounted
+            # separately so a title block full of nested references cannot
+            # hide a root-level abstention.
+            diagnostics["expanded_insert_count"] += 1
+        diagnostics["expanded_nested_insert_count"] += 1
         next_stack = stack + (name,)
         next_path = path + (instance.entity_key,)
         for member in members:

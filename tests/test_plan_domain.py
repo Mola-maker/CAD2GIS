@@ -209,7 +209,8 @@ def test_plan_domain_composes_nested_insert_transforms() -> None:
     )
     assert derived.points[0] == pytest.approx((15.0, 21.0))
     assert derived.points[1] == pytest.approx((15.0, 23.0))
-    assert view.diagnostics["expanded_insert_count"] == 2
+    assert view.diagnostics["expanded_insert_count"] == 1
+    assert view.diagnostics["expanded_nested_insert_count"] == 2
 
 
 def test_plan_domain_fallback_fails_closed_on_missing_transform() -> None:
