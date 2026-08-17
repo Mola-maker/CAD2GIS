@@ -1,0 +1,562 @@
+{
+  "source": "/home/cat/projects/CAD2GIS-robustness/raw/APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg",
+  "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
+  "libredwg_read_error": 68,
+  "total_objects": 15716,
+  "insert_count": 362,
+  "model_insert_count": 222,
+  "block_definition_insert_count": 136,
+  "block_header_count": 237,
+  "availability": {
+    "model_inserts": {
+      "ins_pt_xyz": {
+        "available": 222
+      },
+      "scale_xyz": {
+        "available": 222
+      },
+      "rotation": {
+        "available": 222
+      },
+      "extrusion": {
+        "available": 222
+      },
+      "block_header_ref": {
+        "available": 222
+      },
+      "block_name": {
+        "available": 222
+      }
+    },
+    "nested_inserts": {
+      "ins_pt_xyz": {
+        "available": 136
+      },
+      "scale_xyz": {
+        "available": 136
+      },
+      "rotation": {
+        "available": 136
+      },
+      "extrusion": {
+        "available": 136
+      },
+      "block_header_ref": {
+        "available": 136
+      },
+      "block_name": {
+        "available": 136
+      }
+    },
+    "block_headers": {
+      "name": {
+        "available": 237
+      },
+      "base_pt_xyz": {
+        "available": 237
+      }
+    }
+  },
+  "model_insert_samples": [
+    {
+      "handle": 13782,
+      "owner_handle": null,
+      "block_header_handle": 8620,
+      "block_name": "*U",
+      "ins_pt": [
+        13687819.35511808,
+        69324.5623164823,
+        0.0
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 13808,
+      "owner_handle": null,
+      "block_header_handle": 19310,
+      "block_name": "*U",
+      "ins_pt": [
+        13687907.35511808,
+        69244.5623164823,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 13819,
+      "owner_handle": null,
+      "block_header_handle": 8740,
+      "block_name": "*U",
+      "ins_pt": [
+        13687820.10511808,
+        69314.5623164823,
+        0.0
+      ],
+      "scale": [
+        0.6000000000000002,
+        0.6000000000000002,
+        0.6000000000000002
+      ],
+      "rotation": 0.2617993877991494,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 13841,
+      "owner_handle": null,
+      "block_header_handle": 26548,
+      "block_name": "*U",
+      "ins_pt": [
+        13687822.35511808,
+        69294.5623164823,
+        0.0
+      ],
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 13970,
+      "owner_handle": null,
+      "block_header_handle": 26586,
+      "block_name": "*U",
+      "ins_pt": [
+        13687822.35511808,
+        69274.5623164823,
+        0.0
+      ],
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 14355,
+      "owner_handle": null,
+      "block_header_handle": 26510,
+      "block_name": "*U",
+      "ins_pt": [
+        13687822.35511808,
+        69284.5623164823,
+        0.0
+      ],
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 18094,
+      "owner_handle": null,
+      "block_header_handle": 27595,
+      "block_name": "*U",
+      "ins_pt": [
+        13687822.35511808,
+        69304.5623164823,
+        0.0
+      ],
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 19199,
+      "owner_handle": null,
+      "block_header_handle": 8599,
+      "block_name": "FDT Info",
+      "ins_pt": [
+        13687982.35511808,
+        69306.3123164823,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    }
+  ],
+  "nested_insert_samples": [
+    {
+      "handle": 77626,
+      "owner_handle": 77619,
+      "block_header_handle": 583,
+      "block_name": "ETIKET EMR-NEW 2026",
+      "ins_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 77794,
+      "owner_handle": 77619,
+      "block_header_handle": 116688,
+      "block_name": "*U",
+      "ins_pt": [
+        286.8460531751966,
+        5.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 77805,
+      "owner_handle": 77619,
+      "block_header_handle": 8599,
+      "block_name": "FDT Info",
+      "ins_pt": [
+        298.3903389853839,
+        142.03493173063438,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 77873,
+      "owner_handle": 77619,
+      "block_header_handle": 8655,
+      "block_name": "FAT Info",
+      "ins_pt": [
+        298.390338985384,
+        227.50000000000026,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 77947,
+      "owner_handle": 77940,
+      "block_header_handle": 583,
+      "block_name": "ETIKET EMR-NEW 2026",
+      "ins_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 78115,
+      "owner_handle": 77940,
+      "block_header_handle": 116688,
+      "block_name": "*U",
+      "ins_pt": [
+        286.8460531751966,
+        5.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 78126,
+      "owner_handle": 77940,
+      "block_header_handle": 8599,
+      "block_name": "FDT Info",
+      "ins_pt": [
+        198.49075544789775,
+        122.75158714210579,
+        0.0
+      ],
+      "scale": [
+        0.7892855572584749,
+        0.7892855572584749,
+        0.7892855572584749
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 78415,
+      "owner_handle": 77940,
+      "block_header_handle": 8655,
+      "block_name": "FAT Info",
+      "ins_pt": [
+        94.65240210824504,
+        275.13453385249545,
+        0.0
+      ],
+      "scale": [
+        0.7892855572584749,
+        0.7892855572584749,
+        0.7892855572584749
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    }
+  ],
+  "block_header_samples": [
+    {
+      "handle": 31,
+      "name": "*Model_Space",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 88,
+      "name": "*Paper_Space",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 583,
+      "name": "ETIKET EMR-NEW 2026",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1156,
+      "name": "Paraf Jamajm",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1161,
+      "name": "Paraf Rizky",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1165,
+      "name": "APPROVAL",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 8537,
+      "name": "POLE",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 8575,
+      "name": "FDT",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 8599,
+      "name": "FDT Info",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 8620,
+      "name": "*U",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 8632,
+      "name": "FAT",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 8655,
+      "name": "FAT Info",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    }
+  ],
+  "unreadable_inserts": [],
+  "side_channel": {
+    "dwgread_json_inserts": 362,
+    "dwgread_json_inserts_with_extrusion": 362,
+    "dwgread_json_block_headers": 237,
+    "dwgread_json_block_headers_with_base_pt": 237,
+    "anon_block_names_resolved": 191
+  }
+}

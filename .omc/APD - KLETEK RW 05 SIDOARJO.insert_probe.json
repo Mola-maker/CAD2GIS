@@ -1,0 +1,562 @@
+{
+  "source": "/home/cat/projects/CAD2GIS-robustness/raw/APD - KLETEK RW 05 SIDOARJO.dwg",
+  "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
+  "libredwg_read_error": 64,
+  "total_objects": 2203,
+  "insert_count": 89,
+  "model_insert_count": 53,
+  "block_definition_insert_count": 33,
+  "block_header_count": 46,
+  "availability": {
+    "model_inserts": {
+      "ins_pt_xyz": {
+        "available": 53
+      },
+      "scale_xyz": {
+        "available": 53
+      },
+      "rotation": {
+        "available": 53
+      },
+      "extrusion": {
+        "available": 53
+      },
+      "block_header_ref": {
+        "available": 53
+      },
+      "block_name": {
+        "available": 53
+      }
+    },
+    "nested_inserts": {
+      "ins_pt_xyz": {
+        "available": 33
+      },
+      "scale_xyz": {
+        "available": 33
+      },
+      "rotation": {
+        "available": 33
+      },
+      "extrusion": {
+        "available": 33
+      },
+      "block_header_ref": {
+        "available": 33
+      },
+      "block_name": {
+        "available": 33
+      }
+    },
+    "block_headers": {
+      "name": {
+        "available": 46
+      },
+      "base_pt_xyz": {
+        "available": 46
+      }
+    }
+  },
+  "model_insert_samples": [
+    {
+      "handle": 3037,
+      "owner_handle": null,
+      "block_header_handle": 2028,
+      "block_name": "FDT-Info",
+      "ins_pt": [
+        -213.4225108233449,
+        258.1879477901258,
+        0.0
+      ],
+      "scale": [
+        2.347002760232081,
+        2.347002760232081,
+        2.347002760232081
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3044,
+      "owner_handle": null,
+      "block_header_handle": 2007,
+      "block_name": "FAT Info",
+      "ins_pt": [
+        -240.63172340554206,
+        138.18807345551858,
+        0.0
+      ],
+      "scale": [
+        1.303984155117246,
+        1.303984155117246,
+        1.303984155117246
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3125,
+      "owner_handle": null,
+      "block_header_handle": 2051,
+      "block_name": "*U",
+      "ins_pt": [
+        -93.98324001093272,
+        248.85501120765494,
+        0.0
+      ],
+      "scale": [
+        0.4696514549215081,
+        0.4696514549215081,
+        0.6653190164557065
+      ],
+      "rotation": 6.103723528016544,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3207,
+      "owner_handle": null,
+      "block_header_handle": 1959,
+      "block_name": "POLE",
+      "ins_pt": [
+        -167.5319182685547,
+        126.55280456400119,
+        0.0
+      ],
+      "scale": [
+        0.7000000000000001,
+        0.7000000000000001,
+        0.6716847143054714
+      ],
+      "rotation": 6.227600685485791,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3288,
+      "owner_handle": null,
+      "block_header_handle": 1998,
+      "block_name": "FAT",
+      "ins_pt": [
+        -74.39944907629979,
+        191.4218659703264,
+        0.0
+      ],
+      "scale": [
+        0.34620063955002384,
+        0.34620063955002384,
+        0.34620063955002384
+      ],
+      "rotation": 6.19293709415166,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3315,
+      "owner_handle": null,
+      "block_header_handle": 1959,
+      "block_name": "POLE",
+      "ins_pt": [
+        -168.60372710444116,
+        120.36145477089545,
+        0.0
+      ],
+      "scale": [
+        0.7000000000000001,
+        0.7000000000000001,
+        0.6716847143054714
+      ],
+      "rotation": 6.227600685485791,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3318,
+      "owner_handle": null,
+      "block_header_handle": 1959,
+      "block_name": "POLE",
+      "ins_pt": [
+        -173.82504641141986,
+        97.97453458886707,
+        0.0
+      ],
+      "scale": [
+        0.7000000000000001,
+        0.7000000000000001,
+        0.6716847143054714
+      ],
+      "rotation": 6.227600685485791,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 4734,
+      "owner_handle": null,
+      "block_header_handle": 1959,
+      "block_name": "POLE",
+      "ins_pt": [
+        -164.20306535648206,
+        143.21828669533102,
+        0.0
+      ],
+      "scale": [
+        0.7000000000000001,
+        0.7000000000000001,
+        0.6716847143054714
+      ],
+      "rotation": 6.227600685485791,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    }
+  ],
+  "nested_insert_samples": [
+    {
+      "handle": 1376,
+      "owner_handle": 210,
+      "block_header_handle": 1261,
+      "block_name": "SND KASAR",
+      "ins_pt": [
+        -236649.1581454755,
+        -7122229.189852075,
+        0.0
+      ],
+      "scale": [
+        0.7890021599927551,
+        0.7890021599927551,
+        0.7890021599927551
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1735,
+      "owner_handle": 1261,
+      "block_header_handle": 1232,
+      "block_name": "Title Block v21 - Default$0$AnonymousCell12",
+      "ins_pt": [
+        301244.72782895574,
+        9026924.23946459,
+        0.0
+      ],
+      "scale": [
+        1.502246847832356,
+        1.502246847832356,
+        1.502246847832356
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3543,
+      "owner_handle": 3540,
+      "block_header_handle": 3466,
+      "block_name": "OLT-SUB 2",
+      "ins_pt": [
+        -1.4468771280699002,
+        -0.01281561306632284,
+        0.0
+      ],
+      "scale": [
+        0.3209154630485656,
+        0.3209154630485656,
+        0.3209154630485656
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3544,
+      "owner_handle": 3540,
+      "block_header_handle": 3491,
+      "block_name": "OLT-SUB",
+      "ins_pt": [
+        1.4942325197998798,
+        0.017983922190524027,
+        0.0
+      ],
+      "scale": [
+        0.3209154630485656,
+        0.3209154630485656,
+        0.3209154630485656
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3724,
+      "owner_handle": 3661,
+      "block_header_handle": 3497,
+      "block_name": "LOGO",
+      "ins_pt": [
+        -104187.9926726771,
+        -1369506.5980709097,
+        0.0
+      ],
+      "scale": [
+        0.14707914861781202,
+        0.14707914861781202,
+        0.14707914861781202
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3731,
+      "owner_handle": 3661,
+      "block_header_handle": 3632,
+      "block_name": "GT1",
+      "ins_pt": [
+        -167218.12862811892,
+        -2194906.2582403435,
+        0.0
+      ],
+      "scale": [
+        0.23571390842698747,
+        0.23571390842698747,
+        0.23571390842698747
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3732,
+      "owner_handle": 3661,
+      "block_header_handle": 3640,
+      "block_name": "10MGUY",
+      "ins_pt": [
+        366.9800845213043,
+        183.45832732855024,
+        0.0
+      ],
+      "scale": [
+        0.21723393813561745,
+        0.21723393813561745,
+        0.21723393813561745
+      ],
+      "rotation": 3.140665049527897,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3736,
+      "owner_handle": 3661,
+      "block_header_handle": 3640,
+      "block_name": "10MGUY",
+      "ins_pt": [
+        366.8589239910683,
+        186.355141891916,
+        0.0
+      ],
+      "scale": [
+        0.21723393813561745,
+        0.21723393813561745,
+        0.21723393813561745
+      ],
+      "rotation": 3.140665049527897,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    }
+  ],
+  "block_header_samples": [
+    {
+      "handle": 31,
+      "name": "*Model_Space",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 210,
+      "name": "*Paper_Space",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 214,
+      "name": "*Paper_Space",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1232,
+      "name": "Title Block v21 - Default$0$AnonymousCell12",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1261,
+      "name": "SND KASAR",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1959,
+      "name": "POLE",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1980,
+      "name": "FDT",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1998,
+      "name": "FAT",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 2007,
+      "name": "FAT Info",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 2028,
+      "name": "FDT-Info",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 2051,
+      "name": "*U",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 3339,
+      "name": "HAND HOLE",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    }
+  ],
+  "unreadable_inserts": [],
+  "side_channel": {
+    "dwgread_json_inserts": 89,
+    "dwgread_json_inserts_with_extrusion": 89,
+    "dwgread_json_block_headers": 46,
+    "dwgread_json_block_headers_with_base_pt": 46,
+    "anon_block_names_resolved": 15
+  }
+}

@@ -1,0 +1,562 @@
+{
+  "source": "/home/cat/projects/CAD2GIS-robustness/raw/APD - KELURAHAN LAMTEH DAYAH ACEH - SF.dwg",
+  "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+  "libredwg_read_error": 68,
+  "total_objects": 83267,
+  "insert_count": 3049,
+  "model_insert_count": 54,
+  "block_definition_insert_count": 2994,
+  "block_header_count": 1677,
+  "availability": {
+    "model_inserts": {
+      "ins_pt_xyz": {
+        "available": 54
+      },
+      "scale_xyz": {
+        "available": 54
+      },
+      "rotation": {
+        "available": 54
+      },
+      "extrusion": {
+        "available": 54
+      },
+      "block_header_ref": {
+        "available": 54
+      },
+      "block_name": {
+        "available": 54
+      }
+    },
+    "nested_inserts": {
+      "ins_pt_xyz": {
+        "available": 2994
+      },
+      "scale_xyz": {
+        "available": 2994
+      },
+      "rotation": {
+        "available": 2994
+      },
+      "extrusion": {
+        "available": 2994
+      },
+      "block_header_ref": {
+        "available": 2994
+      },
+      "block_name": {
+        "available": 2994
+      }
+    },
+    "block_headers": {
+      "name": {
+        "available": 1677
+      },
+      "base_pt_xyz": {
+        "available": 1677
+      }
+    }
+  },
+  "model_insert_samples": [
+    {
+      "handle": 1284388,
+      "owner_handle": null,
+      "block_header_handle": 41625,
+      "block_name": "*U",
+      "ins_pt": [
+        2374.3258967602296,
+        -9117.820523625327,
+        0.0
+      ],
+      "scale": [
+        6.47610212524717,
+        6.47610212524717,
+        6.47610212524717
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1284395,
+      "owner_handle": null,
+      "block_header_handle": 41704,
+      "block_name": "LTR",
+      "ins_pt": [
+        2680.0584795303103,
+        -9276.27015922489,
+        0.0
+      ],
+      "scale": [
+        6.47610212524717,
+        6.47610212524717,
+        6.47610212524717
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1284396,
+      "owner_handle": null,
+      "block_header_handle": 42938,
+      "block_name": "*U",
+      "ins_pt": [
+        2374.3258967601732,
+        -9313.87245359181,
+        0.0
+      ],
+      "scale": [
+        6.47610212524717,
+        6.47610212524717,
+        6.47610212524717
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1284403,
+      "owner_handle": null,
+      "block_header_handle": 82542,
+      "block_name": "FAT",
+      "ins_pt": [
+        2688.157486963003,
+        -9120.681498175009,
+        0.0
+      ],
+      "scale": [
+        6.47610212524717,
+        6.47610212524717,
+        6.47610212524717
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1284406,
+      "owner_handle": null,
+      "block_header_handle": 256129,
+      "block_name": "*U",
+      "ins_pt": [
+        2687.378903399045,
+        -9177.514045324471,
+        0.0
+      ],
+      "scale": [
+        6.47610212524717,
+        6.47610212524717,
+        6.47610212524717
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1284415,
+      "owner_handle": null,
+      "block_header_handle": 1284317,
+      "block_name": "*U",
+      "ins_pt": [
+        2688.0456618968783,
+        -9219.130099222008,
+        0.0
+      ],
+      "scale": [
+        6.47610212524717,
+        6.47610212524717,
+        6.47610212524717
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1284444,
+      "owner_handle": null,
+      "block_header_handle": 41569,
+      "block_name": "*U",
+      "ins_pt": [
+        2685.1779187478887,
+        -9372.497053429212,
+        0.0
+      ],
+      "scale": [
+        3.238051062623737,
+        3.238051062623737,
+        3.238051062623737
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 1284460,
+      "owner_handle": null,
+      "block_header_handle": 41607,
+      "block_name": "*U",
+      "ins_pt": [
+        2374.3258967602296,
+        -9166.99502299641,
+        0.0
+      ],
+      "scale": [
+        6.47610212524717,
+        6.47610212524717,
+        6.47610212524717
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    }
+  ],
+  "nested_insert_samples": [
+    {
+      "handle": 41511,
+      "owner_handle": 41507,
+      "block_header_handle": 41405,
+      "block_name": "OLT-SUB 2",
+      "ins_pt": [
+        -1.4468771280699002,
+        -0.01281561306632284,
+        0.0
+      ],
+      "scale": [
+        0.3209154630485656,
+        0.3209154630531136,
+        0.3209154630530908
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41512,
+      "owner_handle": 41507,
+      "block_header_handle": 41431,
+      "block_name": "OLT-SUB",
+      "ins_pt": [
+        1.4942325197998798,
+        0.017983922190524027,
+        0.0
+      ],
+      "scale": [
+        0.3209154630485656,
+        0.3209154630531136,
+        0.3209154630530908
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41840,
+      "owner_handle": 41819,
+      "block_header_handle": 41796,
+      "block_name": "rocket",
+      "ins_pt": [
+        538.2069759434048,
+        127.86047645587938,
+        0.0
+      ],
+      "scale": [
+        0.8927864447397837,
+        0.8927864447397837,
+        0.8927864447397837
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41904,
+      "owner_handle": 41842,
+      "block_header_handle": 41438,
+      "block_name": "LOGO",
+      "ins_pt": [
+        -104187.9926726771,
+        -1369506.5980709097,
+        0.0
+      ],
+      "scale": [
+        0.14707914861781202,
+        0.14707914861781202,
+        0.14707914861781202
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41911,
+      "owner_handle": 41842,
+      "block_header_handle": 41737,
+      "block_name": "GT1",
+      "ins_pt": [
+        -167218.12862811892,
+        -2194906.2582403435,
+        0.0
+      ],
+      "scale": [
+        0.23571390842698747,
+        0.2357139084310802,
+        0.23571390843136855
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41912,
+      "owner_handle": 41842,
+      "block_header_handle": 41746,
+      "block_name": "10MGUY",
+      "ins_pt": [
+        366.9800845213043,
+        183.45832732855024,
+        0.0
+      ],
+      "scale": [
+        0.21723393813561745,
+        0.21723393814045266,
+        0.2172339381405192
+      ],
+      "rotation": 3.140665049527897,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41916,
+      "owner_handle": 41842,
+      "block_header_handle": 41746,
+      "block_name": "10MGUY",
+      "ins_pt": [
+        366.8589239910683,
+        186.355141891916,
+        0.0
+      ],
+      "scale": [
+        0.21723393813561745,
+        0.21723393814045266,
+        0.2172339381405192
+      ],
+      "rotation": 3.140665049527897,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41946,
+      "owner_handle": 41842,
+      "block_header_handle": 41762,
+      "block_name": "Title Block v21 - Default$0$AnonymousCell6",
+      "ins_pt": [
+        354.7733123416483,
+        35.421629513273956,
+        0.0
+      ],
+      "scale": [
+        0.32092936541585004,
+        0.32092936542069594,
+        0.32092936542050665
+      ],
+      "rotation": 0.0,
+      "extrusion": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "errors": []
+    }
+  ],
+  "block_header_samples": [
+    {
+      "handle": 31,
+      "name": "*Model_Space",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 12051,
+      "name": "Cop Gambar A4 Lanscape",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 12408,
+      "name": "Cop Gambar A4 Potrait",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 15061,
+      "name": "Peta",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 32977,
+      "name": "Prada",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 35708,
+      "name": "_ArchTick",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 35712,
+      "name": "A$Ca0e2cc03",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 37445,
+      "name": "POLE",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 37466,
+      "name": "*U",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41405,
+      "name": "OLT-SUB 2",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41431,
+      "name": "OLT-SUB",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    },
+    {
+      "handle": 41438,
+      "name": "LOGO",
+      "base_pt": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "errors": []
+    }
+  ],
+  "unreadable_inserts": [],
+  "side_channel": {
+    "dwgread_json_inserts": 3049,
+    "dwgread_json_inserts_with_extrusion": 3049,
+    "dwgread_json_block_headers": 1677,
+    "dwgread_json_block_headers_with_base_pt": 1677,
+    "anon_block_names_resolved": 1597
+  }
+}
