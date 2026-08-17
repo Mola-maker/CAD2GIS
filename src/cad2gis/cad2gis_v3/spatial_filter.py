@@ -195,11 +195,31 @@ def apply_spatial_denoising(
         "llm_decisions": [],
     }
 
+    def _is_materialized_block_entity(entity: Any) -> bool:
+        plan_domain = getattr(entity, "raw_properties", {}).get("plan_domain")
+        return (
+            isinstance(plan_domain, Mapping)
+            and plan_domain.get("materialization") == "nested-insert-affine"
+        )
+
     # Pre-denoise snapshot: label proximity checks must see entities that a
     # later stage is about to exclude — otherwise removing a real label would
     # cascade into removing the INSERT it identifies (unlabelled-asset rule /
     # cached-region exclusion would then treat the asset as a legend sample).
     original_entities = list(entities)
+    # Drawing-space roots drive body/perimeter geometry.  Materialized
+    # block-definition members (issue 4) are evidence-bearing candidates and
+    # must not shift the annotation-frame body box: expanding title/frame
+    # blocks would otherwise make real perimeter labels look interior and
+    # vice versa.
+    drawing_entities = [
+        entity for entity in original_entities
+        if not _is_materialized_block_entity(entity)
+    ]
+    diagnostics["drawing_entity_count"] = len(drawing_entities)
+    diagnostics["materialized_entity_count"] = len(original_entities) - len(
+        drawing_entities
+    )
     label_patterns = [
         re.compile(str(pattern))
         for pattern in label_text_patterns
@@ -237,7 +257,7 @@ def apply_spatial_denoising(
     route_pattern = re.compile(route_regex) if route_regex else None
     cable_lines = [
         entity
-        for entity in original_entities
+        for entity in drawing_entities
         if entity.dwg_type.upper() in ("LINE", "LWPOLYLINE", "POLYLINE")
         and len(entity.points) >= 2
         and (
@@ -253,7 +273,7 @@ def apply_spatial_denoising(
     }
     dimension_evidence_keys: set[str] = {
         entity.entity_key
-        for entity in original_entities
+        for entity in drawing_entities
         if entity.dwg_type.upper() == "DIMENSION"
         and str(entity.layer).strip().upper() in dimension_layer_upper
     }
@@ -285,24 +305,32 @@ def apply_spatial_denoising(
 
     # ── 1. Load cached regions ──────────────────────────────────────────
     confirmed_regions: list[dict[str, Any]] = []
+    cached_layer_verdicts: list[dict[str, Any]] = []
     spatial_regions_path = project_config_dir / "spatial_regions.json" if project_config_dir else None
     if spatial_regions_path and spatial_regions_path.is_file():
         try:
             config = json.loads(spatial_regions_path.read_text(encoding="utf-8"))
             if isinstance(config, dict):
                 confirmed_regions = list(config.get("clusters", ()))
+                cached_layer_verdicts = list(config.get("layer_verdicts", ()))
                 diagnostics["cached_regions_count"] = len(confirmed_regions)
+                diagnostics["cached_layer_verdict_count"] = len(
+                    cached_layer_verdicts
+                )
         except (OSError, json.JSONDecodeError):
             pass
 
     # ── 2. Run legend detector ──────────────────────────────────────────
+    # Body geometry is derived from drawing-space roots only so materialized
+    # block specimens cannot shift the body bbox used by the annotation-frame
+    # detector below (issue 4: INSERT expansion must not change reviewed
+    # spatial-filter verdicts).
     legend_result = filter_legend_entities(
-        entities,
+        drawing_entities,
         confirmed_regions=confirmed_regions,
-        auto_exclude=(llm_mode == "off" and bool(confirmed_regions)),
+        auto_exclude=False,
     )
     legend_diag = legend_result["diagnostics"]
-    entities[:] = list(legend_result["entities"])
     legend_flagged_keys: frozenset[str] = legend_result["legend_flagged_keys"]
 
     # ── 3. Aggregate catalog_roots + legend_flagged ─────────────────────
@@ -332,6 +360,7 @@ def apply_spatial_denoising(
         c for c in legend_diag.get("clusters", ())
         if not c.get("confirmed", False)
     ]
+    semantics: dict[str, Any] | None = None
     if confirmed_regions and llm_mode == "assist":
         llm_result = {
             "decisions": [],
@@ -344,11 +373,23 @@ def apply_spatial_denoising(
                 "decisions_accepted": 0,
             },
         }
-        semantics = {
-            "schema_version": "cad2gis-layer-semantics-v1",
-            "status": "cache_reused",
-            "verdicts": [],
-        }
+        if cached_layer_verdicts:
+            semantics = {
+                "schema_version": "cad2gis-layer-semantics-v1",
+                "status": "cache_reused",
+                "verdicts": list(cached_layer_verdicts),
+            }
+        else:
+            # Backfill one deterministic call for caches written before
+            # layer verdicts were persisted; afterwards the verdict is reused
+            # exactly like cluster dispositions.
+            layer_stats = _layer_statistics(entities)
+            if layer_stats:
+                semantics = classify_layer_semantics(
+                    layer_stats=layer_stats,
+                    project_config_dir=project_config_dir,
+                )
+                cached_layer_verdicts = list(semantics.get("verdicts", ()))
     else:
         llm_result = classify_spatial_clusters(
             clusters=unconfirmed,
@@ -368,16 +409,18 @@ def apply_spatial_denoising(
                     layer_stats=layer_stats,
                     project_config_dir=project_config_dir,
                 )
-                diagnostics["layer_semantics"] = semantics
-                if semantics.get("status") == "complete":
-                    non_subject_layers = {
-                        str(v["layer"]).strip()
-                        for v in semantics.get("verdicts", ())
-                        if v.get("verdict") == "non_subject"
-                    }
-                    for entity in entities:
-                        if entity.layer.strip() in non_subject_layers:
-                            flag_map.setdefault(entity.entity_key, "llm_layer_non_subject")
+                cached_layer_verdicts = list(semantics.get("verdicts", ()))
+    if semantics is not None:
+        diagnostics["layer_semantics"] = semantics
+        if semantics.get("status") in {"complete", "cache_reused"}:
+            non_subject_layers = {
+                str(v["layer"]).strip()
+                for v in semantics.get("verdicts", ())
+                if v.get("verdict") == "non_subject"
+            }
+            for entity in entities:
+                if entity.layer.strip() in non_subject_layers:
+                    flag_map.setdefault(entity.entity_key, "llm_layer_non_subject")
     diagnostics["llm_spatial"] = llm_result["diagnostics"]
     diagnostics["llm_decisions"] = llm_result["decisions"]
 
@@ -390,121 +433,133 @@ def apply_spatial_denoising(
 
     # ── 6. Save decisions to spatial_regions.json ──────────────────────
     _save_spatial_regions(
-        spatial_regions_path, llm_result, legend_diag, flag_map, llm_mode,
+        spatial_regions_path,
+        llm_result,
+        legend_diag,
+        flag_map,
+        llm_mode,
+        layer_semantics=semantics,
     )
 
-    # ── 6. Auto-exclude noise in assist mode ────────────────────────────
-    if llm_mode == "assist":
+    # ── 6. Auto-exclude deterministic and LLM noise ─────────────────────
+    # Boundary-band candidates are deterministic detector output and are
+    # excluded in every mode (the LLM only supervises legend clusters).  This
+    # keeps ``--llm off`` runs reproducible and keeps the reviewed feature
+    # gate meaningful after INSERT expansion adds block-definition evidence.
+    import re as _re
+    route_pattern = _re.compile(route_regex) if route_regex else None
+    route_exempt: set[str] = set()
+    if route_pattern is not None:
         # Route exemption: entities whose layer matches the reviewed route
         # regex are never excluded — LLM noise decisions cannot kill cables.
         # A length floor keeps legend sample lines (0.4-9 m coloured swatches
         # drawn on FO CORE layers) outside the exemption: only real route
         # segments (hundreds of metres) are protected.
-        import re as _re
-        route_pattern = _re.compile(route_regex) if route_regex else None
-        route_exempt: set[str] = set()
-        if route_pattern is not None:
-            route_exempt = {
-                e.entity_key
-                for e in entities
-                if route_pattern.search(e.layer.strip())
-                and (e.native_length is None or e.native_length >= 10.0)
-            }
-            diagnostics["route_exempt_length_floor_m"] = 10.0
+        route_exempt = {
+            e.entity_key
+            for e in drawing_entities
+            if route_pattern.search(e.layer.strip())
+            and (e.native_length is None or e.native_length >= 10.0)
+        }
+        diagnostics["route_exempt_length_floor_m"] = 10.0
 
-        noise_keys: set[str] = set()
-        evidence_exempt = (
-            route_exempt | label_evidence_keys | dimension_evidence_keys
-        )
-        exempt_layers_upper = {str(layer).upper() for layer in boundary_exempt_layers}
-        entity_by_key = {entity.entity_key: entity for entity in entities}
+    noise_keys: set[str] = set()
+    evidence_exempt = (
+        route_exempt | label_evidence_keys | dimension_evidence_keys
+    )
+    exempt_layers_upper = {str(layer).upper() for layer in boundary_exempt_layers}
+    entity_by_key = {entity.entity_key: entity for entity in entities}
 
-        def _label_protected_insert(key: str) -> bool:
-            # A deployed asset (INSERT) carrying a reviewed identifier within
-            # the label radius — or hugging a route/sling cable — is real
-            # infrastructure; noise verdicts (LLM clusters, cached regions,
-            # boundary band) never kill it.
-            entity = entity_by_key.get(key)
-            if entity is None or entity.dwg_type.upper() != "INSERT":
-                return False
-            ctr = entity.centroid
-            if any(
-                math.dist(ctr, text_centroid) <= _DENOISE_LABEL_RADIUS_M
-                for text_centroid in label_centroids
-            ):
-                return True
-            if cable_lines and _near_cable(ctr):
-                return True
+    def _label_protected_insert(key: str) -> bool:
+        # A deployed asset (INSERT) carrying a reviewed identifier within
+        # the label radius — or hugging a route/sling cable — is real
+        # infrastructure; noise verdicts (LLM clusters, cached regions,
+        # boundary band) never kill it.
+        entity = entity_by_key.get(key)
+        if entity is None or entity.dwg_type.upper() != "INSERT":
             return False
+        ctr = entity.centroid
+        if any(
+            math.dist(ctr, text_centroid) <= _DENOISE_LABEL_RADIUS_M
+            for text_centroid in label_centroids
+        ):
+            return True
+        if cable_lines and _near_cable(ctr):
+            return True
+        return False
 
-        for key, source in flag_map.items():
-            if key in evidence_exempt:
+    for key, source in flag_map.items():
+        if key in evidence_exempt:
+            continue
+        disp = source
+        for prefix in ("llm_",):
+            if disp.startswith(prefix):
+                disp = disp[len(prefix):]
+        disp = disp.replace("_fallback", "")
+        if disp == "boundary_band":
+            # Deterministic annotation-frame detector: frame text/leaders
+            # hugging the body perimeter are noise by construction —
+            # unless the reviewed boundary layer says otherwise.
+            entity = entity_by_key.get(key)
+            if entity is not None and str(entity.layer).strip().upper() in exempt_layers_upper:
                 continue
-            disp = source
-            for prefix in ("llm_",):
-                if disp.startswith(prefix):
-                    disp = disp[len(prefix):]
-            disp = disp.replace("_fallback", "")
-            if disp == "boundary_band":
-                # Deterministic annotation-frame detector: frame text/leaders
-                # hugging the body perimeter are noise by construction —
-                # unless the reviewed boundary layer says otherwise.
-                entity = entity_by_key.get(key)
-                if entity is not None and str(entity.layer).strip().upper() in exempt_layers_upper:
-                    continue
-                if (
-                    entity is not None
-                    and (entity.text or "").strip()
-                    and not is_placeholder_text(entity.text)
-                    and any(
-                        pattern.fullmatch(entity.text.strip())
-                        for pattern in label_patterns
-                    )
-                ):
-                    # A reviewed asset identifier (e.g. pole label) hugging
-                    # the perimeter is deployment, not an annotation frame.
-                    continue
+            if (
+                entity is not None
+                and (entity.text or "").strip()
+                and not is_placeholder_text(entity.text)
+                and any(
+                    pattern.fullmatch(entity.text.strip())
+                    for pattern in label_patterns
+                )
+            ):
+                # A reviewed asset identifier (e.g. pole label) hugging
+                # the perimeter is deployment, not an annotation frame.
+                continue
+            noise_keys.add(key)
+            continue
+        if llm_mode != "assist":
+            continue
+        if disp in _NOISE_DISPOSITIONS:
+            if not _label_protected_insert(key):
                 noise_keys.add(key)
-                continue
-            if disp in _NOISE_DISPOSITIONS:
-                if not _label_protected_insert(key):
-                    noise_keys.add(key)
-                continue
-            if disp == "llm_layer_non_subject":
-                if not _label_protected_insert(key):
-                    noise_keys.add(key)
-                continue
+            continue
+        if disp == "llm_layer_non_subject":
+            if not _label_protected_insert(key):
+                noise_keys.add(key)
+            continue
 
-        # Apply cached LLM decisions from spatial_regions.json: on later
-        # runs the clusters are already confirmed so the LLM is not called
-        # again, but the stored dispositions must still exclude noise.
-        for region in confirmed_regions:
-            if not isinstance(region, Mapping):
+    # Apply cached LLM decisions from spatial_regions.json in every mode: on
+    # later runs the clusters are already confirmed so the LLM is not called
+    # again, but the stored dispositions must still exclude noise.  The same
+    # label/cable proximity protection as assist mode applies so an ``--llm
+    # off`` replay cannot kill deployed assets that a legend cluster touched.
+    for region in confirmed_regions:
+        if not isinstance(region, Mapping):
+            continue
+        if str(region.get("disposition", "")) not in _NOISE_DISPOSITIONS:
+            continue
+        for mid in region.get("member_ids", ()):
+            if str(mid) in evidence_exempt:
                 continue
-            if str(region.get("disposition", "")) not in _NOISE_DISPOSITIONS:
+            if _label_protected_insert(str(mid)):
+                # A cached legend verdict must not kill a deployed asset:
+                # an INSERT carrying a reviewed identifier is real
+                # infrastructure regardless of which cluster (possibly
+                # legend+mixed) the LLM grouped it into.
                 continue
-            for mid in region.get("member_ids", ()):
-                if str(mid) in evidence_exempt:
-                    continue
-                if _label_protected_insert(str(mid)):
-                    # A cached legend verdict must not kill a deployed asset:
-                    # an INSERT carrying a reviewed identifier is real
-                    # infrastructure regardless of which cluster (possibly
-                    # legend+mixed) the LLM grouped it into.
-                    continue
-                noise_keys.add(mid)
+            noise_keys.add(mid)
 
-        if route_exempt:
-            diagnostics["route_exempt_count"] = len(route_exempt)
-        diagnostics["evidence_exempt_count"] = len(evidence_exempt)
-        diagnostics["label_evidence_protected_count"] = len(label_evidence_keys)
-        diagnostics["dimension_evidence_protected_count"] = len(dimension_evidence_keys)
-        if noise_keys:
-            pre_count = len(entities)
-            entities[:] = [e for e in entities if e.entity_key not in noise_keys]
-            diagnostics["auto_excluded_count"] = pre_count - len(entities)
-            diagnostics["auto_excluded_keys"] = sorted(noise_keys)
-            diagnostics["status"] = "denoised"
+    if route_exempt:
+        diagnostics["route_exempt_count"] = len(route_exempt)
+    diagnostics["evidence_exempt_count"] = len(evidence_exempt)
+    diagnostics["label_evidence_protected_count"] = len(label_evidence_keys)
+    diagnostics["dimension_evidence_protected_count"] = len(dimension_evidence_keys)
+    if noise_keys:
+        pre_count = len(entities)
+        entities[:] = [e for e in entities if e.entity_key not in noise_keys]
+        diagnostics["auto_excluded_count"] = pre_count - len(entities)
+        diagnostics["auto_excluded_keys"] = sorted(noise_keys)
+        diagnostics["status"] = "denoised"
 
     return {
         "entities": list(entities),
@@ -520,6 +575,8 @@ def _save_spatial_regions(
     legend_diag: dict[str, Any],
     flag_map: dict[str, str],
     llm_mode: str,
+    *,
+    layer_semantics: Mapping[str, Any] | None = None,
 ) -> None:
     if path is None or llm_mode == "off":
         return
@@ -556,11 +613,29 @@ def _save_spatial_regions(
                 "confirmed_at": now,
             },
         })
-    if regions:
+    layer_verdicts: list[dict[str, Any]] = []
+    if llm_mode == "assist" and isinstance(layer_semantics, Mapping):
+        for verdict in layer_semantics.get("verdicts", ()):
+            if not isinstance(verdict, Mapping):
+                continue
+            if not str(verdict.get("layer", "")).strip():
+                continue
+            layer_verdicts.append({
+                "layer": str(verdict.get("layer", "")).strip(),
+                "verdict": str(verdict.get("verdict", "subject")).strip(),
+                "confidence": float(verdict.get("confidence", 0.0)),
+                "justification": str(verdict.get("justification", "")),
+                "provenance": {
+                    "confirmed_by": f"llm-{llm_mode}",
+                    "confirmed_at": now,
+                },
+            })
+    if regions or layer_verdicts:
         path.parent.mkdir(parents=True, exist_ok=True)
         _atomic_write_json(path, {
             "schema_version": "cad2gis-spatial-regions-v1",
             "generated": now,
             "llm_mode": llm_mode,
             "clusters": regions,
+            "layer_verdicts": layer_verdicts,
         })
