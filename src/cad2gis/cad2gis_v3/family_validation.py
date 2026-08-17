@@ -18,9 +18,26 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from .spatial_filter import is_placeholder_text
+
 
 def _tokenize(text: str) -> list[str]:
     return [tok for tok in re.split(r"[^A-Za-z0-9]+", text.strip()) if tok]
+
+
+def _is_asset_code_sample(text: str) -> bool:
+    """Asset identifiers carry a letter+numeric field; prose/unit labels don't.
+
+    A mere numeric token is not enough: ``Power @1490 nm`` has a digit field
+    but is prose.  Asset codes observed in the projects always contain at
+    least one mixed alphanumeric field (``B12``, ``A01``, ``P137``).
+    """
+    if is_placeholder_text(text):
+        return False
+    return any(
+        re.fullmatch(r"[A-Za-z]+\d+", token) is not None
+        for token in _tokenize(text)
+    )
 
 
 _ASSET_CLASS_BY_LAYER_HINT = (
@@ -53,11 +70,17 @@ def derive_family_from_samples(
     tokens stay literal.  Every derived pattern full-matches its samples by
     construction — robust where the LLM repair loop fails.
     """
-    texts = [
-        str(sample.get("text", "")).strip()
-        for sample in samples
-        if str(sample.get("text", "")).strip()
-    ]
+    texts = []
+    for sample in samples:
+        text = str(sample.get("text", "")).strip()
+        if not text or is_placeholder_text(text):
+            continue
+        # Asset identifiers always carry a numeric field (``011``, ``B12``,
+        # ``A01``).  Prose labels such as ``Distance to FDT`` and unit labels
+        # such as ``- dBm`` would otherwise poison the alignment groups.
+        if not _is_asset_code_sample(text):
+            continue
+        texts.append(text)
     if len(texts) < 2:
         return []
     by_width: dict[int, list[str]] = {}
@@ -111,7 +134,11 @@ def derive_family_from_samples(
             family_id = f"{family_id}_{len(result) + 1}"
         result.append({
             "family_id": family_id[:48] or "auto_family",
-            "text_pattern": "^" + r"\.".join(parts) + "$",
+            # Separator-preserving by construction: observed labels use ``.``,
+            # ``-`` and spaces interchangeably (``DMPH-1.010.C07`` vs
+            # ``KLDYA.011.C01``).  Hardcoding ``\\.`` made every derived
+            # family fail its own samples.
+            "text_pattern": "^" + r"[^A-Za-z0-9]+".join(parts) + "$",
             "target_class": infer_target_class(layer),
             "max_distance_native_m": 15.0,
             "source_layer": layer,
@@ -131,6 +158,9 @@ def _cleaned_pattern(pattern: str) -> str:
     """
     body = re.sub(r"\\[dDwWsS]", "0", pattern)
     body = re.sub(r"\\[A-Za-z]", "", body)
+    # ``[^A-Za-z0-9]+`` is the derivation separator class; keep it as a token
+    # boundary rather than collapsing it into a letter placeholder.
+    body = re.sub(r"\[\^A-Za-z0-9\](?:\+|\*)?", ".", body)
 
     def _class_placeholder(match: re.Match) -> str:
         cls = match.group(0)
@@ -150,6 +180,17 @@ def _cleaned_pattern(pattern: str) -> str:
 def _literal_tokens(pattern: str) -> list[str]:
     """Tokens a regex asserts structurally (digit classes as ``0``)."""
     return [tok for tok in _tokenize(_cleaned_pattern(pattern)) if tok]
+
+
+def annotation_pattern_specificity(pattern: str) -> int:
+    """Structural field count of a reviewed text pattern.
+
+    ``^[A-Za-z]+\\d+$`` has specificity 1; ``^KLDYA[^A-Za-z0-9]+\\d+...`` has
+    specificity 3.  Assignment uses this to let full asset identifiers claim
+    a shared target layer before short subordinate labels (``A07`` beside
+    ``KLDYA.011.C01`` on the same FAT block).
+    """
+    return len(_literal_tokens(pattern))
 
 
 def _separator_normalized(pattern: str) -> str:
@@ -222,13 +263,21 @@ def l1_validate_family(
                 foreign_matched += 1
 
     own_fraction = own_matched / len(own) if own else 0.0
+    structure_samples = (
+        [
+            sample for sample in own
+            if _fullmatch(pattern, str(sample.get("text", "")))
+        ]
+        if family.get("auto_derived")
+        else list(own)
+    )
     structure_fraction = (
         sum(
             _token_coverage(pattern, str(sample.get("text", "")))
-            for sample in own
+            for sample in structure_samples
         )
-        / len(own)
-        if own
+        / len(structure_samples)
+        if structure_samples
         else 1.0
     )
     # A family without a resolvable source layer is vacuous: it could match
@@ -328,16 +377,25 @@ def l2_validate_family_group(
     families: Sequence[Mapping[str, Any]],
     samples: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Intra-layer grouping: every sample full-matches exactly one family.
+    """Intra-layer grouping: every asset-code sample full-matches exactly one
+    family.
 
     A sample matching two or more families indicates overlapping patterns
     (ambiguous); a sample matching none indicates the families miss part of
     the layer's label structure (unassigned).  Fullmatch is the hard grouping
     test; token coverage remains the runtime cost signal for assignment.
+
+    Non-asset samples (placeholders and prose/unit labels without a numeric
+    field, e.g. ``MR.XXX.XXX`` or ``Distance to FDT``) are not part of any
+    label family and are skipped, matching how families are derived.
     """
     records: list[dict[str, Any]] = []
+    skipped = 0
     for sample in samples:
         text = str(sample.get("text", ""))
+        if not _is_asset_code_sample(text):
+            skipped += 1
+            continue
         matched = _fullmatch_count(text, families)
         records.append({
             "text": text,
@@ -349,6 +407,7 @@ def l2_validate_family_group(
     unassigned = [r for r in records if r["unassigned"]]
     return {
         "sample_count": len(records),
+        "skipped_sample_count": skipped,
         "ambiguous_count": len(ambiguous),
         "unassigned_count": len(unassigned),
         "passed": not ambiguous and not unassigned,

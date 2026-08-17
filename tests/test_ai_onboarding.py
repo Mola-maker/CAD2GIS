@@ -362,3 +362,34 @@ def test_insert_layer_mapping_classifies_anonymous_dynamic_block() -> None:
 
     assert [feature.feature_class for feature in features] == ["BOITE"]
     assert diagnostics["coverage"]["conversion_allowed"] is True
+
+
+def test_text_samples_use_drawing_space_and_prioritize_structured_labels() -> None:
+    carriers = [
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.B06", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.B11", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.C01", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.A07", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.A01", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.C03", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.B08", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.011.B04", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "KLDYA.012.A02", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A01", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A02", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A03", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A04", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A05", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A06", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A07", "aci_color": 30},
+        {"layer": "FAT", "layout": "Model", "text": "A08", "aci_color": 30},
+        {"layer": "FAT", "layout": "BLOCKDEF:sfsfsfs", "text": "\\pxqc;FAT A014"},
+        {"layer": "FAT_Info", "layout": "BLOCKDEF:", "text": "KLDYA.011.B12"},
+    ]
+    samples = onboarding._text_samples(carriers, limit_per_layer=8)
+    assert "FAT_Info" not in samples
+    fat_texts = [item["text"] for item in samples["FAT"]]
+    assert "\\pxqc;FAT A014" not in fat_texts
+    # Multi-field identifiers are sampled before single-token stubs.
+    assert fat_texts.index("KLDYA.011.B06") < fat_texts.index("A01")
+    assert "KLDYA.012.A02" in fat_texts
