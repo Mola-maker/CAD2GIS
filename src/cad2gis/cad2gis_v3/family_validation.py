@@ -25,8 +25,10 @@ def _tokenize(text: str) -> list[str]:
 
 _ASSET_CLASS_BY_LAYER_HINT = (
     (re.compile(r"(?i)(fat|closure|splice|otb|odp|splitter)"), "BOITE"),
-    (re.compile(r"(?i)(fdt|olt|hub)"), "SITE"),
+    # POLE/PTECH is a stronger device semantic than an FDT area qualifier:
+    # ``POLE ID FDT 2 73`` is a pole label layer, not a site layer.
     (re.compile(r"(?i)(pole|ptech)"), "PTECH"),
+    (re.compile(r"(?i)(fdt|olt|hub)"), "SITE"),
 )
 
 

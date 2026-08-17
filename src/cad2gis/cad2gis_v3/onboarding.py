@@ -706,6 +706,8 @@ def _compile_annotation_families(
     layer is itself a reviewed target layer (e.g. ``EXISTING POLE`` text and
     INSERT share that layer).
     """
+    from .family_validation import infer_target_class
+
     result: list[dict[str, Any]] = []
     seen: set[str] = set()
     for entry in proposal_families:
@@ -713,10 +715,21 @@ def _compile_annotation_families(
         if not fid or fid in seen:
             continue
         seen.add(fid)
-        target_class = str(entry.get("target_class", "")).strip()
+        raw_layer = str(entry.get("source_layer", "")).strip()
+        proposed_class = str(entry.get("target_class", "")).strip()
+        target_class = proposed_class
+        class_repaired = False
+        if raw_layer:
+            # The label layer name is deterministic DWG evidence; the model's
+            # target_class is a semantic guess.  Reconcile mismatches such as
+            # ``POLE ID FDT 2 73`` → SITE (the FDT qualifier must not beat the
+            # POLE device semantic) before any target-layer pattern is built.
+            inferred_class = infer_target_class(raw_layer)
+            if inferred_class in _FEATURE_CLASSES:
+                class_repaired = inferred_class != proposed_class
+                target_class = inferred_class
         text_pattern = str(entry.get("text_pattern", "")).strip()
         distance = float(entry.get("max_distance_native_m", 15.0))
-        raw_layer = str(entry.get("source_layer", "")).strip()
         target_layers = [
             str(layer).strip()
             for layer in insert_layer_families.get(target_class, ())
@@ -747,7 +760,13 @@ def _compile_annotation_families(
             "require_same_layer": source_is_target,
             "max_distance_native_m": distance,
             "rule_id": f"AI-ANNOTATION-{fid.upper()}-001",
-            "provenance": f"DWG_DERIVED:AI-ANNOTATION-{fid.upper()}-001",
+            "provenance": (
+                f"DWG_DERIVED:AI-ANNOTATION-{fid.upper()}-001"
+                + (
+                    f"|LAYER-TARGET-CLASS-REPAIR:{target_class}"
+                    if class_repaired else ""
+                )
+            ),
         }
         if entry.get("aci_color") is not None:
             family["aci_color"] = int(entry["aci_color"])
