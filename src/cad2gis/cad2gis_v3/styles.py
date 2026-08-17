@@ -175,11 +175,35 @@ def _line_width(layer_name, lineweight):
 
 def _marker_properties(layer_name):
     return {
-        "BOITE": ("square", 3.2),
-        "SITE": ("diamond", 4.0),
+        "BOITE": ("square", 4.0),
+        "SITE": ("diamond", 4.4),
         "PTECH": ("circle", 3.2),
         "IMB": ("circle", 0.8),
     }.get(layer_name, ("circle", 2.4))
+
+
+def _label_style(layer_name):
+    """Per-layer label styling so collocated device classes stay legible."""
+    return {
+        "BOITE": {
+            "text_color": "255,127,0,255", "font_size": "8",
+            "font_weight": "75", "dist": "2.2", "priority": "10",
+        },
+        "SITE": {
+            "text_color": "200,30,24,255", "font_size": "8",
+            "font_weight": "75", "dist": "2.4", "priority": "9",
+        },
+        "PTECH": {
+            "text_color": "0,0,0,255", "font_size": "8",
+            "font_weight": "50", "dist": "1.0", "priority": "8",
+        },
+    }.get(
+        layer_name,
+        {
+            "text_color": "0,0,0,255", "font_size": "8",
+            "font_weight": "50", "dist": "1.0", "priority": "5",
+        },
+    )
 
 
 def _add_label_rotation(settings):
@@ -243,11 +267,14 @@ def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
             )
             _option(options, "outline_width", _line_width(layer_name, lineweight))
             _option(options, "outline_width_unit", "MM")
+    label_style = _label_style(layer_name)
     labeling = ET.SubElement(root, "labeling", type="simple")
-    settings = ET.SubElement(labeling, "settings")
+    settings = ET.SubElement(labeling, "settings", priority=label_style["priority"])
     ET.SubElement(
         settings, "text-style", fieldName=label_field, isExpression="0",
-        fontFamily="Arial", fontSize="8", textColor="0,0,0,255",
+        fontFamily="Arial", fontSize=label_style["font_size"],
+        fontWeight=label_style["font_weight"],
+        textColor=label_style["text_color"],
     )
     # QGIS's legacy placement enum uses 2 for a line-following label.  The
     # default point/polygon placement (0, around point/centroid) leaves short
@@ -255,7 +282,7 @@ def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
     ET.SubElement(
         settings, "placement",
         placement="2" if geometry_kind == "LineString" else "0",
-        dist="1", offsetUnits="MM", rotationUnit="AngleDegrees",
+        dist=label_style["dist"], offsetUnits="MM", rotationUnit="AngleDegrees",
     )
     ET.SubElement(settings, "rendering", drawLabels="1", obstacle="1", scaleVisibility="0")
     # Line labels follow their source LineString placement.  Applying the
