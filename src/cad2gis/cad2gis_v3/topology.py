@@ -685,11 +685,15 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         for index, (start, end) in enumerate(zip(entity.points, entity.points[1:]))
     })
 
-    # APD BOITE/SITE INSERTs are annotation blocks offset from the pole they
-    # are mounted on.  Their physical location is the unique reviewed PTECH
+    # APD BOITE INSERTs are annotation blocks offset from the pole they are
+    # mounted on.  Their physical location is the unique reviewed PTECH
     # support within this tolerance; collocation is recorded as a derived
     # lineage operation, never as a source mutation.  A large second-nearest
     # gap (>= 2 m) is required so ambiguous cases stay fail-closed.
+    # SITE blocks (FDT/OLT/HUB) are physical enclosures with their own
+    # surveyed insertion point — kletek's SITE sits metres away from any
+    # PTECH and must keep that source location — so SITE never participates
+    # in BOITE-style support collocation.
     collocation_tolerance = float(
         registry.thresholds.get("device_collocation_to_support_m", 15.0)
     )
@@ -713,9 +717,13 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
 
     for asset in boxes + sites:
         support, distance, status = _nearest_unique(asset.native_centroid, supports, support_tolerance)
-        collocated = _collocated_support(asset)
+        collocated = (
+            _collocated_support(asset)
+            if asset.feature_class == "BOITE"
+            else None
+        )
         if support is None and collocated is not None:
-            # The BOITE/SITE INSERT is an annotation frame: its reviewed
+            # The BOITE INSERT is an annotation frame: its reviewed
             # collocation window (15 m) is authoritative even when the
             # generic support-candidate window (8 m) rejects the same pole.
             # Without this, boxes mounted 9-12 m from their pole keep their
