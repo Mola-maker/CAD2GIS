@@ -26,14 +26,20 @@ LLM assist conversions completed with the same canonical pipeline.  Every
 run is `CONDITIONAL` by design: no surveyed GCP / independent check-point
 evidence was supplied, so absolute ground accuracy is not claimed.
 
-| Site | run_status | PTECH | BOITE | SITE | CABLE | CABLE_SEGMENT | ZPM |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| bulu_lor_semarang | CONDITIONAL | 23 | 0 | 1 | 6 | 27 | 0 |
-| darat_sekip_pontianak | CONDITIONAL | 13 | 1 | 1 | 114 | 144 | 0 |
-| manado_tomohon_uplink | CONDITIONAL | 49 | 15 | 1 | 20 | 105 | 15 |
-| tinggede_view_palu | CONDITIONAL | 51 | 22 | 1 | 16 | 65 | 22 |
-| taipa_palu | CONDITIONAL | 112 | 26 | 1 | 17 | 118 | 26 |
-| tinggar_serang | CONDITIONAL | 106 | 0 | 0 | 17 | 119 | 0 |
+Two drawings carry real DWG geographic coordinates and are delivered without
+an anchor.  The other four use a cached coarse OSM place-name anchor derived
+from the classified asset network bbox (PTECH/BOITE/SITE/CABLE) and the
+filename-region lookup; the anchor is an explicit per-project config and is
+applied even when the declared-CRS heuristic passes.
+
+| Site | run_status | PTECH | BOITE | SITE | IMB | CABLE | CABLE_SEGMENT | ZPM | placement |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| semarang_sf | CONDITIONAL | 23 | 0 | 1 | 0 | 6 | 27 | 0 | OSM coarse anchor |
+| darat_sekip_sf | CONDITIONAL | 13 | 1 | 1 | 0 | 114 | 144 | 0 | DWG real coordinates |
+| manado-tomohon_uplink | CONDITIONAL | 49 | 15 | 1 | 243 | 20 | 105 | 15 | DWG real coordinates |
+| tinggede | CONDITIONAL | 51 | 22 | 1 | 337 | 16 | 65 | 22 | OSM coarse anchor |
+| taipa | CONDITIONAL | 112 | 26 | 1 | 369 | 17 | 118 | 26 | OSM coarse anchor |
+| tinggar | CONDITIONAL | 106 | 0 | 0 | 435 | 17 | 119 | 0 | OSM coarse anchor |
 
 Artifacts per site:
 

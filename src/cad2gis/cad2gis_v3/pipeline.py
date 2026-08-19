@@ -1270,6 +1270,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
         boundary_exempt_layers=(
             getattr(registry, "layers", {}).get("zpm_boundary", ())
             + getattr(registry, "layers", {}).get("sling_wire", ())
+            + getattr(registry, "layers", {}).get("homepass", ())
         ),
         label_text_patterns=[
             str(family.text_pattern)
@@ -1296,14 +1297,15 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
     # ── OSM place-name anchor for local engineering coordinates ────────
     osm_anchor: dict[str, Any] | None = None
-    if (
-        coordinate_domain.get("passed") is not True
-        and request.gcp_profile is None
-    ):
+    if request.gcp_profile is None:
         from .osm_anchor import apply_osm_anchor, derive_osm_anchor
 
+        # A cached/reviewed anchor is explicit project configuration and wins
+        # even when the coordinate-domain heuristic accepted the declared CRS
+        # (some validation drawings carry local offsets with magnitudes that
+        # look EPSG:3857-plausible but still land near the QGIS origin).
         anchor = _load_osm_anchor(request.mapping_registry.parent)
-        if anchor is None:
+        if anchor is None and coordinate_domain.get("passed") is not True:
             extent = coordinate_domain.get("observed_extent") or {}
             if len(extent) == 4:
                 anchor = derive_osm_anchor(

@@ -1,0 +1,26 @@
+{
+  "schema_version": "cad2gis-osm-anchor-v1",
+  "status": "derived",
+  "place_name": "Bulu Lor, Semarang, Central Java, Indonesia",
+  "display_name": "Bulu Lor, Semarang, Central Java, Indonesia",
+  "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - BULU LOR RW 05 SEMARANG - SF.dwg",
+  "local_entity_bbox": [
+    658.8873742471956,
+    -1106.4684719504237,
+    8442.107506551138,
+    229.88533162355913
+  ],
+  "local_centre": [
+    4550.497440399166,
+    -438.2915701634323
+  ],
+  "target_epsg3857_centre": [
+    12291530.817362655,
+    -777447.5696149172
+  ],
+  "translation_dx": 12286980.3199,
+  "translation_dy": -777009.278,
+  "source": "WEB_SEARCH_APPROX:NOMINATIM_EQUIVALENT",
+  "precision": "coarse_bbox_centre",
+  "refinement": "gcp_optional"
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "cad2gis-osm-anchor-v1",
+  "status": "derived",
+  "place_name": "Tinggar, Serang, Banten, Indonesia",
+  "display_name": "Tinggar, Serang, Banten, Indonesia",
+  "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - TINGGAR RW 04 SERANG.dwg",
+  "local_entity_bbox": [
+    -2463.156904129232,
+    1190.9355488224348,
+    -1344.5786176740664,
+    1967.2571818330503
+  ],
+  "local_centre": [
+    -1903.867760901649,
+    1579.0963653277427
+  ],
+  "target_epsg3857_centre": [
+    11816597.341908345,
+    -682574.4657320443
+  ],
+  "translation_dx": 11818501.2097,
+  "translation_dy": -684153.5621,
+  "source": "WEB_SEARCH_APPROX:NOMINATIM_EQUIVALENT",
+  "precision": "coarse_bbox_centre",
+  "refinement": "gcp_optional"
+}

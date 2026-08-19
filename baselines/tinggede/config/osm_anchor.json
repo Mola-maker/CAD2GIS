@@ -1,0 +1,26 @@
+{
+  "schema_version": "cad2gis-osm-anchor-v1",
+  "status": "derived",
+  "place_name": "Tinggede, Palu, Central Sulawesi, Indonesia",
+  "display_name": "Tinggede, Palu, Central Sulawesi, Indonesia",
+  "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - PERUMAHAN TINGGEDE VIEW PALU.dwg",
+  "local_entity_bbox": [
+    -1462.686744006019,
+    13424.73757640721,
+    -1235.0394296576064,
+    13716.332792625419
+  ],
+  "local_centre": [
+    -1348.8630868318128,
+    13570.535184516313
+  ],
+  "target_epsg3857_centre": [
+    13342687.372929975,
+    -99634.99625412376
+  ],
+  "translation_dx": 13344036.236,
+  "translation_dy": -113205.5314,
+  "source": "WEB_SEARCH_APPROX:NOMINATIM_EQUIVALENT",
+  "precision": "coarse_bbox_centre",
+  "refinement": "gcp_optional"
+}

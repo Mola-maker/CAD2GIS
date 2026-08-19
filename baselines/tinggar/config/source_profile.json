@@ -8,7 +8,7 @@
   "drawing": {
     "drawing_units": "metre",
     "dwg_cgeocs": "WGS84.PseudoMercator",
-    "dwg_insunits": 4,
+    "dwg_insunits": 6,
     "source_coordinate_scale_reviewed": true,
     "source_coordinate_scale_to_m": 1.0
   },
@@ -16,33 +16,31 @@
     "annotation_families": {},
     "delivery_counts": {},
     "feature_counts": {
-      "BOITE": 26,
       "CABLE": 17,
-      "PTECH": 112,
-      "SITE": 1,
-      "ZPM": 26
+      "IMB": 435,
+      "PTECH": 106
     },
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
-      "model_dimensions": 118,
-      "model_entities": 1809,
-      "model_inserts": 204
+      "model_dimensions": 0,
+      "model_entities": 2845,
+      "model_inserts": 156
     },
     "topology_gates": {}
   },
-  "project_id": "source-57cc7756b55a",
+  "project_id": "source-d4ebc3bbae4d",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:887dfb61cc95335c81f9968603df434007a6f952c4193131f1b0f52ee7778b26",
-    "reviewed_at": "2026-08-19T12:09:44.442285Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:46264cbc2f34bdca54d93af9ff937205936741aa42cace673f7445a9e0230981",
+    "reviewed_at": "2026-08-19T15:03:09.568826Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "8308164a4135c537970a9c2bdc870798d8e30f28e648ce2233882634a886cd4c",
-    "source_sha256": "57cc7756b55aa10b6d18a7986b9c55cf0e7796a451e9e220c7d8ef4856e40614",
-    "source_size_bytes": 603730
+    "inventory_sha256": "5ce1a12e48fc970e0bb0775d515fe72a7af3f96f8022c1ac3204ee4f0dee61cf",
+    "source_sha256": "d4ebc3bbae4da60a1f367da6301e9ac0945607eb7c972b546ac0af9f4323b74f",
+    "source_size_bytes": 2422076
   },
   "spatial_coverage_policy": null
 }

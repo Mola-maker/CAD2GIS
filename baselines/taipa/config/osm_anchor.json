@@ -1,0 +1,26 @@
+{
+  "schema_version": "cad2gis-osm-anchor-v1",
+  "status": "derived",
+  "place_name": "Taipa, Palu, Central Sulawesi, Indonesia",
+  "display_name": "Taipa, Palu, Central Sulawesi, Indonesia",
+  "source_path": "/home/cat/projects/CAD2GIS-robustness/raw/APD - TAIPA RW 05 PALU.dwg",
+  "local_entity_bbox": [
+    -3167.446405810233,
+    32212.66036810514,
+    -2125.653549757033,
+    33395.61907784927
+  ],
+  "local_centre": [
+    -2646.549977783633,
+    32804.139722977205
+  ],
+  "target_epsg3857_centre": [
+    13342687.372929975,
+    -99634.99625412376
+  ],
+  "translation_dx": 13345333.9229,
+  "translation_dy": -132439.136,
+  "source": "WEB_SEARCH_APPROX:NOMINATIM_EQUIVALENT",
+  "precision": "coarse_bbox_centre",
+  "refinement": "gcp_optional"
+}
