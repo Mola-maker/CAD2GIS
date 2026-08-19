@@ -169,7 +169,11 @@ def _role_suggestions(
             result["route_layers"].append(str(layer))
         if (
             "HOME NUMBER" in upper
+            or "HOMENUMBER" in upper
+            or "HOME PASS" in upper
+            or "HOMEPASS" in upper
             or re.fullmatch(r"HP(?:\s*\([A-Z]\)|\s+REDUCE)?", upper)
+            or upper.endswith("REDUCE")
         ):
             result["homepass_layers"].append(str(layer))
         if "SPAN" in upper or "DIMENSI" in upper:
@@ -1331,6 +1335,7 @@ def compile_onboarding_proposal(
                 boundary_exempt_layers=(
                     registry.layers.get("zpm_boundary", ())
                     + registry.layers.get("sling_wire", ())
+                    + registry.layers.get("homepass", ())
                 ),
                 label_text_patterns=[
                     str(family.text_pattern)

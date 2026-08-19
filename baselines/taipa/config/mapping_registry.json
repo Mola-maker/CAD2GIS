@@ -1,6 +1,17 @@
 {
   "annotation_families": [
     {
+      "family_id": "auto_fat",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_FAT-001",
+      "source_layer_pattern": "(?i)^FAT$",
+      "target_class": "BOITE",
+      "target_layer_pattern": "(?i)^FAT$",
+      "text_pattern": "^TPA[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+[A-Za-z]+\\d+$"
+    },
+    {
       "family_id": "auto_new_pole_id_7m_2_5_inches",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_2_5_INCHES-001",
@@ -21,17 +32,6 @@
       "target_class": "PTECH",
       "target_layer_pattern": "(?i)^(?:NEW\\ POLE\\ 7m\\(2\\.5\\ inches\\)|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|PROPOSED\\ NEW\\ POLE\\ 7m|PROPOSES\\ NEW\\ POLE\\ 9m)$",
       "text_pattern": "^MR[^A-Za-z0-9]+TPA[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+P\\d+$"
-    },
-    {
-      "family_id": "auto_fat",
-      "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT-001",
-      "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_FAT-001",
-      "source_layer_pattern": "(?i)^FAT$",
-      "target_class": "BOITE",
-      "target_layer_pattern": "(?i)^FAT$",
-      "text_pattern": "^TPA[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+[A-Za-z]+\\d+$"
     }
   ],
   "block_families": {
@@ -135,8 +135,8 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 48\\ CORE\\.|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-57cc7756b55a",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:887dfb61cc95335c81f9968603df434007a6f952c4193131f1b0f52ee7778b26",
-    "reviewed_at": "2026-08-19T12:09:44.442285Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:f71a6b45040c532e473bfcb1c18fa91c76b8ff136fe63ba859f36e892ba5453f",
+    "reviewed_at": "2026-08-19T15:02:10.831551Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
