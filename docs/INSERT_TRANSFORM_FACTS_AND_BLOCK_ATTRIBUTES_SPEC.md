@@ -1,5 +1,8 @@
 # Spec：LibreDWG INSERT 变换事实与块属性/块内文字物化（robustness 下一 session 重点）
 
+> 术语：APD = **As Plan Drawing**（按计划图纸，as-planned 设计态）；
+> SF = **Subfeeder**（副馈线）。见 [GLOSSARY.md](GLOSSARY.md)。
+>
 > 状态：待实施（`78f5d1a` 已提前合入 Model 空间 POLE ID 标签修复；本方案剩余范围收窄为 **block-only 文字/属性物化**）
 > 分支：`robustness`
 > 关联问题：DSH 工业化调研中发现的 issue 4 —— “LibreDWG reader 不输出 INSERT transform facts，导致 block definition 内的真实杆号/线缆文字无法进入语义层”。
@@ -68,7 +71,7 @@ CAD2GIS 的 PTECH / BOITE / SITE 等设备在图中的几何是 INSERT（块引�
 ## 2. 目标与验收（Definition of Done）
 
 1. **Reader 输出完整 INSERT transform facts。**
-   对四个 APD DWG，所有 model-space INSERT（以及后续嵌套 INSERT）的 `raw_properties.transform_facts` 都包含六项且 status=`available`：
+   对四个 APD（As Plan Drawing）开发基线 DWG，所有 model-space INSERT（以及后续嵌套 INSERT）的 `raw_properties.transform_facts` 都包含六项且 status=`available`：
    `insertion_point`（含 z）、`block_base_point`、`scale`、`rotation`、`normal`、`extrusion`。
 2. **plan_domain 成功物化块定义成员。**
    四个项目重跑后，`plan_domain.derived_entity_count > 0`、`expanded_insert_count == model INSERT 数量`（允许以诊断记录列出无法展开的异常 INSERT），`missing_or_invalid_insert_transform` 警告数降为 0 或只剩被显式 allowlist 的实体。

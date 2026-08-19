@@ -29,7 +29,7 @@ from .curation_service import review_task
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Optional APD review curation; never part of offline conversion",
+        description="Optional APD (As Plan Drawing) review curation; never part of offline conversion",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

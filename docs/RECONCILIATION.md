@@ -1,8 +1,9 @@
 # CAD2GIS Baseline Reconciliation
 
-## APD Closed Loop
+## APD (As Plan Drawing) Closed Loop
 
-The fast APD loop validates committed evidence without reopening the DWG:
+The fast APD baseline loop validates committed evidence without reopening
+the DWG:
 
 - records: `baselines/apd_hutabohu/records/readcad_review_bundle.json`
 - source profile: `experiment/config/apd_source_profile.json`

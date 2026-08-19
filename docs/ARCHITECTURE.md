@@ -88,6 +88,12 @@ The external `APD_test` corpus is compatibility evidence, not domain or
 absolute-accuracy truth. Full extraction of complex DWGs is an explicit
 performance gate.
 
+**Terminology**: `APD` means **As Plan Drawing** (as-planned construction
+design, not as-built), and the filename suffix `SF` means **Subfeeder**.
+The six DWGs added under `raw/` after the four development baselines are a
+held-out validation set and must receive fresh source-bound profiles.  See
+[GLOSSARY.md](GLOSSARY.md).
+
 ## Repository Layout
 
 - `src/`: production package

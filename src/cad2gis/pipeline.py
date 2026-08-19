@@ -44,6 +44,8 @@ _CONFIG_LABELS = {
 _REQUIRED_CONFIGS = frozenset({"source_profile", "mapping_registry"})
 
 _PROJECT_MANIFEST_NAMES = ("cad2gis-project.json", "project.json")
+# APD = As Plan Drawing; SF = Subfeeder.  ``ftth_apd`` is the FTTH
+# As-Plan-Drawing conversion domain.
 _VALID_DOMAINS = frozenset({"auto", "generic", "ftth_apd"})
 _VALID_LLM_MODES = frozenset({"off", "observe", "assist"})
 

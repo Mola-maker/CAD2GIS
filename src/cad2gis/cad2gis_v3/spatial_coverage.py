@@ -69,9 +69,10 @@ def source_entity_drawing_points(
             )
         role_is_model = entity.layout_role.strip().casefold() == "model"
         # The reader classifies any non-paper named layout tab (e.g.
-        # "APD - SF", "Layout2") as model space — drawings legitimately
-        # carry their plan in a named layout.  A named layout with model
-        # role is therefore consistent, not contradictory.
+        # "APD - SF", the subfeeder plan layout, or "Layout2") as model
+        # space — drawings legitimately carry their plan in a named layout.
+        # A named layout with model role is therefore consistent, not
+        # contradictory.
         if role_is_model:
             layout_is_model = (
                 entity.layout.strip().casefold() == "model"

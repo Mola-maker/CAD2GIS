@@ -1,4 +1,5 @@
-"""Reviewed APD semantic candidates and evidence-bound annotation linking."""
+"""Reviewed APD (As Plan Drawing) semantic candidates and evidence-bound
+annotation linking."""
 
 from __future__ import annotations
 

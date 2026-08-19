@@ -183,7 +183,7 @@ def _run_one(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Regenerate the four APD baseline run/ directories."
+        description="Regenerate the four APD (As Plan Drawing) baseline run/ directories."
     )
     parser.add_argument(
         "--site",
