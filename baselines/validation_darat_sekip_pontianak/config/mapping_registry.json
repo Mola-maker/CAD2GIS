@@ -1,0 +1,185 @@
+{
+  "annotation_families": [
+    {
+      "family_id": "auto_new_pole_7m_4_inches",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCHES-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCHES-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7m\\(4\\ inches\\)$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ 7m\\(4\\ inches\\)$",
+      "text_pattern": "^MR[^A-Za-z0-9]+PTB[^A-Za-z0-9]+DRS\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_fdt_sp",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_SP-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_FDT_SP-001",
+      "source_layer_pattern": "(?i)^FDT\\ SP$",
+      "target_class": "SITE",
+      "target_layer_pattern": "(?i)^(?:FDT|FDT\\-Info|HUB|OLT)$",
+      "text_pattern": "^G\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_9m_4inch",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7M\\ 2\\.5INCH|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ HC|POLE\\ ID\\ 7M\\ 3')$",
+      "text_pattern": "^NP\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_9m_4inch_2",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH_2-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH_2-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7M\\ 2\\.5INCH|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ HC|POLE\\ ID\\ 7M\\ 3')$",
+      "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+PTB[^A-Za-z0-9]+DRS\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_fdt_structure",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_STRUCTURE-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_FDT_STRUCTURE-001",
+      "source_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
+      "target_class": "SITE",
+      "target_layer_pattern": "(?i)^(?:FDT|FDT\\-Info|HUB|OLT)$",
+      "text_pattern": "^OUT\\d+$"
+    },
+    {
+      "family_id": "auto_fdt_structure_2",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_STRUCTURE_2-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_FDT_STRUCTURE_2-001",
+      "source_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
+      "target_class": "SITE",
+      "target_layer_pattern": "(?i)^(?:FDT|FDT\\-Info|HUB|OLT)$",
+      "text_pattern": "^fArial[^A-Za-z0-9]+b\\d+[^A-Za-z0-9]+i\\d+[^A-Za-z0-9]+c\\d+[^A-Za-z0-9]+p\\d+[^A-Za-z0-9]+The[^A-Za-z0-9]+first[^A-Za-z0-9]+splicing[^A-Za-z0-9]+tray$"
+    }
+  ],
+  "block_families": {
+    "BOITE": [
+      "FAT"
+    ],
+    "PTECH": [],
+    "SITE": [
+      "FDT-Info",
+      "HUT-HUB",
+      "OLT",
+      "OLT-SUB",
+      "OLT-SUB 2"
+    ]
+  },
+  "coverage": {
+    "semantics": {
+      "allowlist": [],
+      "policy": "abstain"
+    },
+    "styles": {
+      "allowlist": [],
+      "policy": "abstain"
+    }
+  },
+  "decision_rules": {
+    "annotation_assignment": {
+      "method": "global-minimum-cost-family-assignment",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-ASSIGN-001",
+      "rule_id": "AI-ANNOTATION-ASSIGN-001"
+    },
+    "span_segment_measurement": {
+      "method": "exact-segment-or-unique-support-pair",
+      "provenance": "DWG_DIRECT:DIMENSION|RULE:AI-SPAN-MEASUREMENT-001",
+      "rule_id": "AI-SPAN-MEASUREMENT-001"
+    }
+  },
+  "display_label_rules": {
+    "IMB": {
+      "field": "CODE",
+      "kind": "attribute-field",
+      "provenance": "DWG_DIRECT:text|RULE:AI-IMB-LABEL-001",
+      "rule_id": "AI-IMB-LABEL-001"
+    }
+  },
+  "field_rules": {
+    "IMB": {
+      "CODE": {
+        "kind": "entity-text",
+        "provenance": "DWG_DIRECT:text|RULE:AI-IMB-CODE-001",
+        "rule_id": "AI-IMB-CODE-001"
+      }
+    }
+  },
+  "insert_layer_families": {
+    "BOITE": [
+      "CLOSURE",
+      "FAT",
+      "FAT Code",
+      "FIBER OPTIC CLOSURE"
+    ],
+    "PTECH": [
+      "EXT FM POLE",
+      "EXT POLE",
+      "NEW POLE 7M 2.5INCH",
+      "NEW POLE 7m(4 inches)",
+      "NEW POLE HC",
+      "POLE ID 7M 3'"
+    ],
+    "SITE": [
+      "FDT",
+      "FDT-Info",
+      "HUB",
+      "OLT"
+    ]
+  },
+  "labels": {},
+  "layers": {
+    "homepass": [],
+    "sling_wire": [
+      "SLING WIRE"
+    ],
+    "span_dimension": [
+      "Span Cable"
+    ],
+    "zpm_boundary": [
+      "FAT AREA"
+    ]
+  },
+  "policy": {
+    "crossing_is_connection": false,
+    "dimension_is_cable_geometry": false,
+    "force_route_components_connected": false,
+    "generic_line_is_cable": false,
+    "source_geometry_immutable": true,
+    "support_is_optical_node": false
+  },
+  "positive_route_layer_regex": "(?i)^(?:FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE|Distribution\\ Micr\\ Cable\\(24\\ cores\\))$",
+  "project_id": "source-524aa257bdbe",
+  "review": {
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:c646873a8e163d3a3818ae958abf440ff6c1a7efcb3c6ded898575d783307c08",
+    "reviewed_at": "2026-08-19T12:06:05.813731Z",
+    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "status": "auto_accepted"
+  },
+  "schema_version": "cad2gis-mapping-registry-v2",
+  "source_binding": {
+    "inventory_sha256": "768d4c8b6b0103db93c548a1c1639755afd2f954109a94f88d3ab7e2b9116c5c",
+    "source_sha256": "524aa257bdbe706a3175337e5722787c269c8ebe44dca4f5525c0092046c77a8"
+  },
+  "thresholds_native_m": {
+    "device_collocation_to_support_m": 15.0,
+    "device_to_support_candidate": 8.0,
+    "dimension_to_support": 2.0,
+    "exact": 1e-06,
+    "route_to_asset": 8.0
+  }
+}

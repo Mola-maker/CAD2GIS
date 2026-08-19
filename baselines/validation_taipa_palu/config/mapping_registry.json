@@ -1,0 +1,155 @@
+{
+  "annotation_families": [
+    {
+      "family_id": "auto_new_pole_id_7m_2_5_inches",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_2_5_INCHES-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_2_5_INCHES-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\ \\(2\\.5\\ inches\\)$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:NEW\\ POLE\\ 7m\\(2\\.5\\ inches\\)|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|PROPOSED\\ NEW\\ POLE\\ 7m|PROPOSES\\ NEW\\ POLE\\ 9m)$",
+      "text_pattern": "^MR[^A-Za-z0-9]+TPA[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_id_7m_3_inches",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_3_INCHES-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_3_INCHES-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\(3\\ inches\\)$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:NEW\\ POLE\\ 7m\\(2\\.5\\ inches\\)|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|PROPOSED\\ NEW\\ POLE\\ 7m|PROPOSES\\ NEW\\ POLE\\ 9m)$",
+      "text_pattern": "^MR[^A-Za-z0-9]+TPA[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_fat",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_FAT-001",
+      "source_layer_pattern": "(?i)^FAT$",
+      "target_class": "BOITE",
+      "target_layer_pattern": "(?i)^FAT$",
+      "text_pattern": "^TPA[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+[A-Za-z]+\\d+$"
+    }
+  ],
+  "block_families": {
+    "BOITE": [
+      "FAT",
+      "FAT Info"
+    ],
+    "PTECH": [],
+    "SITE": [
+      "FDT",
+      "FDT New",
+      "FDT-Info"
+    ]
+  },
+  "coverage": {
+    "semantics": {
+      "allowlist": [],
+      "policy": "abstain"
+    },
+    "styles": {
+      "allowlist": [],
+      "policy": "abstain"
+    }
+  },
+  "decision_rules": {
+    "annotation_assignment": {
+      "method": "global-minimum-cost-family-assignment",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-ASSIGN-001",
+      "rule_id": "AI-ANNOTATION-ASSIGN-001"
+    },
+    "span_segment_measurement": {
+      "method": "exact-segment-or-unique-support-pair",
+      "provenance": "DWG_DIRECT:DIMENSION|RULE:AI-SPAN-MEASUREMENT-001",
+      "rule_id": "AI-SPAN-MEASUREMENT-001"
+    }
+  },
+  "display_label_rules": {
+    "IMB": {
+      "field": "CODE",
+      "kind": "attribute-field",
+      "provenance": "DWG_DIRECT:text|RULE:AI-IMB-LABEL-001",
+      "rule_id": "AI-IMB-LABEL-001"
+    }
+  },
+  "field_rules": {
+    "IMB": {
+      "CODE": {
+        "kind": "entity-text",
+        "provenance": "DWG_DIRECT:text|RULE:AI-IMB-CODE-001",
+        "rule_id": "AI-IMB-CODE-001"
+      }
+    }
+  },
+  "insert_layer_families": {
+    "BOITE": [
+      "FAT",
+      "FAT AREA",
+      "FAT CODE",
+      "FAT_Info",
+      "FIBER OPTIC CLOSURE",
+      "OTB"
+    ],
+    "PTECH": [
+      "NEW POLE 7m(2.5 inches)",
+      "NEW POLE 7m(3 inches)",
+      "NEW POLE 7m(4 inches)",
+      "PROPOSED NEW POLE 7m",
+      "PROPOSES NEW POLE 9m"
+    ],
+    "SITE": [
+      "FDT-Info",
+      "HUB CENTRAL OFFICE",
+      "POLE ID",
+      "SUB HUB"
+    ]
+  },
+  "labels": {},
+  "layers": {
+    "homepass": [
+      "Home Number",
+      "Homepass Number"
+    ],
+    "sling_wire": [
+      "SLING WIRE"
+    ],
+    "span_dimension": [
+      "SPAN KU"
+    ],
+    "zpm_boundary": [
+      "FAT AREA"
+    ]
+  },
+  "policy": {
+    "crossing_is_connection": false,
+    "dimension_is_cable_geometry": false,
+    "force_route_components_connected": false,
+    "generic_line_is_cable": false,
+    "source_geometry_immutable": true,
+    "support_is_optical_node": false
+  },
+  "positive_route_layer_regex": "(?i)^(?:FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 48\\ CORE\\.|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
+  "project_id": "source-57cc7756b55a",
+  "review": {
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:887dfb61cc95335c81f9968603df434007a6f952c4193131f1b0f52ee7778b26",
+    "reviewed_at": "2026-08-19T12:09:44.442285Z",
+    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "status": "auto_accepted"
+  },
+  "schema_version": "cad2gis-mapping-registry-v2",
+  "source_binding": {
+    "inventory_sha256": "8308164a4135c537970a9c2bdc870798d8e30f28e648ce2233882634a886cd4c",
+    "source_sha256": "57cc7756b55aa10b6d18a7986b9c55cf0e7796a451e9e220c7d8ef4856e40614"
+  },
+  "thresholds_native_m": {
+    "device_collocation_to_support_m": 15.0,
+    "device_to_support_candidate": 8.0,
+    "dimension_to_support": 2.0,
+    "exact": 1e-06,
+    "route_to_asset": 8.0
+  }
+}

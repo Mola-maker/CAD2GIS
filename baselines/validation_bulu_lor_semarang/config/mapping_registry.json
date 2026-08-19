@@ -1,0 +1,163 @@
+{
+  "annotation_families": [
+    {
+      "family_id": "pole_7m_2p5in",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-POLE_7M_2P5IN-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-POLE_7M_2P5IN-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7M\\ 2\\.5INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
+      "text_pattern": "NP7|3'"
+    },
+    {
+      "family_id": "pole_9m_4in",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-POLE_9M_4IN-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-POLE_9M_4IN-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
+      "text_pattern": "4\"|NP9"
+    },
+    {
+      "family_id": "auto_ext_pole",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_EXT_POLE-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_EXT_POLE-001",
+      "source_layer_pattern": "(?i)^EXT\\ POLE$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^EXT\\ POLE$",
+      "text_pattern": "^EXT[^A-Za-z0-9]+LN[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_ext_pole_2",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_EXT_POLE_2-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_EXT_POLE_2-001",
+      "source_layer_pattern": "(?i)^EXT\\ POLE$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^EXT\\ POLE$",
+      "text_pattern": "^MQM[^A-Za-z0-9]+GJM[^A-Za-z0-9]+BLOR\\d+[^A-Za-z0-9]+P\\d+$"
+    }
+  ],
+  "block_families": {
+    "BOITE": [
+      "FAT Info"
+    ],
+    "PTECH": [],
+    "SITE": [
+      "FDT-Info",
+      "HUT-HUB",
+      "OLT",
+      "OLT-SUB",
+      "OLT-SUB 2"
+    ]
+  },
+  "coverage": {
+    "semantics": {
+      "allowlist": [],
+      "policy": "abstain"
+    },
+    "styles": {
+      "allowlist": [],
+      "policy": "abstain"
+    }
+  },
+  "decision_rules": {
+    "annotation_assignment": {
+      "method": "global-minimum-cost-family-assignment",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-ASSIGN-001",
+      "rule_id": "AI-ANNOTATION-ASSIGN-001"
+    },
+    "span_segment_measurement": {
+      "method": "exact-segment-or-unique-support-pair",
+      "provenance": "DWG_DIRECT:DIMENSION|RULE:AI-SPAN-MEASUREMENT-001",
+      "rule_id": "AI-SPAN-MEASUREMENT-001"
+    }
+  },
+  "display_label_rules": {
+    "IMB": {
+      "field": "CODE",
+      "kind": "attribute-field",
+      "provenance": "DWG_DIRECT:text|RULE:AI-IMB-LABEL-001",
+      "rule_id": "AI-IMB-LABEL-001"
+    }
+  },
+  "field_rules": {
+    "IMB": {
+      "CODE": {
+        "kind": "entity-text",
+        "provenance": "DWG_DIRECT:text|RULE:AI-IMB-CODE-001",
+        "rule_id": "AI-IMB-CODE-001"
+      }
+    }
+  },
+  "insert_layer_families": {
+    "BOITE": [
+      "CLOSURE",
+      "FAT CODE",
+      "FAT_Info"
+    ],
+    "PTECH": [
+      "EXT FM POLE",
+      "EXT POLE",
+      "NEW POLE 7m(4 inches)",
+      "NEW POLE 7m(5 inches)",
+      "NEW POLE 9m(4 inches)",
+      "NEW POLE 9m(5 inches)",
+      "NEW POLE HC"
+    ],
+    "SITE": [
+      "FDT",
+      "FDT-Info",
+      "HUB",
+      "OLT"
+    ]
+  },
+  "labels": {},
+  "layers": {
+    "homepass": [],
+    "sling_wire": [
+      "SLING WIRE"
+    ],
+    "span_dimension": [
+      "SPAN KU"
+    ],
+    "zpm_boundary": [
+      "FAT AREA"
+    ]
+  },
+  "policy": {
+    "crossing_is_connection": false,
+    "dimension_is_cable_geometry": false,
+    "force_route_components_connected": false,
+    "generic_line_is_cable": false,
+    "source_geometry_immutable": true,
+    "support_is_optical_node": false
+  },
+  "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
+  "project_id": "source-a03aacdc2846",
+  "review": {
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:29052e75a0fef3dea8ed7af76a0e774ac1f3246e60cf28273228dabfd09949a2",
+    "reviewed_at": "2026-08-19T12:05:33.776505Z",
+    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "status": "auto_accepted"
+  },
+  "schema_version": "cad2gis-mapping-registry-v2",
+  "source_binding": {
+    "inventory_sha256": "40b9a04e97fea6a48f3268983c1ce8157d61fab5e13037d35924cb952fa8521d",
+    "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289"
+  },
+  "thresholds_native_m": {
+    "device_collocation_to_support_m": 15.0,
+    "device_to_support_candidate": 8.0,
+    "dimension_to_support": 2.0,
+    "exact": 1e-06,
+    "route_to_asset": 8.0
+  }
+}
