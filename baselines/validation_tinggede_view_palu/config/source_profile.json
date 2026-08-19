@@ -1,0 +1,48 @@
+{
+  "crs": {
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "source_crs": "EPSG:3857",
+    "target_crs": "EPSG:3857"
+  },
+  "drawing": {
+    "drawing_units": "metre",
+    "dwg_cgeocs": "WGS84.PseudoMercator",
+    "dwg_insunits": 0,
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0
+  },
+  "expectations": {
+    "annotation_families": {},
+    "delivery_counts": {},
+    "feature_counts": {
+      "BOITE": 22,
+      "CABLE": 16,
+      "PTECH": 51,
+      "SITE": 1,
+      "ZPM": 22
+    },
+    "segment_gates": {},
+    "source_geometry_gates": {},
+    "source_inventory": {
+      "model_dimensions": 51,
+      "model_entities": 1422,
+      "model_inserts": 128
+    },
+    "topology_gates": {}
+  },
+  "project_id": "source-f71526ec36d5",
+  "review": {
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:0747d817ad6a4e430da593d55071df8f5b73ff01625d88b4b219b9db95269b29",
+    "reviewed_at": "2026-08-19T12:09:05.600578Z",
+    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "status": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-profile-v1",
+  "source_binding": {
+    "inventory_sha256": "928b98469cbc48062e623471078edf1468bb3a81d0bd49043fbb9c9496114703",
+    "source_sha256": "f71526ec36d503d07f883d22fdadaa9c3ccdc30be804402df4c533309f664a5b",
+    "source_size_bytes": 563189
+  },
+  "spatial_coverage_policy": null
+}
