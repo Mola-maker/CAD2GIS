@@ -372,7 +372,8 @@ def _read_anon_block_names_json(source: Path, source_sha256: str) -> dict[int, s
     libredwg-swig-utf-16-r2018-dwg) carries each bare BLOCK_HEADER plus a
     following companion entry holding the full numbered name; pairing is
     order-preserving on handle value (validated against the canonical AutoCAD
-    INSERT census for APD).  Results are cached under /tmp by source hash.
+    INSERT census for the APD / As Plan Drawing corpus).  Results are cached
+    under /tmp by source hash.
     """
     fd, cache = tempfile.mkstemp(prefix="libredwg_blocks_", suffix=".json")
     os.close(fd)

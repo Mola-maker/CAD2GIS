@@ -10,8 +10,8 @@ from .pipeline import ConversionRequest, convert
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="APD direct-DWG evidence-first CAD2GIS v3")
-    parser.add_argument("--input", required=True, type=Path, help="Immutable APD DWG")
+    parser = argparse.ArgumentParser(description="APD (As Plan Drawing) direct-DWG evidence-first CAD2GIS v3")
+    parser.add_argument("--input", required=True, type=Path, help="Immutable APD (As Plan Drawing) DWG")
     parser.add_argument("--run-dir", required=True, type=Path, help="New run directory")
     parser.add_argument("--source-profile", required=True, type=Path)
     parser.add_argument("--mapping-registry", required=True, type=Path)

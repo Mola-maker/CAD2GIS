@@ -22,6 +22,16 @@
 
 结论：**不重写项目核心，先用 DSH 插件补齐治理层，再把项目已有 `cad2gis-agent` 服务以 MCP/Skill/Native Bundle 三条路线接入 DSH。**
 
+### 1.1 图纸类型语义澄清（对后续所有上下文生效）
+
+- **APD = As Plan Drawing**：建筑工程领域“按计划图纸”，记录 as-planned
+  设计态；不是 as-built 竣工实测，也不是接入点设备。转换与验收不得把
+  计划图纸的几何表述为地面实测状态。
+- **SF = Subfeeder**：副馈线 / 分支配电线。`- SF` 文件名表示该图是网络的
+  subfeeder 部分。
+- **语料切分**：`raw/` 下原 4 张为开发/基线集；新加入的 6 张为**验证集**。
+  验证集必须各自 source-bound 处理，禁止复用基线规则、计数与阈值。
+
 ---
 
 ## 2. 工作区资产盘点
@@ -38,7 +48,7 @@
 | `.png` | 80 | 视觉证据与命中图 |
 | `.gpkg` | 29 | GeoPackage 证据/交付/源数据 |
 | `.md` | 13+ | 架构与 specs（另有 `.omc` 下 113 篇） |
-| `.dwg` | 5 | AutoCAD 源图纸 |
+| `.dwg` | 10 | APD（As Plan Drawing）源图纸：4 张开发/基线集 + 6 张验证集 |
 | `.sqlite3` | 4 | 审查会话库 |
 | `.log` | 8+ | 运行与 dsh-funnel 日志 |
 | 其他 | — | `.qgz`、`.toml`、`.lsp`、`.scr` 等 |
@@ -62,6 +72,7 @@
 | 文档 | 核心内容 |
 |---|---|
 | `README.md` | CAD2GIS 证据优先 DWG→GIS 系统；CLI/Python/Web 审查/MCP 共用 canonical pipeline |
+| `docs/GLOSSARY.md` | APD=As Plan Drawing、SF=Subfeeder 语义；开发集/验证集切分 |
 | `docs/ARCHITECTURE.md` | 边界、Reader Contract、Plan-Domain Contract、测试分层、精度声明 |
 | `docs/LLM_AGENT_ARCHITECTURE.md` | LLM 是流程规划者与语义推理者；CAD 事实、几何、拓扑由确定性核心负责 |
 | `docs/REGISTRATION_AND_SCENE_ARCHITECTURE.md` | 场景划分、坐标域准入、GCP 配准、双栏审查、AI 边界 |
@@ -236,7 +247,7 @@ Claude Code 风格声明式权限规则：allow / deny / ask + glob/regex + work
 - 当前提交：`985826c929b292fcf32f351429bd2413ac576ca2`
 - 类型：bundle（0.2.22）
 - 作用：任务 DAG 分层为 waves，每个 lane 在独立 git worktree 并行执行，自动 review 与 merge。
-- 映射：`raw/` 下四个 APD 项目（hutabohu / lamteh_main / lamteh_sf / kletek）天然是四个 task packet，可并行完成 source inventory → decision pack → convert → review。
+- 映射：`raw/` 下四个 APD（As Plan Drawing）开发项目（hutabohu / lamteh_main / lamteh_sf(subfeeder) / kletek）天然是四个 task packet，可并行完成 source inventory → decision pack → convert → review。新加入的 6 张 APD 验证图是 held-out 验证集，不得复用这四个 task packet 的规则、计数或阈值，必须各自 source-bound 处理。
 - 安装：
 
 ```bash

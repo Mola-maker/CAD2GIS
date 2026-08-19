@@ -69,6 +69,9 @@ def _implementation_digest():
     return production_conversion_provenance()["sha256"]
 
 
+# Domain vocabulary: APD = As Plan Drawing (construction-industry plan
+# drawings, as-planned not as-built), SF = Subfeeder (network distribution
+# leg).  ``ftth_apd`` selects the FTTH As-Plan-Drawing conversion domain.
 _VALID_DOMAINS = frozenset({"auto", "generic", "ftth_apd"})
 _VALID_LLM_MODES = frozenset({"off", "observe", "assist"})
 

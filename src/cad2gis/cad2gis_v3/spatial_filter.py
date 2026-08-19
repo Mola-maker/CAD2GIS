@@ -118,9 +118,10 @@ def detect_annotation_frames(
 _PLACEHOLDER_RE = re.compile(r"(.)\1{2,}")
 _DENOISE_LABEL_RADIUS_M = 50.0
 
-# Structural shape shared by the four reviewed APD pole-identifier families:
-# dot-separated fields ending in ``P<digits>``.  Used only for unclaimed text
-# on POLE-semantic layers so legend notes like ``SLACK - 2 EXT`` never count.
+# Structural shape shared by the four reviewed APD (As Plan Drawing)
+# pole-identifier families: dot-separated fields ending in ``P<digits>``.
+# Used only for unclaimed text on POLE-semantic layers so legend notes like
+# ``SLACK - 2 EXT`` never count.
 _POLE_IDENTIFIER_SHAPE = re.compile(r"(?i)\.\s*P\d+$")
 
 
@@ -135,7 +136,8 @@ def is_placeholder_text(text: str) -> bool:
 
 
 def is_pole_identifier_shape(text: str) -> bool:
-    """True for the reviewed APD pole-label shape (e.g. ``MR.KLDYA.P017``)."""
+    """True for the reviewed APD (As Plan Drawing) pole-label shape
+    (e.g. ``MR.KLDYA.P017``)."""
     return _POLE_IDENTIFIER_SHAPE.search(str(text).strip()) is not None
 
 

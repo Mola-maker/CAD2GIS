@@ -773,8 +773,9 @@ def _classify_layout_role(layout_name: str) -> str:
         return "block_definition"
     if name.casefold() == "model":
         return "model"
-    # Named paper-space layout tabs (e.g. "APD - SF", "Layout2")
-    # carry plan geometry and must not be discarded as paper space.
+    # Named paper-space layout tabs (e.g. "APD - SF", the subfeeder plan
+    # layout, or "Layout2") carry plan geometry and must not be discarded as
+    # paper space.
     if name and name.casefold() != "paper":
         return "model"
     return "layout"
@@ -793,8 +794,9 @@ def _read_block_header_metadata(
 ) -> tuple[dict[int, str], dict[int, tuple[float, float, float]], dict[int, str]]:
     """Map block header handles to names, base points, and read statuses.
 
-    The dynapi BLOCK_HEADER field is ``base_pt`` (probed on all four APD R2018
-    files; see ``tools/diagnostics/libredwg_insert_probe.py``).  Anonymous
+    The dynapi BLOCK_HEADER field is ``base_pt`` (probed on all four baseline
+    APD / As Plan Drawing R2018 files; see
+    ``tools/diagnostics/libredwg_insert_probe.py``).  Anonymous
     headers (*U/*D) decode without the numeric suffix via dynapi on this R2018
     file; ``anon_fallback`` (dwgread JSON side channel) supplies the full
     numbered name keyed by block header handle.
@@ -856,9 +858,10 @@ def _read_anon_block_names_json(
     libredwg-swig-utf-16-r2018-dwg) carries each bare BLOCK_HEADER plus a
     following companion entry holding the full numbered name; pairing is
     order-preserving on handle value (validated against the canonical AutoCAD
-    INSERT census for APD).  The same document also links each DIMENSION to
-    its anonymous text block, whose MTEXT is the rendered display value (the
-    rounded integer shown in CAD, not the raw ``act_measurement``).
+    INSERT census for the APD / As Plan Drawing corpus).  The same document
+    also links each DIMENSION to its anonymous text block, whose MTEXT is the
+    rendered display value (the rounded integer shown in CAD, not the raw
+    ``act_measurement``).
     """
     fd, cache = tempfile.mkstemp(prefix="libredwg_blocks_", suffix=".json")
     os.close(fd)

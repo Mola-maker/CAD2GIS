@@ -1,7 +1,9 @@
-"""Evidence-first APD direct-DWG conversion package.
+"""Evidence-first APD (As Plan Drawing) direct-DWG conversion package.
 
-The public conversion symbols are loaded lazily so importing the independent
-curation lane cannot import GIS/conversion code (and vice versa).
+APD drawings are construction-industry as-planned designs; the filename
+suffix ``SF`` denotes a subfeeder drawing.  The public conversion symbols are
+loaded lazily so importing the independent curation lane cannot import
+GIS/conversion code (and vice versa).
 """
 
 from __future__ import annotations

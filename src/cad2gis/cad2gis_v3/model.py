@@ -1,4 +1,4 @@
-"""Typed stage-boundary models for the v3 APD pipeline."""
+"""Typed stage-boundary models for the v3 APD (As Plan Drawing) pipeline."""
 
 from __future__ import annotations
 

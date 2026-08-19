@@ -1,4 +1,7 @@
-"""Deterministic APD semantic rules for the experiment converter."""
+"""Deterministic APD (As Plan Drawing) semantic rules for the experiment converter.
+
+APD drawings are as-planned design sheets, not as-built surveys.
+"""
 
 import re
 

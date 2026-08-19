@@ -41,8 +41,10 @@ def _place_name_from_filename(source_path: str | Path) -> list[str]:
     """
     name = Path(source_path).stem
     name = re.sub(r"(?i)\.dwg$", "", name)
+    # ``APD`` = As Plan Drawing; strip the drawing-type prefix before
+    # geocoding the locality.
     name = re.sub(r"(?i)^APD\s*[-_]?\s*", "", name)
-    # Strip trailing project qualifiers like " - SF" / " - MAIN".
+    # Strip trailing project qualifiers like " - SF" (subfeeder) / " - MAIN".
     name = re.sub(r"(?i)\s*-\s*(sf|main|odp|site|ftth|v\d+)\s*$", "", name).strip()
     name = re.sub(r"\s+", " ", name).strip()
 

@@ -4,11 +4,11 @@ Legend Detector — F-component: parameterized legend/annotation-block cluster
 detection inside CAD Model space
 =============================================================================
 
-Model space of APD sheets mixes the geographic network with non-subject
-element blocks (legend samples, symbol tables, DESIGN SUMMARY, splicing
-diagrams). This module detects such clusters so they can be quarantined
-for human review (reason=LEGEND_CANDIDATE) and, once confirmed via an
-exclusion config, excluded from the 8-FC delivery.
+Model space of APD (As Plan Drawing) sheets mixes the geographic network with
+non-subject element blocks (legend samples, symbol tables, DESIGN SUMMARY,
+splicing diagrams). This module detects such clusters so they can be
+quarantined for human review (reason=LEGEND_CANDIDATE) and, once confirmed
+via an exclusion config, excluded from the 8-FC delivery.
 
 Algorithm (all knobs parameterized — no hardcoded sheet ratios, no
 "legend is always rightmost" assumption; both are documented overfits of

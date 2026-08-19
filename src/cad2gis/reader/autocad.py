@@ -3112,7 +3112,8 @@ def partition_plan_roles(records):
 
 
 def partition_model_legend(records):
-    """Separate the isolated APD legend cluster from geographic model data."""
+    """Separate the isolated APD (As Plan Drawing) legend cluster from
+    geographic model data."""
     inserts = [
         record for record in records
         if record.get("object_name") in {"ACDBBLOCKREFERENCE", "ACDBDYNAMICBLOCKREFERENCE"}

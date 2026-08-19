@@ -4,6 +4,17 @@ Validation date: 2026-07-26
 Repository: `E:\branch_CAD2GIS\CAD2GIS`  
 External compatibility corpus: `E:\branch_CAD2GIS\APD_test`
 
+## Terminology
+
+- **APD — As Plan Drawing**: the DWGs are construction-industry plan drawings
+  (as-planned design), not as-built surveys and not access-point devices.
+- **SF — Subfeeder**: the `- SF` filename suffix denotes the subfeeder /
+  distribution leg drawing of the network.
+- The four DWGs used to develop the baseline are a development set; the six
+  DWGs later added under `raw/` are a held-out validation set and must be
+  processed with fresh source-bound profiles. See
+  [GLOSSARY.md](GLOSSARY.md).
+
 ## Conclusion
 
 The local CLI/MCP workflow now completes a reviewed APD conversion and fully
@@ -25,7 +36,7 @@ independent check points.
 | Source/profile/hash binding | PASS | wrong source, stale inventory and tampered artifacts fail closed |
 | Reader capability isolation | PASS | explicit LibreDWG/AutoCAD capability and typed failure boundary |
 | Small real DWG | PASS | KLETEK complete inventory, zero skipped rows |
-| Complex real DWG lifecycle | PASS | SF 61,829 records; Lamteh 65,957 records; zero skipped rows |
+| Complex real DWG lifecycle | PASS | SF (subfeeder) 61,829 records; Lamteh 65,957 records; zero skipped rows |
 | Completion/partial-output safety | PASS | versioned completion marker, exact row conservation and negative timeout/partial-output tests |
 | Plan-domain coordinate separation | PASS | immutable raw inventory plus a lineage-bound Model/plan instance view |
 | Nested INSERT transforms | PASS | block base, insertion, scale, rotation, normal and extrusion are required; nested composition tested |
@@ -94,7 +105,7 @@ The new `cad2gis-plan-domain-v1` stage:
 No source filename, APD/Lamteh block name, vendor layer, coordinate, feature
 count or expected output count participates in this logic.
 
-Lamteh SF real-data probe:
+Lamteh SF (subfeeder) real-data probe:
 
 ```json
 {

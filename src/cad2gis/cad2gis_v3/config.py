@@ -1,10 +1,10 @@
 """Versioned, source-bound project profile and mapping registry loaders.
 
 The runtime consumes one normalized contract regardless of whether the input
-is the historical APD v4/v1 pair or the generic project schemas.  APD key
-translation deliberately lives here, at the compatibility boundary, so the
-conversion pipeline never needs to know project-specific family or census
-names.
+is the historical APD (As Plan Drawing) v4/v1 pair or the generic project
+schemas.  APD key translation deliberately lives here, at the compatibility
+boundary, so the conversion pipeline never needs to know project-specific
+family or census names.
 """
 
 from __future__ import annotations
@@ -247,7 +247,8 @@ class ProjectExpectations:
 
 
 def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
-    """Normalize the reviewed APD v4 census into generic runtime gates."""
+    """Normalize the reviewed APD (As Plan Drawing) v4 census into generic
+    runtime gates."""
 
     required = {
         "model_entities", "model_inserts", "model_dimensions", "plan_poles",

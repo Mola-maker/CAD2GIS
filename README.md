@@ -8,6 +8,17 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 > 源几何、拓扑、长度和坐标精度会分别验证。缺少可信控制点时，系统不会把
 > OSM 视觉重合宣传为测量级绝对精度。
 
+## 术语
+
+- **APD = As Plan Drawing**：建筑工程领域的“按计划图纸”，记录的是
+  **as-planned 设计**，不是 as-built 竣工实测；也不是“接入点设备”。
+- **SF = Subfeeder**：光缆/电缆网络中的副馈线 / 分支配电线；文件名中的
+  `- SF` 表示该图是网络的 subfeeder 部分。
+- `raw/` 中 4 张 DWG 是建立算法流程的开发/基线集，后加入的 6 张是
+  **验证集**，必须按新图各自 source-bound 处理，不得复用基线规则或数量门禁。
+
+完整定义与两份清单见 [docs/GLOSSARY.md](docs/GLOSSARY.md)。
+
 ##怎么使用呢宝贝
 直接把插件喂给AI叫它给你装就好了
 
@@ -177,7 +188,9 @@ $env:CAD2GIS_PROJECT_ROOTS = "E:\branch_CAD2GIS"
 坐标错误缩小 1000 倍。
 
 外部 `E:\branch_CAD2GIS\APD_test` 仅是兼容性压力输入，不是训练集、规则模板或
-准确率真值。没有 authoritative GCP 的结果必须保持 `CONDITIONAL` 或
+准确率真值。同理，`raw/` 下新增的 6 张 APD（As Plan Drawing）验证图也必须
+各自建立 source-bound profile，不得沿用四张开发基线图的规则或数量门禁。
+没有 authoritative GCP 的结果必须保持 `CONDITIONAL` 或
 `not independently verified`。
 
 ## 验证
@@ -195,7 +208,8 @@ python -m pytest tests/test_apd_test_compatibility.py -q
 - `src/cad2gis/`：唯一生产实现、CLI、reader、MCP、review server
 - `tests/`：自动化契约与回归测试
 - `baselines/`：不可变 source-bound 回归证据
+- `raw/`：开发基线 APD 4 张 + 验证集 APD 6 张
 - `experiment/`：APD reviewed 兼容项目
 - `plugins/cad2gis-agent/`：智能体插件和 MCP 客户端模板
-- `docs/`：架构、鲁棒性、可移植性与对账说明
+- `docs/`：架构、鲁棒性、可移植性、术语与对账说明
 - `env/`：固定 GIS 运行环境
