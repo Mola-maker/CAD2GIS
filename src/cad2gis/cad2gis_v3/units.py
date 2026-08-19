@@ -77,6 +77,7 @@ class CrsAxisUnit:
 _SUPPORTED_INSUNITS = {
     # AutoCAD $INSUNITS enumeration.  Values not listed here are deliberately
     # rejected until their scale and test fixtures become part of this contract.
+    0: CadUnit(0, "unitless", "", 1.0),
     1: CadUnit(1, "inch", "in", 0.0254),
     2: CadUnit(2, "foot", "ft", 0.3048),
     4: CadUnit(4, "millimetre", "mm", 0.001),
@@ -86,7 +87,12 @@ _SUPPORTED_INSUNITS = {
 
 
 def resolve_insunits(code: int) -> CadUnit:
-    """Resolve a reviewed AutoCAD unit code without accepting unitless input."""
+    """Resolve a reviewed AutoCAD unit code.
+
+    ``0`` (unitless) is accepted as a metadata hint only; callers still need
+    an explicit reviewed coordinate scale or a projected CRS axis scale —
+    ``build_unit_crs_contract`` rejects a bare unitless drawing.
+    """
     if isinstance(code, bool) or not isinstance(code, int):
         raise UnitCrsContractError("dwg_insunits must be an integer $INSUNITS code")
     try:
@@ -244,6 +250,12 @@ def build_unit_crs_contract(
     stage and cannot be passed off as a direct CRS operation.
     """
     cad_unit = resolve_insunits(dwg_insunits)
+    if cad_unit.insunits == 0 and source_coordinate_scale_to_m is None:
+        raise UnitCrsContractError(
+            "Unitless dwg_insunits=0 requires an explicit reviewed "
+            "source_coordinate_scale_to_m (projected CRS axis or project review); "
+            "a bare unitless identity scale is not a coordinate contract"
+        )
     if not isinstance(source_coordinate_scale_reviewed, bool):
         raise UnitCrsContractError("source_coordinate_scale_reviewed must be boolean")
     if not isinstance(local_registration_reviewed, bool):
