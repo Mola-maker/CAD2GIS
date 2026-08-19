@@ -370,8 +370,9 @@ def test_mm_and_ft_require_reviewed_scaling_and_preserve_unit_provenance():
         assert contract.source_coordinate_scale_reviewed is True
         assert contract.to_manifest_dict()["provenance"]["dwg_insunits"] == "DWG_DIRECT:$INSUNITS"
 
-    with pytest.raises(units.UnitCrsContractError, match="Unsupported|unitless"):
-        units.resolve_insunits(0)
+    assert units.resolve_insunits(0).name == "unitless"
+    with pytest.raises(units.UnitCrsContractError, match="Unitless"):
+        units.build_unit_crs_contract(0, "EPSG:3857", "EPSG:3857")
     with pytest.raises(units.UnitCrsContractError, match="require explicit"):
         units.build_unit_crs_contract(4, "EPSG:3857", "EPSG:3857")
     with pytest.raises(units.UnitCrsContractError, match="reviewed"):
