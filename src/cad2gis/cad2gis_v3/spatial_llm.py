@@ -28,6 +28,10 @@ from .curation_providers import (
 _logger = logging.getLogger(__name__)
 
 # ── Generic FTTH spatial analysis prompt ───────────────────────────────────
+# OVERFIT-RISK (region vocabulary): ``keterangan`` / ``SIMBOL`` are
+# Indonesian legend anchor words and ``FDT STRUCTURE``/``FDT-Info`` are
+# baseline layer names.  They are prompt examples only; project overrides
+# must come from ``spatial_prompt.md`` / ``spatial_regions.json``.
 _GENERIC_SPATIAL_PROMPT = """\
 You are a CAD drawing spatial analyst for FTTH (Fibre To The Home) telecom \
 infrastructure plans.

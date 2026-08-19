@@ -1,11 +1,18 @@
 """Deterministic APD (As Plan Drawing) semantic rules for the experiment converter.
 
 APD drawings are as-planned design sheets, not as-built surveys.
+
+OVERFIT-RISK: this entire module is a legacy experiment-converter shortcut
+bound to one baseline drawing (Hutabohu).  The anonymous-block handle map and
+the ``DMPH-*`` label regexes below are per-drawing facts, not reusable
+FTTH/APD rules; the v3 pipeline must never import them for new drawings.
 """
 
 import re
 
 
+# OVERFIT-RISK: anonymous block handles are object-identity facts of one DWG.
+# Another DWG can reuse ``*U7``/``*U11`` for entirely different symbols.
 APD_ANONYMOUS_BLOCKS = {
     "*U7": "SITE",
     "*U11": "BOITE",
@@ -22,6 +29,8 @@ _PTECH = re.compile(
 _BOITE = re.compile(r"(?i)(fat|box|closure|cto|nap|splice|splitter|terminal|pbo)")
 _SITE = re.compile(r"(?i)(fdt|nro|\bpm\b|exchange|hub|pop|shelter|\bolt\b)")
 _DECORATION = re.compile(r"(?i)(info|label|legend|etiket|title|frame|border|table|summary)")
+# OVERFIT-RISK: ``DMPH`` is the Hutabohu drawing's site code.  These label
+# patterns will never match KLDYA/KTK5 or any validation-set drawing.
 _POLE_LABEL = re.compile(r"(?i)^(?:MR[._-])?DMPH[._-]P\d+[A-Z0-9._/-]*$")
 _BOITE_LABEL = re.compile(r"(?i)^DMPH-\d+\.\d+\.[BC]\d+[A-Z0-9._/-]*$")
 _SITE_LABEL = re.compile(r"(?i)^(?:FDT[_ -]?ID=)?DMPH-\d+\.\d+$")

@@ -141,6 +141,12 @@ def _role_suggestions(
     insert_instances: Any,
     named_blocks: Mapping[str, Any],
 ) -> dict[str, Any]:
+    # OVERFIT-RISK: the layer-name heuristics below (``HOME NUMBER``,
+    # ``HP(...)``, ``SPAN``/``DIMENSI``, ``SLING WIRE``, ``FAT AREA``,
+    # ``BOUNDARY FAT``, ``ZPM``) were observed on the four Indonesian
+    # baseline drawings.  They are suggestions for the AI proposal, not
+    # conversion gates; validation-set drawings must still pass through
+    # their own source inventory and deterministic census.
     result: dict[str, Any] = {
         "route_layers": [],
         "homepass_layers": [],
@@ -845,6 +851,10 @@ def _repair_annotation_families(
             "Return a JSON object with a 'decisions' array. Respond in JSON."
         )
     else:
+        # OVERFIT-RISK (prompt example): ``EXT, MR, MF, LBB, S\\d{2}, P\\d+``
+        # is a baseline label hierarchy shown only as an example.  The model
+        # must follow the actual samples in ``failing_families``, not copy
+        # these tokens into new projects.
         system_prompt = (
             "You are repairing annotation label patterns for a CAD2GIS project. "
             "Each entry lists a family whose text_pattern failed structural "
@@ -1479,6 +1489,10 @@ def request_onboarding_proposal(
         selected_provider = OpenAICompatibleProvider(
             load_provider_config(provider=provider_id)
         )
+    # OVERFIT-RISK (prompt examples): ``EXT.MR.MF.LBB.S02.P001``, ``DMPH``,
+    # ``FAT CODE``/``FDT-Info`` and the layer-name examples are illustrative
+    # tokens from the four baseline drawings.  The JSON schema enum and the
+    # bundled text samples remain authoritative for every new project.
     request = ReviewRequest(
         system_prompt=(
             "You are the CAD2GIS onboarding planner. Return a JSON object matching "
