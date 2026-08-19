@@ -583,7 +583,12 @@ def _segment_delivery_summary(features, delivery_counts=None):
                 index_passed = False
                 continue
             status = str(metric.get("status", ""))
-            if status not in {"measured", "unmeasured_no_dimension"}:
+            if status not in {
+                "measured",
+                "unmeasured_no_dimension",
+                "unmeasured_ambiguous_dimensions",
+                "unmeasured_missing_dimension_value",
+            }:
                 index_passed = False
             if status == "measured":
                 measured_count += 1

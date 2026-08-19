@@ -536,21 +536,40 @@ def _write_staged(
     segment_parents = []
     for entity in entities:
         if entity.entity_key in route_by_source:
-            segment_parents.append(("OPTICAL_CABLE", route_by_source[entity.entity_key].feature_key, entity))
+            segment_parents.append(("OPTICAL_CABLE", route_by_source[entity.entity_key].feature_key, route_by_source[entity.entity_key]))
+        # OVERFIT-RISK: the literal layer name ``SLING WIRE`` is a reviewed
+        # baseline-corpus layer.  New drawings may name their support/sling
+        # layer differently; this branch must be driven by the project's
+        # reviewed sling_wire layers, not by this string literal.
         elif entity.cad_role == "model" and entity.dwg_type in {"LWPOLYLINE", "POLYLINE"} and entity.layer.upper() == "SLING WIRE":
             segment_parents.append(("SLING_SUPPORT", entity.entity_key, entity))
     segment_lookup = {}
-    for source_role, parent_key, entity in segment_parents:
-        for segment_index, (start, end) in enumerate(zip(entity.points, entity.points[1:])):
+    for source_role, parent_key, parent in segment_parents:
+        if source_role == "OPTICAL_CABLE":
+            materialization = parent.attributes.get("curve_materialization") or {}
+            occurrences = [
+                (
+                    int(segment["source_segment_index"]),
+                    segment["delivery_native_points"][0],
+                    segment["delivery_native_points"][-1],
+                )
+                for segment in materialization.get("source_segments", ())
+            ]
+        else:
+            occurrences = [
+                (index, start, end)
+                for index, (start, end) in enumerate(zip(parent.points, parent.points[1:]))
+            ]
+        for segment_index, start, end in occurrences:
             occurrence_key = hashlib.sha256(
                 f"{parent_key}|segment|{segment_index}".encode("utf-8")
             ).hexdigest()
-            segment_lookup[f"{parent_key}:segment:{segment_index}"] = (source_role, occurrence_key, entity, start, end)
+            segment_lookup[f"{parent_key}:segment:{segment_index}"] = (source_role, occurrence_key, parent, start, end)
             row = ogr.Feature(segment_table.GetLayerDefn())
             _set(row, {
                 "occurrence_key": occurrence_key, "source_role": source_role,
-                "parent_key": parent_key, "source_entity_key": entity.entity_key,
-                "source_handle": entity.handle, "segment_index": segment_index,
+                "parent_key": parent_key, "source_entity_key": parent.source_entity_key,
+                "source_handle": parent.source_handle, "segment_index": segment_index,
                 "start_native": json.dumps(start, separators=(",", ":")),
                 "end_native": json.dumps(end, separators=(",", ":")),
                 "native_length_m": math.dist(start, end),
@@ -568,7 +587,12 @@ def _write_staged(
         _set(row, {
             "route_key": feature.feature_key, "source_entity_key": feature.source_entity_key,
             "source_handle": feature.source_handle,
-            "segment_occurrences": max(0, len(feature.native_points) - 1),
+            "segment_occurrences": int(
+                feature.attributes.get(
+                    "curve_source_segment_count",
+                    max(0, len(feature.native_points) - 1),
+                )
+            ),
             "capacity": feature.attributes.get("CAPACITE"),
             "display_label": feature.display_label,
             "geometry_policy": "immutable-source-polyline",
@@ -609,13 +633,20 @@ def _write_staged(
             cable_span_layer.CreateField(ogr.FieldDefn(field_name, field_type))
     for feature in sorted(route_by_source.values(), key=lambda item: item.source_handle):
         metrics = feature.attributes.get("span_metrics")
-        expected = max(0, len(feature.native_points) - 1)
+        # Curve materialization may skip degenerate duplicate vertices, so the
+        # expected metric count is the materialized source-segment count, not
+        # ``len(native_points) - 1``.
+        expected = int(feature.attributes.get("curve_source_segment_count", 0))
         if not isinstance(metrics, list) or len(metrics) != expected:
             raise RuntimeError(
                 f"Evidence requires one span metric per CABLE segment for {feature.feature_key}"
             )
+        materialized_points = (
+            feature.attributes.get("curve_materialization") or {}
+        ).get("delivery_native_points")
+        spatial_source_points = materialized_points or feature.native_points
         target_points = (
-            delivery_transformer.points(feature.native_points)
+            delivery_transformer.points(spatial_source_points)
             if delivery_transformer is not None else None
         )
         for segment_index, metric in enumerate(metrics):
