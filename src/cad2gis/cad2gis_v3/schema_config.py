@@ -1830,6 +1830,10 @@ FIELD_NAME_CROSSWALK = {
 # ── 6. NEGATIVE EVIDENCE LAYERS ────────────────────────────────────────────────
 # DWG layers that must never be classified into FTTH feature classes.
 # Applies at Agent 6 Tier-1 classification gate.
+# OVERFIT-RISK: entries such as ``FDT-Info``, ``FAT INFO``, ``FAT AREA``,
+# ``FAT AREA FDT 1``, ``FAT ARAR`` and ``BOUNDARY FAT`` are layer names
+# observed in the four Indonesian baseline drawings.  Treat this set as a
+# compatibility blocklist for that corpus, not a universal CAD truth.
 
 NEGATIVE_EVIDENCE_LAYERS = {
     "APPROVAL",

@@ -28,6 +28,9 @@ newmodel/autocad_reader.py:551-608):
      fence = max(fence_min, fence_k * cluster_diagonal)) an anchor term
      (LEGEND / SYMBOL / DESIGN SUMMARY / SPLICING / CABLE TYPE /
      KETERANGAN / FDT / LAYOUT, configurable) gains confidence.
+     OVERFIT-RISK (region vocabulary): ``KETERANGAN`` is Indonesian; keep
+     anchor terms project-configurable rather than extending this list per
+     country.
   4. Confidence = w_separation * sep_score + w_anchor * anchor_score,
      where sep_score saturates at 2x the split threshold.
   5. Exclusion list: clusters matching a confirmed entry (bbox or

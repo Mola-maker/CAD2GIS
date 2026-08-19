@@ -248,7 +248,13 @@ class ProjectExpectations:
 
 def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
     """Normalize the reviewed APD (As Plan Drawing) v4 census into generic
-    runtime gates."""
+    runtime gates.
+
+    OVERFIT-RISK (legacy compat only): ``plan_poles``/``plan_fat``/
+    ``plan_fdt`` below mirror one historical baseline schema.  This path runs
+    only for a source-bound v4 profile; new projects use the generic census
+    and must not inherit these keys.
+    """
 
     required = {
         "model_entities", "model_inserts", "model_dimensions", "plan_poles",

@@ -40,6 +40,9 @@ def _is_asset_code_sample(text: str) -> bool:
     )
 
 
+# Generic FTTH layer vocabulary (not a baseline-site hardcode): the model's
+# proposed target_class is reconciled only when a reviewed layer name carries
+# these asset semantics.
 _ASSET_CLASS_BY_LAYER_HINT = (
     (re.compile(r"(?i)(fat|closure|splice|otb|odp|splitter)"), "BOITE"),
     # POLE/PTECH is a stronger device semantic than an FDT area qualifier:
@@ -189,6 +192,9 @@ def annotation_pattern_specificity(pattern: str) -> int:
     specificity 3.  Assignment uses this to let full asset identifiers claim
     a shared target layer before short subordinate labels (``A07`` beside
     ``KLDYA.011.C01`` on the same FAT block).
+
+    ``KLDYA.011.C01`` is a baseline example only; the function itself is
+    pattern-generic.
     """
     return len(_literal_tokens(pattern))
 

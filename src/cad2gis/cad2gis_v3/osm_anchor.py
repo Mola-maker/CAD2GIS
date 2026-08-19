@@ -21,10 +21,18 @@ _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 _NOMINATIM_TIMEOUT_S = 15.0
 _OSM_ANCHOR_SCHEMA = "cad2gis-osm-anchor-v1"
 
+# OVERFIT-RISK (region): these administrative-level keywords are Indonesian
+# naming conventions (kelurahan/kecamatan/kabupaten/desa/dusun/RW/RT).  They
+# make the anchor parser fit the four Indonesian baseline drawings; other
+# countries need their own locality grammar, not this list.
 _LOCALITY_KEYWORDS = re.compile(
     r"(?i)(kelurahan|kecamatan|kabupaten|desa|dusun|rw|rt|kampung|"
     r"village|town|city|district|provinsi)"
 )
+# OVERFIT-RISK (corpus filename grammar): ``apd|sf|main|odp`` are the
+# baseline filename tokens.  New validation files keep ``APD``/``SF`` by
+# convention, but any non-Indonesian or differently-named corpus should be
+# parsed from its own source-bound evidence, not this token list.
 _UNIT_KEYWORDS = re.compile(r"(?i)(apd|ftth|odp|site|sf|main|cable|fo)")
 
 

@@ -122,6 +122,8 @@ _DENOISE_LABEL_RADIUS_M = 50.0
 # pole-identifier families: dot-separated fields ending in ``P<digits>``.
 # Used only for unclaimed text on POLE-semantic layers so legend notes like
 # ``SLACK - 2 EXT`` never count.
+# DOMAIN-SCOPED: valid for the APD pole-label convention, not a universal
+# CAD pole shape.  Non-APD drawings should use their own reviewed families.
 _POLE_IDENTIFIER_SHAPE = re.compile(r"(?i)\.\s*P\d+$")
 
 
