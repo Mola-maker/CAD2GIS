@@ -346,13 +346,28 @@ def _materialize_route(
             raise ValueError("open curve has a trailing bulge without a source segment")
 
         built_segments = []
-        for index, (start, end, bulge) in enumerate(zip(vertices, vertices[1:], bulges)):
+        skipped_zero_length_segments: list[dict[str, Any]] = []
+        segment_index = 0
+        for vertex_index, (start, end, bulge) in enumerate(zip(vertices, vertices[1:], bulges)):
+            chord = math.dist(start, end)
+            if abs(bulge) <= tolerance and chord <= tolerance:
+                # Repeated consecutive WCS vertices are CAD drafting artifacts:
+                # the segment contributes zero length and zero delivery
+                # geometry.  Record it in the audit payload but do not put it
+                # in ``source_segments`` — downstream segment contracts reject
+                # degenerate (<2 points / non-positive length) segments.
+                skipped_zero_length_segments.append({
+                    "source_vertex_index": vertex_index,
+                    "source_end_vertex_index": vertex_index + 1,
+                    "bulge": bulge,
+                })
+                continue
             points, native_length, kind = _bulge_segment(start, end, bulge, policy)
             built_segments.append({
-                "source_segment_index": index,
+                "source_segment_index": segment_index,
                 "source_segment_kind": kind,
-                "source_start_vertex_index": index,
-                "source_end_vertex_index": index + 1,
+                "source_start_vertex_index": vertex_index,
+                "source_end_vertex_index": vertex_index + 1,
                 "source_native_length": native_length,
                 "native_length_source": (
                     "analytic_bulge_arc" if kind == "bulge_arc" else "ordered_wcs_vertices"
@@ -360,6 +375,7 @@ def _materialize_route(
                 "delivery_native_points": [list(point) for point in points],
                 "delivery_chord_length_native": _polyline_length(points),
             })
+            segment_index += 1
         segments = tuple(built_segments)
         materialization_method = "analytic-bulge-and-line"
 
@@ -387,9 +403,13 @@ def _materialize_route(
     joined: list[list[float]] = []
     for segment in segments:
         points = segment["delivery_native_points"]
+        if not points:
+            continue
         if joined and not _points_close(joined[-1], points[0], tolerance):
             raise ValueError("materialized source segments are not endpoint-contiguous")
         joined.extend(points if not joined else points[1:])
+    if not joined:
+        raise ValueError("curve materialization produced no nonzero delivery segments")
     payload: dict[str, Any] = {
         "schema_version": MATERIALIZATION_SCHEMA_VERSION,
         "policy": dict(policy),
@@ -405,6 +425,7 @@ def _materialize_route(
         "delivery_vertex_count": len(joined),
         "delivery_native_points": joined,
         "source_segments": list(segments),
+        "skipped_zero_length_segments": skipped_zero_length_segments,
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
     payload["materialization_fingerprint"] = hashlib.sha256(canonical.encode("ascii")).hexdigest()
@@ -424,6 +445,7 @@ def _diagnostics(policy: Mapping[str, Any], cables_total: int) -> dict[str, Any]
         "line_segments": 0,
         "arc_segments": 0,
         "reader_materialized_segments": 0,
+        "zero_length_segments_skipped": 0,
         "delivery_vertices_total": 0,
         "unsupported_count": 0,
         "unsupported": [],
@@ -440,6 +462,9 @@ def _accumulate(diagnostics: dict[str, Any], payload: Mapping[str, Any]) -> None
     diagnostics["arc_segments"] += sum(segment["source_segment_kind"] == "bulge_arc" for segment in segments)
     diagnostics["reader_materialized_segments"] += sum(
         segment["source_segment_kind"] not in {"line", "bulge_arc"} for segment in segments
+    )
+    diagnostics["zero_length_segments_skipped"] += len(
+        payload.get("skipped_zero_length_segments", ())
     )
     if any(segment["source_segment_kind"] != "line" for segment in segments):
         diagnostics["curved_routes"] += 1

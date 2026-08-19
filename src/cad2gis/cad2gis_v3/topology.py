@@ -659,8 +659,21 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
     else:
         dimension_support_tolerance = float(dimension_support_value)
 
+    # Index materialized delivery segments, not ``route.native_points``:
+    # degenerate duplicate vertices are skipped during curve materialization,
+    # so native-point segment indices can drift from ``source_segment_index``
+    # and leave DIMENSION evidence pointing at a segment key that no longer
+    # exists.  Each materialized segment is indexed by its own endpoints.
     cable_segments = _segment_index(
-        ((route.feature_key, route.native_points) for route in routes), exact,
+        (
+            (route.feature_key, (
+                segment["delivery_native_points"][0],
+                segment["delivery_native_points"][-1],
+            ))
+            for route in routes
+            for segment in route_source_segments[route.feature_key]
+        ),
+        exact,
     )
     sling_entities = [
         entity for entity in entities
@@ -690,6 +703,11 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
     # support within this tolerance; collocation is recorded as a derived
     # lineage operation, never as a source mutation.  A large second-nearest
     # gap (>= 2 m) is required so ambiguous cases stay fail-closed.
+    # OVERFIT-RISK (behaviour calibration): the BOITE-collocate / SITE-keep
+    # split below is calibrated on the four Indonesian baseline drawings
+    # (kletek's SITE is 3.8 m from its PTECH).  A new corpus with
+    # SITE-as-annotation-frame conventions needs this policy reviewed
+    # per-project, not copied.
     # SITE blocks (FDT/OLT/HUB) are physical enclosures with their own
     # surveyed insertion point — kletek's SITE sits metres away from any
     # PTECH and must keep that source location — so SITE never participates
