@@ -1148,115 +1148,140 @@ def classify_entities(
         )
     ]
     used_point_entities: set[str] = set()
-    used_frame_entities: set[str] = set()
     used_integer_texts: set[str] = set()
-    point_feature_by_family: defaultdict[str, set[str]] = defaultdict(set)
-    for family, _, _, _ in compiled_families:
-        if family.target_class not in {"PTECH", "SITE", "BOITE"}:
+    derived_target_keys: set[str] = set()
+    boite_frame_layers = {
+        str(layer).strip().upper()
+        for layer in getattr(registry, "insert_layer_families", {}).get("BOITE", ())
+    }
+
+    def _device_number_for_frame(frame: Any) -> tuple[str | None, str | None]:
+        integer_nearby = sorted(
+            (
+                math.dist(frame.centroid, item.centroid),
+                item.handle,
+                item.entity_key,
+                item,
+            )
+            for item in integer_text_entities
+            if item.entity_key not in used_integer_texts
+        )
+        if integer_nearby and integer_nearby[0][0] <= 20.0:
+            number_entity = integer_nearby[0][3]
+            used_integer_texts.add(number_entity.entity_key)
+            return (
+                number_entity.text.strip(),
+                "DWG_DIRECT:nearby-integer-label",
+            )
+        return None, None
+
+    # BOITE frames are device geometry by themselves: every small rectangular
+    # FAT frame on a reviewed BOITE target layer becomes a BOITE point at its
+    # centroid, even when no text label family happens to match it.
+    for frame in frame_candidates:
+        if str(frame.layer).strip().upper() not in boite_frame_layers:
             continue
-        candidates = (
-            frame_candidates if family.target_class == "BOITE"
-            else point_candidates
+        if any(
+            math.dist(feature.native_centroid, frame.centroid) <= 0.5
+            for feature in by_class["BOITE"]
+        ):
+            continue
+        number_value, number_provenance = _device_number_for_frame(frame)
+        attributes = {"CODE": _generated_code("BOITE", frame.handle)}
+        provenance = {"CODE": _GENERATED_CODE_PROVENANCE}
+        if number_value is not None:
+            attributes["DEVICE_NUMBER"] = number_value
+            provenance["DEVICE_NUMBER"] = number_provenance
+        frame_feature = Feature(
+            feature_key=_feature_key(frame, "BOITE"),
+            feature_class="BOITE",
+            geometry_kind="Point",
+            native_points=[list(frame.centroid)],
+            source_entity_key=frame.entity_key,
+            source_handle=frame.handle,
+            source_layer=frame.layer,
+            geometry_role="SOURCE_ASSET",
+            style=frame.style,
+            attributes=attributes,
+            display_label="",
+            label_provenance="UNAVAILABLE",
+            field_provenance=provenance,
+            lineage=[{
+                "operation": "rectangular_frame_centroid",
+                "source_entity_key": frame.entity_key,
+                "max_displacement_m": 0.0,
+            }],
         )
-        used_candidates = (
-            used_frame_entities if family.target_class == "BOITE"
-            else used_point_entities
-        )
+        features.append(frame_feature)
+        by_class["BOITE"].append(frame_feature)
+        derived_target_keys.add(frame_feature.feature_key)
+        mapped_entities.add(frame.entity_key)
+
+    for family, _, _, _ in compiled_families:
+        if family.target_class not in {"PTECH", "SITE"}:
+            continue
         for annotation in sorted(
             annotations_by_family[family.family_id],
             key=lambda item: (item.text.casefold(), item.entity_key),
         ):
-            # Do not materialize a geometry target when the annotation
-            # already has an eligible INSERT-derived target inside the family
+            # Do not materialize a POINT target when the annotation already
+            # has an eligible INSERT-derived target inside the family
             # tolerance: the normal assignment loop owns that relationship.
             if any(
                 _annotation_target_eligible(target)
                 and math.dist(annotation.centroid, target.native_centroid)
                 <= family.max_distance_native_m
                 for target in by_class[family.target_class]
-                if target.feature_key not in point_feature_by_family[family.family_id]
+                if target.feature_key not in derived_target_keys
             ):
                 continue
             nearby = sorted(
                 (
-                    math.dist(annotation.centroid, candidate.centroid),
-                    candidate.handle,
-                    candidate.entity_key,
-                    candidate,
+                    math.dist(annotation.centroid, point.centroid),
+                    point.handle,
+                    point.entity_key,
+                    point,
                 )
-                for candidate in candidates
-                if candidate.entity_key not in used_candidates
+                for point in point_candidates
+                if point.entity_key not in used_point_entities
             )
             if not nearby:
                 continue
             nearest = nearby[0]
-            distance, candidate = nearest[0], nearest[3]
+            distance, point = nearest[0], nearest[3]
             if distance > family.max_distance_native_m:
                 continue
-            # Never duplicate an existing INSERT-derived target at the same
-            # location: the reviewed label will attach to that feature
-            # through the normal assignment loop.
             if any(
-                math.dist(feature.native_centroid, candidate.centroid) <= 0.5
+                math.dist(feature.native_centroid, point.centroid) <= 0.5
                 for feature in by_class[family.target_class]
             ):
                 continue
-            used_candidates.add(candidate.entity_key)
-            if family.target_class == "BOITE":
-                centroid = list(candidate.centroid)
-            else:
-                centroid = list(candidate.points[0] if candidate.points else candidate.centroid)
-            attributes = {
-                "CODE": _generated_code(family.target_class, candidate.handle),
-            }
-            provenance = {"CODE": _GENERATED_CODE_PROVENANCE}
-            if family.target_class == "BOITE":
-                integer_nearby = sorted(
-                    (
-                        math.dist(candidate.centroid, item.centroid),
-                        item.handle,
-                        item.entity_key,
-                        item,
-                    )
-                    for item in integer_text_entities
-                    if item.entity_key not in used_integer_texts
-                )
-                if integer_nearby and integer_nearby[0][0] <= 20.0:
-                    number_entity = integer_nearby[0][3]
-                    used_integer_texts.add(number_entity.entity_key)
-                    attributes["DEVICE_NUMBER"] = number_entity.text.strip()
-                    provenance["DEVICE_NUMBER"] = "DWG_DIRECT:nearby-integer-label"
+            used_point_entities.add(point.entity_key)
+            centroid = list(point.points[0] if point.points else point.centroid)
             point_feature = Feature(
-                feature_key=_feature_key(candidate, family.target_class),
+                feature_key=_feature_key(point, family.target_class),
                 feature_class=family.target_class,
                 geometry_kind="Point",
                 native_points=[centroid],
-                source_entity_key=candidate.entity_key,
-                source_handle=candidate.handle,
-                source_layer=candidate.layer,
+                source_entity_key=point.entity_key,
+                source_handle=point.handle,
+                source_layer=point.layer,
                 geometry_role="SOURCE_ASSET",
-                style=(
-                    candidate.style if family.target_class == "BOITE"
-                    else annotation.style
-                ),
-                attributes=attributes,
+                style=annotation.style,
+                attributes={"CODE": _generated_code(family.target_class, point.handle)},
                 display_label="",
                 label_provenance="UNAVAILABLE",
-                field_provenance=provenance,
+                field_provenance={"CODE": _GENERATED_CODE_PROVENANCE},
                 lineage=[{
-                    "operation": (
-                        "rectangular_frame_centroid"
-                        if family.target_class == "BOITE"
-                        else "identity"
-                    ),
-                    "source_entity_key": candidate.entity_key,
+                    "operation": "identity",
+                    "source_entity_key": point.entity_key,
                     "max_displacement_m": 0.0,
                 }],
             )
             features.append(point_feature)
             by_class[family.target_class].append(point_feature)
-            point_feature_by_family[family.family_id].add(point_feature.feature_key)
-            mapped_entities.add(candidate.entity_key)
+            derived_target_keys.add(point_feature.feature_key)
+            mapped_entities.add(point.entity_key)
 
     annotation_candidates = []
     annotation_assignments_by_family = {}
@@ -1293,7 +1318,7 @@ def classify_entities(
             for target in by_class[family.target_class]
             if (
                 target_layer_pattern.fullmatch(target.source_layer.strip())
-                or target.feature_key in point_feature_by_family[family.family_id]
+                or target.feature_key in derived_target_keys
             )
         ]
         assignments, failures, candidates = _assign_family_annotations(
@@ -1302,7 +1327,7 @@ def classify_entities(
             family.max_distance_native_m,
             family_id=family.family_id,
             require_same_layer=family.require_same_layer,
-            cross_layer_target_keys=point_feature_by_family[family.family_id],
+            cross_layer_target_keys=derived_target_keys,
         )
         for item in failures:
             unresolved.append({**item, "target_class": family.target_class})

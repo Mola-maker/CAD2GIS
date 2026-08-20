@@ -39,7 +39,7 @@ applied even when the declared-CRS heuristic passes.
 | manado-tomohon_uplink | CONDITIONAL | 49 | 16 | 1 | 243 | 16 | 93 | 15 | 42/93 | DWG real coordinates |
 | tinggede | CONDITIONAL | 51 | 22 | 1 | 337 | 16 | 65 | 22 | 35/65 | OSM coarse anchor |
 | taipa | CONDITIONAL | 112 | 26 | 1 | 369 | 17 | 118 | 26 | 100/118 | OSM coarse anchor |
-| tinggar | CONDITIONAL | 109 | 11 | 2 | 435 | 17 | 119 | 0 | 0/119* | OSM coarse anchor |
+| tinggar | CONDITIONAL | 111 | 31 | 2 | 435 | 17 | 119 | 0 | 0/119* | OSM coarse anchor |
 
 `*` Tinggar's source inventory contains zero DIMENSION entities; its
 CABLE_SEGMENT labels therefore remain computed geometry lengths.  Every other
