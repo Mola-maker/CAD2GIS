@@ -87,6 +87,61 @@
       "target_class": "SITE",
       "target_layer_pattern": "(?i)^(?:FAT|FDT\\-Info|FDT_info|HUB|HUB\\ CENTRAL\\ OFFICE|OLT|SUB\\ HUB)$",
       "text_pattern": "^SRG[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+TGGR\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_7m_4_inch_fdt_1",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCH_FDT_1-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCH_FDT_1-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7m\\ 4\\ inch\\ fdt\\ 1$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ 7m\\ 4\\ inch\\ fdt\\ 1$",
+      "text_pattern": "^MR[^A-Za-z0-9]+TGGR\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_7m_4_inches_fdt_2",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCHES_FDT_2-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCHES_FDT_2-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ fdt\\ 2$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ fdt\\ 2$",
+      "text_pattern": "^MR[^A-Za-z0-9]+TGGR\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_7m_2_5inch",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7M\\ 2\\.5INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|EXT\\ POLE\\ FDT\\ 1|NEW\\ POLE\\ 7m\\ \\(3\\ inches\\)\\ FDT\\ 1|NEW\\ POLE\\ 7m\\ \\(3\\ inches\\)\\ FDT\\ 2|NEW\\ POLE\\ 7M\\ 2\\.5INCH\\ FDT\\ 1|NEW\\ POLE\\ 7M\\ 2\\.5INCH\\ FDT\\ 2|NEW\\ POLE\\ 7m\\ 3inches\\ fdt\\ 1|NEW\\ POLE\\ 7m\\ 4\\ inch\\ fdt\\ 1|NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ FDT\\ 1|NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ fdt\\ 2|NEW\\ POLE\\ 9m|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^NP\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_7m_4_inches",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCHES-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_4_INCHES-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7m\\(4\\ inches\\)$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|EXT\\ POLE\\ FDT\\ 1|NEW\\ POLE\\ 7m\\ \\(3\\ inches\\)\\ FDT\\ 1|NEW\\ POLE\\ 7m\\ \\(3\\ inches\\)\\ FDT\\ 2|NEW\\ POLE\\ 7M\\ 2\\.5INCH\\ FDT\\ 1|NEW\\ POLE\\ 7M\\ 2\\.5INCH\\ FDT\\ 2|NEW\\ POLE\\ 7m\\ 3inches\\ fdt\\ 1|NEW\\ POLE\\ 7m\\ 4\\ inch\\ fdt\\ 1|NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ FDT\\ 1|NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ fdt\\ 2|NEW\\ POLE\\ 9m|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^NP\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_9m_4inch",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|EXT\\ POLE\\ FDT\\ 1|NEW\\ POLE\\ 7m\\ \\(3\\ inches\\)\\ FDT\\ 1|NEW\\ POLE\\ 7m\\ \\(3\\ inches\\)\\ FDT\\ 2|NEW\\ POLE\\ 7M\\ 2\\.5INCH\\ FDT\\ 1|NEW\\ POLE\\ 7M\\ 2\\.5INCH\\ FDT\\ 2|NEW\\ POLE\\ 7m\\ 3inches\\ fdt\\ 1|NEW\\ POLE\\ 7m\\ 4\\ inch\\ fdt\\ 1|NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ FDT\\ 1|NEW\\ POLE\\ 7m\\(4\\ inches\\)\\ fdt\\ 2|NEW\\ POLE\\ 9m|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^NP\\d+$"
     }
   ],
   "block_families": {
@@ -204,8 +259,8 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 48\\ CORE\\.|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-d4ebc3bbae4d",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:46264cbc2f34bdca54d93af9ff937205936741aa42cace673f7445a9e0230981",
-    "reviewed_at": "2026-08-19T15:03:09.568826Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:4b23bdd406ff537880cf2bfc85df6e37c5d451221227b66c5e2b6dfbd0924641",
+    "reviewed_at": "2026-08-20T05:41:58.599788Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },

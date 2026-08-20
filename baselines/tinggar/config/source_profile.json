@@ -18,7 +18,8 @@
     "feature_counts": {
       "CABLE": 17,
       "IMB": 435,
-      "PTECH": 106
+      "PTECH": 109,
+      "SITE": 2
     },
     "segment_gates": {},
     "source_geometry_gates": {},
@@ -31,8 +32,8 @@
   },
   "project_id": "source-d4ebc3bbae4d",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:46264cbc2f34bdca54d93af9ff937205936741aa42cace673f7445a9e0230981",
-    "reviewed_at": "2026-08-19T15:03:09.568826Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:4b23bdd406ff537880cf2bfc85df6e37c5d451221227b66c5e2b6dfbd0924641",
+    "reviewed_at": "2026-08-20T05:41:58.599788Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },

@@ -84,7 +84,7 @@ def derive_family_from_samples(
         if not _is_asset_code_sample(text):
             continue
         texts.append(text)
-    if len(texts) < 2:
+    if not texts:
         return []
     by_width: dict[int, list[str]] = {}
     for text in texts:

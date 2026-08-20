@@ -45,6 +45,17 @@
       "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+PTB[^A-Za-z0-9]+DRS\\d+[^A-Za-z0-9]+P\\d+$"
     },
     {
+      "family_id": "auto_ext_pole",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_EXT_POLE-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_EXT_POLE-001",
+      "source_layer_pattern": "(?i)^EXT\\ POLE$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^EXT\\ POLE$",
+      "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+DRS\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
       "family_id": "auto_fdt_structure",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_STRUCTURE-001",
@@ -65,6 +76,17 @@
       "target_class": "SITE",
       "target_layer_pattern": "(?i)^(?:FDT|FDT\\-Info|HUB|OLT)$",
       "text_pattern": "^fArial[^A-Za-z0-9]+b\\d+[^A-Za-z0-9]+i\\d+[^A-Za-z0-9]+c\\d+[^A-Za-z0-9]+p\\d+[^A-Za-z0-9]+The[^A-Za-z0-9]+first[^A-Za-z0-9]+splicing[^A-Za-z0-9]+tray$"
+    },
+    {
+      "family_id": "auto_new_pole_7m_2_5inch",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7M\\ 2\\.5INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ 7M\\ 2\\.5INCH$",
+      "text_pattern": "^NP\\d+$"
     }
   ],
   "block_families": {
@@ -143,7 +165,9 @@
   },
   "labels": {},
   "layers": {
-    "homepass": [],
+    "homepass": [
+      "Homepass Number"
+    ],
     "sling_wire": [
       "SLING WIRE"
     ],
@@ -162,11 +186,11 @@
     "source_geometry_immutable": true,
     "support_is_optical_node": false
   },
-  "positive_route_layer_regex": "(?i)^(?:FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE|Distribution\\ Micr\\ Cable\\(24\\ cores\\))$",
+  "positive_route_layer_regex": "(?i)^(?:FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-524aa257bdbe",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:c646873a8e163d3a3818ae958abf440ff6c1a7efcb3c6ded898575d783307c08",
-    "reviewed_at": "2026-08-19T12:06:05.813731Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:959b9782813203c157b79aab7afc1ff1460fc61aa5b4629ca7665cb5e4d6e9dd",
+    "reviewed_at": "2026-08-20T05:59:16.991523Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },

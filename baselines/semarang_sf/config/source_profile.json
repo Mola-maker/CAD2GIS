@@ -16,8 +16,8 @@
     "annotation_families": {},
     "delivery_counts": {},
     "feature_counts": {
-      "CABLE": 6,
-      "PTECH": 23,
+      "CABLE": 1,
+      "PTECH": 19,
       "SITE": 1
     },
     "segment_gates": {},
@@ -31,8 +31,8 @@
   },
   "project_id": "source-a03aacdc2846",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:29052e75a0fef3dea8ed7af76a0e774ac1f3246e60cf28273228dabfd09949a2",
-    "reviewed_at": "2026-08-19T12:05:33.776505Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:9b3ad6f9b9649db65b2546b18619d228fc2715d15199cc312e6908b48b3edc39",
+    "reviewed_at": "2026-08-20T05:58:30.357142Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
