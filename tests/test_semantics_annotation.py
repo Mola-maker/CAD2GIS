@@ -5,6 +5,7 @@ from cad2gis.cad2gis_v3.semantics import (
     _GENERATED_CODE_PROVENANCE,
     _annotation_target_eligible,
     _assign_family_annotations,
+    _attributed_block_style,
     _device_number_attribute,
 )
 from cad2gis.cad2gis_v3.spatial_filter import is_pole_identifier_shape
@@ -191,3 +192,58 @@ def test_legacy_relation_priority_off_keeps_geometric_tie_abstention() -> None:
 
     assert not assignments
     assert failures and failures[0]["status"] == "multiple_optima"
+
+
+def test_attributed_block_style_uses_explicit_non_default_attribute_colour() -> None:
+    root = SourceEntity(
+        entity_key="root",
+        source_sha256=SOURCE_SHA,
+        source_file="drawing.dwg",
+        handle="2988D",
+        layout="Model",
+        layout_role="model",
+        cad_role="model",
+        layer="CLOSURE",
+        object_name="AcDbBlockReference",
+        dwg_type="INSERT",
+        points=((10.0, 20.0),),
+        centroid=(10.0, 20.0),
+        closed=False,
+        text="",
+        block_name="*U108",
+        block_attributes={"CLOSURE": "48"},
+        style=CadStyle(aci_color=1, true_color="#FF0000"),
+    )
+    styles = {
+        "root": [("", CadStyle(aci_color=5, true_color="#0000FF"))],
+    }
+    style = _attributed_block_style(root, styles)
+    assert style is not None
+    assert style.aci_color == 5
+    assert style.true_color == "#0000FF"
+
+
+def test_attributed_block_style_ignores_default_black_template() -> None:
+    root = SourceEntity(
+        entity_key="root",
+        source_sha256=SOURCE_SHA,
+        source_file="drawing.dwg",
+        handle="4D208",
+        layout="Model",
+        layout_role="model",
+        cad_role="model",
+        layer="FAT",
+        object_name="AcDbBlockReference",
+        dwg_type="INSERT",
+        points=((10.0, 20.0),),
+        centroid=(10.0, 20.0),
+        closed=False,
+        text="",
+        block_name="FAT",
+        block_attributes={"FAT": "16"},
+        style=CadStyle(aci_color=30, true_color="#FF7F00"),
+    )
+    styles = {
+        "root": [("", CadStyle(aci_color=7, true_color="#000000"))],
+    }
+    assert _attributed_block_style(root, styles) is None

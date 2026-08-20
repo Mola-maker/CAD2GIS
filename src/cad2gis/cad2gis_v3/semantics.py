@@ -7,6 +7,7 @@ import hashlib
 import math
 import re
 from collections import defaultdict
+from dataclasses import replace
 from fnmatch import fnmatchcase
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -52,6 +53,61 @@ def _is_placeholder_attribute_value(value: Any) -> bool:
     if not text:
         return True
     return not (text.isdigit() and int(text) != 0)
+
+
+def _non_default_explicit_style(style: Any) -> bool:
+    """A block attribute style that is deliberately coloured.
+
+    ACI 7 (black/white) and ByLayer/ByBlock are default presentation; they
+    must not override a coloured device layer (e.g. an orange FAT box with a
+    black attribute template).  Any other explicit colour is evidence that
+    the visible symbol/label is drawn in that colour.
+    """
+    true_color = str(getattr(style, "true_color", "") or "").strip().lstrip("#")
+    if true_color and true_color.upper() not in {"000000", "FFFFFF"}:
+        return True
+    return int(getattr(style, "aci_color", 256) or 256) not in {0, 7, 256}
+
+
+def _attributed_block_style(entity: SourceEntity, styles_by_root: Mapping[str, list[tuple[str, Any]]]):
+    """Return the explicit style of the block attribute that fills this INSERT.
+
+    Device INSERTs are commonly drawn on a layer whose colour differs from the
+    attribute text inside the referenced block (e.g. a blue closure number on
+    a red CLOSURE layer).  When the INSERT itself is ByLayer/ByBlock, the
+    attribute definition carries the visible symbol style and must win.
+
+    Some readers materialize ATTDEF carriers with an empty ``text`` field
+    (the actual value lives on the INSERT's ``block_attributes``).  Such
+    empty carriers are still accepted when their definition is the only
+    non-default explicitly coloured attribute of the block.
+    """
+    if entity.style.entity_true_color.strip() or entity.style.entity_aci_color not in {0, 256}:
+        return None
+    attribute_values = {
+        str(value).strip() for value in entity.block_attributes.values()
+    }
+    if not attribute_values:
+        return None
+    candidates = []
+    for text, style in styles_by_root.get(entity.entity_key, ()):
+        if not _non_default_explicit_style(style):
+            continue
+        if text and text not in attribute_values:
+            continue
+        candidates.append((text, style))
+    distinct = {
+        (
+            style.aci_color,
+            style.true_color.strip(),
+            style.linetype,
+            style.lineweight,
+        ): style
+        for _, style in candidates
+    }
+    if len(distinct) == 1:
+        return next(iter(distinct.values()))
+    return None
 
 
 def _is_polygon_ring(points: Sequence[tuple[float, float]]) -> bool:
@@ -833,6 +889,19 @@ def classify_entities(
             and plan_domain.get("materialization") == "nested-insert-affine"
         )
 
+    attributed_block_styles: dict[str, list[tuple[str, Any]]] = defaultdict(list)
+    for entity in model_entities:
+        if not _is_materialized_block_entity(entity):
+            continue
+        if entity.dwg_type.upper() not in {"ATTRIB", "ATTDEF"}:
+            continue
+        text = entity.text.strip()
+        root_key = str(
+            entity.raw_properties.get("plan_domain", {}).get("root_entity_key", "")
+        )
+        if root_key:
+            attributed_block_styles[root_key].append((text, entity.style))
+
     for entity in model_entities:
         if entity.entity_key in catalog_roots:
             # Scene-partition catalog roots are aligned symbol specimens on a
@@ -938,6 +1007,19 @@ def classify_entities(
         display_label, label_provenance = _registry_display_label(
             feature_class, attributes, registry,
         )
+        feature_style = entity.style
+        if dwg_type == "INSERT" and feature_class in {"BOITE", "SITE"}:
+            attributed_style = _attributed_block_style(
+                entity, attributed_block_styles,
+            )
+            if attributed_style is not None:
+                feature_style = replace(
+                    entity.style,
+                    aci_color=attributed_style.aci_color,
+                    true_color=attributed_style.true_color,
+                    linetype=attributed_style.linetype,
+                    lineweight=attributed_style.lineweight,
+                )
 
         features.append(Feature(
             feature_key=_feature_key(entity, feature_class),
@@ -948,7 +1030,7 @@ def classify_entities(
             source_handle=entity.handle,
             source_layer=entity.layer,
             geometry_role=geometry_role,
-            style=entity.style,
+            style=feature_style,
             attributes={key: value for key, value in attributes.items() if value is not None},
             display_label=display_label,
             label_provenance=label_provenance,
@@ -1080,6 +1162,27 @@ def classify_entities(
             unclaimed_pole_annotations.append(entity)
             continue
         elif text_matches:
+            boite_matches = [
+                family for family in text_matches if family.target_class == "BOITE"
+            ]
+            if len(boite_matches) == 1:
+                # Some APD drawings duplicate their FAT-code text on a
+                # non-family layer (e.g. a basic-map numbering layer) while
+                # the actual FAT geometry is a derived rectangular frame.
+                # The reviewed family contract still owns the text shape;
+                # keep the label with that family so the normal assignment
+                # pass can claim a cross-layer frame target.  Non-derived
+                # INSERT targets keep the reviewed same-layer contract.
+                annotations_by_family[boite_matches[0].family_id].append(entity)
+                annotation_discovery_failures.append({
+                    "kind": "annotation",
+                    "entity_key": entity.entity_key,
+                    "family_id": boite_matches[0].family_id,
+                    "text": text,
+                    "source_layer": entity.layer,
+                    "status": "cross_layer_boite_label",
+                })
+                continue
             annotation_discovery_failures.append({
                 "kind": "annotation",
                 "entity_key": entity.entity_key,
