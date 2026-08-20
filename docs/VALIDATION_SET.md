@@ -32,14 +32,18 @@ from the classified asset network bbox (PTECH/BOITE/SITE/CABLE) and the
 filename-region lookup; the anchor is an explicit per-project config and is
 applied even when the declared-CRS heuristic passes.
 
-| Site | run_status | PTECH | BOITE | SITE | IMB | CABLE | CABLE_SEGMENT | ZPM | placement |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| semarang_sf | CONDITIONAL | 23 | 0 | 1 | 0 | 6 | 27 | 0 | OSM coarse anchor |
-| darat_sekip_sf | CONDITIONAL | 13 | 1 | 1 | 0 | 114 | 144 | 0 | DWG real coordinates |
-| manado-tomohon_uplink | CONDITIONAL | 49 | 15 | 1 | 243 | 20 | 105 | 15 | DWG real coordinates |
-| tinggede | CONDITIONAL | 51 | 22 | 1 | 337 | 16 | 65 | 22 | OSM coarse anchor |
-| taipa | CONDITIONAL | 112 | 26 | 1 | 369 | 17 | 118 | 26 | OSM coarse anchor |
-| tinggar | CONDITIONAL | 106 | 0 | 0 | 435 | 17 | 119 | 0 | OSM coarse anchor |
+| Site | run_status | PTECH | BOITE | SITE | IMB | CABLE | CABLE_SEGMENT | ZPM | DIM spans | placement |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| semarang_sf | CONDITIONAL | 19 | 0 | 1 | 0 | 1 | 18 | 0 | 18/18 | OSM coarse anchor |
+| darat_sekip_sf | CONDITIONAL | 13 | 1 | 1 | 0 | 4 | 26 | 0 | 12/26 | DWG real coordinates |
+| manado-tomohon_uplink | CONDITIONAL | 49 | 15 | 1 | 243 | 16 | 93 | 15 | 42/93 | DWG real coordinates |
+| tinggede | CONDITIONAL | 51 | 22 | 1 | 337 | 16 | 65 | 22 | 35/65 | OSM coarse anchor |
+| taipa | CONDITIONAL | 112 | 26 | 1 | 369 | 17 | 118 | 26 | 100/118 | OSM coarse anchor |
+| tinggar | CONDITIONAL | 109 | 0 | 2 | 435 | 17 | 119 | 0 | 0/119* | OSM coarse anchor |
+
+`*` Tinggar's source inventory contains zero DIMENSION entities; its
+CABLE_SEGMENT labels therefore remain computed geometry lengths.  Every other
+project now labels matched spans with the integer DWG DIMENSION value.
 
 Artifacts per site:
 
