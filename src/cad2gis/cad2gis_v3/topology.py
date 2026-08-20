@@ -12,6 +12,10 @@ from .curve_geometry import delivery_points, delivery_segments
 from .model import Relation
 from .ports import build_port_candidates
 
+_ANNOTATION_CARRIER_TYPES = frozenset({
+    "TEXT", "MTEXT", "ATTRIB", "ATTDEF", "MLEADER", "MULTILEADER",
+})
+
 
 def _relation(kind, source, target, status, method, distance=None, evidence=()):
     key = hashlib.sha256(f"{kind}|{source}|{target}|{method}".encode()).hexdigest()
@@ -802,6 +806,68 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         if entity.cad_role == "model" and entity.dwg_type == "DIMENSION"
         and entity.layer.upper() in span_dimension_layers and len(entity.points) == 2
     ]
+    # Drawings that carry span lengths as bare integer TEXT labels (e.g. a
+    # ``Label`` layer with ``30``/``24`` instead of DIMENSION entities) are
+    # supported by the same measurement contract: proximity to a materialized
+    # CABLE segment turns the integer label into its nominal length.
+    span_label_entities = [
+        entity for entity in entities
+        if entity.cad_role == "model"
+        and entity.dwg_type in _ANNOTATION_CARRIER_TYPES
+        and str(entity.text or "").strip().isdigit()
+        and (
+            entity.layer.upper() in span_dimension_layers
+            or "LABEL" in entity.layer.upper()
+            or "SPAN" in entity.layer.upper()
+        )
+        and not any(
+            math.dist(entity.centroid, box.native_centroid) <= 12.0
+            for box in boxes
+        )
+    ]
+    route_segment_label_measurements: dict[
+        tuple[str, int], tuple[Any, float]
+    ] = {}
+    if span_label_entities:
+        labelled_entities: set[str] = set()
+        for label_entity in sorted(
+            span_label_entities, key=lambda item: item.entity_key,
+        ):
+            if label_entity.entity_key in labelled_entities:
+                continue
+            candidates = []
+            for route in routes:
+                for segment in route_source_segments[route.feature_key]:
+                    points = segment["delivery_native_points"]
+                    if len(points) < 2:
+                        continue
+                    midpoint = (
+                        (points[0][0] + points[-1][0]) / 2.0,
+                        (points[0][1] + points[-1][1]) / 2.0,
+                    )
+                    distance = math.dist(label_entity.centroid, midpoint)
+                    if distance <= 60.0:
+                        candidates.append((
+                            distance,
+                            route.feature_key,
+                            int(segment["source_segment_index"]),
+                        ))
+            if not candidates:
+                continue
+            candidates.sort(key=lambda item: item[0])
+            if (
+                len(candidates) > 1
+                and candidates[1][0] - candidates[0][0] < 2.0
+            ):
+                continue
+            _, owner_key, segment_index = candidates[0]
+            key = (owner_key, segment_index)
+            if key in route_segment_label_measurements:
+                continue
+            route_segment_label_measurements[key] = (
+                label_entity, float(label_entity.text.strip())
+            )
+            labelled_entities.add(label_entity.entity_key)
     span_edges, span_edges_all, span_nodes, accepted_dimensions, candidate_dimensions = set(), set(), set(), 0, 0
     span_role_counts = Counter()
     route_segment_dimensions = defaultdict(list)
@@ -948,9 +1014,14 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             dimension_key = None
             measurement = None
             measurement_delta = None
+            dimension_text_override = None
+            label_measurement = route_segment_label_measurements.get(
+                (route.feature_key, segment_index)
+            )
             if len(dimensions) == 1:
                 dimension = dimensions[0]
                 dimension_key = dimension.entity_key
+                dimension_text_override = dimension.dimension_text_override
                 if dimension.dimension_value is None:
                     status = "unmeasured_missing_dimension_value"
                 else:
@@ -969,6 +1040,16 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
                     "status": "multiple_exact_span_dimensions",
                     "dimension_entity_keys": [item.entity_key for item in dimensions],
                 })
+            elif label_measurement is not None:
+                label_entity, label_value = label_measurement
+                dimension_key = label_entity.entity_key
+                dimension_text_override = str(label_entity.text or "").strip()
+                measurement = label_value
+                measurement_delta = measurement - source_length
+                status = "measured"
+                measured_count += 1
+                measured_cable_segments.add((route.feature_key, segment_index))
+                dimension_total += measurement
             else:
                 status = "unmeasured_no_dimension"
             span_metrics.append({
@@ -981,10 +1062,7 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
                     segment["delivery_chord_length_native"]
                 ),
                 "dimension_entity_key": dimension_key,
-                "dimension_text_override": (
-                    dimension.dimension_text_override
-                    if dimension_key is not None else None
-                ),
+                "dimension_text_override": dimension_text_override,
                 "measurement_native_m": measurement,
                 "measurement_delta_m": measurement_delta,
                 "status": status,
@@ -1037,6 +1115,34 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
                 span_rule["provenance"] if span_rule else "UNAVAILABLE:no-reviewed-span-rule"
             ),
         })
+
+    for (owner_key, segment_index), (label_entity, label_value) in sorted(
+        route_segment_label_measurements.items(),
+        key=lambda item: (item[0][0], item[0][1]),
+    ):
+        if span_rule is None:
+            unresolved.append({
+                "kind": "span_segment_measurement",
+                "entity_key": label_entity.entity_key,
+                "status": "missing_reviewed_decision_rule",
+            })
+            continue
+        span_measurement_max_abs_error = max(
+            span_measurement_max_abs_error,
+            abs(label_value - segment_lengths[(owner_key, segment_index)]),
+        )
+        relations.append(_relation(
+            "measures",
+            label_entity.entity_key,
+            f"{owner_key}:segment:{segment_index}",
+            "accepted",
+            (
+                f"{span_rule['rule_id']}:{span_rule['method']}:"
+                "integer-label-proximity"
+            ),
+            0.0,
+            (label_entity.entity_key, owner_key),
+        ))
 
     all_cable_segments = {
         (route.feature_key, segment_index)

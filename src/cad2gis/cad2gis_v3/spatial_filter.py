@@ -574,6 +574,20 @@ def apply_spatial_denoising(
                 entity is not None
                 and entity.dwg_type in _ANNOTATION_FRAME_TYPES
                 and str(entity.text or "").strip().isdigit()
+                and (
+                    "LABEL" in str(entity.layer).upper()
+                    or str(entity.layer).strip().upper() in dimension_layer_upper
+                )
+                and cable_lines
+                and _near_cable(entity.centroid)
+            ):
+                # Bare integer TEXT labels near a cable are span lengths,
+                # not sheet-border annotation noise.
+                continue
+            if (
+                entity is not None
+                and entity.dwg_type in _ANNOTATION_FRAME_TYPES
+                and str(entity.text or "").strip().isdigit()
                 and reviewed_device_frames
                 and any(
                     math.dist(entity.centroid, frame.centroid) <= 20.0
