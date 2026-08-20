@@ -1224,6 +1224,11 @@ def classify_entities(
             annotations_by_family[family.family_id],
             key=lambda item: (item.text.casefold(), item.entity_key),
         ):
+            if _is_materialized_block_entity(annotation):
+                # Block-definition template labels (e.g. ``NP7`` inside a
+                # pole symbol) must not fabricate new POINT targets; they
+                # already label their own INSERT when applicable.
+                continue
             # Do not materialize a POINT target when the annotation already
             # has an eligible INSERT-derived target inside the family
             # tolerance: the normal assignment loop owns that relationship.

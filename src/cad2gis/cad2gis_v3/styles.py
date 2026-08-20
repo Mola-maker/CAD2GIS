@@ -169,15 +169,18 @@ def analyze_style_coverage(
 
 def _line_width(layer_name, lineweight):
     if lineweight is not None and int(lineweight) > 0:
-        return max(0.1, min(2.0, int(lineweight) / 100.0))
-    return 0.6 if layer_name in {"CABLE", "CABLE_SEGMENT"} else 0.35
+        width = max(0.1, min(2.4, int(lineweight) / 100.0))
+        return width * 2.0 if layer_name in {"CABLE", "CABLE_SEGMENT"} else width
+    return 1.2 if layer_name in {"CABLE", "CABLE_SEGMENT"} else 0.35
 
 
 def _marker_properties(layer_name):
     return {
         "BOITE": ("square", 4.0),
         "SITE": ("diamond", 4.4),
-        "PTECH": ("circle", 3.2),
+        # PTECH is a large circular pole symbol in the source drawings;
+        # render it as a clearly circular marker at QGIS scale.
+        "PTECH": ("circle", 5.0),
         "IMB": ("circle", 0.8),
     }.get(layer_name, ("circle", 2.4))
 

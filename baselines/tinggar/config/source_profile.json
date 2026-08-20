@@ -19,7 +19,7 @@
       "BOITE": 31,
       "CABLE": 17,
       "IMB": 435,
-      "PTECH": 111,
+      "PTECH": 109,
       "SITE": 2
     },
     "segment_gates": {},
@@ -33,8 +33,8 @@
   },
   "project_id": "source-d4ebc3bbae4d",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:2f54fb6bdfd3ffa676f6e1949ad4c02cf917cdf0d272eb5adb699085fb697249",
-    "reviewed_at": "2026-08-20T13:42:36.758777Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:a63fb12c0a9a16809b824950a042c306d6946b198549f296abe5327918eaed12",
+    "reviewed_at": "2026-08-20T14:10:41.041224Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
