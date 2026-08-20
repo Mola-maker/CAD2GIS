@@ -16,8 +16,8 @@
     "annotation_families": {},
     "delivery_counts": {},
     "feature_counts": {
-      "BOITE": 3,
-      "CABLE": 2,
+      "BOITE": 1,
+      "CABLE": 1,
       "PTECH": 13,
       "SITE": 1
     },
@@ -32,8 +32,8 @@
   },
   "project_id": "source-524aa257bdbe",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:c038eb7b2c245d20f41595ade7fb71000716eb8a4ad5fd432a4311ac132dfb36",
-    "reviewed_at": "2026-08-20T14:14:15.953653Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:2dbfdc798356312cceb10de8aafdbbca5c6ada027bdf13b35675bcf72bbe9bd9",
+    "reviewed_at": "2026-08-20T17:34:34.590575Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
