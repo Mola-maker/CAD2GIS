@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the four APD project packs with AI-supervised ``auto-convert``.
+"""Regenerate the four APD (As Plan Drawing) project packs with AI-supervised ``auto-convert``.
 
 Unlike ``regenerate_runs.py`` (which replays existing reviewed JSON), this
 script intentionally lets ``cad2gis auto-convert`` re-run the AI onboarding
@@ -17,7 +17,7 @@ Safety: before each conversion the script archives
 ``baselines/<site>/config`` and ``baselines/<site>/review`` into
 ``scripts/logs/backups/``.  Run with ``--dry-run`` first.
 
-Fill ``API_KEY`` below or export ``DEEPSEEK_API_KEY`` (environment wins).
+Export ``DEEPSEEK_API_KEY`` in the environment before running.
 For new-api, export the ``NEW_API_*`` variables and pass ``--provider new-api``.
 
 Examples:
@@ -42,8 +42,8 @@ from pathlib import Path
 from typing import Any
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TODO: fill in your DeepSeek API key, or leave empty and export
-# DEEPSEEK_API_KEY before running.
+# Set DEEPSEEK_API_KEY in the environment before running.  The key is passed
+# to child processes only and is never printed or written to logs.
 API_KEY = ""
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -75,6 +75,42 @@ PROJECTS: tuple[dict[str, str], ...] = (
         "dwg": "raw/APD - KELURAHAN LAMTEH DAYAH ACEH - SF.dwg",
         "project": "baselines/lamteh_sf",
         "run_dir": "baselines/lamteh_sf/run",
+    },
+    {
+        "site": "semarang_sf",
+        "dwg": "raw/APD - BULU LOR RW 05 SEMARANG - SF.dwg",
+        "project": "baselines/semarang_sf",
+        "run_dir": "baselines/semarang_sf/run",
+    },
+    {
+        "site": "darat_sekip_sf",
+        "dwg": "raw/APD - DARAT SEKIP RW 12 PONTIANAK - SF.dwg",
+        "project": "baselines/darat_sekip_sf",
+        "run_dir": "baselines/darat_sekip_sf/run",
+    },
+    {
+        "site": "manado-tomohon_uplink",
+        "dwg": "raw/APD - MANADO- UPLINK_FWA_OLT_TOMOHON_TO_EMR- 46478_FO_24C.dwg",
+        "project": "baselines/manado-tomohon_uplink",
+        "run_dir": "baselines/manado-tomohon_uplink/run",
+    },
+    {
+        "site": "tinggede",
+        "dwg": "raw/APD - PERUMAHAN TINGGEDE VIEW PALU.dwg",
+        "project": "baselines/tinggede",
+        "run_dir": "baselines/tinggede/run",
+    },
+    {
+        "site": "taipa",
+        "dwg": "raw/APD - TAIPA RW 05 PALU.dwg",
+        "project": "baselines/taipa",
+        "run_dir": "baselines/taipa/run",
+    },
+    {
+        "site": "tinggar",
+        "dwg": "raw/APD - TINGGAR RW 04 SERANG.dwg",
+        "project": "baselines/tinggar",
+        "run_dir": "baselines/tinggar/run",
     },
 )
 
@@ -122,8 +158,7 @@ def _environment(args: argparse.Namespace) -> dict[str, str]:
         key = env.get("DEEPSEEK_API_KEY", "").strip() or API_KEY.strip()
         if not args.dry_run and not key:
             raise SystemExit(
-                "DEEPSEEK_API_KEY is empty. Fill API_KEY inside "
-                "scripts/auto_convert_runs.py or export DEEPSEEK_API_KEY."
+                "DEEPSEEK_API_KEY is empty. Export DEEPSEEK_API_KEY before running."
             )
         if key:
             env["DEEPSEEK_API_KEY"] = key
@@ -226,7 +261,7 @@ def _run_one(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="AI-supervised auto-convert for the four APD projects."
+        description="AI-supervised auto-convert for the four APD (As Plan Drawing) projects."
     )
     parser.add_argument(
         "--site",

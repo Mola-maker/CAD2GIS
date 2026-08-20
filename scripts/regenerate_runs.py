@@ -5,9 +5,8 @@ Each run uses the existing reviewed project pack (``baselines/<site>/config``)
 and the same supervision mode as the committed baselines: ``--llm assist``.
 The script does NOT run onboarding or rewrite profiles/registries.
 
-Fill ``API_KEY`` below with your DeepSeek API key, or export
-``DEEPSEEK_API_KEY`` in the environment (environment wins).  The key is passed
-to child processes only and is never printed or written to logs.
+Export ``DEEPSEEK_API_KEY`` in the environment before running.  The key is
+passed to child processes only and is never printed or written to logs.
 
 Examples:
 
@@ -38,8 +37,8 @@ from pathlib import Path
 from typing import Any
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TODO: fill in your DeepSeek API key, or leave empty and export
-# DEEPSEEK_API_KEY before running.  For new-api, fill/export NEW_API_API_KEY.
+# Export DEEPSEEK_API_KEY before running (or NEW_API_API_KEY with --provider
+# new-api).  The key is passed to child processes only and is never printed.
 API_KEY = ""
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -109,8 +108,7 @@ def _environment(args: argparse.Namespace) -> dict[str, str]:
         key = env.get("DEEPSEEK_API_KEY", "").strip() or API_KEY.strip()
         if not args.dry_run and args.llm != "off" and not key:
             raise SystemExit(
-                "DEEPSEEK_API_KEY is empty. Fill API_KEY inside "
-                "scripts/regenerate_runs.py or export DEEPSEEK_API_KEY."
+                "DEEPSEEK_API_KEY is empty. Export DEEPSEEK_API_KEY before running."
             )
         if key:
             env["DEEPSEEK_API_KEY"] = key
