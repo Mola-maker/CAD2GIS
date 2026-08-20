@@ -15,33 +15,33 @@
       "family_id": "auto_fdt_sp",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_SP-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_FDT_SP-001",
       "source_layer_pattern": "(?i)^FDT\\ SP$",
       "target_class": "SITE",
-      "target_layer_pattern": "(?i)^(?:FDT|FDT\\-Info|HUB|OLT)$",
+      "target_layer_pattern": "(?i)^FDT\\ SP$",
       "text_pattern": "^G\\d+$"
     },
     {
       "family_id": "auto_new_pole_9m_4inch",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
       "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7M\\ 2\\.5INCH|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ HC|POLE\\ ID\\ 7M\\ 3')$",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
       "text_pattern": "^NP\\d+$"
     },
     {
       "family_id": "auto_new_pole_9m_4inch_2",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH_2-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH_2-001",
       "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7M\\ 2\\.5INCH|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ HC|POLE\\ ID\\ 7M\\ 3')$",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
       "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+PTB[^A-Za-z0-9]+DRS\\d+[^A-Za-z0-9]+P\\d+$"
     },
     {
@@ -59,22 +59,22 @@
       "family_id": "auto_fdt_structure",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_STRUCTURE-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_FDT_STRUCTURE-001",
       "source_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "target_class": "SITE",
-      "target_layer_pattern": "(?i)^(?:FDT|FDT\\-Info|HUB|OLT)$",
+      "target_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "text_pattern": "^OUT\\d+$"
     },
     {
       "family_id": "auto_fdt_structure_2",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_STRUCTURE_2-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_FDT_STRUCTURE_2-001",
       "source_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "target_class": "SITE",
-      "target_layer_pattern": "(?i)^(?:FDT|FDT\\-Info|HUB|OLT)$",
+      "target_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "text_pattern": "^fArial[^A-Za-z0-9]+b\\d+[^A-Za-z0-9]+i\\d+[^A-Za-z0-9]+c\\d+[^A-Za-z0-9]+p\\d+[^A-Za-z0-9]+The[^A-Za-z0-9]+first[^A-Za-z0-9]+splicing[^A-Za-z0-9]+tray$"
     },
     {
@@ -145,19 +145,26 @@
     "BOITE": [
       "CLOSURE",
       "FAT",
+      "FAT AREA",
       "FAT Code",
-      "FIBER OPTIC CLOSURE"
+      "FAT SP",
+      "FAT_Info",
+      "FIBER OPTIC CLOSURE",
+      "OTB"
     ],
     "PTECH": [
       "EXT FM POLE",
       "EXT POLE",
       "NEW POLE 7M 2.5INCH",
       "NEW POLE 7m(4 inches)",
+      "NEW POLE 9M 4INCH",
       "NEW POLE HC",
       "POLE ID 7M 3'"
     ],
     "SITE": [
       "FDT",
+      "FDT SP",
+      "FDT STRUCTURE",
       "FDT-Info",
       "HUB",
       "OLT"
@@ -189,8 +196,8 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-524aa257bdbe",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:959b9782813203c157b79aab7afc1ff1460fc61aa5b4629ca7665cb5e4d6e9dd",
-    "reviewed_at": "2026-08-20T05:59:16.991523Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:365efdd4443894aa94f9d90e4bf8dc2b8fb6cd95da9480b38601c8e20115d996",
+    "reviewed_at": "2026-08-20T13:35:17.866957Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },

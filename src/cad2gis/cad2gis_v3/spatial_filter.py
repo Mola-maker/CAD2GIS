@@ -496,6 +496,42 @@ def apply_spatial_denoising(
     exempt_layers_upper = {str(layer).upper() for layer in boundary_exempt_layers}
     entity_by_key = {entity.entity_key: entity for entity in entities}
 
+    def _is_reviewed_device_frame(entity: Any) -> bool:
+        if entity is None or entity.dwg_type.upper() != "LWPOLYLINE":
+            return False
+        if str(entity.layer).strip().upper() not in reviewed_insert_layer_upper:
+            return False
+        points = entity.points
+        if len(points) < 4:
+            return False
+        if math.dist(points[0], points[-1]) <= 1.0:
+            area = abs(sum(
+                points[i][0] * points[(i + 1) % len(points)][1]
+                - points[(i + 1) % len(points)][0] * points[i][1]
+                for i in range(len(points))
+            )) / 2.0
+            return 0.05 <= area <= 400.0
+        if len(points) != 4:
+            return False
+        p0, p1, p2, p3 = points
+        v0 = (p1[0] - p0[0], p1[1] - p0[1])
+        v1 = (p2[0] - p1[0], p2[1] - p1[1])
+        v2 = (p3[0] - p2[0], p3[1] - p2[1])
+        missing = (p3[0] - p0[0], p3[1] - p0[1])
+        norms = [math.hypot(*v) for v in (v0, v1, v2, missing)]
+        if min(norms) <= 0.0:
+            return False
+        units = [(v[0] / n, v[1] / n) for v, n in zip((v0, v1, v2, missing), norms)]
+        parallel_long = abs(units[0][0] * units[2][1] - units[0][1] * units[2][0]) <= 0.15
+        same_direction_long = abs(units[0][0] * units[2][0] + units[0][1] * units[2][1]) >= 0.7
+        perpendicular = abs(units[0][0] * units[1][0] + units[0][1] * units[1][1]) <= 0.3
+        missing_parallel = abs(units[1][0] * units[3][1] - units[1][1] * units[3][0]) <= 0.15
+        return parallel_long and same_direction_long and perpendicular and missing_parallel
+
+    reviewed_device_frames = [
+        entity for entity in entities if _is_reviewed_device_frame(entity)
+    ]
+
     def _label_protected_insert(key: str) -> bool:
         # A deployed asset (INSERT) carrying a reviewed identifier within
         # the label radius — or hugging a route/sling cable — is real
@@ -528,6 +564,25 @@ def apply_spatial_denoising(
             # unless the reviewed boundary layer says otherwise.
             entity = entity_by_key.get(key)
             if entity is not None and str(entity.layer).strip().upper() in exempt_layers_upper:
+                continue
+            if _is_reviewed_device_frame(entity):
+                # Small closed LWPOLYLINE frames on a reviewed BOITE target
+                # layer (e.g. the yellow FAT rectangle) are device geometry,
+                # not sheet-border annotation noise.
+                continue
+            if (
+                entity is not None
+                and entity.dwg_type in _ANNOTATION_FRAME_TYPES
+                and str(entity.text or "").strip().isdigit()
+                and reviewed_device_frames
+                and any(
+                    math.dist(entity.centroid, frame.centroid) <= 20.0
+                    for frame in reviewed_device_frames
+                )
+            ):
+                # Integer labels next to a reviewed BOITE frame (the FAT
+                # sequence number) belong to the device, not the sheet
+                # border, even when the label itself hugs the perimeter band.
                 continue
             if (
                 entity is not None
