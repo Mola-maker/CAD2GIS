@@ -63,6 +63,181 @@ def _is_polygon_ring(points: Sequence[tuple[float, float]]) -> bool:
     on the boundary layer become polygons).
     """
     return len(points) >= 3
+
+
+def _is_open_rectangle_callout(points: Sequence[Sequence[float]]) -> bool:
+    """True for a 4-vertex polyline shaped like a rectangle missing one side.
+
+    APD annotation frames are drawn as three edges of a rectangle (the fourth
+    side is left open for the leader line).  The two long edges are parallel,
+    the short middle edge is roughly perpendicular to them, and the missing
+    side is not closed back to the start vertex.
+    """
+    if len(points) != 4:
+        return False
+    p0, p1, p2, p3 = (tuple(float(v) for v in p) for p in points)
+    v0 = (p1[0] - p0[0], p1[1] - p0[1])
+    v1 = (p2[0] - p1[0], p2[1] - p1[1])
+    v2 = (p3[0] - p2[0], p3[1] - p2[1])
+    missing = (p3[0] - p0[0], p3[1] - p0[1])
+    n0 = math.hypot(*v0)
+    n1 = math.hypot(*v1)
+    n2 = math.hypot(*v2)
+    n_missing = math.hypot(*missing)
+    if min(n0, n1, n2, n_missing) <= 0.0:
+        return False
+    u0 = (v0[0] / n0, v0[1] / n0)
+    u1 = (v1[0] / n1, v1[1] / n1)
+    u2 = (v2[0] / n2, v2[1] / n2)
+    u_missing = (missing[0] / n_missing, missing[1] / n_missing)
+    cross_02 = abs(u0[0] * u2[1] - u0[1] * u2[0])
+    dot_02 = abs(u0[0] * u2[0] + u0[1] * u2[1])
+    dot_01 = abs(u0[0] * u1[0] + u0[1] * u1[1])
+    cross_1m = abs(u1[0] * u_missing[1] - u1[1] * u_missing[0])
+    dot_1m = abs(u1[0] * u_missing[0] + u1[1] * u_missing[1])
+    if cross_02 > 0.15 or dot_02 < 0.7 or dot_01 > 0.3:
+        return False
+    # The fourth side is not drawn: the gap between start and end must be
+    # parallel to the middle edge (the two perpendicular edges together with
+    # the two long edges describe the open annotation frame).
+    return cross_1m <= 0.15 and dot_1m >= 0.7
+
+
+def _annotation_callout_component_keys(
+    cables: Sequence[Feature],
+    assets: Sequence[Feature],
+) -> set[str]:
+    """Exclude annotation-frame callouts that were misclassified as CABLE.
+
+    The callout is an open rectangle (three sides of an annotation frame) and,
+    when present, its 2-vertex leader line.  The leader connects the rectangle
+    to another endpoint or to a PTECH/SITE point; real multi-vertex cable
+    routes are never removed by this rule.
+    """
+    cable_list = list(cables)
+    if not cable_list:
+        return set()
+    points_by_key = {
+        feature.feature_key: [tuple(p[:2]) for p in feature.native_points]
+        for feature in cable_list
+        if feature.native_points
+    }
+    rectangle_keys = {
+        key for key, points in points_by_key.items()
+        if _is_open_rectangle_callout(points)
+    }
+    if not rectangle_keys:
+        return set()
+
+    other_endpoints = []
+    for key, points in points_by_key.items():
+        if len(points) >= 2:
+            other_endpoints.extend((key, point) for point in (points[0], points[-1]))
+    asset_points = [
+        tuple(float(v) for v in feature.native_centroid)
+        for feature in assets if feature.native_points
+    ]
+
+    noise_keys = set(rectangle_keys)
+    for rect_key in rectangle_keys:
+        rect_points = points_by_key[rect_key]
+        for key, points in points_by_key.items():
+            if key == rect_key or len(points) != 2:
+                continue
+            connected = any(
+                math.dist(rect_point, line_endpoint) <= 1.0
+                for rect_point in rect_points
+                for line_endpoint in (points[0], points[-1])
+            )
+            if not connected:
+                continue
+            far_endpoint = (
+                points[-1]
+                if min(math.dist(points[0], point) for point in rect_points)
+                <= min(math.dist(points[-1], point) for point in rect_points)
+                else points[0]
+            )
+            reaches_network = (
+                any(
+                    math.dist(far_endpoint, endpoint) <= 1.0
+                    for _, endpoint in other_endpoints
+                    if not (
+                        endpoint in rect_points
+                    )
+                )
+                or any(
+                    math.dist(far_endpoint, asset_point) <= 2.0
+                    for asset_point in asset_points
+                )
+            )
+            if reaches_network:
+                noise_keys.add(key)
+    return noise_keys
+
+
+def _isolated_short_cable_keys(
+    cables: Sequence[Feature],
+    assets: Sequence[Feature],
+    sling_layers: set[str],
+) -> set[str]:
+    """Short SLING_WIRE lines with no endpoint near an asset or another CABLE.
+
+    Legend/style sheets draw one short sling specimen beside the symbol
+    catalog (e.g. a cyan 9 m line on a SLING WIRE layer).  A real sling span
+    always ends on a PTECH/SITE or continues into the cable network, so
+    endpoint isolation is safe evidence for removal.  The rule is limited to
+    reviewed sling layers so a short standalone FO feeder is never removed.
+    """
+    cable_list = list(cables)
+    points_by_key = {
+        feature.feature_key: [tuple(p[:2]) for p in feature.native_points]
+        for feature in cable_list
+        if feature.native_points
+    }
+    endpoints_by_key = {
+        key: (points[0], points[-1])
+        for key, points in points_by_key.items()
+        if len(points) >= 2
+    }
+    asset_points = [
+        tuple(float(v) for v in feature.native_centroid)
+        for feature in assets if feature.native_points
+    ]
+    noise_keys: set[str] = set()
+    for key, (start, end) in endpoints_by_key.items():
+        points = points_by_key[key]
+        if len(points) != 2:
+            continue
+        cable_feature = next(
+            (feature for feature in cable_list if feature.feature_key == key),
+            None,
+        )
+        if cable_feature is None or str(cable_feature.source_layer).strip().upper() not in sling_layers:
+            continue
+        if math.dist(start, end) > 20.0:
+            continue
+        if any(
+            math.dist(endpoint, asset_point) <= 2.0
+            for endpoint in (start, end)
+            for asset_point in asset_points
+        ):
+            continue
+        other_endpoints = [
+            endpoint
+            for other_key, (left, right) in endpoints_by_key.items()
+            if other_key != key
+            for endpoint in (left, right)
+        ]
+        if any(
+            math.dist(endpoint, other) <= 2.0
+            for endpoint in (start, end)
+            for other in other_endpoints
+        ):
+            continue
+        noise_keys.add(key)
+    return noise_keys
+
+
 _ALLOWLIST_FIELDS = frozenset({
     "reason", "candidate_class", "source_layer", "dwg_type", "block_name",
 })
@@ -562,6 +737,7 @@ def classify_entities(
     *,
     coverage_policy: str | None = None,
     coverage_allowlist: Sequence[str | Mapping[str, Any]] | None = None,
+    catalog_roots: frozenset[str] = frozenset(),
 ):
     """Classify only reviewed semantic mappings and account for every abstention.
 
@@ -603,6 +779,14 @@ def classify_entities(
         )
 
     for entity in model_entities:
+        if entity.entity_key in catalog_roots:
+            # Scene-partition catalog roots are aligned symbol specimens on a
+            # legend/style sheet (e.g. coloured POLE/BOITE samples).  They are
+            # diagnostic evidence only and must never become delivery assets.
+            coverage_records.append(_coverage_record(
+                entity, "scene_partition_catalog_root", "EVIDENCE_ONLY",
+            ))
+            continue
         if _is_materialized_block_entity(entity) and entity.dwg_type.upper() not in _ANNOTATION_CARRIER_TYPES:
             # Issue 4 materializes block-definition members as evidence so
             # their TEXT/MTEXT labels can enter semantics.  Non-annotation
@@ -722,6 +906,17 @@ def classify_entities(
     by_class = defaultdict(list)
     for feature in features:
         by_class[feature.feature_class].append(feature)
+    callout_noise_keys = _annotation_callout_component_keys(
+        by_class["CABLE"], by_class["PTECH"] + by_class["SITE"],
+    )
+    callout_noise_keys.update(_isolated_short_cable_keys(
+        by_class["CABLE"],
+        by_class["PTECH"] + by_class["SITE"],
+        {
+            str(layer).strip().upper()
+            for layer in getattr(registry, "layers", {}).get("sling_wire", ())
+        },
+    ))
     annotation_families = tuple(getattr(registry, "annotation_families", ()))
     compiled_families = sorted(
         [
@@ -852,6 +1047,87 @@ def classify_entities(
                 text=text,
             ))
 
+    # Some validation drawings encode PTECH/SITE devices as bare POINT
+    # entities on a map-point layer rather than as INSERTs.  A reviewed
+    # annotation family is the only evidence that a POINT is a device: create
+    # one target feature per labelled point so the family assignment contract
+    # can claim it.  Points already mapped as INSERT features, and points
+    # without a matching reviewed label, remain untouched.
+    point_candidates = [
+        entity for entity in model_entities
+        if entity.dwg_type.upper() == "POINT"
+        and entity.entity_key not in mapped_entities
+    ]
+    used_point_entities: set[str] = set()
+    point_feature_by_family: defaultdict[str, set[str]] = defaultdict(set)
+    for family, _, _, _ in compiled_families:
+        if family.target_class not in {"PTECH", "SITE"}:
+            continue
+        for annotation in sorted(
+            annotations_by_family[family.family_id],
+            key=lambda item: (item.text.casefold(), item.entity_key),
+        ):
+            # Do not materialize a POINT target when the annotation already
+            # has an eligible INSERT-derived target inside the family
+            # tolerance: the normal assignment loop owns that relationship.
+            if any(
+                _annotation_target_eligible(target)
+                and math.dist(annotation.centroid, target.native_centroid)
+                <= family.max_distance_native_m
+                for target in by_class[family.target_class]
+                if target.feature_key not in point_feature_by_family[family.family_id]
+            ):
+                continue
+            nearby = sorted(
+                (
+                    math.dist(annotation.centroid, point.centroid),
+                    point.handle,
+                    point.entity_key,
+                    point,
+                )
+                for point in point_candidates
+                if point.entity_key not in used_point_entities
+            )
+            if not nearby:
+                continue
+            nearest = nearby[0]
+            distance, point = nearest[0], nearest[3]
+            if distance > family.max_distance_native_m:
+                continue
+            # Never duplicate an existing INSERT-derived target at the same
+            # location: the reviewed label will attach to that feature
+            # through the normal assignment loop.
+            if any(
+                math.dist(feature.native_centroid, point.centroid) <= 0.5
+                for feature in by_class[family.target_class]
+            ):
+                continue
+            used_point_entities.add(point.entity_key)
+            point_feature = Feature(
+                feature_key=_feature_key(point, family.target_class),
+                feature_class=family.target_class,
+                geometry_kind="Point",
+                native_points=list(point.points),
+                source_entity_key=point.entity_key,
+                source_handle=point.handle,
+                source_layer=point.layer,
+                geometry_role="SOURCE_ASSET",
+                style=point.style,
+                attributes={"CODE": _generated_code(family.target_class, point.handle)},
+                display_label="",
+                label_provenance="UNAVAILABLE",
+                field_provenance={"CODE": _GENERATED_CODE_PROVENANCE},
+                lineage=[{
+                    "operation": "identity",
+                    "source_entity_key": point.entity_key,
+                    "max_displacement_m": 0.0,
+                }],
+            )
+            features.append(point_feature)
+            by_class[family.target_class].append(point_feature)
+            point_feature_by_family[family.family_id].add(point_feature.feature_key)
+            mapped_entities.add(point.entity_key)
+
     annotation_candidates = []
     annotation_assignments_by_family = {}
     annotation_assignments = defaultdict(lambda: {
@@ -885,7 +1161,10 @@ def classify_entities(
         family_targets = [
             target
             for target in by_class[family.target_class]
-            if target_layer_pattern.fullmatch(target.source_layer.strip())
+            if (
+                target_layer_pattern.fullmatch(target.source_layer.strip())
+                or target.feature_key in point_feature_by_family[family.family_id]
+            )
         ]
         assignments, failures, candidates = _assign_family_annotations(
             annotations,
@@ -1342,6 +1621,12 @@ def classify_entities(
             source = entity_by_key.get(feature.source_entity_key)
             coverage_records.append(_coverage_record(
                 source, "legend_core_sample", feature.feature_class,
+            ))
+            continue
+        if feature.feature_key in callout_noise_keys:
+            source = entity_by_key.get(feature.source_entity_key)
+            coverage_records.append(_coverage_record(
+                source, "annotation_callout_noise", feature.feature_class,
             ))
             continue
         retained.append(feature)

@@ -1388,6 +1388,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
         registry,
         coverage_policy=registry.semantic_coverage_policy,
         coverage_allowlist=list(registry.semantic_coverage_allowlist),
+        catalog_roots=catalog_roots,
     )
     semantic_diagnostics["legend_spatial"] = {
         "flagged_entity_keys": sorted(legend_flag_map.keys()),

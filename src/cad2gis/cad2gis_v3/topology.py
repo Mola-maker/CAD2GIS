@@ -663,18 +663,19 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
     # degenerate duplicate vertices are skipped during curve materialization,
     # so native-point segment indices can drift from ``source_segment_index``
     # and leave DIMENSION evidence pointing at a segment key that no longer
-    # exists.  Each materialized segment is indexed by its own endpoints.
-    cable_segments = _segment_index(
-        (
-            (route.feature_key, (
-                segment["delivery_native_points"][0],
-                segment["delivery_native_points"][-1],
-            ))
-            for route in routes
-            for segment in route_source_segments[route.feature_key]
-        ),
-        exact,
-    )
+    # exists.  Build the index per materialized segment (each entry carries
+    # its own ``source_segment_index``) rather than asking ``_segment_index``
+    # to enumerate a two-point polyline, which would report index 0 for
+    # every span.
+    cable_segments = defaultdict(list)
+    for route in routes:
+        for segment in route_source_segments[route.feature_key]:
+            points = segment["delivery_native_points"]
+            if len(points) < 2:
+                continue
+            cable_segments[_segment_key(
+                points[0], points[-1], exact,
+            )].append((route.feature_key, int(segment["source_segment_index"])))
     sling_entities = [
         entity for entity in entities
         if entity.cad_role == "model"

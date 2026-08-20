@@ -1360,6 +1360,7 @@ def compile_onboarding_proposal(
                 registry,
                 coverage_policy=registry.semantic_coverage_policy,
                 coverage_allowlist=list(registry.semantic_coverage_allowlist),
+                catalog_roots=getattr(plan_domain, "catalog_roots", frozenset()),
             )
             feature_counts = dict(
                 sorted(Counter(item.feature_class for item in features).items())

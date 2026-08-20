@@ -1,26 +1,26 @@
 {
   "annotation_families": [
     {
-      "family_id": "pole_7m_2p5in",
+      "family_id": "auto_new_pole_7m_2_5inch",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-POLE_7M_2P5IN-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
       "require_same_layer": false,
-      "rule_id": "AI-ANNOTATION-POLE_7M_2P5IN-001",
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
       "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7M\\ 2\\.5INCH$",
       "target_class": "PTECH",
       "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
-      "text_pattern": "NP7|3'"
+      "text_pattern": "^NP\\d+$"
     },
     {
-      "family_id": "pole_9m_4in",
+      "family_id": "auto_new_pole_9m_4inch",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-POLE_9M_4IN-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
       "require_same_layer": false,
-      "rule_id": "AI-ANNOTATION-POLE_9M_4IN-001",
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
       "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
       "target_class": "PTECH",
       "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
-      "text_pattern": "4\"|NP9"
+      "text_pattern": "^NP\\d+$"
     },
     {
       "family_id": "auto_ext_pole",
@@ -121,7 +121,9 @@
   },
   "labels": {},
   "layers": {
-    "homepass": [],
+    "homepass": [
+      "Homepass Number"
+    ],
     "sling_wire": [
       "SLING WIRE"
     ],
@@ -143,8 +145,8 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-a03aacdc2846",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:29052e75a0fef3dea8ed7af76a0e774ac1f3246e60cf28273228dabfd09949a2",
-    "reviewed_at": "2026-08-19T12:05:33.776505Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:9b3ad6f9b9649db65b2546b18619d228fc2715d15199cc312e6908b48b3edc39",
+    "reviewed_at": "2026-08-20T05:58:30.357142Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
