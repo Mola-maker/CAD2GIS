@@ -35,10 +35,10 @@ applied even when the declared-CRS heuristic passes.
 | Site | run_status | PTECH | BOITE | SITE | IMB | CABLE | CABLE_SEGMENT | ZPM | DIM spans | placement |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
 | semarang_sf | CONDITIONAL | 19 | 0 | 1 | 0 | 1 | 18 | 0 | 18/18 | OSM coarse anchor |
-| darat_sekip_sf | CONDITIONAL | 13 | 1 | 1 | 0 | 2 | 24 | 0 | 12/24 | DWG real coordinates |
-| manado-tomohon_uplink | CONDITIONAL | 49 | 16 | 1 | 243 | 16 | 93 | 15 | 42/93 | DWG real coordinates |
-| tinggede | CONDITIONAL | 51 | 22 | 1 | 337 | 16 | 65 | 22 | 35/65 | OSM coarse anchor |
-| taipa | CONDITIONAL | 112 | 26 | 1 | 369 | 17 | 118 | 26 | 100/118 | OSM coarse anchor |
+| darat_sekip_sf | CONDITIONAL | 13 | 3 | 1 | 0 | 2 | 24 | 0 | 12/24 | DWG real coordinates |
+| manado-tomohon_uplink | CONDITIONAL | 49 | 15 | 1 | 243 | 16 | 93 | 15 | 42/93 | DWG real coordinates |
+| tinggede | CONDITIONAL | 51 | 25 | 1 | 337 | 16 | 65 | 22 | 35/65 | OSM coarse anchor |
+| taipa | CONDITIONAL | 112 | 29 | 1 | 369 | 17 | 118 | 26 | 100/118 | OSM coarse anchor |
 | tinggar | CONDITIONAL | 109 | 31 | 2 | 435 | 17 | 119 | 0 | 89/119* | OSM coarse anchor |
 
 `*` Tinggar has no DIMENSION entities; its integer span labels are read from

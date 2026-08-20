@@ -4,22 +4,33 @@
       "family_id": "auto_new_pole_id_7m_2_5_inches",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_2_5_INCHES-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_2_5_INCHES-001",
       "source_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\ \\(2\\.5\\ inches\\)$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:NEW\\ POLE\\ 7m\\(2\\.5\\ inches\\)|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|PROPOSED\\ NEW\\ POLE\\ 7m|PROPOSES\\ NEW\\ POLE\\ 9m)$",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\ \\(2\\.5\\ inches\\)$",
       "text_pattern": "^MR[^A-Za-z0-9]+PTV[^A-Za-z0-9]+P\\d+$"
     },
     {
       "family_id": "auto_new_pole_id_7m_3_inches",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_3_INCHES-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_3_INCHES-001",
       "source_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\(3\\ inches\\)$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:NEW\\ POLE\\ 7m\\(2\\.5\\ inches\\)|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|PROPOSED\\ NEW\\ POLE\\ 7m|PROPOSES\\ NEW\\ POLE\\ 9m)$",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\(3\\ inches\\)$",
+      "text_pattern": "^MR[^A-Za-z0-9]+PTV[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_new_pole_id_7m_4_inches",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_4_INCHES-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_ID_7M_4_INCHES-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\(4\\ inches\\)$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^NEW\\ POLE\\ ID\\ 7m\\(4\\ inches\\)$",
       "text_pattern": "^MR[^A-Za-z0-9]+PTV[^A-Za-z0-9]+P\\d+$"
     },
     {
@@ -87,6 +98,7 @@
   },
   "insert_layer_families": {
     "BOITE": [
+      "CLOSURE",
       "FAT",
       "FAT AREA",
       "FAT CODE",
@@ -98,12 +110,18 @@
       "NEW POLE 7m(2.5 inches)",
       "NEW POLE 7m(3 inches)",
       "NEW POLE 7m(4 inches)",
+      "NEW POLE ID 7m (2.5 inches)",
+      "NEW POLE ID 7m(3 inches)",
+      "NEW POLE ID 7m(4 inches)",
       "PROPOSED NEW POLE 7m",
       "PROPOSES NEW POLE 9m"
     ],
     "SITE": [
+      "FDT",
       "FDT-Info",
+      "HUB",
       "HUB CENTRAL OFFICE",
+      "OLT",
       "POLE ID",
       "SUB HUB"
     ]
@@ -136,8 +154,8 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 36\\ CORE\\.|FO\\ 48\\ CORE|FO\\ 48\\ CORE\\.|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-f71526ec36d5",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:14b0576340fba515b9b161e0a8e499b9e277a7c89bddde9d73214086a15c3279",
-    "reviewed_at": "2026-08-19T15:01:21.653284Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:68dbf96e43d29c93552c44674947afc458b57142788b93b25e3193ebe9b38e52",
+    "reviewed_at": "2026-08-20T14:16:03.247931Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
