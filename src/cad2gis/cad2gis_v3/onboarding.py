@@ -201,23 +201,40 @@ def _role_suggestions(
         feature_class = _asset_class_hint(str(block))
         if feature_class:
             result["block_families"][feature_class].append(str(block))
-    for layer in insert_layers:
+    # Iterate the full layer census, not only INSERT-bearing layers: drawings
+    # such as tinggar encode BOITE frames as LWPOLYLINEs on ``FAT`` with no
+    # INSERT on that layer, and the semantic layer hint must still make it
+    # eligible as a reviewed BOITE target layer.
+    for layer in layers:
         upper = str(layer).upper()
         observed = class_by_layer.get(str(layer), Counter())
+        layer_hint = _asset_class_hint(upper)
         feature_class = ""
         if observed:
             ranked = observed.most_common()
             total_instances = int(insert_layers.get(layer, 0) or 0)
+            layer_entity_count = int(layers.get(layer, 0) or 0)
             dominant_share = (
                 ranked[0][1] / total_instances if total_instances > 0 else 0.0
             )
+            # A layer can carry one stray INSERT while its deterministic name
+            # semantic dominates (e.g. FAT frame layer with a single FDT
+            # annotation INSERT).  Prefer the reviewed layer-name hint when
+            # the observed INSERT census is only a small fraction of the
+            # layer's entities.
+            sparse_inserts = (
+                total_instances > 0
+                and layer_entity_count > 0
+                and total_instances / layer_entity_count < 0.1
+            )
             if (
-                dominant_share >= 0.6
+                not sparse_inserts
+                and dominant_share >= 0.6
                 and (len(ranked) == 1 or ranked[0][1] > ranked[1][1])
             ):
                 feature_class = ranked[0][0]
         if not feature_class:
-            feature_class = _asset_class_hint(upper)
+            feature_class = layer_hint
         if feature_class:
             result[f"{feature_class.casefold()}_insert_layers"].append(
                 str(layer)

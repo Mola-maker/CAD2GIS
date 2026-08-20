@@ -16,6 +16,7 @@
     "annotation_families": {},
     "delivery_counts": {},
     "feature_counts": {
+      "BOITE": 11,
       "CABLE": 17,
       "IMB": 435,
       "PTECH": 109,
@@ -32,8 +33,8 @@
   },
   "project_id": "source-d4ebc3bbae4d",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:4b23bdd406ff537880cf2bfc85df6e37c5d451221227b66c5e2b6dfbd0924641",
-    "reviewed_at": "2026-08-20T05:41:58.599788Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:dfc534648eb310f4608416e78579272e7c4c4eba3de0199d9383964ba877e955",
+    "reviewed_at": "2026-08-20T13:33:43.292623Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },

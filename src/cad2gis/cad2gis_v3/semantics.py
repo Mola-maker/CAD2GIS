@@ -238,6 +238,59 @@ def _isolated_short_cable_keys(
     return noise_keys
 
 
+def _dangling_cable_leader_keys(
+    cables: Sequence[Feature],
+    assets: Sequence[Feature],
+) -> set[str]:
+    """Remove 2-point leader lines that touch a multi-point CABLE at one end
+    and dangle at the other.
+
+    APD annotation leaders often ride on the same FO layer as the route they
+    annotate: one endpoint lands on the real route, the other floats away from
+    every PTECH/SITE.  A real cable span or lateral ends on an asset or on
+    another cable at both ends.
+    """
+    cable_list = list(cables)
+    points_by_key = {
+        feature.feature_key: [tuple(p[:2]) for p in feature.native_points]
+        for feature in cable_list if feature.native_points
+    }
+    asset_points = [
+        tuple(float(v) for v in feature.native_centroid)
+        for feature in assets if feature.native_points
+    ]
+    endpoint_lookup = [
+        (other_key, endpoint)
+        for other_key, points in points_by_key.items()
+        if len(points) >= 2
+        for endpoint in (points[0], points[-1])
+    ]
+    noise_keys: set[str] = set()
+    for key, points in points_by_key.items():
+        if len(points) != 2:
+            continue
+        shared_other_endpoint = None
+        for endpoint_index, endpoint in enumerate(points):
+            for other_key, other_endpoint in endpoint_lookup:
+                if other_key == key:
+                    continue
+                if math.dist(endpoint, other_endpoint) <= 1.0:
+                    shared_other_endpoint = endpoint_index
+                    break
+            if shared_other_endpoint is not None:
+                break
+        if shared_other_endpoint is None:
+            continue
+        other_endpoint = points[1 - shared_other_endpoint]
+        if any(
+            math.dist(other_endpoint, asset_point) <= 2.0
+            for asset_point in asset_points
+        ):
+            continue
+        noise_keys.add(key)
+    return noise_keys
+
+
 _ALLOWLIST_FIELDS = frozenset({
     "reason", "candidate_class", "source_layer", "dwg_type", "block_name",
 })
@@ -532,6 +585,7 @@ def _annotation_link_kind(annotation: SourceEntity, target: Feature) -> tuple[in
 def _assign_family_annotations(
     annotations, targets, tolerance, *, family_id="", require_same_layer=False,
     relation_priority: bool = True,
+    cross_layer_target_keys: set[str] | frozenset[str] = frozenset(),
 ):
     """Maximum-cardinality, minimum-distance one-to-one annotation matching.
 
@@ -555,6 +609,7 @@ def _assign_family_annotations(
         for target in targets:
             if (
                 require_same_layer
+                and target.feature_key not in cross_layer_target_keys
                 and annotation.layer.strip().casefold()
                 != target.source_layer.strip().casefold()
             ):
@@ -917,6 +972,9 @@ def classify_entities(
             for layer in getattr(registry, "layers", {}).get("sling_wire", ())
         },
     ))
+    callout_noise_keys.update(_dangling_cable_leader_keys(
+        by_class["CABLE"], by_class["PTECH"] + by_class["SITE"],
+    ))
     annotation_families = tuple(getattr(registry, "annotation_families", ()))
     compiled_families = sorted(
         [
@@ -1047,28 +1105,69 @@ def classify_entities(
                 text=text,
             ))
 
-    # Some validation drawings encode PTECH/SITE devices as bare POINT
-    # entities on a map-point layer rather than as INSERTs.  A reviewed
-    # annotation family is the only evidence that a POINT is a device: create
-    # one target feature per labelled point so the family assignment contract
-    # can claim it.  Points already mapped as INSERT features, and points
-    # without a matching reviewed label, remain untouched.
+    # Some validation drawings encode devices as bare POINT entities
+    # (PTECH/SITE) or as small closed rectangular frames (BOITE) instead of
+    # INSERTs.  A reviewed annotation family is the only evidence that such
+    # geometry is a device: create one target feature per labelled candidate
+    # so the family assignment contract can claim it.  Entities already
+    # mapped as INSERT features, and entities without a matching reviewed
+    # label, remain untouched.
     point_candidates = [
         entity for entity in model_entities
         if entity.dwg_type.upper() == "POINT"
         and entity.entity_key not in mapped_entities
     ]
+    frame_candidates = []
+    for entity in model_entities:
+        if entity.entity_key in mapped_entities:
+            continue
+        if entity.dwg_type.upper() != "LWPOLYLINE":
+            continue
+        points = entity.points
+        if len(points) < 4:
+            continue
+        is_closed_rectangle = math.dist(points[0], points[-1]) <= 1.0
+        if is_closed_rectangle:
+            area = abs(sum(
+                points[i][0] * points[(i + 1) % len(points)][1]
+                - points[(i + 1) % len(points)][0] * points[i][1]
+                for i in range(len(points))
+            )) / 2.0
+            if not (0.05 <= area <= 400.0):
+                continue
+        elif not _is_open_rectangle_callout(points):
+            continue
+        frame_candidates.append(entity)
+    integer_text_entities = [
+        entity for entity in model_entities
+        if entity.dwg_type in _ANNOTATION_CARRIER_TYPES
+        and str(entity.text or "").strip().isdigit()
+        and (
+            "LABEL" in str(entity.layer).upper()
+            or "FAT" in str(entity.layer).upper()
+        )
+    ]
     used_point_entities: set[str] = set()
+    used_frame_entities: set[str] = set()
+    used_integer_texts: set[str] = set()
     point_feature_by_family: defaultdict[str, set[str]] = defaultdict(set)
     for family, _, _, _ in compiled_families:
-        if family.target_class not in {"PTECH", "SITE"}:
+        if family.target_class not in {"PTECH", "SITE", "BOITE"}:
             continue
+        candidates = (
+            frame_candidates if family.target_class == "BOITE"
+            else point_candidates
+        )
+        used_candidates = (
+            used_frame_entities if family.target_class == "BOITE"
+            else used_point_entities
+        )
         for annotation in sorted(
             annotations_by_family[family.family_id],
             key=lambda item: (item.text.casefold(), item.entity_key),
         ):
-            # Do not materialize a POINT target when the annotation already
-            # has an eligible INSERT-derived target inside the family
+            # Do not materialize a geometry target when the annotation
+            # already has an eligible INSERT-derived target inside the family
             # tolerance: the normal assignment loop owns that relationship.
             if any(
                 _annotation_target_eligible(target)
@@ -1080,53 +1179,84 @@ def classify_entities(
                 continue
             nearby = sorted(
                 (
-                    math.dist(annotation.centroid, point.centroid),
-                    point.handle,
-                    point.entity_key,
-                    point,
+                    math.dist(annotation.centroid, candidate.centroid),
+                    candidate.handle,
+                    candidate.entity_key,
+                    candidate,
                 )
-                for point in point_candidates
-                if point.entity_key not in used_point_entities
+                for candidate in candidates
+                if candidate.entity_key not in used_candidates
             )
             if not nearby:
                 continue
             nearest = nearby[0]
-            distance, point = nearest[0], nearest[3]
+            distance, candidate = nearest[0], nearest[3]
             if distance > family.max_distance_native_m:
                 continue
             # Never duplicate an existing INSERT-derived target at the same
             # location: the reviewed label will attach to that feature
             # through the normal assignment loop.
             if any(
-                math.dist(feature.native_centroid, point.centroid) <= 0.5
+                math.dist(feature.native_centroid, candidate.centroid) <= 0.5
                 for feature in by_class[family.target_class]
             ):
                 continue
-            used_point_entities.add(point.entity_key)
+            used_candidates.add(candidate.entity_key)
+            if family.target_class == "BOITE":
+                centroid = list(candidate.centroid)
+            else:
+                centroid = list(candidate.points[0] if candidate.points else candidate.centroid)
+            attributes = {
+                "CODE": _generated_code(family.target_class, candidate.handle),
+            }
+            provenance = {"CODE": _GENERATED_CODE_PROVENANCE}
+            if family.target_class == "BOITE":
+                integer_nearby = sorted(
+                    (
+                        math.dist(candidate.centroid, item.centroid),
+                        item.handle,
+                        item.entity_key,
+                        item,
+                    )
+                    for item in integer_text_entities
+                    if item.entity_key not in used_integer_texts
+                )
+                if integer_nearby and integer_nearby[0][0] <= 20.0:
+                    number_entity = integer_nearby[0][3]
+                    used_integer_texts.add(number_entity.entity_key)
+                    attributes["DEVICE_NUMBER"] = number_entity.text.strip()
+                    provenance["DEVICE_NUMBER"] = "DWG_DIRECT:nearby-integer-label"
             point_feature = Feature(
-                feature_key=_feature_key(point, family.target_class),
+                feature_key=_feature_key(candidate, family.target_class),
                 feature_class=family.target_class,
                 geometry_kind="Point",
-                native_points=list(point.points),
-                source_entity_key=point.entity_key,
-                source_handle=point.handle,
-                source_layer=point.layer,
+                native_points=[centroid],
+                source_entity_key=candidate.entity_key,
+                source_handle=candidate.handle,
+                source_layer=candidate.layer,
                 geometry_role="SOURCE_ASSET",
-                style=point.style,
-                attributes={"CODE": _generated_code(family.target_class, point.handle)},
+                style=(
+                    candidate.style if family.target_class == "BOITE"
+                    else annotation.style
+                ),
+                attributes=attributes,
                 display_label="",
                 label_provenance="UNAVAILABLE",
-                field_provenance={"CODE": _GENERATED_CODE_PROVENANCE},
+                field_provenance=provenance,
                 lineage=[{
-                    "operation": "identity",
-                    "source_entity_key": point.entity_key,
+                    "operation": (
+                        "rectangular_frame_centroid"
+                        if family.target_class == "BOITE"
+                        else "identity"
+                    ),
+                    "source_entity_key": candidate.entity_key,
                     "max_displacement_m": 0.0,
                 }],
             )
             features.append(point_feature)
             by_class[family.target_class].append(point_feature)
             point_feature_by_family[family.family_id].add(point_feature.feature_key)
-            mapped_entities.add(point.entity_key)
+            mapped_entities.add(candidate.entity_key)
 
     annotation_candidates = []
     annotation_assignments_by_family = {}
@@ -1172,6 +1302,7 @@ def classify_entities(
             family.max_distance_native_m,
             family_id=family.family_id,
             require_same_layer=family.require_same_layer,
+            cross_layer_target_keys=point_feature_by_family[family.family_id],
         )
         for item in failures:
             unresolved.append({**item, "target_class": family.target_class})

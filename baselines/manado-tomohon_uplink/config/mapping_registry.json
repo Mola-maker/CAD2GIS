@@ -15,66 +15,66 @@
       "family_id": "auto_kmz_fat",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_KMZ_FAT-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_KMZ_FAT-001",
       "source_layer_pattern": "(?i)^KMZ\\ FAT$",
       "target_class": "BOITE",
-      "target_layer_pattern": "(?i)^(?:CLOSURE|FAT|FAT\\ CODE|FAT_Info)$",
+      "target_layer_pattern": "(?i)^KMZ\\ FAT$",
       "text_pattern": "^MSRG\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+A\\d+$"
     },
     {
       "family_id": "auto_fdt_sp",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_SP-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_FDT_SP-001",
       "source_layer_pattern": "(?i)^FDT\\ SP$",
       "target_class": "SITE",
-      "target_layer_pattern": "(?i)^(?:FDT)$",
+      "target_layer_pattern": "(?i)^FDT\\ SP$",
       "text_pattern": "^G\\d+$"
     },
     {
       "family_id": "auto_pole_id",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_POLE_ID-001",
       "source_layer_pattern": "(?i)^POLE\\ ID$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(2'5\\ inches\\)|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ HC|Pole\\ 7m\\ 4')$",
+      "target_layer_pattern": "(?i)^POLE\\ ID$",
       "text_pattern": "^MR[^A-Za-z0-9]+MSRG\\d+[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+P\\d+$"
     },
     {
       "family_id": "auto_pole_id_2",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_2-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_2-001",
       "source_layer_pattern": "(?i)^POLE\\ ID$",
       "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(2'5\\ inches\\)|NEW\\ POLE\\ 7m\\(3\\ inches\\)|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ HC|Pole\\ 7m\\ 4')$",
+      "target_layer_pattern": "(?i)^POLE\\ ID$",
       "text_pattern": "^MR[^A-Za-z0-9]+UP[^A-Za-z0-9]+TMH[^A-Za-z0-9]+S\\d+[^A-Za-z0-9]+P\\d+$"
     },
     {
       "family_id": "auto_fdt_structure",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_STRUCTURE-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_FDT_STRUCTURE-001",
       "source_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "target_class": "SITE",
-      "target_layer_pattern": "(?i)^(?:FDT)$",
+      "target_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "text_pattern": "^OUT\\d+$"
     },
     {
       "family_id": "auto_fdt_structure_2",
       "max_distance_native_m": 15.0,
       "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FDT_STRUCTURE_2-001",
-      "require_same_layer": false,
+      "require_same_layer": true,
       "rule_id": "AI-ANNOTATION-AUTO_FDT_STRUCTURE_2-001",
       "source_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "target_class": "SITE",
-      "target_layer_pattern": "(?i)^(?:FDT)$",
+      "target_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "text_pattern": "^fArial[^A-Za-z0-9]+b\\d+[^A-Za-z0-9]+i\\d+[^A-Za-z0-9]+c\\d+[^A-Za-z0-9]+p\\d+[^A-Za-z0-9]+The[^A-Za-z0-9]+first[^A-Za-z0-9]+splicing[^A-Za-z0-9]+tray$"
     }
   ],
@@ -130,20 +130,31 @@
     "BOITE": [
       "CLOSURE",
       "FAT",
+      "FAT AREA",
       "FAT CODE",
-      "FAT_Info"
+      "FAT SP",
+      "FAT_Info",
+      "KMZ FAT",
+      "OTB"
     ],
     "PTECH": [
       "EXT FM POLE",
       "EXT POLE",
+      "NEW POLE 7M 2.5INCH",
       "NEW POLE 7m(2'5 inches)",
       "NEW POLE 7m(3 inches)",
       "NEW POLE 7m(4 inches)",
+      "NEW POLE 9M 4INCH",
       "NEW POLE HC",
-      "Pole 7m 4'"
+      "Pole 7m 4'",
+      "POLE ID"
     ],
     "SITE": [
-      "FDT"
+      "FDT",
+      "FDT SP",
+      "FDT STRUCTURE",
+      "HUB",
+      "OLT"
     ]
   },
   "labels": {},
@@ -173,8 +184,8 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-100a90e5f833",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:5800172f1aa904f73b4ed9186615dc0ebc86b1d4fcf228eb534d895f138cbcaa",
-    "reviewed_at": "2026-08-19T14:59:54.685769Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:25cc5ec615c51d1da7482f022dd628857ea9968f1c3c0297aeba98fc091f94fc",
+    "reviewed_at": "2026-08-20T13:36:56.897267Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
