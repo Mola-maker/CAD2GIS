@@ -24,6 +24,221 @@ _NOISE_DISPOSITIONS = frozenset({
     "layer_non_subject",
 })
 
+# A topology-abstract subdrawing is a translated copy of a reviewed cable
+# route.  The copy repeats the main cable geometry but has no PTECH/SITE pole
+# INSERT anchors near it; the original drawing keeps the network anchors.
+_TOPOLOGY_ANCHOR_RADIUS_M = 50.0
+_TOPOLOGY_MIN_LENGTH_M = 10.0
+_TOPOLOGY_SHAPE_TOLERANCE_FRACTION = 0.005
+_TOPOLOGY_MIN_TRANSLATION_M = 10.0
+
+# Materialized block-definition frames (title-block/FDT specimens) are
+# evidence-only unless they sit inside the deployment-anchor neighbourhood.
+# The anchor radius is scale-free (10 x median pole spacing) with this
+# absolute floor for drawings whose poles are very dense.
+_MATERIALIZED_FRAME_GAP_MIN = 100.0
+
+
+def _is_materialized_block_entity(entity: Any) -> bool:
+    plan_domain = getattr(entity, "raw_properties", {}).get("plan_domain")
+    return (
+        isinstance(plan_domain, Mapping)
+        and plan_domain.get("materialization") == "nested-insert-affine"
+    )
+
+
+def _segment_distance_m(point: Sequence[float], start: Sequence[float], end: Sequence[float]) -> float:
+    """Perpendicular/endpoint distance from a point to one 2-D segment."""
+    px, py = float(point[0]), float(point[1])
+    ax, ay = float(start[0]), float(start[1])
+    bx, by = float(end[0]), float(end[1])
+    dx, dy = bx - ax, by - ay
+    segment_sq = dx * dx + dy * dy
+    if segment_sq <= 0.0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / segment_sq))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+
+
+def _centroid_near_polyline(
+    point: Sequence[float], polyline: Sequence[Sequence[float]], radius_m: float,
+) -> bool:
+    for start, end in zip(polyline, polyline[1:]):
+        if _segment_distance_m(point, start, end) <= radius_m:
+            return True
+    return False
+
+
+def _polyline_bbox(polyline: Sequence[Sequence[float]]) -> tuple[float, float, float, float]:
+    xs = [float(point[0]) for point in polyline]
+    ys = [float(point[1]) for point in polyline]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _translated_duplicate_route_pairs(
+    routes: Sequence[Any],
+) -> tuple[list[tuple[Any, Any, float]], list[dict[str, Any]]]:
+    """Find same-layer polylines that are near-exact translations of each other.
+
+    APD sheets put the real cable route and its topology-abstract copy side by
+    side.  Both copies keep the same layer and vertex count; the abstract copy
+    is an exact translation of the real route.  Short legend swatches are
+    excluded by the caller's length floor, and a minimum translation distance
+    keeps collocated duplicates (CAD double-drawn lines) out of this detector.
+    """
+    by_shape: dict[tuple[str, int], list[Any]] = {}
+    for route in routes:
+        by_shape.setdefault(
+            (str(route.layer).strip().casefold(), len(route.points)),
+            [],
+        ).append(route)
+
+    pairs: list[tuple[Any, Any, float]] = []
+    records: list[dict[str, Any]] = []
+    for group in by_shape.values():
+        if len(group) < 2:
+            continue
+        for index, left in enumerate(group):
+            for right in group[index + 1:]:
+                left_points = left.points
+                right_points = right.points
+                dx = float(right_points[0][0] - left_points[0][0])
+                dy = float(right_points[0][1] - left_points[0][1])
+                translation = math.hypot(dx, dy)
+                min_x, min_y, max_x, max_y = _polyline_bbox(left_points)
+                span = max(max_x - min_x, max_y - min_y)
+                if span <= 0.0:
+                    continue
+                if translation < max(_TOPOLOGY_MIN_TRANSLATION_M, 0.01 * span):
+                    continue
+                max_deviation = max(
+                    math.hypot(
+                        float(right_point[0]) - (float(left_point[0]) + dx),
+                        float(right_point[1]) - (float(left_point[1]) + dy),
+                    )
+                    for left_point, right_point in zip(left_points, right_points)
+                )
+                tolerance = max(0.5, _TOPOLOGY_SHAPE_TOLERANCE_FRACTION * span)
+                if max_deviation > tolerance:
+                    continue
+                pairs.append((left, right, max_deviation))
+                records.append({
+                    "left_handle": left.handle,
+                    "right_handle": right.handle,
+                    "layer": left.layer,
+                    "point_count": len(left_points),
+                    "translation_dx_m": dx,
+                    "translation_dy_m": dy,
+                    "max_deviation_m": max_deviation,
+                })
+    return pairs, records
+
+
+def _topology_subdrawing_keys(
+    route_entities: Sequence[Any],
+    anchor_inserts: Sequence[Any],
+) -> tuple[frozenset[str], list[dict[str, Any]]]:
+    """Detect unanchored translated copies of reviewed cable routes.
+
+    The drawing-side copy whose route has no PTECH/SITE INSERT within the
+    anchor radius is the topology abstraction; the copy corroborated by pole
+    INSERTs is the deployment geometry.  When neither or both copies have
+    anchors the detector stays fail-closed and keeps both routes.
+    """
+    pairs, pair_records = _translated_duplicate_route_pairs(route_entities)
+
+    def support_count(route: Any) -> int:
+        return sum(
+            1
+            for insert in anchor_inserts
+            if _centroid_near_polyline(
+                insert.centroid, route.points, _TOPOLOGY_ANCHOR_RADIUS_M,
+            )
+        )
+
+    subdrawing_keys: set[str] = set()
+    records: list[dict[str, Any]] = []
+    for left, right, max_deviation in pairs:
+        left_support = support_count(left)
+        right_support = support_count(right)
+        subdrawing = None
+        if left_support == 0 and right_support > 0:
+            subdrawing = left
+        elif right_support == 0 and left_support > 0:
+            subdrawing = right
+        record = {
+            "left_handle": left.handle,
+            "right_handle": right.handle,
+            "layer": left.layer,
+            "left_anchor_support": left_support,
+            "right_anchor_support": right_support,
+            "max_deviation_m": max_deviation,
+            "disposition": (
+                "subdrawing" if subdrawing is not None else "ambiguous"
+            ),
+            "excluded_handle": subdrawing.handle if subdrawing is not None else None,
+        }
+        records.append(record)
+        if subdrawing is not None:
+            subdrawing_keys.add(subdrawing.entity_key)
+    return frozenset(subdrawing_keys), records
+
+
+def _deployment_anchor_radius(anchor_points: Sequence[Sequence[float]]) -> float | None:
+    """Scale-free "main drawing" radius from pole (PTECH) insert spacing.
+
+    The legend detector body bbox is not safe for materialized-frame noise:
+    singleton outliers stay in its body bbox because only accepted clusters
+    are removed, so a title-block frame can sit "inside" a body that spans the
+    whole sheet.  Pole inserts are reviewed deployment anchors; the median
+    nearest-neighbour distance between them is a local density estimate, and
+    ten such spacings (at least 100 m) is a generous deployed-device
+    neighbourhood that works across CRS scales and multi-cluster drawings.
+    """
+    distances: list[float] = []
+    for index, point in enumerate(anchor_points):
+        neighbours = [
+            math.hypot(
+                float(point[0]) - float(other[0]),
+                float(point[1]) - float(other[1]),
+            )
+            for other_index, other in enumerate(anchor_points)
+            if other_index != index
+        ]
+        if neighbours:
+            distances.append(min(neighbours))
+    positive = sorted(distance for distance in distances if distance > 0.01)
+    if not positive:
+        return None
+    median = positive[len(positive) // 2]
+    return max(_MATERIALIZED_FRAME_GAP_MIN, 10.0 * median)
+
+
+def _materialized_frame_outlier(
+    entity: Any,
+    anchor_points: Sequence[Sequence[float]],
+    anchor_radius: float | None,
+) -> bool:
+    """True for a materialized frame with no deployment anchor nearby.
+
+    Materialized block-definition frames on reviewed BOITE layers are title/
+    specimen geometry more often than deployed devices.  A frame is only a
+    device candidate when it sits inside the deployment-anchor neighbourhood;
+    otherwise it is deterministic noise.  With no reviewed pole anchors the
+    guard fails closed and keeps every frame.
+    """
+    if anchor_radius is None:
+        return False
+    if not _is_materialized_block_entity(entity):
+        return False
+    if entity.dwg_type.upper() != "LWPOLYLINE":
+        return False
+    x, y = (float(value) for value in entity.centroid[:2])
+    return min(
+        math.hypot(x - float(point[0]), y - float(point[1]))
+        for point in anchor_points
+    ) > anchor_radius
+
 
 def _layer_statistics(
     entities: Sequence[SourceEntity],
@@ -156,6 +371,8 @@ def apply_spatial_denoising(
     reviewed_insert_layers: Sequence[str] = (),
     cable_protect_layers: Sequence[str] = (),
     dimension_protect_layers: Sequence[str] = (),
+    boite_frame_layers: Sequence[str] = (),
+    topology_anchor_insert_layers: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Run both spatial detectors, optionally call LLM, and exclude noise.
 
@@ -192,6 +409,13 @@ def apply_spatial_denoising(
             (registry).  DIMENSION entities on these layers are independent
             measurement evidence and are never removed by spatial denoising,
             even inside a cached legend cluster.
+        boite_frame_layers: Reviewed BOITE target layers.  Materialized
+            block-definition rectangles on these layers are excluded when far
+            outside the drawing body (title-block/FDT specimens), while
+            drawing-space FAT frames remain intact.
+        topology_anchor_insert_layers: Reviewed PTECH (pole) INSERT layers.
+            A translated duplicate cable-route copy with no such anchor near
+            it is a topology-abstract subdrawing and is excluded.
 
     Returns:
         ``{"entities": list, "flag_map": dict, "diagnostics": dict}``
@@ -292,6 +516,12 @@ def apply_spatial_denoising(
     reviewed_insert_layer_upper = {
         str(layer).strip().upper() for layer in reviewed_insert_layers
     }
+    boite_frame_layer_upper = {
+        str(layer).strip().upper() for layer in boite_frame_layers
+    }
+    topology_anchor_layer_upper = {
+        str(layer).strip().upper() for layer in topology_anchor_insert_layers
+    }
     reviewed_insert_evidence_keys: set[str] = {
         entity.entity_key
         for entity in drawing_entities
@@ -366,6 +596,45 @@ def apply_spatial_denoising(
             if flag_map.get(key) != "scene_partition"
             else "scene_partition+legend_detector"
         )
+    # ── 3b. Topology-abstract subdrawing detector ───────────────────────
+    # Some APD sheets add a right-side copy of the cable topology as an
+    # abstract schematic.  It is an exact translation of a real cable route
+    # but has no pole (PTECH) INSERTs along it.  Detect the duplicate pair
+    # and mark the unanchored copy as deterministic noise; a legend gap
+    # detector cannot see it because the two copies are close enough to the
+    # main body and the schematic follows the reviewed cable layer.
+    topology_route_lines = [
+        entity
+        for entity in drawing_entities
+        if entity.dwg_type.upper() in ("LINE", "LWPOLYLINE", "POLYLINE")
+        and len(entity.points) >= 2
+        and route_pattern is not None
+        and route_pattern.search(entity.layer.strip())
+        and (
+            entity.native_length is None
+            or entity.native_length >= _TOPOLOGY_MIN_LENGTH_M
+        )
+    ]
+    topology_anchor_inserts = [
+        entity
+        for entity in drawing_entities
+        if entity.dwg_type.upper() == "INSERT"
+        and str(entity.layer).strip().upper() in topology_anchor_layer_upper
+    ]
+    topology_subdrawing_keys, topology_subdrawing_records = (
+        _topology_subdrawing_keys(topology_route_lines, topology_anchor_inserts)
+    )
+    for key in topology_subdrawing_keys:
+        flag_map[key] = "topology_subdrawing"
+    diagnostics["topology_subdrawing"] = {
+        "status": "complete",
+        "route_line_count": len(topology_route_lines),
+        "anchor_insert_count": len(topology_anchor_inserts),
+        "anchor_radius_m": _TOPOLOGY_ANCHOR_RADIUS_M,
+        "excluded_count": len(topology_subdrawing_keys),
+        "pairs": topology_subdrawing_records,
+    }
+
     diagnostics["flagged_count"] = len(flag_map)
     diagnostics["body_bbox"] = legend_diag.get("body_bbox")
     diagnostics["clusters"] = legend_diag.get("clusters", ())
@@ -531,6 +800,55 @@ def apply_spatial_denoising(
     reviewed_device_frames = [
         entity for entity in entities if _is_reviewed_device_frame(entity)
     ]
+
+    # Deterministic noise discovered after body geometry is known.  These keys
+    # bypass LLM/cached disposition processing on purpose: route exemption and
+    # label protection exist for legend verdicts, not for a geometric
+    # duplicate or a materialized frame specimen outside the drawing body.
+    topology_subdrawing_noise = set(topology_subdrawing_keys)
+    noise_keys.update(topology_subdrawing_noise)
+    diagnostics["topology_subdrawing"]["excluded_route_keys"] = sorted(
+        topology_subdrawing_noise
+    )
+    materialized_frame_outlier_keys: set[str] = set()
+    deployment_anchor_points = [
+        (float(entity.centroid[0]), float(entity.centroid[1]))
+        for entity in topology_anchor_inserts
+    ]
+    deployment_anchor_radius = _deployment_anchor_radius(
+        deployment_anchor_points
+    )
+    for entity in entities:
+        if str(entity.layer).strip().upper() not in boite_frame_layer_upper:
+            continue
+        if not _is_reviewed_device_frame(entity):
+            continue
+        if _is_materialized_block_entity(entity) is False:
+            continue
+        # Real deployed frames are corroborated by a reviewed label or a
+        # cable within the same radius the label-protection rule uses; the
+        # far-outlier guard must never kill such a frame.
+        ctr = entity.centroid
+        if any(
+            math.dist(ctr, text_centroid) <= _DENOISE_LABEL_RADIUS_M
+            for text_centroid in label_centroids
+        ):
+            continue
+        if cable_lines and _near_cable(ctr):
+            continue
+        if _materialized_frame_outlier(
+            entity, deployment_anchor_points, deployment_anchor_radius,
+        ):
+            materialized_frame_outlier_keys.add(entity.entity_key)
+    noise_keys.update(materialized_frame_outlier_keys)
+    diagnostics["materialized_frame_outlier"] = {
+        "status": "complete",
+        "anchor_count": len(deployment_anchor_points),
+        "anchor_radius_m": deployment_anchor_radius,
+        "label_cable_protected_radius_m": _DENOISE_LABEL_RADIUS_M,
+        "excluded_count": len(materialized_frame_outlier_keys),
+        "excluded_keys": sorted(materialized_frame_outlier_keys),
+    }
 
     def _label_protected_insert(key: str) -> bool:
         # A deployed asset (INSERT) carrying a reviewed identifier within

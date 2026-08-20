@@ -1285,6 +1285,12 @@ def convert(request: ConversionRequest) -> ConversionResult:
         dimension_protect_layers=getattr(registry, "layers", {}).get(
             "span_dimension", ()
         ),
+        boite_frame_layers=getattr(registry, "insert_layer_families", {}).get(
+            "BOITE", ()
+        ),
+        topology_anchor_insert_layers=getattr(
+            registry, "insert_layer_families", {}
+        ).get("PTECH", ()),
     )
     semantic_entities = list(spatial_result["entities"])
     legend_flag_map: dict[str, str] = spatial_result["flag_map"]

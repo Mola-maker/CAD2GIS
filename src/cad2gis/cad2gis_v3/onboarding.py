@@ -1369,6 +1369,12 @@ def compile_onboarding_proposal(
                 dimension_protect_layers=registry.layers.get(
                     "span_dimension", ()
                 ),
+                boite_frame_layers=registry.insert_layer_families.get(
+                    "BOITE", ()
+                ),
+                topology_anchor_insert_layers=registry.insert_layer_families.get(
+                    "PTECH", ()
+                ),
             )
             semantic = list(spatial_result["entities"])
 
