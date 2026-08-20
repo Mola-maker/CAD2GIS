@@ -184,8 +184,8 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-100a90e5f833",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:69f5f8b174e279cddcab0e05ae2997456f097b81f4b1540d0555dd85e71657a1",
-    "reviewed_at": "2026-08-20T14:15:16.977787Z",
+    "provenance": "cad2gis.ai_onboarding_proposal.v1:c8d472f8bf06c642676eea3ee9afee75a32eaf2e986a5d1efe45c8ece8c82fff",
+    "reviewed_at": "2026-08-20T17:35:58.588056Z",
     "reviewed_by": "deepseek/deepseek-v4-flash",
     "status": "auto_accepted"
   },
