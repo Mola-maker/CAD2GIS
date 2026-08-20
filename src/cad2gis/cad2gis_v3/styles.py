@@ -177,7 +177,7 @@ def _line_width(layer_name, lineweight):
 def _marker_properties(layer_name):
     return {
         "BOITE": ("square", 4.0),
-        "SITE": ("diamond", 4.4),
+        "SITE": ("diamond", 11.0),
         # PTECH is a large circular pole symbol in the source drawings;
         # render it as a clearly circular marker at QGIS scale.
         "PTECH": ("circle", 5.0),
@@ -209,16 +209,64 @@ def _label_style(layer_name):
     )
 
 
-def _add_label_rotation(settings):
-    data_defined = ET.SubElement(settings, "dd_properties")
+def _dd_properties_map(settings):
+    data_defined = settings.find("dd_properties")
+    if data_defined is None:
+        data_defined = ET.SubElement(settings, "dd_properties")
+        collection = ET.SubElement(data_defined, "Option", type="Map")
+        ET.SubElement(collection, "Option", name="name", type="QString", value="")
+        properties = ET.SubElement(collection, "Option", name="properties", type="Map")
+        ET.SubElement(collection, "Option", name="type", type="QString", value="collection")
+        return properties
+    for collection in data_defined:
+        if collection.tag != "Option" or collection.get("type") != "Map":
+            continue
+        for option in collection:
+            if option.tag == "Option" and option.get("name") == "properties":
+                return option
     collection = ET.SubElement(data_defined, "Option", type="Map")
     ET.SubElement(collection, "Option", name="name", type="QString", value="")
     properties = ET.SubElement(collection, "Option", name="properties", type="Map")
+    ET.SubElement(collection, "Option", name="type", type="QString", value="collection")
+    return properties
+
+
+def _add_label_rotation(settings):
+    properties = _dd_properties_map(settings)
     rotation = ET.SubElement(properties, "Option", name="LabelRotation", type="Map")
     ET.SubElement(rotation, "Option", name="active", type="bool", value="true")
     ET.SubElement(rotation, "Option", name="field", type="QString", value="style_qgis_rotation_deg")
     ET.SubElement(rotation, "Option", name="type", type="int", value="2")
-    ET.SubElement(collection, "Option", name="type", type="QString", value="collection")
+
+
+def _add_label_color(settings, styles):
+    """Label colour follows the feature's own symbol category.
+
+    BOITE markers carry the effective CAD colour (yellow FAT frames, blue
+    closure attributes, ...), so a single fixed label colour would contradict
+    the source drawing whenever a device uses a non-default colour.
+    """
+    cases = []
+    for render_key, _aci, color, _linetype, _lineweight, _rotation in styles:
+        try:
+            red, green, blue, _alpha = color.split(",", 3)
+            int(red), int(green), int(blue)
+        except (TypeError, ValueError):
+            continue
+        escaped = str(render_key).replace("'", "''")
+        cases.append(
+            f"WHEN \"style_render_key\" = '{escaped}' "
+            f"THEN color_rgb({red},{green},{blue})"
+        )
+    expression = (
+        "CASE " + " ".join(cases) + " ELSE color_rgb(0,0,0) END"
+        if cases else "color_rgb(0,0,0)"
+    )
+    properties = _dd_properties_map(settings)
+    color_option = ET.SubElement(properties, "Option", name="Color", type="Map")
+    ET.SubElement(color_option, "Option", name="active", type="bool", value="true")
+    ET.SubElement(color_option, "Option", name="expression", type="QString", value=expression)
+    ET.SubElement(color_option, "Option", name="type", type="int", value="3")
 
 
 def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
@@ -294,6 +342,8 @@ def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
     # that rotation field for point/area symbols.
     if geometry_kind != "LineString":
         _add_label_rotation(settings)
+        if layer_name == "BOITE":
+            _add_label_color(settings, styles)
     ET.SubElement(root, "layerGeometryType").text = {"Point": "0", "LineString": "1", "Polygon": "2"}[geometry_kind]
     return ET.tostring(root, encoding="unicode")
 
