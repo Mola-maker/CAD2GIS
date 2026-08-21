@@ -62,8 +62,8 @@ baselines/*/run/
 baselines/*/run.review/
 baselines/*/review/
 
-# robustness: regenerate_runs.py log output
-scripts/logs/
+# robustness: scripts directory stays out of version control
+scripts/
 
 # robustness: verification output artifacts
 baselines/apd_hutabohu/output/
