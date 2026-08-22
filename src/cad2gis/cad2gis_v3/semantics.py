@@ -13,7 +13,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from .config import MappingRegistry
 from .family_validation import annotation_pattern_specificity
-from .model import Feature, Relation, SourceEntity
+from .model import CadStyle, Feature, Relation, SourceEntity
 from .spatial_filter import is_placeholder_text, is_pole_identifier_shape
 
 
@@ -25,6 +25,48 @@ _ANNOTATION_CARRIER_TYPES = frozenset({
 SEMANTIC_COVERAGE_SCHEMA_VERSION = "cad2gis-semantic-coverage-v1"
 OBSERVABILITY_POLICIES = frozenset({"warn", "abstain", "fail"})
 _ROUTE_ENTITY_TYPES = frozenset({"LINE", "LWPOLYLINE", "POLYLINE", "POLYLINE_2D", "POLYLINE_3D"})
+
+# EMR-xxxx labels mark the orange concentric square equipment symbol drawn
+# beside an uplink FWA/OLT spur.  The symbol is drawn with short FO-core
+# rectangles; those loops are equipment symbology, not deployed cable spans.
+_EMR_LABEL_RE = re.compile(r"(?i)^EMR[^A-Za-z0-9]+\d+$")
+_EMR_SYMBOL_RADIUS_M = 60.0
+_EMR_SHORT_CABLE_LENGTH_M = 80.0
+
+# A pole drawn a few metres off a cable endpoint is a drafting gap, not a
+# disconnected network node.  FTTH construction requires every PTECH to
+# terminate on the cable; bridge the unique near-miss endpoint.
+_PTECH_CABLE_ENDPOINT_BRIDGE_M = 12.0
+_PTECH_CABLE_ENDPOINT_MIN_GAP_M = 0.5
+
+
+def _point_segment_distance(
+    point: Sequence[float],
+    start: Sequence[float],
+    end: Sequence[float],
+) -> float:
+    px, py = float(point[0]), float(point[1])
+    ax, ay = float(start[0]), float(start[1])
+    bx, by = float(end[0]), float(end[1])
+    dx, dy = bx - ax, by - ay
+    segment_sq = dx * dx + dy * dy
+    if segment_sq <= 0.0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / segment_sq))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+
+
+def _polyline_nearest_distance(
+    point: Sequence[float],
+    polyline: Sequence[Sequence[float]],
+) -> float:
+    return min(
+        (
+            _point_segment_distance(point, start, end)
+            for start, end in zip(polyline, polyline[1:])
+        ),
+        default=math.inf,
+    )
 
 
 def _is_placeholder_block(entity: SourceEntity) -> bool:
@@ -1628,6 +1670,184 @@ def classify_entities(
                     annotation_families=sorted(family_ids),
                 ))
 
+    # EMR equipment symbols: an ``EMR-xxxx`` label with one or more short
+    # orange FO-core loops around it is an equipment symbol (the orange
+    # concentric square), not cable spans and not legend noise.
+    emr_label_entities = sorted(
+        (
+            entity
+            for entity in model_entities
+            if entity.dwg_type in _ANNOTATION_CARRIER_TYPES
+            and _EMR_LABEL_RE.fullmatch(entity.text.strip())
+        ),
+        key=lambda entity: entity.text.casefold(),
+    )
+    for emr_entity in emr_label_entities:
+        symbol_cables = [
+            feature
+            for feature in features
+            if feature.feature_class == "CABLE"
+            and feature.native_points
+            and _polyline_nearest_distance(
+                emr_entity.centroid, feature.native_points,
+            ) <= _EMR_SYMBOL_RADIUS_M
+            and sum(
+                math.dist(start, end)
+                for start, end in zip(feature.native_points, feature.native_points[1:])
+            ) <= _EMR_SHORT_CABLE_LENGTH_M
+        ]
+        style = (
+            symbol_cables[0].style
+            if symbol_cables
+            else CadStyle(aci_color=30, true_color="#FF7F00")
+        )
+        code = emr_entity.text.strip()
+        emr_feature = Feature(
+            feature_key=_feature_key(emr_entity, "EMR"),
+            feature_class="EMR",
+            geometry_kind="Point",
+            native_points=[list(emr_entity.centroid)],
+            source_entity_key=emr_entity.entity_key,
+            source_handle=emr_entity.handle,
+            source_layer=emr_entity.layer,
+            geometry_role="SOURCE_ASSET",
+            style=style,
+            attributes={
+                "CODE": code,
+                "TYPE": "EMR",
+                "STATUT": "DEPLOYE",
+            },
+            display_label=code,
+            label_provenance="DWG_DIRECT:emr-label",
+            field_provenance={
+                "CODE": "DWG_DIRECT:emr-label",
+                "TYPE": "DWG_DERIVED:emr-symbol-class",
+                "STATUT": "DWG_DERIVED:reviewed-domain-default",
+            },
+            lineage=[{
+                "operation": "identity",
+                "source_entity_key": emr_entity.entity_key,
+                "max_displacement_m": 0.0,
+            }],
+        )
+        features.append(emr_feature)
+        mapped_entities.add(emr_entity.entity_key)
+        callout_noise_keys.update(
+            feature.feature_key for feature in symbol_cables
+        )
+
+    # PATCHCORD OUTDOOR is carried by the ONT-MDU drawing layer in the
+    # EMR-29619 spur.  It is a physical cable span and belongs in CABLE.
+    patchcord_layers = {
+        str(layer).strip().upper()
+        for layer in getattr(registry, "layers", {}).get("patchcord", ())
+    }
+    for entity in model_entities:
+        if entity.entity_key in mapped_entities:
+            continue
+        if entity.dwg_type not in _ROUTE_ENTITY_TYPES:
+            continue
+        if str(entity.layer).strip().upper() not in patchcord_layers:
+            continue
+        if len(entity.points) < 2:
+            continue
+        attributes = {
+            "CODE": _generated_code("CABLE", entity.handle),
+            "TYPE_CABLE": "RACCORDEMENT",
+        }
+        provenance = {
+            "CODE": "DWG_DERIVED:stable-handle-id",
+            "TYPE_CABLE": "DWG_DIRECT:patchcord-outdoor-layer",
+        }
+        display_label = "PATCHCORD OUTDOOR"
+        patchcord_feature = Feature(
+            feature_key=_feature_key(entity, "CABLE"),
+            feature_class="CABLE",
+            geometry_kind="LineString",
+            native_points=list(entity.points),
+            source_entity_key=entity.entity_key,
+            source_handle=entity.handle,
+            source_layer=entity.layer,
+            geometry_role="SOURCE_ROUTE",
+            style=entity.style,
+            attributes=attributes,
+            display_label=display_label,
+            label_provenance="DWG_DIRECT:patchcord-outdoor-layer",
+            field_provenance=provenance,
+            lineage=[{
+                "operation": "identity",
+                "source_entity_key": entity.entity_key,
+                "max_displacement_m": 0.0,
+            }],
+        )
+        if entity.native_length is not None:
+            patchcord_feature.attributes["source_autocad_native_length_m"] = float(
+                entity.native_length
+            )
+            patchcord_feature.field_provenance["source_autocad_native_length_m"] = (
+                "DWG_DIRECT:AutoCAD-curve-distance"
+            )
+        features.append(patchcord_feature)
+        mapped_entities.add(entity.entity_key)
+
+    # Real-world connectivity rule: a PTECH drawn just off a cable endpoint
+    # is a drafting gap, not a disconnected pole.  Bridge the unique near
+    # miss by moving the cable endpoint onto the PTECH point; topology then
+    # records an exact ``connects`` relation.
+    def _reindex_by_class(feature_list):
+        indexed = defaultdict(list)
+        for item in feature_list:
+            indexed[item.feature_class].append(item)
+        return indexed
+
+    by_class = _reindex_by_class(features)
+    bridged_endpoints = []
+    for support in by_class["PTECH"]:
+        if not support.native_points:
+            continue
+        support_point = support.native_points[0]
+        deployed_cables = [
+            route for route in by_class["CABLE"]
+            if route.feature_key not in callout_noise_keys
+        ]
+        if any(
+            _polyline_nearest_distance(support_point, route.native_points) <= 0.5
+            for route in deployed_cables
+        ):
+            continue
+        endpoint_candidates = []
+        for route in deployed_cables:
+            if len(route.native_points) < 2:
+                continue
+            for index, endpoint in (
+                (0, route.native_points[0]),
+                (-1, route.native_points[-1]),
+            ):
+                distance = math.dist(support_point, endpoint)
+                if _PTECH_CABLE_ENDPOINT_MIN_GAP_M <= distance <= _PTECH_CABLE_ENDPOINT_BRIDGE_M:
+                    endpoint_candidates.append((distance, route, index))
+        if not endpoint_candidates:
+            continue
+        endpoint_candidates.sort(key=lambda item: item[0])
+        best_distance, best_route, best_index = endpoint_candidates[0]
+        if (
+            len(endpoint_candidates) > 1
+            and endpoint_candidates[1][0] - best_distance < 2.0
+        ):
+            continue
+        best_route.native_points[best_index] = [float(support_point[0]), float(support_point[1])]
+        best_route.lineage.append({
+            "operation": "bridge_cable_endpoint_to_pole",
+            "source_entity_key": support.source_entity_key,
+            "support_handle": support.source_handle,
+            "max_displacement_m": best_distance,
+        })
+        bridged_endpoints.append({
+            "ptech": support.source_handle,
+            "cable": best_route.source_handle,
+            "gap_m": best_distance,
+        })
+
     # Legend core detection: a drawing legend lays one sample per cable
     # type on the sheet edge — the sample cables repeat the same length
     # (each type drawn at the standard stub length), cluster in one column
@@ -1929,6 +2149,10 @@ def classify_entities(
             for status in {item["status"] for item in annotation_discovery_failures}
         )),
         "annotation_candidates": annotation_candidates,
+        "emr_features": sum(
+            1 for feature in features if feature.feature_class == "EMR"
+        ),
+        "ptech_cable_endpoint_bridges": bridged_endpoints,
         "coverage": coverage,
     }
     if not coverage["conversion_allowed"]:

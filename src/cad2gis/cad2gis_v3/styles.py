@@ -15,7 +15,12 @@ from ezdxf.colors import aci2rgb
 from .gpkg_metadata import normalize_geopackage_metadata
 from .model import Feature
 from .semantics import CoverageGateError, build_coverage_report
-from .warehouse import LAYER_CONFIGS, LAYER_ORDER, _contract_geometry_kind
+from .warehouse import (
+    LAYER_CONFIGS,
+    LAYER_ORDER,
+    OPTIONAL_LAYER_ORDER,
+    _contract_geometry_kind,
+)
 
 ACI = {
     1: "255,0,0,255", 2: "255,255,0,255", 3: "0,255,0,255",
@@ -177,11 +182,13 @@ def _line_width(layer_name, lineweight):
 def _marker_properties(layer_name):
     return {
         "BOITE": ("square", 4.0),
-        "SITE": ("diamond", 11.0),
+        "SITE": ("diamond", 8.5),
         # PTECH is a large circular pole symbol in the source drawings;
         # render it as a clearly circular marker at QGIS scale.
         "PTECH": ("circle", 5.0),
         "IMB": ("circle", 0.8),
+        # EMR is the orange concentric square drawn around EMR-xxxx labels.
+        "EMR": ("square", 6.0),
     }.get(layer_name, ("circle", 2.4))
 
 
@@ -199,6 +206,10 @@ def _label_style(layer_name):
         "PTECH": {
             "text_color": "0,0,0,255", "font_size": "8",
             "font_weight": "50", "dist": "1.0", "priority": "8",
+        },
+        "EMR": {
+            "text_color": "255,127,0,255", "font_size": "9",
+            "font_weight": "75", "dist": "2.6", "priority": "9",
         },
     }.get(
         layer_name,
@@ -459,7 +470,12 @@ def write_styles(
         "layers": {},
     }
     qml_by_layer = {}
-    for layer_name in LAYER_ORDER:
+    active_layers = LAYER_ORDER + tuple(
+        layer_name
+        for layer_name in OPTIONAL_LAYER_ORDER
+        if layer_name in by_class
+    )
+    for layer_name in active_layers:
         observed = {}
         # CABLE_SEGMENT inherits the effective CAD style of its immutable
         # parent CABLE.  It is a normalised business layer, not a second audit

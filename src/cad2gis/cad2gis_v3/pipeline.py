@@ -14,6 +14,7 @@ from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .calibration import GCPProfile, fit_profile
 from .accounting import account_entities, summarize_accounting
@@ -62,6 +63,64 @@ def _canonical_json_sha256(value) -> str:
         allow_nan=False,
     )
     return hashlib.sha256(payload.encode("ascii")).hexdigest()
+
+
+def _load_delivery_partitions(config_dir: Path | None) -> list[dict[str, Any]]:
+    """Load optional second-level delivery partitions from the project pack.
+
+    A DWG may contain several independent APD panels.  The top-level eight
+    GeoPackage layers keep the main panel; each configured partition is
+    written under ``<run_dir>/<region_id>/`` with the same eight-layer
+    contract (plus optional layers present in that panel).
+    """
+    if config_dir is None:
+        return []
+    path = Path(config_dir) / "delivery_partitions.json"
+    if not path.is_file():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    partitions = []
+    for item in payload.get("partitions", ()):
+        try:
+            bbox = [float(value) for value in item["bbox"]]
+            if len(bbox) != 4:
+                continue
+            partitions.append({
+                "region_id": str(item.get("region_id", "")).strip(),
+                "label": str(item.get("label", "")).strip(),
+                "bbox": bbox,
+            })
+        except (KeyError, TypeError, ValueError):
+            continue
+    return [item for item in partitions if item["region_id"]]
+
+
+def _partition_features(
+    features: Iterable[Any],
+    partitions: Sequence[Mapping[str, Any]],
+) -> tuple[list[Any], dict[str, list[Any]]]:
+    feature_list = list(features)
+    main_features = []
+    by_region = {item["region_id"]: [] for item in partitions}
+    for feature in feature_list:
+        if not feature.native_points:
+            main_features.append(feature)
+            continue
+        x, y = feature.native_centroid[:2]
+        region_id = None
+        for partition in partitions:
+            min_x, min_y, max_x, max_y = partition["bbox"]
+            if min_x <= x <= max_x and min_y <= y <= max_y:
+                region_id = partition["region_id"]
+                break
+        if region_id is None:
+            main_features.append(feature)
+        else:
+            by_region[region_id].append(feature)
+    return main_features, by_region
 
 
 def _implementation_digest():
@@ -221,7 +280,10 @@ def _validate_source_geometry(
     route_pattern = re.compile(registry.positive_route_layer_regex)
     reviewed_route_layers = {
         str(layer).upper()
-        for layer in getattr(registry, "layers", {}).get("sling_wire", ())
+        for layer in (
+            getattr(registry, "layers", {}).get("sling_wire", ())
+            + getattr(registry, "layers", {}).get("patchcord", ())
+        )
     }
     cables = [feature for feature in features if feature.feature_class == "CABLE"]
     failures = []
@@ -244,9 +306,13 @@ def _validate_source_geometry(
             failures.append(f"{cable.feature_key}: source is not a reviewed model route")
         if cable.geometry_role != "SOURCE_ROUTE":
             failures.append(f"{cable.feature_key}: geometry role is {cable.geometry_role}")
-        if tuple(cable.native_points) != tuple(source.points):
+        endpoint_bridged = any(
+            item.get("operation") == "bridge_cable_endpoint_to_pole"
+            for item in cable.lineage
+        )
+        if tuple(cable.native_points) != tuple(source.points) and not endpoint_bridged:
             failures.append(f"{cable.feature_key}: source geometry was displaced or re-vertexed")
-        if require_curve_facts:
+        if require_curve_facts and not endpoint_bridged:
             facts = source.curve_facts
             if not facts or not source.curve_fingerprint:
                 failures.append(f"{cable.feature_key}: missing canonical source curve facts")
@@ -309,7 +375,13 @@ def _validate_source_geometry(
                 ):
                     failures.append(f"{cable.feature_key}: curve native length mismatch")
         if not cable.lineage or any(
-            item.get("operation") != "identity" or float(item.get("max_displacement_m", 0.0)) != 0.0
+            item.get("operation") not in {
+                "identity", "bridge_cable_endpoint_to_pole",
+            }
+            or (
+                item.get("operation") == "identity"
+                and float(item.get("max_displacement_m", 0.0)) != 0.0
+            )
             for item in cable.lineage
         ):
             failures.append(f"{cable.feature_key}: non-identity cable lineage")
@@ -1271,6 +1343,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             getattr(registry, "layers", {}).get("zpm_boundary", ())
             + getattr(registry, "layers", {}).get("sling_wire", ())
             + getattr(registry, "layers", {}).get("homepass", ())
+            + getattr(registry, "layers", {}).get("patchcord", ())
         ),
         label_text_patterns=[
             str(family.text_pattern)
@@ -1739,6 +1812,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
         "reasoning": reasoning_diagnostics,
     }
 
+    delivery_partitions = _load_delivery_partitions(request.mapping_registry.parent)
+    main_delivery_features, partitioned_features = _partition_features(
+        features, delivery_partitions,
+    )
+
     artifact_prefix = "apd_" if profile.is_legacy else ""
     source_path = run_dir / "source.gpkg"
     evidence_path = run_dir / f"{artifact_prefix}evidence.gpkg"
@@ -1807,12 +1885,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
             target_srs=transformer.target,
             delivery_transformer=selected_transformer,
         )
-        counts = write_delivery(staged_delivery_path, features, selected_transformer)
+        counts = write_delivery(
+            staged_delivery_path, main_delivery_features, selected_transformer,
+        )
         delivery_gate = _validate_declared_counts(
             "delivery", profile.expectations.delivery_counts, counts,
         )
         staged_style_manifest_path = write_styles(
-            staged_styles_dir, features, staged_delivery_path,
+            staged_styles_dir, main_delivery_features, staged_delivery_path,
             coverage_policy=registry.style_coverage_policy,
             coverage_allowlist=list(registry.style_coverage_allowlist),
             color_unification=getattr(
@@ -1830,9 +1910,61 @@ def convert(request: ConversionRequest) -> ConversionResult:
             raise RuntimeError(
                 f"Written style manifest coverage gate failed: {written_style_coverage}"
             )
+        delivery_partition_artifacts: dict[str, Any] = {}
+        for partition in delivery_partitions:
+            region_id = partition["region_id"]
+            region_features = partitioned_features.get(region_id, [])
+            region_dir = staged_run_dir / region_id
+            region_delivery_path = region_dir / "delivery.gpkg"
+            region_styles_dir = region_dir / "qgis" / "styles"
+            region_counts = write_delivery(
+                region_delivery_path, region_features, selected_transformer,
+            )
+            region_style_manifest_path = write_styles(
+                region_styles_dir, region_features, region_delivery_path,
+                coverage_policy=registry.style_coverage_policy,
+                coverage_allowlist=list(registry.style_coverage_allowlist),
+                color_unification=getattr(
+                    registry, "render_color_unification", None,
+                ),
+            )
+            region_style_manifest = json.loads(
+                region_style_manifest_path.read_text(encoding="utf-8")
+            )
+            region_style_coverage = region_style_manifest.get("coverage")
+            if (
+                not isinstance(region_style_coverage, dict)
+                or region_style_coverage.get("conversion_allowed") is not True
+            ):
+                raise RuntimeError(
+                    f"Partition {region_id} style coverage gate failed: "
+                    f"{region_style_coverage}"
+                )
+            partition_manifest = {
+                "schema_version": "cad2gis-delivery-partition-v1",
+                "region_id": region_id,
+                "label": partition["label"],
+                "bbox": partition["bbox"],
+                "delivery_counts": region_counts,
+                "style_manifest": (
+                    f"{region_id}/qgis/styles/style_manifest.json"
+                ),
+            }
+            _write_manifest(
+                region_dir / "partition_manifest.json", partition_manifest,
+            )
+            delivery_partition_artifacts[region_id] = {
+                "path": str(run_dir / region_id / "delivery.gpkg"),
+                "sha256": _sha256(region_delivery_path),
+                "style_manifest": (
+                    f"{region_id}/qgis/styles/style_manifest.json"
+                ),
+                "delivery_counts": region_counts,
+            }
+
         validation_summary = _manifest_validation_summary(
             semantic_entities,
-            features,
+            main_delivery_features,
             policy_diagnostics,
             topology_diagnostics,
             diagnostics["georeference"],
@@ -1921,6 +2053,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                     },
                 } if staged_decision_execution_path is not None else {}),
             },
+            "delivery_partitions": delivery_partition_artifacts,
             "delivery_counts": counts,
             "delivery_contract_gate": delivery_gate,
             "source_entity_count": source_entity_count,

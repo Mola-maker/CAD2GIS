@@ -1,0 +1,25 @@
+{
+  "schema_version": "cad2gis-delivery-partitions-v1",
+  "partitions": [
+    {
+      "region_id": "EMR28560",
+      "label": "EMR-28560",
+      "bbox": [
+        13896380.0,
+        145520.0,
+        13896600.0,
+        145680.0
+      ]
+    },
+    {
+      "region_id": "EMR29619",
+      "label": "EMR-29619",
+      "bbox": [
+        13900930.0,
+        143640.0,
+        13901290.0,
+        143800.0
+      ]
+    }
+  ]
+}

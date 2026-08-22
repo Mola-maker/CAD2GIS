@@ -247,3 +247,16 @@ def test_attributed_block_style_ignores_default_black_template() -> None:
         "root": [("", CadStyle(aci_color=7, true_color="#000000"))],
     }
     assert _attributed_block_style(root, styles) is None
+
+
+def test_emr_label_shape_accepts_equipment_ids_only() -> None:
+    from cad2gis.cad2gis_v3.semantics import _EMR_LABEL_RE
+    assert _EMR_LABEL_RE.fullmatch("EMR-28560") is not None
+    assert _EMR_LABEL_RE.fullmatch("EMR-29619") is not None
+    assert _EMR_LABEL_RE.fullmatch("MR.UP.TMH.S01.P005") is None
+
+
+def test_point_segment_distance_snaps_to_segment() -> None:
+    from cad2gis.cad2gis_v3.semantics import _point_segment_distance
+    assert abs(_point_segment_distance((1.0, 2.0), (0.0, 0.0), (4.0, 0.0)) - 2.0) < 1e-9
+    assert abs(_point_segment_distance((-1.0, 0.0), (0.0, 0.0), (4.0, 0.0)) - 1.0) < 1e-9

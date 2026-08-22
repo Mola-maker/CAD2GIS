@@ -34,6 +34,11 @@ WKB_POLYGON = 3
 
 REQUIRED_LAYERS = {"BOITE", "CABLE", "PTECH", "INFRASTRUCTURE", "SITE", "ZNRO", "ZPM", "IMB"}
 
+# Optional delivery layers.  These are written only when a conversion emits
+# features for the class; drawings without the class keep the standard
+# eight-layer GeoPackage contract unchanged.
+OPTIONAL_LAYERS = {"EMR"}
+
 # ── 2. REQUIRED GEOMETRY TYPES ─────────────────────────────────────────────────
 
 REQUIRED_GEOM = {
@@ -1264,6 +1269,72 @@ SITE = {
         "Y",
     ],
     "conditional_fields": ["ADRESSSE", "CODE_POSTAL", "COMMENT"],
+    "unique_fields": ["CODE"],
+}
+
+EMR = {
+    "fc_name": "EMR",
+    "geometry_type": "Point",
+    "layer_name": "EMR",
+    "fields": [
+        {
+            "name": "CODE",
+            "full_name": "CODE",
+            "truncated_name": "CODE",
+            "type": "Text",
+            "length": 40,
+            "mandatory": "O",
+            "domain_values": None,
+            "description": "EMR (extended/mobile relay) equipment identifier, e.g. EMR-28560.",
+            "source": "DWG",
+        },
+        {
+            "name": "TYPE",
+            "full_name": "TYPE",
+            "truncated_name": "TYPE",
+            "type": "Text",
+            "length": 40,
+            "mandatory": "O",
+            "domain_values": ["EMR"],
+            "description": "Equipment type. Fixed to EMR.",
+            "source": "DWG",
+        },
+        {
+            "name": "STATUT",
+            "full_name": "STATUT",
+            "truncated_name": "STATUT",
+            "type": "Text",
+            "length": 30,
+            "mandatory": "O",
+            "domain_values": ["DEPLOYE", "EN COURS DE DEPLOIEMENT", "EN PROJET"],
+            "description": "Deployment status.",
+            "source": "DWG",
+        },
+        {
+            "name": "X",
+            "full_name": "X",
+            "truncated_name": "X",
+            "type": "Double",
+            "length": None,
+            "mandatory": "O",
+            "domain_values": None,
+            "description": "Longitude computed from geometry.",
+            "source": "DWG",
+        },
+        {
+            "name": "Y",
+            "full_name": "Y",
+            "truncated_name": "Y",
+            "type": "Double",
+            "length": None,
+            "mandatory": "O",
+            "domain_values": None,
+            "description": "Latitude computed from geometry.",
+            "source": "DWG",
+        },
+    ],
+    "mandatory_fields": ["CODE", "TYPE", "STATUT", "X", "Y"],
+    "conditional_fields": [],
     "unique_fields": ["CODE"],
 }
 

@@ -16,12 +16,13 @@
     "annotation_families": {},
     "delivery_counts": {},
     "feature_counts": {
-      "BOITE": 15,
-      "CABLE": 15,
+      "BOITE": 16,
+      "CABLE": 16,
       "IMB": 243,
-      "PTECH": 49,
+      "PTECH": 61,
       "SITE": 1,
-      "ZPM": 15
+      "ZPM": 15,
+      "EMR": 2
     },
     "segment_gates": {},
     "source_geometry_gates": {},
