@@ -433,6 +433,31 @@ const renderRun = (run) => {
     ["审查存储", run.review_store || "—"],
   ];
   $("#run-summary").innerHTML = rows.map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`).join("");
+  renderRoadmatch(run.road_match);
+};
+
+const renderRoadmatch = (report) => {
+  const node = $("#roadmatch");
+  if (!node) return;
+  if (!report || report.available !== true) {
+    node.innerHTML = "<p class=\"muted\">该 run 暂无路网匹配定位报告。</p>";
+    return;
+  }
+  const decision = String(report.decision || "REVIEW").toLowerCase();
+  const candidate = report.recommended_transform_for_web_gcp
+    || report.top_candidate
+    || {};
+  const rows = [
+    ["判定", `<span class="decision ${decision}">${report.decision || "REVIEW"}</span>`],
+    ["恒等 F1", report.identity_exact_f1 ?? report.identity_f1 ?? "—"],
+    ["候选 θ", candidate.theta_deg != null ? `${Number(candidate.theta_deg).toFixed(3)}°` : "—"],
+    ["候选 t", candidate.t_3857 ? candidate.t_3857.map((v) => Number(v).toFixed(1)).join(", ") : "—"],
+    ["依据", report.basis || report.note || report.reason || "—"],
+  ];
+  node.innerHTML = rows.map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`).join("");
+  if (report.overlay) {
+    node.insertAdjacentHTML("beforeend", `<img src="${report.overlay}" alt="road-match overlay">`);
+  }
 };
 
 localMap.on("pointermove", ({ coordinate }) => {
