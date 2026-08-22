@@ -1802,7 +1802,7 @@ def classify_entities(
 
     by_class = _reindex_by_class(features)
     bridged_endpoints = []
-    for support in by_class["PTECH"]:
+    for support in by_class["PTECH"] + by_class["EMR"]:
         if not support.native_points:
             continue
         support_point = support.native_points[0]
@@ -1843,7 +1843,8 @@ def classify_entities(
             "max_displacement_m": best_distance,
         })
         bridged_endpoints.append({
-            "ptech": support.source_handle,
+            "node_class": support.feature_class,
+            "node": support.source_handle,
             "cable": best_route.source_handle,
             "gap_m": best_distance,
         })
