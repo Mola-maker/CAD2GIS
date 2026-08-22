@@ -1308,6 +1308,9 @@ def create_review_app(
                 "min_check_baseline_to_drawing_diagonal_ratio": 0.05,
                 "min_check_hull_area_ratio": 0.01,
                 "max_drawing_vertices_outside_training_hull_ratio": 0.70,
+                "corridor_min_cable_length_to_diagonal_ratio": 1.0,
+                "corridor_min_cable_arc_coverage_ratio": 0.70,
+                "corridor_max_device_to_training_along_cable_m": 150.0,
             }
             generated_source_profile = workspace / "web_source_profile.json"
             _write_json_atomic(

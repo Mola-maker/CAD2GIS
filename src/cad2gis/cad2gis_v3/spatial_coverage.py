@@ -9,6 +9,7 @@ nominal target-grid coordinates and a source-profile policy.
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any
 
@@ -253,6 +254,188 @@ def _point_in_convex_hull(
     return True
 
 
+_MANUAL_PICK_TOLERANCE_M = 0.5
+_CORRIDOR_PROJECTION_LATERAL_TOLERANCE_M = 25.0
+
+
+def _project_to_polyline(
+    point: Point,
+    polyline: Sequence[Point],
+) -> tuple[float, float]:
+    """Return (along_m, lateral_m) for a point projected onto a polyline."""
+    best_s = 0.0
+    best_lateral = math.inf
+    travelled = 0.0
+    for start, end in zip(polyline, polyline[1:]):
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        segment_sq = dx * dx + dy * dy
+        if segment_sq <= 0.0:
+            travelled += math.dist(start, end)
+            continue
+        t = max(0.0, min(1.0, (
+            (point[0] - start[0]) * dx + (point[1] - start[1]) * dy
+        ) / segment_sq))
+        projection = (start[0] + t * dx, start[1] + t * dy)
+        lateral = math.dist(point, projection)
+        if lateral < best_lateral:
+            best_lateral = lateral
+            best_s = travelled + t * math.sqrt(segment_sq)
+        travelled += math.sqrt(segment_sq)
+    return best_s, best_lateral
+
+
+def evaluate_corridor_coverage(
+    cable_polylines: Sequence[Sequence[Point]],
+    device_points: Sequence[Point],
+    training_points: Sequence[Point],
+    policy: Any,
+) -> dict[str, Any]:
+    """Coverage gates for long, thin V-shaped/linear cable corridors.
+
+    Convex-hull containment is a poor proxy for such drawings: the device
+    envelope is dominated by two narrow arms, and a well-placed control set
+    may still leave most devices outside a 2D hull.  This corridor gate
+    measures what actually matters for translation fitting on a route:
+    how much of the cable arc length is covered, and how far any device is
+    from the nearest training projection along the cable.
+    """
+    corridors = [
+        [(float(p[0]), float(p[1])) for p in polyline]
+        for polyline in cable_polylines
+        if len(polyline) >= 2
+    ]
+    devices = [(float(p[0]), float(p[1])) for p in device_points]
+    trainings = [(float(p[0]), float(p[1])) for p in training_points]
+    result: dict[str, Any] = {
+        "schema_version": "cad2gis-corridor-coverage-v1",
+        "corridor_detected": False,
+        "passed": False,
+        "failures": [],
+        "cable_count": len(corridors),
+    }
+    if not corridors or not devices or not trainings:
+        return result
+    diagonal = _span(_bbox(devices), "x"), _span(_bbox(devices), "y")
+    device_bbox = _bbox(devices)
+    drawing_diagonal = (
+        None
+        if device_bbox is None
+        else math.hypot(
+            float(device_bbox["max_easting"] - device_bbox["min_easting"]),
+            float(device_bbox["max_northing"] - device_bbox["min_northing"]),
+        )
+    )
+    cable_length = sum(
+        sum(math.dist(start, end) for start, end in zip(line, line[1:]))
+        for line in corridors
+    )
+    ratio_threshold = getattr(
+        policy, "corridor_min_cable_length_to_diagonal_ratio", None,
+    )
+    coverage_threshold = getattr(
+        policy, "corridor_min_cable_arc_coverage_ratio", None,
+    )
+    max_gap = getattr(
+        policy, "corridor_max_device_to_training_along_cable_m", None,
+    )
+    if ratio_threshold is None or coverage_threshold is None or max_gap is None:
+        return result
+    if drawing_diagonal is None or drawing_diagonal <= 0.0:
+        return result
+    result["cable_total_length_m"] = cable_length
+    result["drawing_diagonal_m"] = drawing_diagonal
+    result["cable_length_to_diagonal_ratio"] = cable_length / drawing_diagonal
+    if result["cable_length_to_diagonal_ratio"] < ratio_threshold:
+        return result
+    result["corridor_detected"] = True
+
+    # Project each training point onto its nearest cable; a lateral offset
+    # larger than the projection tolerance does not count as on-route.
+    training_projections: dict[int, list[float]] = defaultdict(list)
+    for point in trainings:
+        best = None
+        for index, line in enumerate(corridors):
+            along, lateral = _project_to_polyline(point, line)
+            if lateral <= _CORRIDOR_PROJECTION_LATERAL_TOLERANCE_M:
+                candidate = (lateral, index, along)
+                if best is None or candidate < best:
+                    best = candidate
+        if best is not None:
+            _, index, along = best
+            training_projections[index].append(along)
+
+    covered_length = 0.0
+    uncovered_cables = []
+    for index, line in enumerate(corridors):
+        total = sum(math.dist(a, b) for a, b in zip(line, line[1:]))
+        projections = sorted(training_projections.get(index, ()))
+        if not projections:
+            uncovered_cables.append(index)
+            continue
+        intervals = []
+        for along in projections:
+            intervals.append((max(0.0, along - max_gap), min(total, along + max_gap)))
+        intervals.sort()
+        merged = [list(intervals[0])]
+        for start, end in intervals[1:]:
+            if start <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], end)
+            else:
+                merged.append([start, end])
+        covered_length += sum(end - start for start, end in merged)
+
+    coverage_ratio = covered_length / cable_length if cable_length > 0.0 else 0.0
+    result["cable_arc_coverage_ratio"] = coverage_ratio
+    result["uncovered_cable_count"] = len(uncovered_cables)
+    if coverage_ratio < coverage_threshold:
+        result["failures"].append(
+            "corridor_cable_arc_coverage_ratio "
+            f"{coverage_ratio:.6f} < required {coverage_threshold:.6f}"
+        )
+    if uncovered_cables:
+        result["failures"].append(
+            f"corridor_uncovered_cable_count {len(uncovered_cables)} > allowed 0"
+        )
+
+    # Along-route extrapolation: each device must be within max_gap of a
+    # training projection on the cable it belongs to.
+    max_device_gap = 0.0
+    max_device_gap_detail = None
+    for point in devices:
+        best = None
+        for index, line in enumerate(corridors):
+            along, lateral = _project_to_polyline(point, line)
+            candidate = (lateral, index, along)
+            if best is None or candidate < best:
+                best = candidate
+        if best is None:
+            max_device_gap = math.inf
+            max_device_gap_detail = {"device": point, "status": "no_cable_projection"}
+            continue
+        _, index, along = best
+        projections = training_projections.get(index, ())
+        gap = min(
+            (abs(along - value) for value in projections),
+            default=math.inf,
+        )
+        if gap > max_device_gap:
+            max_device_gap = gap
+            max_device_gap_detail = {
+                "device": point, "cable_index": index, "along_m": along,
+            }
+    result["max_device_to_training_along_cable_m"] = max_device_gap
+    result["max_device_gap_detail"] = max_device_gap_detail
+    if max_device_gap > max_gap:
+        result["failures"].append(
+            "corridor_max_device_to_training_along_cable_m "
+            f"{max_device_gap:.6f} > allowed {max_gap:.6f}"
+        )
+
+    result["passed"] = not result["failures"]
+    return result
+
+
 def _below(
     failures: list[str], metric_name: str, value: float | None, minimum: float,
 ) -> None:
@@ -307,7 +490,10 @@ def evaluate_spatial_coverage(
         if drawing_area is None or drawing_area <= 0.0
         else None if check_hull_area is None else check_hull_area / drawing_area
     )
-    containment_epsilon = _bbox_numeric_epsilon(drawing_bbox)
+    containment_epsilon = max(
+        _bbox_numeric_epsilon(drawing_bbox) or 0.0,
+        _MANUAL_PICK_TOLERANCE_M,
+    )
     outside_count = None
     outside_ratio = None
     if (
@@ -479,4 +665,8 @@ def evaluate_spatial_coverage(
     }
 
 
-__all__ = ["evaluate_spatial_coverage", "source_entity_drawing_points"]
+__all__ = [
+    "evaluate_corridor_coverage",
+    "evaluate_spatial_coverage",
+    "source_entity_drawing_points",
+]
