@@ -98,6 +98,42 @@ def _load_delivery_partitions(config_dir: Path | None) -> list[dict[str, Any]]:
     return [item for item in partitions if item["region_id"]]
 
 
+def _gcp_partition_for_controls(
+    partitions: Sequence[Mapping[str, Any]],
+    controls: Sequence[Any],
+) -> str | None:
+    """Identify the delivery partition that owns a GCP profile.
+
+    Manado-tomohon_uplink contains several independent APD panels.  A GCP
+    profile exported from one panel review workspace has control points only
+    in that panel; spatial coverage must be measured against that panel's
+    device extent, not the whole multi-panel drawing.
+    """
+    if not partitions or not controls:
+        return None
+    training_points = [
+        (float(control.cad_point[0]), float(control.cad_point[1]))
+        for control in controls
+        if getattr(control, "role", None) == "train"
+    ]
+    if not training_points:
+        return None
+    scored = []
+    for partition in partitions:
+        min_x, min_y, max_x, max_y = partition["bbox"]
+        inside = sum(
+            1 for x, y in training_points
+            if min_x <= x <= max_x and min_y <= y <= max_y
+        )
+        scored.append((inside, partition["region_id"]))
+    scored.sort(reverse=True)
+    if not scored or scored[0][0] == 0:
+        return None
+    if len(scored) > 1 and scored[0][0] == scored[1][0]:
+        return None
+    return scored[0][1]
+
+
 def _partition_features(
     features: Iterable[Any],
     partitions: Sequence[Mapping[str, Any]],
@@ -1632,6 +1668,13 @@ def convert(request: ConversionRequest) -> ConversionResult:
     lineage_audit = None
     calibration_diagnostics = {"status": "not_provided"}
     gcp_profile = None
+    delivery_partitions = _load_delivery_partitions(
+        request.mapping_registry.parent,
+    )
+    _, all_partitioned_features = _partition_features(
+        features, delivery_partitions,
+    )
+    gcp_partition_id: str | None = None
     if request.gcp_profile is not None:
         gcp_profile = GCPProfile.load(
             request.gcp_profile, expected_source_sha256=source_hash,
@@ -1641,19 +1684,28 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "An enabled GCP profile requires reviewed spatial_coverage_policy gates"
             )
         gcp_profile.validate_transformer(transformer)
+        gcp_partition_id = _gcp_partition_for_controls(
+            delivery_partitions, gcp_profile.active_controls,
+        )
+        gcp_feature_scope = (
+            all_partitioned_features.get(gcp_partition_id, [])
+            if gcp_partition_id is not None
+            else features
+        )
         # Coverage envelope is the classified asset network (PTECH/BOITE/
         # SITE points), not raw entities or route lines: legend samples and
         # annotation cards around the sheet edge must not inflate the
-        # required control-point distribution.
+        # required control-point distribution.  For a partition review the
+        # envelope is scoped to that independent subdrawing.
         drawing_extent_points = tuple(
             point
-            for feature in features
-            if feature.feature_class in {"PTECH", "BOITE", "SITE"}
+            for feature in gcp_feature_scope
+            if feature.feature_class in {"PTECH", "BOITE", "SITE", "EMR"}
             for point in feature.native_points
         )
         corridor_polylines = tuple(
             tuple(feature.native_points)
-            for feature in features
+            for feature in gcp_feature_scope
             if feature.feature_class == "CABLE"
             and feature.geometry_kind == "LineString"
             and len(feature.native_points) >= 2
@@ -1846,10 +1898,20 @@ def convert(request: ConversionRequest) -> ConversionResult:
         "reasoning": reasoning_diagnostics,
     }
 
-    delivery_partitions = _load_delivery_partitions(request.mapping_registry.parent)
-    main_delivery_features, partitioned_features = _partition_features(
-        features, delivery_partitions,
-    )
+    if gcp_partition_id is not None:
+        # A GCP profile exported from one subdrawing review workspace must
+        # produce that subdrawing's corrected eight-layer package at the
+        # requested run-dir, not the full multi-panel drawing.
+        main_delivery_features = all_partitioned_features.get(
+            gcp_partition_id, [],
+        )
+        partitioned_features = {}
+        output_partitions = []
+    else:
+        main_delivery_features, partitioned_features = _partition_features(
+            features, delivery_partitions,
+        )
+        output_partitions = delivery_partitions
 
     artifact_prefix = "apd_" if profile.is_legacy else ""
     source_path = run_dir / "source.gpkg"
@@ -1945,7 +2007,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 f"Written style manifest coverage gate failed: {written_style_coverage}"
             )
         delivery_partition_artifacts: dict[str, Any] = {}
-        for partition in delivery_partitions:
+        for partition in output_partitions:
             region_id = partition["region_id"]
             region_features = partitioned_features.get(region_id, [])
             region_dir = staged_run_dir / region_id
