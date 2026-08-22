@@ -33,7 +33,7 @@ from .ingest import ingest
 from .implementation import implementation_manifest_fields, production_conversion_provenance
 from .model import canonical_curve_fingerprint
 from .semantics import classify_entities
-from .spatial_coverage import evaluate_spatial_coverage
+from .spatial_coverage import evaluate_corridor_coverage, evaluate_spatial_coverage
 from .styles import write_styles
 from .topology import build_topology
 from .run_status import RunStatus, derive_run_status, publish_verified_alias
@@ -530,6 +530,7 @@ def _calibration_observations(profile, result, transformer):
 def _calibration_spatial_coverage(
     profile, transformer, drawing_native_points, spatial_coverage_policy, *,
     training_point_ids=None,
+    corridor_polylines=(),
 ):
     """Evaluate the source-bound numeric GCP distribution policy."""
     drawing = [transformer.point(point) for point in drawing_native_points]
@@ -550,6 +551,27 @@ def _calibration_spatial_coverage(
     result = evaluate_spatial_coverage(
         drawing, train, check, spatial_coverage_policy,
     )
+    corridor = evaluate_corridor_coverage(
+        corridor_polylines, drawing, train, spatial_coverage_policy,
+    )
+    result["corridor"] = corridor
+    if result["passed"] is not True and corridor.get("corridor_detected") is True:
+        # Long, thin V-shaped corridors use arc-length coverage instead of
+        # 2D convex-hull containment.  The corridor gate may override only
+        # those two hull/bbox-extent proxies; every other standard gate
+        # (training/check counts, baseline, area ratios) remains binding.
+        overrideable = {
+            failure
+            for failure in result["failures"]
+            if (
+                failure.startswith("drawing_vertices_outside_training_hull_ratio")
+                or failure.startswith("drawing_vertices_outside_training_bbox_ratio")
+            )
+        }
+        if corridor["passed"] is True and overrideable == set(result["failures"]):
+            result["passed"] = True
+            result["failures"] = []
+            result["corridor_override"] = True
     result.update({
         "reviewed": profile.validation.spatial_distribution_reviewed,
         "review_source": getattr(
@@ -570,6 +592,7 @@ def _calibration_candidate_coverage_failures(
     drawing_native_points,
     spatial_coverage_policy,
     candidate,
+    corridor_polylines=(),
 ):
     """Return post-inlier coverage failures for one fitted model candidate."""
     accepted_training_ids = {
@@ -583,6 +606,7 @@ def _calibration_candidate_coverage_failures(
         drawing_native_points,
         spatial_coverage_policy,
         training_point_ids=accepted_training_ids,
+        corridor_polylines=corridor_polylines,
     )
     if coverage["passed"] is True:
         return ()
@@ -1627,6 +1651,13 @@ def convert(request: ConversionRequest) -> ConversionResult:
             if feature.feature_class in {"PTECH", "BOITE", "SITE"}
             for point in feature.native_points
         )
+        corridor_polylines = tuple(
+            tuple(feature.native_points)
+            for feature in features
+            if feature.feature_class == "CABLE"
+            and feature.geometry_kind == "LineString"
+            and len(feature.native_points) >= 2
+        )
         prefit_spatial_coverage = (
             {
                 "schema_version": "cad2gis-spatial-coverage-v1",
@@ -1640,6 +1671,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 transformer,
                 drawing_extent_points,
                 profile.spatial_coverage_policy,
+                corridor_polylines=corridor_polylines,
             )
         )
         if gcp_profile.enabled and prefit_spatial_coverage["passed"] is not True:
@@ -1657,6 +1689,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                     drawing_extent_points,
                     profile.spatial_coverage_policy,
                     candidate,
+                    corridor_polylines=corridor_polylines,
                 )
             ),
         )
@@ -1673,6 +1706,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 drawing_extent_points,
                 profile.spatial_coverage_policy,
                 training_point_ids=accepted_training_ids,
+                corridor_polylines=corridor_polylines,
             )
             spatial_coverage["pre_fit"] = prefit_spatial_coverage
             if spatial_coverage["passed"] is not True:

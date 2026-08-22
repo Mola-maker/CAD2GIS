@@ -379,6 +379,15 @@ def _unit_ratio(value: Any, name: str) -> float:
     return result
 
 
+def _unit_positive(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be a positive finite number")
+    result = float(value)
+    if not math.isfinite(result) or result <= 0.0:
+        raise ValueError(f"{name} must be a positive finite number")
+    return result
+
+
 @dataclass(frozen=True)
 class SpatialCoveragePolicy:
     """Source-bound numeric gates for distribution of reviewed GCPs.
@@ -396,6 +405,9 @@ class SpatialCoveragePolicy:
     min_check_baseline_to_drawing_diagonal_ratio: float
     min_check_hull_area_ratio: float | None
     max_drawing_vertices_outside_training_hull_ratio: float | None = None
+    corridor_min_cable_length_to_diagonal_ratio: float | None = None
+    corridor_min_cable_arc_coverage_ratio: float | None = None
+    corridor_max_device_to_training_along_cable_m: float | None = None
 
     @classmethod
     def from_mapping(cls, value: Any) -> "SpatialCoveragePolicy":
@@ -411,6 +423,9 @@ class SpatialCoveragePolicy:
         expected = legacy | {
             "min_check_hull_area_ratio",
             "max_drawing_vertices_outside_training_hull_ratio",
+            "corridor_min_cable_length_to_diagonal_ratio",
+            "corridor_min_cable_arc_coverage_ratio",
+            "corridor_max_device_to_training_along_cable_m",
         }
         missing, unknown = legacy - set(value), set(value) - expected
         if missing or unknown:
@@ -439,6 +454,27 @@ class SpatialCoveragePolicy:
                 "max_drawing_vertices_outside_training_hull_ratio",
             )
         )
+        for optional_name in (
+            "corridor_min_cable_length_to_diagonal_ratio",
+            "corridor_min_cable_arc_coverage_ratio",
+        ):
+            values[optional_name] = (
+                None
+                if optional_name not in value
+                else _unit_ratio(
+                    value[optional_name],
+                    f"spatial_coverage_policy.{optional_name}",
+                )
+            )
+        values["corridor_max_device_to_training_along_cable_m"] = (
+            None
+            if "corridor_max_device_to_training_along_cable_m" not in value
+            else _unit_positive(
+                value["corridor_max_device_to_training_along_cable_m"],
+                "spatial_coverage_policy."
+                "corridor_max_device_to_training_along_cable_m",
+            )
+        )
         return cls(**values)
 
     def to_dict(self) -> dict[str, float | None]:
@@ -455,6 +491,15 @@ class SpatialCoveragePolicy:
             "min_check_hull_area_ratio": self.min_check_hull_area_ratio,
             "max_drawing_vertices_outside_training_hull_ratio": (
                 self.max_drawing_vertices_outside_training_hull_ratio
+            ),
+            "corridor_min_cable_length_to_diagonal_ratio": (
+                self.corridor_min_cable_length_to_diagonal_ratio
+            ),
+            "corridor_min_cable_arc_coverage_ratio": (
+                self.corridor_min_cable_arc_coverage_ratio
+            ),
+            "corridor_max_device_to_training_along_cable_m": (
+                self.corridor_max_device_to_training_along_cable_m
             ),
         }
 
