@@ -476,6 +476,70 @@ def _accumulate(diagnostics: dict[str, Any], payload: Mapping[str, Any]) -> None
     )
 
 
+def _bridge_materialization(
+    feature: Feature,
+    source: SourceEntity,
+    policy: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Materialize an endpoint-bridged cable from its reviewed native vertices.
+
+    The bridge rule moved one endpoint onto a nearby PTECH point; the source
+    curve facts intentionally no longer match that endpoint.  Every other
+    vertex is immutable, and all source segments are straight CAD segments.
+    """
+    points = [
+        (float(point[0]), float(point[1]))
+        for point in feature.native_points
+    ]
+    if len(points) < 2:
+        raise ValueError("bridged cable requires at least two native vertices")
+    source_points = [(float(point[0]), float(point[1])) for point in source.points]
+    displaced = [
+        index for index, (left, right) in enumerate(zip(source_points, points))
+        if left != right
+    ]
+    if len(displaced) != 1:
+        raise ValueError("endpoint bridge must displace exactly one source vertex")
+    if displaced[0] not in (0, len(points) - 1):
+        raise ValueError("endpoint bridge must displace a cable endpoint")
+    segments = []
+    native_sum = 0.0
+    for index, (start, end) in enumerate(zip(points, points[1:])):
+        length = math.hypot(end[0] - start[0], end[1] - start[1])
+        if length <= 0.0:
+            continue
+        segments.append({
+            "source_segment_index": index,
+            "source_segment_kind": "line",
+            "source_start_vertex_index": index,
+            "source_end_vertex_index": index + 1,
+            "source_native_length": length,
+            "native_length_source": "endpoint-bridge-native-vertices",
+            "delivery_native_points": [list(start), list(end)],
+            "delivery_chord_length_native": length,
+        })
+        native_sum += length
+    if not segments:
+        raise ValueError("endpoint bridge produced no source segments")
+    return {
+        "schema_version": MATERIALIZATION_SCHEMA_VERSION,
+        "policy": dict(policy),
+        "policy_version": policy["policy_version"],
+        "source_curve_fingerprint": source.curve_fingerprint,
+        "source_primitive_type": str(source.curve_facts.get("primitive_type", "")),
+        "source_native_unit": "cad_drawing_unit",
+        "source_native_length": native_sum,
+        "source_segment_native_length_sum": native_sum,
+        "native_length_closure_delta": 0.0,
+        "materialization_method": "endpoint-bridge-over-native-vertices",
+        "source_segment_count": len(segments),
+        "delivery_vertex_count": len(points),
+        "delivery_native_points": [list(point) for point in points],
+        "source_segments": segments,
+        "skipped_zero_length_segments": [],
+    }
+
+
 def materialize_cable_features(
     entities: Sequence[SourceEntity],
     features: Sequence[Feature],
@@ -502,8 +566,15 @@ def materialize_cable_features(
         if source is None:
             issues.append(_issue("MISSING_SOURCE_ENTITY", feature, None, "source entity is absent"))
             continue
+        endpoint_bridged = any(
+            item.get("operation") == "bridge_cable_endpoint_to_pole"
+            for item in feature.lineage
+        )
         try:
-            payload = _materialize_route(feature, source, resolved_policy)
+            if endpoint_bridged:
+                payload = _bridge_materialization(feature, source, resolved_policy)
+            else:
+                payload = _materialize_route(feature, source, resolved_policy)
         except (KeyError, TypeError, ValueError) as exc:
             issues.append(_issue(
                 "UNSUPPORTED_OR_INCOMPLETE_CURVE_FACTS", feature, source, str(exc),
@@ -640,7 +711,14 @@ def validate_cable_geometry_materialization(
                 ))
             continue
         try:
-            expected = _materialize_route(feature, source, resolved_policy)
+            endpoint_bridged = any(
+                item.get("operation") == "bridge_cable_endpoint_to_pole"
+                for item in feature.lineage
+            )
+            if endpoint_bridged:
+                expected = _bridge_materialization(feature, source, resolved_policy)
+            else:
+                expected = _materialize_route(feature, source, resolved_policy)
             expected_json = json.dumps(expected, sort_keys=True, separators=(",", ":"), allow_nan=False)
             stored_json = json.dumps(stored, sort_keys=True, separators=(",", ":"), allow_nan=False)
         except (KeyError, TypeError, ValueError) as exc:

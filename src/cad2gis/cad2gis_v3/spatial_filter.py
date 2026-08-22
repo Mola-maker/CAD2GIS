@@ -332,6 +332,7 @@ def detect_annotation_frames(
 
 _PLACEHOLDER_RE = re.compile(r"(.)\1{2,}")
 _DENOISE_LABEL_RADIUS_M = 50.0
+_EMR_LABEL_RE = re.compile(r"(?i)^EMR[^A-Za-z0-9]+\d+$")
 
 # Structural shape shared by the four reviewed APD (As Plan Drawing)
 # pole-identifier families: dot-separated fields ending in ``P<digits>``.
@@ -475,7 +476,8 @@ def apply_spatial_denoising(
             "POLE" in str(entity.layer).upper()
             and is_pole_identifier_shape(text)
         )
-        if reviewed_label or pole_shape_label:
+        emr_label = bool(_EMR_LABEL_RE.fullmatch(text))
+        if reviewed_label or pole_shape_label or emr_label:
             label_centroids.append(
                 (float(entity.centroid[0]), float(entity.centroid[1]))
             )

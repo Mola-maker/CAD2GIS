@@ -1353,6 +1353,7 @@ def compile_onboarding_proposal(
                     registry.layers.get("zpm_boundary", ())
                     + registry.layers.get("sling_wire", ())
                     + registry.layers.get("homepass", ())
+                    + registry.layers.get("patchcord", ())
                 ),
                 label_text_patterns=[
                     str(family.text_pattern)

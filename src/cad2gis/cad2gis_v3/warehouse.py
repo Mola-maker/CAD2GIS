@@ -20,7 +20,7 @@ from pathlib import Path
 
 from osgeo import ogr
 
-from .schema_config import BOITE, CABLE, IMB, INFRASTRUCTURE_FC, PTECH, SITE, ZNRO, ZPM
+from .schema_config import BOITE, CABLE, EMR, IMB, INFRASTRUCTURE_FC, PTECH, SITE, ZNRO, ZPM
 
 from .curve_geometry import delivery_points, delivery_segments
 from .georef import DirectTransformer
@@ -77,7 +77,17 @@ CABLE_SEGMENT = {
     ],
 }
 LAYER_CONFIGS["CABLE_SEGMENT"] = CABLE_SEGMENT
-LAYER_ORDER = tuple(LAYER_CONFIGS)
+LAYER_CONFIGS["EMR"] = EMR
+LAYER_ORDER = tuple(name for name in LAYER_CONFIGS if name != "EMR")
+OPTIONAL_LAYER_ORDER = ("EMR",)
+
+
+def _active_layer_order(features):
+    emitted = {feature.feature_class for feature in features}
+    optional = tuple(
+        name for name in OPTIONAL_LAYER_ORDER if name in emitted
+    )
+    return LAYER_ORDER + optional
 
 CABLE_SEGMENT_SCHEMA_VERSION = "cad2gis.cable_segment.v1"
 CABLE_SEGMENT_UNIT = "m"
@@ -577,7 +587,7 @@ def _populate_dataset(dataset, features, transformer):
     geom_types = {
         "Point": ogr.wkbPoint, "LineString": ogr.wkbLineString, "Polygon": ogr.wkbPolygon,
     }
-    for layer_name in LAYER_ORDER:
+    for layer_name in _active_layer_order(features):
         config = LAYER_CONFIGS[layer_name]
         geometry_kind = _contract_geometry_kind(config["geometry_type"])
         layer = dataset.CreateLayer(layer_name, transformer.target, geom_types[geometry_kind])
@@ -847,8 +857,12 @@ def write_delivery(path, features, transformer):
             }
         finally:
             connection.close()
-        if integrity != "ok" or layers != set(LAYER_ORDER):
-            raise RuntimeError(f"Delivery validation failed: integrity={integrity}, layers={sorted(layers)}")
+        expected_layers = set(_active_layer_order(features))
+        if integrity != "ok" or layers != expected_layers:
+            raise RuntimeError(
+                f"Delivery validation failed: integrity={integrity}, "
+                f"layers={sorted(layers)}, expected={sorted(expected_layers)}"
+            )
         gc.collect()
         os.replace(staged, destination)
         return counts

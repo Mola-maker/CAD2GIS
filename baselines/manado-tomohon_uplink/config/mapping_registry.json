@@ -76,6 +76,39 @@
       "target_class": "SITE",
       "target_layer_pattern": "(?i)^FDT\\ STRUCTURE$",
       "text_pattern": "^fArial[^A-Za-z0-9]+b\\d+[^A-Za-z0-9]+i\\d+[^A-Za-z0-9]+c\\d+[^A-Za-z0-9]+p\\d+[^A-Za-z0-9]+The[^A-Za-z0-9]+first[^A-Za-z0-9]+splicing[^A-Za-z0-9]+tray$"
+    },
+    {
+      "family_id": "auto_pole_id_emr46478",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_EMR46478-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_EMR46478-001",
+      "source_layer_pattern": "(?i)^POLE\\ ID$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^POLE\\ ID$",
+      "text_pattern": "^MR[^A-Za-z0-9]+UP[^A-Za-z0-9]+TMH[^A-Za-z0-9]+EMR[^A-Za-z0-9]+46478[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_pole_id_ext_mf_s02",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_POLE_ID_EXT_MF_S02-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_POLE_ID_EXT_MF_S02-001",
+      "source_layer_pattern": "(?i)^POLE\\ ID$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^POLE\\ ID$",
+      "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+MF[^A-Za-z0-9]+TMH[^A-Za-z0-9]+S02[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "family_id": "auto_fat_emr",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_FAT_EMR-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-AUTO_FAT_EMR-001",
+      "source_layer_pattern": "(?i)^FAT$",
+      "target_class": "BOITE",
+      "target_layer_pattern": "(?i)^FAT$",
+      "text_pattern": "^EMR[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+\\d+$"
     }
   ],
   "block_families": {
@@ -171,6 +204,9 @@
     ],
     "zpm_boundary": [
       "FAT AREA"
+    ],
+    "patchcord": [
+      "ONT-MDU"
     ]
   },
   "policy": {
