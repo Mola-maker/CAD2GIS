@@ -260,3 +260,27 @@ def test_point_segment_distance_snaps_to_segment() -> None:
     from cad2gis.cad2gis_v3.semantics import _point_segment_distance
     assert abs(_point_segment_distance((1.0, 2.0), (0.0, 0.0), (4.0, 0.0)) - 2.0) < 1e-9
     assert abs(_point_segment_distance((-1.0, 0.0), (0.0, 0.0), (4.0, 0.0)) - 1.0) < 1e-9
+
+
+def test_frame_boite_admission_rules_are_structural_not_colour_based():
+    from cad2gis.cad2gis_v3.family_validation import annotation_pattern_specificity
+    from cad2gis.cad2gis_v3.semantics import (
+        _BOITE_FRAME_DEVICE_LAYER_TOKENS,
+        _BOITE_FRAME_MIN_LABEL_SPECIFICITY,
+    )
+
+    # A pole-legend label such as ``NP7`` matches a generic alphanumeric
+    # family and must never prove a BOITE frame.
+    assert annotation_pattern_specificity(r"^[A-Za-z]+\d+$") < (
+        _BOITE_FRAME_MIN_LABEL_SPECIFICITY
+    )
+    # Full FAT identifiers (TGGR04-1.022.A01 / KLDYA.011.C01) do.
+    assert annotation_pattern_specificity(
+        r"^TGGR\d+[^A-Za-z0-9]+\d+[^A-Za-z0-9]+\d+[^A-Za-z0-9]+[A-Za-z]+\d+$"
+    ) >= _BOITE_FRAME_MIN_LABEL_SPECIFICITY
+
+    # Base-map layers are never frame-derived BOITE sources; reviewed
+    # telecom device layers are.
+    assert not any(token in "BASIC MAP" for token in _BOITE_FRAME_DEVICE_LAYER_TOKENS)
+    assert any(token in "FAT INFO" for token in _BOITE_FRAME_DEVICE_LAYER_TOKENS)
+    assert any(token in "CLOSURE" for token in _BOITE_FRAME_DEVICE_LAYER_TOKENS)

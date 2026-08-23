@@ -41,18 +41,15 @@ _PTECH_CABLE_ENDPOINT_BRIDGE_M = 12.0
 _PTECH_CABLE_ENDPOINT_MIN_GAP_M = 0.5
 
 
-_NOISE_BOITE_TRUECOLORS = frozenset({"#003FFF", "#4C995F", "#FFFFFF"})
 _ZNRO_BOUNDARY_TOLERANCE_M = 3.0
-
-
-def _is_noise_boite(feature: Feature) -> bool:
-    """Reviewed colour-marked noise boxes that are not FDT BOITE assets."""
-    if feature.feature_class != "BOITE":
-        return False
-    true_color = str(getattr(feature.style, "true_color", "") or "").strip().upper()
-    if not true_color.startswith("#"):
-        true_color = f"#{true_color}"
-    return true_color in _NOISE_BOITE_TRUECOLORS
+# Frame-derived BOITE admission requires a reviewed asset-identifier label.
+# Generic alphanumeric labels such as ``NP7`` have specificity 1 and prove a
+# pole legend specimen, not a FAT device.
+_BOITE_FRAME_MIN_LABEL_SPECIFICITY = 2
+# A frame-derived BOITE is a deployed telecom device only on device-semantic
+# layers.  Base-map layers (``Basic Map``) contain buildings/parcels and are
+# never promoted regardless of nearby labels.
+_BOITE_FRAME_DEVICE_LAYER_TOKENS = ("FAT", "CLOSURE", "OTB", "FDT", "FIBER")
 
 
 def _point_segment_distance(
@@ -1441,6 +1438,30 @@ def classify_entities(
         str(layer).strip().upper()
         for layer in getattr(registry, "insert_layer_families", {}).get("BOITE", ())
     }
+    # Structural BOITE-frame admission: an LWPOLYLINE on a reviewed BOITE
+    # layer is only a device when a reviewed BOITE annotation-family label
+    # (e.g. ``TGGR04-1.022.A01``) proves it.  Unlabelled map/info rectangles
+    # and pole-legend specimens stay abstained instead of being promoted by
+    # their colour or their layer membership alone.
+    boite_label_evidence: list[tuple[SourceEntity, float]] = []
+    for family in annotation_families:
+        if family.target_class != "BOITE":
+            continue
+        if (
+            annotation_pattern_specificity(family.text_pattern)
+            < _BOITE_FRAME_MIN_LABEL_SPECIFICITY
+        ):
+            continue
+        tolerance = float(getattr(family, "max_distance_native_m", 15.0) or 15.0)
+        for entity in annotations_by_family.get(family.family_id, ()):
+            if not any(entity.entity_key == item.entity_key for item, _ in boite_label_evidence):
+                boite_label_evidence.append((entity, tolerance))
+
+    def _has_reviewed_boite_label(frame: Any) -> bool:
+        return any(
+            math.dist(frame.centroid, entity.centroid) <= tolerance
+            for entity, tolerance in boite_label_evidence
+        )
 
     def _device_number_for_frame(frame: Any) -> tuple[str | None, str | None]:
         integer_nearby = sorted(
@@ -1462,11 +1483,25 @@ def classify_entities(
             )
         return None, None
 
-    # BOITE frames are device geometry by themselves: every small rectangular
-    # FAT frame on a reviewed BOITE target layer becomes a BOITE point at its
-    # centroid, even when no text label family happens to match it.
+    # A small rectangular frame on a reviewed BOITE layer is promoted only
+    # when a reviewed BOITE identifier label proves it is a deployed FAT
+    # device.  Bare map rectangles, legend samples and info-card frames have
+    # no such label and remain abstained coverage records.
     for frame in frame_candidates:
-        if str(frame.layer).strip().upper() not in boite_frame_layers:
+        frame_layer_upper = str(frame.layer).strip().upper()
+        if frame_layer_upper not in boite_frame_layers:
+            continue
+        if not any(
+            token in frame_layer_upper
+            for token in _BOITE_FRAME_DEVICE_LAYER_TOKENS
+        ):
+            # Base-map rectangles (e.g. ``Basic Map``) are not deployed
+            # devices even when a nearby BOITE-style text exists.
+            continue
+        if not _has_reviewed_boite_label(frame) and not _is_materialized_block_entity(frame):
+            # Unlabelled raw LWPOLYLINE rectangles are map/info furniture;
+            # only a reviewed BOITE identifier label or an actual nested-INSERT
+            # block frame proves a deployed FAT/closure device.
             continue
         if any(
             math.dist(feature.native_centroid, frame.centroid) <= 0.5
@@ -2270,12 +2305,6 @@ def classify_entities(
             source = entity_by_key.get(feature.source_entity_key)
             coverage_records.append(_coverage_record(
                 source, "annotation_callout_noise", feature.feature_class,
-            ))
-            continue
-        if _is_noise_boite(feature):
-            source = entity_by_key.get(feature.source_entity_key)
-            coverage_records.append(_coverage_record(
-                source, "reviewed_noise_boite_color", feature.feature_class,
             ))
             continue
         retained.append(feature)
