@@ -17,7 +17,7 @@ from typing import Any
 
 IMPLEMENTATION_SCHEMA_VERSION = "cad2gis-implementation-provenance-v1"
 PRODUCTION_CONVERSION_SCOPE = "production-conversion"
-PRODUCTION_CONVERSION_SCOPE_VERSION = 4
+PRODUCTION_CONVERSION_SCOPE_VERSION = 5
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
 # Paths are relative to src/cad2gis.  Keep this list explicit: adding
@@ -27,6 +27,7 @@ PRODUCTION_CONVERSION_FILES = (
     "apd_rules.py",
     "reader/autocad.py",
     "cad2gis_v3/__init__.py",
+    "cad2gis_v3/cable_legend.py",
     "cad2gis_v3/calibration.py",
     "cad2gis_v3/cli.py",
     "cad2gis_v3/config.py",

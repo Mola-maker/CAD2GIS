@@ -78,7 +78,10 @@ CABLE_SEGMENT = {
 }
 LAYER_CONFIGS["CABLE_SEGMENT"] = CABLE_SEGMENT
 LAYER_CONFIGS["EMR"] = EMR
-LAYER_ORDER = tuple(name for name in LAYER_CONFIGS if name != "EMR")
+# QGIS layer-tree order follows the reviewed sample legend.
+LAYER_ORDER = (
+    "SITE", "BOITE", "PTECH", "IMB", "INFRASTRUCTURE", "CABLE", "ZPM", "ZNRO",
+)
 OPTIONAL_LAYER_ORDER = ("EMR",)
 
 
@@ -848,7 +851,9 @@ def write_delivery(path, features, transformer):
         counts = _write_staged(staged, features, transformer)
         connection = sqlite3.connect(staged)
         try:
-            normalize_geopackage_metadata(connection)
+            normalize_geopackage_metadata(
+                connection, contents_order=_active_layer_order(features),
+            )
             integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
             layers = {
                 row[0] for row in connection.execute(

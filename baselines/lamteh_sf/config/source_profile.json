@@ -18,7 +18,10 @@
     "feature_counts": {
       "CABLE": 1,
       "PTECH": 26,
-      "SITE": 2
+      "SITE": 2,
+      "INFRASTRUCTURE": 1,
+      "ZNRO": 0,
+      "BOITE": 2
     },
     "segment_gates": {},
     "source_geometry_gates": {},

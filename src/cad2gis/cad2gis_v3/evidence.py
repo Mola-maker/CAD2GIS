@@ -566,10 +566,18 @@ def _write_staged(
             ).hexdigest()
             segment_lookup[f"{parent_key}:segment:{segment_index}"] = (source_role, occurrence_key, parent, start, end)
             row = ogr.Feature(segment_table.GetLayerDefn())
+            if source_role == "OPTICAL_CABLE":
+                parent_source_key = parent.source_entity_key
+                parent_source_handle = parent.source_handle
+            else:
+                # SLING_SUPPORT parents are raw SourceEntity records, not
+                # classified delivery Features.
+                parent_source_key = parent.entity_key
+                parent_source_handle = parent.handle
             _set(row, {
                 "occurrence_key": occurrence_key, "source_role": source_role,
-                "parent_key": parent_key, "source_entity_key": parent.source_entity_key,
-                "source_handle": parent.source_handle, "segment_index": segment_index,
+                "parent_key": parent_key, "source_entity_key": parent_source_key,
+                "source_handle": parent_source_handle, "segment_index": segment_index,
                 "start_native": json.dumps(start, separators=(",", ":")),
                 "end_native": json.dumps(end, separators=(",", ":")),
                 "native_length_m": math.dist(start, end),

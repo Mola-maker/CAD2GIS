@@ -9,56 +9,62 @@ from pathlib import Path
 import pytest
 
 from cad2gis.cad2gis_v3.config import SourceProfile
-from cad2gis.reader.records_adapter import load_records, validate_bundle_facts
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = ROOT / "baselines" / "apd_hutabohu"
-SOURCE_PROFILE = ROOT / "experiment" / "config" / "apd_source_profile.json"
-RECORDS = BASELINE / "records" / "readcad_review_bundle.json"
-DELIVERY = BASELINE / "delivery" / "apd_delivery.gpkg"
-EXPECTED_DELIVERY_COUNTS = {
-    "BOITE": 43,
-    "CABLE": 6,
-    "PTECH": 167,
-    "IMB": 682,
-    "SITE": 2,
-}
+BASELINE = ROOT / "baselines" / "hutabohu"
+SOURCE_PROFILE = BASELINE / "config" / "source_profile.json"
+SOURCE_INVENTORY = BASELINE / "review" / "source_inventory.json"
+DELIVERY = BASELINE / "run" / "delivery.gpkg"
 
 
-def test_apd_records_bundle_contract() -> None:
-    profile = SourceProfile.load(SOURCE_PROFILE)
-    bundle_info = validate_bundle_facts(RECORDS, profile)
-
-    assert bundle_info["schema_version"] == "cad2gis.review_bundle.v2"
-    assert bundle_info["objects_count"] == 9391
-    assert bundle_info["facts_count"] == 9391
-    assert bundle_info["source_sha256"] == profile.source_sha256
-    assert len(load_records(RECORDS)) == 9391
+def _profile() -> SourceProfile:
+    return SourceProfile.load(SOURCE_PROFILE)
 
 
-def test_apd_records_bundle_rejects_a_different_source_profile() -> None:
-    unrelated_profile = SourceProfile.load(
-        BASELINE / "config" / "source_profile.json"
-    )
+def _inventory() -> dict:
+    return json.loads(SOURCE_INVENTORY.read_text(encoding="utf-8"))
 
-    with pytest.raises(ValueError, match="source SHA-256"):
-        validate_bundle_facts(RECORDS, unrelated_profile)
+
+def test_source_inventory_binds_to_the_reviewed_profile() -> None:
+    profile = _profile()
+    inventory = _inventory()
+
+    assert inventory["schema_version"] == "cad2gis-source-inventory-v1"
+    assert inventory["source"]["sha256"] == profile.source_sha256
+    assert inventory["inventory_sha256"] == profile.inventory_sha256
+    assert inventory["source"]["size_bytes"] == profile.source_size_bytes
+    assert inventory["counts"]["records"] == 9896
+
+
+def test_source_profile_rejects_a_different_dwg_stream(tmp_path: Path) -> None:
+    profile = _profile()
+    other_source = tmp_path / "same-name-different-bytes.dwg"
+    other_source.write_bytes(b"not the reviewed source byte stream")
+    with pytest.raises(ValueError, match="Source hash mismatch"):
+        profile.validate_source(other_source)
 
 
 def test_apd_delivery_layer_counts() -> None:
+    profile = _profile()
+    expected = {
+        layer: count
+        for layer, count in profile.expectations.feature_counts.items()
+        if count > 0
+    }
     with sqlite3.connect(DELIVERY) as connection:
         actual = {
             layer: connection.execute(
                 f'SELECT COUNT(*) FROM "{layer}"'
             ).fetchone()[0]
-            for layer in EXPECTED_DELIVERY_COUNTS
+            for layer in expected
         }
 
-    assert actual == EXPECTED_DELIVERY_COUNTS
+    assert actual == expected
 
 
-def test_apd_bundle_payload_count_matches_contract() -> None:
-    payload = json.loads(RECORDS.read_text(encoding="utf-8"))
+def test_apd_inventory_count_matches_contract() -> None:
+    inventory = _inventory()
 
-    assert payload["schema_version"] == "cad2gis.review_bundle.v2"
-    assert len(payload["objects"]) == 9391
+    assert inventory["counts"]["records"] == 9896
+    assert inventory["counts"]["model_entities"] == 7099
+    assert inventory["counts"]["unsupported_records"] == 1527

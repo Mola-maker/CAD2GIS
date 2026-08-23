@@ -12,6 +12,7 @@ from typing import Any, Mapping, Sequence
 
 from ezdxf.colors import aci2rgb
 
+from .cable_legend import cable_spec_from_style, cable_spec_name, ptech_type_name
 from .gpkg_metadata import normalize_geopackage_metadata
 from .model import Feature
 from .semantics import CoverageGateError, build_coverage_report
@@ -175,14 +176,18 @@ def analyze_style_coverage(
 def _line_width(layer_name, lineweight):
     if lineweight is not None and int(lineweight) > 0:
         width = max(0.1, min(2.4, int(lineweight) / 100.0))
-        return width * 2.0 if layer_name in {"CABLE", "CABLE_SEGMENT"} else width
-    return 1.2 if layer_name in {"CABLE", "CABLE_SEGMENT"} else 0.35
+        if layer_name == "INFRASTRUCTURE":
+            return max(0.1, min(2.4, int(lineweight) / 100.0)) * 2.4
+        return width * 2.0 if layer_name == "CABLE" else width
+    if layer_name == "INFRASTRUCTURE":
+        return 1.2 * 1.2
+    return 1.2 if layer_name == "CABLE" else 0.35
 
 
 def _marker_properties(layer_name):
     return {
         "BOITE": ("square", 4.0),
-        "SITE": ("diamond", 8.5),
+        "SITE": ("diamond", 6.0),
         # PTECH is a large circular pole symbol in the source drawings;
         # render it as a clearly circular marker at QGIS scale.
         "PTECH": ("circle", 5.0),
@@ -280,6 +285,55 @@ def _add_label_color(settings, styles):
     ET.SubElement(color_option, "Option", name="type", type="int", value="3")
 
 
+_CABLE_LEGEND_ORDER = (
+    "12", "24", "36", "48", "72", "96", "144", "288",
+    "DROP DUCT", "SLING WIRE", "PATCHCORD OUTDOOR",
+)
+_PTECH_LEGEND_ORDER = ('NP9 4"', 'NP7 4"', 'NP7 3"', 'NP7 2.5"', "EXISTING")
+
+
+def _legend_sort_key(layer_name, render_key):
+    """QGIS legend follows the reviewed sheet order, not ASCII order."""
+    text = str(render_key)
+    if layer_name == "CABLE":
+        spec = (
+            text[len("CABLE:"):].rsplit("|ROT_QGIS:", 1)[0]
+            if text.startswith("CABLE:")
+            else ""
+        )
+        order = _CABLE_LEGEND_ORDER.index(spec) if spec in _CABLE_LEGEND_ORDER else len(_CABLE_LEGEND_ORDER)
+        return (0, order, text)
+    if layer_name == "PTECH":
+        kind = (
+            text[len("PTECH:"):].rsplit("|ROT_QGIS:", 1)[0]
+            if text.startswith("PTECH:")
+            else ""
+        )
+        order = _PTECH_LEGEND_ORDER.index(kind) if kind in _PTECH_LEGEND_ORDER else len(_PTECH_LEGEND_ORDER)
+        return (0, order, text)
+    return (1, text)
+
+
+def _legend_label(layer_name, render_key):
+    """QGIS legend label: cable spec / pole type when available."""
+    text = str(render_key)
+    if layer_name == "CABLE" and text.startswith("CABLE:"):
+        text = text[len("CABLE:"):]
+    elif layer_name == "PTECH" and text.startswith("PTECH:"):
+        text = text[len("PTECH:"):]
+    elif layer_name in {"INFRASTRUCTURE", "ZNRO"}:
+        # These are single reviewed delivery layers; show the layer name
+        # rather than an internal CAD style key in the legend.
+        return layer_name
+    # Category values carry ``|ROT_QGIS:...`` (and occasionally
+    # ``|UNIFIED:...``) suffixes so the QML category exactly matches the
+    # gpkg ``style_render_key`` column; the legend label must show only the
+    # reviewed cable spec / pole type.
+    text = text.rsplit("|ROT_QGIS:", 1)[0]
+    text = text.rsplit("|UNIFIED:", 1)[0]
+    return text
+
+
 def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
     root = ET.Element(
         "qgis", version="3.40.0", styleCategories="AllStyleCategories",
@@ -293,9 +347,10 @@ def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
     categories = ET.SubElement(renderer, "categories")
     symbols = ET.SubElement(renderer, "symbols")
     for index, (render_key, aci, color, linetype, lineweight, rotation_degrees) in enumerate(styles):
+        legend_label = _legend_label(layer_name, render_key)
         ET.SubElement(
             categories, "category", value=render_key,
-            label=render_key, symbol=str(index), render="true",
+            label=legend_label, symbol=str(index), render="true",
         )
         symbol = ET.SubElement(symbols, "symbol", type={"Point": "marker", "LineString": "line", "Polygon": "fill"}[geometry_kind], name=str(index), alpha="1")
         if geometry_kind == "Point":
@@ -501,6 +556,21 @@ def write_styles(
             qgis_rotation = float(feature.attributes.get(
                 "delivery_style_qgis_rotation_deg", feature.style.qgis_rotation_degrees,
             ))
+            if layer_name == "CABLE":
+                spec = cable_spec_name(feature.source_layer, feature.style) or (
+                    cable_spec_from_style(
+                        feature.style.aci_color, feature.style.true_color,
+                    )
+                )
+                if spec:
+                    # The gpkg ``style_render_key`` column carries the same
+                    # legend key plus the georef rotation suffix, so QGIS
+                    # category values must match it exactly.
+                    key = f"CABLE:{spec}|ROT_QGIS:{qgis_rotation:.9f}"
+            elif layer_name == "PTECH":
+                type_name = ptech_type_name(feature)
+                if type_name:
+                    key = f"PTECH:{type_name}|ROT_QGIS:{qgis_rotation:.9f}"
             if unified_color is not None:
                 # Unified render colour keeps the audit render key intact;
                 # only the visual swatch is normalised.
@@ -511,7 +581,10 @@ def write_styles(
                 _effective_linetype(feature),
                 feature.style.lineweight, qgis_rotation,
             ))
-        styles = [observed[key] for key in sorted(observed)] or [
+        styles = [
+            observed[key]
+            for key in sorted(observed, key=lambda item: _legend_sort_key(layer_name, item))
+        ] or [
             ("ACI:7|LT:Continuous|LW:-1|ROT_QGIS:0.000000000", 7, "0,0,0,255", "Continuous", -1, 0.0)
         ]
         qml_path = destination / f"{layer_name}.qml"

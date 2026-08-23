@@ -19,7 +19,9 @@
       "BOITE": 1,
       "CABLE": 1,
       "PTECH": 13,
-      "SITE": 1
+      "SITE": 1,
+      "INFRASTRUCTURE": 1,
+      "ZNRO": 0
     },
     "segment_gates": {},
     "source_geometry_gates": {},

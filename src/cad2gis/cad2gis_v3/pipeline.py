@@ -1576,6 +1576,45 @@ def convert(request: ConversionRequest) -> ConversionResult:
     relations, unresolved, topology_diagnostics = build_topology(
         semantic_entities, features, registry, relations, unresolved,
     )
+    # CABLE length labels: keep only integer DWG span labels, formatted as
+    # ``27m``.  CABLE_SEGMENT is no longer a delivery layer; the labels are
+    # attached directly to the CABLE feature for QGIS line labelling.
+    for cable_feature in features:
+        if cable_feature.feature_class != "CABLE":
+            continue
+        integer_labels = []
+        for metric in cable_feature.attributes.get("span_metrics", ()) or ():
+            if str(metric.get("status") or "") != "measured":
+                # Only DWG dimension annotations become CABLE labels; CAD
+                # curve lengths of unmeasured spans stay unlabelled.
+                continue
+            label = str(metric.get("dimension_text_override") or "").strip()
+            value = None
+            match = re.search(r"(\d+(?:\.0+)?)\s*m", label)
+            if match:
+                value = float(match.group(1))
+            else:
+                # Many DWG dimension overrides are the bare integer text
+                # (``42``) rather than a formatted ``42 m`` string.
+                bare = re.fullmatch(r"(\d+(?:\.0+)?)", label)
+                if bare:
+                    value = float(bare.group(1))
+            if value is None:
+                # Fall back to the measured DWG value when the override text
+                # is absent or non-numeric.
+                measurement = metric.get("measurement_native_m")
+                if measurement is not None:
+                    value = float(measurement)
+            if value is not None and float(value).is_integer():
+                integer_labels.append(f"{int(value)}m")
+        if not integer_labels:
+            continue
+        base_label = cable_feature.display_label.strip()
+        parts = ([base_label] if base_label else []) + integer_labels
+        cable_feature.display_label = " · ".join(parts)
+        cable_feature.label_provenance = (
+            f"{cable_feature.label_provenance}|DWG_DIRECT:integer-span-labels"
+        )
     base_evidence_graph = build_stage_evidence_graph(
         source_sha256=source_hash,
         entities=evidence_entities,
