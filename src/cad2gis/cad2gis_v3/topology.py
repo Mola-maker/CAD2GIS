@@ -926,12 +926,18 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
                     support_pair_key, ()
                 )
                 match_method = "unique-support-pair"
-        if len(cable_matches) == 1 and not sling_matches:
+        # A DIMENSION whose endpoints match both a delivered CABLE segment
+        # and its raw SLING WIRE source entity belongs to the CABLE delivery
+        # segment.  The raw sling index is only the fallback for spans that
+        # are not delivered as CABLE routes; treating the duplicate as
+        # ambiguous silently starved every SLING WIRE label in drawings whose
+        # reader reports sling polylines as LWPOLYLINE.
+        if len(cable_matches) == 1:
             owner_key, segment_index = cable_matches[0]
             span_role = "cable_route_span"
             target_key = f"{owner_key}:segment:{segment_index}"
             route_segment_dimensions[(owner_key, segment_index)].append(dimension)
-        elif len(sling_matches) == 1 and not cable_matches:
+        elif len(sling_matches) == 1:
             owner_key, segment_index = sling_matches[0]
             span_role = "sling_wire_span"
             target_key = f"{owner_key}:segment:{segment_index}"
