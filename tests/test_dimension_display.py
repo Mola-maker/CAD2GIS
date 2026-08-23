@@ -16,5 +16,5 @@ def test_dimension_placeholder_falls_back_to_raw_measurement() -> None:
 
 
 def test_dimension_measurement_label_keeps_dwg_integer_text() -> None:
-    assert _dimension_measurement_label(r"{\H0.75x;50m}", 49.669) == "50 m [DWG DIMENSION]"
-    assert _dimension_measurement_label(r"{\H0.75x;<>}", 49.669) == "49.669 m [DWG DIMENSION]"
+    assert _dimension_measurement_label(r"{\H0.75x;50m}", 49.669) == "50m"
+    assert _dimension_measurement_label(r"{\H0.75x;<>}", 49.669) == "49.669m"

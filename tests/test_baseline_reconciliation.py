@@ -49,7 +49,7 @@ def test_apd_delivery_layer_counts() -> None:
     expected = {
         layer: count
         for layer, count in profile.expectations.feature_counts.items()
-        if count > 0
+        if count > 0 and layer != "CABLE"
     }
     with sqlite3.connect(DELIVERY) as connection:
         actual = {
@@ -58,8 +58,21 @@ def test_apd_delivery_layer_counts() -> None:
             ).fetchone()[0]
             for layer in expected
         }
+        cable_segment_count = connection.execute(
+            'SELECT COUNT(*) FROM "CABLE"'
+        ).fetchone()[0]
 
     assert actual == expected
+
+    # The delivery CABLE layer is the segment-normalised view: one row per
+    # immutable source segment.  The reviewed feature census still counts
+    # whole CABLE routes.
+    manifest = json.loads(
+        (BASELINE / "run" / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    segment_contract = manifest["validation"]["segment_delivery"]
+    assert segment_contract["passed"] is True
+    assert cable_segment_count == segment_contract["count"]
 
 
 def test_apd_inventory_count_matches_contract() -> None:

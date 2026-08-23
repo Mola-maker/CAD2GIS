@@ -800,8 +800,8 @@ def _segment_delivery_summary(features, delivery_counts=None):
         if attributes.get("unmeasured_span_count") != expected - route_measured:
             index_passed = False
     actual_count = metric_count
-    if delivery_counts is not None and "CABLE_SEGMENT" in delivery_counts:
-        actual_count = int(delivery_counts["CABLE_SEGMENT"])
+    if delivery_counts is not None and "CABLE" in delivery_counts:
+        actual_count = int(delivery_counts["CABLE"])
         if actual_count != metric_count:
             index_passed = False
     closure_passed = bool(index_passed and geometry_passed and total_passed)
@@ -1392,6 +1392,23 @@ def convert(request: ConversionRequest) -> ConversionResult:
     catalog_roots: frozenset[str] = getattr(
         plan_domain, "catalog_roots", frozenset()
     )
+    # ZNRO outer boundary rings (red BOUNDARY/BATAS polylines) are reviewed
+    # deployment geometry even when the annotation-frame detector flags them
+    # for hugging the drawing-body perimeter.
+    znro_boundary_layers = tuple(sorted({
+        str(entity.layer)
+        for entity in semantic_entities
+        if entity.dwg_type.upper() in {"LWPOLYLINE", "POLYLINE", "POLYLINE_2D"}
+        and (
+            "BOUNDARY" in str(entity.layer).upper()
+            or "BATAS" in str(entity.layer).upper()
+        )
+        and (
+            getattr(entity.style, "aci_color", 256) == 1
+            or str(getattr(entity.style, "true_color", "") or "").strip().upper().lstrip("#")
+            in {"FF0000", "E00000", "CC0000", "B00000"}
+        )
+    }))
     spatial_result = apply_spatial_denoising(
         entities=semantic_entities,
         catalog_roots=catalog_roots,
@@ -1404,6 +1421,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             + getattr(registry, "layers", {}).get("sling_wire", ())
             + getattr(registry, "layers", {}).get("homepass", ())
             + getattr(registry, "layers", {}).get("patchcord", ())
+            + znro_boundary_layers
         ),
         label_text_patterns=[
             str(family.text_pattern)
@@ -1528,6 +1546,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
         coverage_policy=registry.semantic_coverage_policy,
         coverage_allowlist=list(registry.semantic_coverage_allowlist),
         catalog_roots=catalog_roots,
+        project_id=profile.project_id,
+        project_slug=profile.path.parent.parent.name,
     )
     semantic_diagnostics["legend_spatial"] = {
         "flagged_entity_keys": sorted(legend_flag_map.keys()),
@@ -1576,45 +1596,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
     relations, unresolved, topology_diagnostics = build_topology(
         semantic_entities, features, registry, relations, unresolved,
     )
-    # CABLE length labels: keep only integer DWG span labels, formatted as
-    # ``27m``.  CABLE_SEGMENT is no longer a delivery layer; the labels are
-    # attached directly to the CABLE feature for QGIS line labelling.
-    for cable_feature in features:
-        if cable_feature.feature_class != "CABLE":
-            continue
-        integer_labels = []
-        for metric in cable_feature.attributes.get("span_metrics", ()) or ():
-            if str(metric.get("status") or "") != "measured":
-                # Only DWG dimension annotations become CABLE labels; CAD
-                # curve lengths of unmeasured spans stay unlabelled.
-                continue
-            label = str(metric.get("dimension_text_override") or "").strip()
-            value = None
-            match = re.search(r"(\d+(?:\.0+)?)\s*m", label)
-            if match:
-                value = float(match.group(1))
-            else:
-                # Many DWG dimension overrides are the bare integer text
-                # (``42``) rather than a formatted ``42 m`` string.
-                bare = re.fullmatch(r"(\d+(?:\.0+)?)", label)
-                if bare:
-                    value = float(bare.group(1))
-            if value is None:
-                # Fall back to the measured DWG value when the override text
-                # is absent or non-numeric.
-                measurement = metric.get("measurement_native_m")
-                if measurement is not None:
-                    value = float(measurement)
-            if value is not None and float(value).is_integer():
-                integer_labels.append(f"{int(value)}m")
-        if not integer_labels:
-            continue
-        base_label = cable_feature.display_label.strip()
-        parts = ([base_label] if base_label else []) + integer_labels
-        cable_feature.display_label = " · ".join(parts)
-        cable_feature.label_provenance = (
-            f"{cable_feature.label_provenance}|DWG_DIRECT:integer-span-labels"
-        )
+    # CABLE length labels are segment-level facts.  The delivery ``CABLE``
+    # layer is the normalised segment view: the warehouse attaches each DWG
+    # dimension label to its own source segment (``42m``) and leaves segments
+    # without a DWG dimension unlabelled.  Route features keep their reviewed
+    # semantic label only; no aggregate label is manufactured here.
     base_evidence_graph = build_stage_evidence_graph(
         source_sha256=source_hash,
         entities=evidence_entities,
@@ -2107,7 +2093,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
         )
         if validation_summary["segment_delivery"]["passed"] is not True:
             raise RuntimeError(
-                "CABLE_SEGMENT manifest closure validation failed: "
+                "CABLE segment delivery manifest closure validation failed: "
                 f"{validation_summary['segment_delivery']}"
             )
         run_status = _derive_conversion_status(

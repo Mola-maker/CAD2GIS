@@ -1067,3 +1067,13 @@ def test_gpkg_contents_scan_order_follows_reviewed_layer_order(tmp_path: Path):
         connection.close()
 
     assert names == ["SITE", "BOITE", "PTECH", "IMB", "INFRASTRUCTURE", "CABLE", "ZPM", "ZNRO"]
+
+
+def test_optional_emr_layer_is_inserted_before_imb():
+    warehouse = _canonical_module("cad2gis.cad2gis_v3.warehouse")
+    features = [SimpleNamespace(feature_class="EMR")]
+    order = warehouse._active_layer_order(features)
+    assert order == (
+        "SITE", "BOITE", "PTECH", "EMR", "IMB",
+        "INFRASTRUCTURE", "CABLE", "ZPM", "ZNRO",
+    )
