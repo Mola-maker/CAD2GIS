@@ -603,7 +603,15 @@ def enrich_delivery_metrics(features, transformer: DirectTransformer):
             qgis_rotation = transformer.qgis_rotation(
                 feature.native_centroid, feature.style.rotation,
             )
-            render_key = feature.style.render_key.rsplit("|ROT_QGIS:", 1)[0]
+            # Semantics may have already replaced the render key with the
+            # reviewed legend key (``CABLE:48`` / ``PTECH:NP7 4"``).  The
+            # georeference step only appends its rotation suffix; it must
+            # never clobber the semantic legend name.
+            base_render_key = str(
+                feature.attributes.get("delivery_style_render_key")
+                or feature.style.render_key
+            )
+            render_key = base_render_key.rsplit("|ROT_QGIS:", 1)[0]
             feature.attributes.update({
                 "delivery_style_qgis_rotation_deg": qgis_rotation,
                 "delivery_style_render_key": f"{render_key}|ROT_QGIS:{qgis_rotation:.9f}",

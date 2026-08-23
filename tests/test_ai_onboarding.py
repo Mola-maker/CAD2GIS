@@ -208,7 +208,7 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
         proposer={"provider": "test", "model": "fixture"},
     )
     assert result_repair["status"] == "auto_accepted"
-    assert result_repair["feature_counts"] == {"CABLE": 1}
+    assert result_repair["feature_counts"] == {"CABLE": 1, "INFRASTRUCTURE": 1}
     assert result_repair.get("family_validation", {}).get(
         "route_regex_check", {}
     ).get("status") == "extended"
@@ -221,7 +221,7 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
     )
 
     assert result["status"] == "auto_accepted"
-    assert result["feature_counts"] == {"CABLE": 1}
+    assert result["feature_counts"] == {"CABLE": 1, "INFRASTRUCTURE": 1}
     assert validate_project(project_dir=root)["conversion_allowed"] is True
     profile = json.loads(
         (root / "config" / "source_profile.json").read_text(encoding="utf-8")
@@ -231,7 +231,7 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
     )
     assert profile["review"] == registry["review"]
     assert profile["crs"]["source_crs"] == "EPSG:32749"
-    assert profile["expectations"]["feature_counts"] == {"CABLE": 1}
+    assert profile["expectations"]["feature_counts"] == {"CABLE": 1, "INFRASTRUCTURE": 1}
 
 
 def test_compile_annotation_families_targets_insert_layers_not_label_layers() -> None:

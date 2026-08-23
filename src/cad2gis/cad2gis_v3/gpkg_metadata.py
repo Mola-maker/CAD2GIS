@@ -19,13 +19,17 @@ def _table_columns(connection: sqlite3.Connection, table_name: str) -> set[str]:
     }
 
 
-def normalize_geopackage_metadata(connection: sqlite3.Connection) -> None:
+def normalize_geopackage_metadata(
+    connection: sqlite3.Connection,
+    contents_order: list[str] | tuple[str, ...] | None = None,
+) -> None:
     """Replace writer-clock metadata using deterministic primary-key order.
 
-    This deliberately touches only generated timestamps; feature, audit,
-    extent, CRS, and style payloads remain unchanged.  ``VACUUM`` rebuilds the
-    file after the transaction so superseded wall-clock values cannot remain
-    in unused SQLite cells and make otherwise equal databases differ by byte.
+    This deliberately touches only generated timestamps and (optionally) the
+    scan order of ``gpkg_contents``; feature, audit, extent, CRS, and style
+    payloads remain unchanged.  ``VACUUM`` rebuilds the file after the
+    transaction so superseded wall-clock values cannot remain in unused SQLite
+    cells and make otherwise equal databases differ by byte.
     """
     if connection.in_transaction:
         raise RuntimeError(
@@ -69,5 +73,32 @@ def normalize_geopackage_metadata(connection: sqlite3.Connection) -> None:
                     for style_id in style_ids
                 ),
             )
+
+        if contents_order is not None:
+            # GDAL registers an empty layer in ``gpkg_contents`` only once its
+            # first feature is written, which can move zero-feature layers to
+            # the end.  Rewrite the rowid order explicitly so the default
+            # GeoPackage scan (and QGIS's layer order) matches the reviewed
+            # legend.  The temporary high-water offset avoids rowid conflicts.
+            ordered = [str(name) for name in contents_order]
+            remaining = [name for name in content_names if name not in ordered]
+            desired = ordered + remaining
+            offset = max(len(desired), 1) + 1000
+            existing_names = [
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT table_name FROM gpkg_contents ORDER BY rowid"
+                ).fetchall()
+            ]
+            for index, table_name in enumerate(existing_names):
+                connection.execute(
+                    "UPDATE gpkg_contents SET rowid=? WHERE table_name=?",
+                    (offset + index, table_name),
+                )
+            for index, table_name in enumerate(desired, start=1):
+                connection.execute(
+                    "UPDATE gpkg_contents SET rowid=? WHERE table_name=?",
+                    (index, table_name),
+                )
 
     connection.execute("VACUUM")

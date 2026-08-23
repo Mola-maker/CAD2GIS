@@ -20,7 +20,9 @@
       "CABLE": 17,
       "IMB": 435,
       "PTECH": 109,
-      "SITE": 2
+      "SITE": 2,
+      "INFRASTRUCTURE": 17,
+      "ZNRO": 0
     },
     "segment_gates": {},
     "source_geometry_gates": {},

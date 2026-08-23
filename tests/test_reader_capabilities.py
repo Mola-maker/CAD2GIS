@@ -293,7 +293,7 @@ def test_capability_rejects_loadable_library_without_required_symbols(
     monkeypatch.setattr(libredwg.os, "name", "nt")
     monkeypatch.setattr(libredwg.ctypes.util, "find_library", lambda _name: None)
     monkeypatch.setattr(libredwg.ctypes, "CDLL", fake_cdll)
-    monkeypatch.setattr(_ctypes, "FreeLibrary", lambda _handle: None)
+    monkeypatch.setattr(_ctypes, "FreeLibrary", lambda _handle: None, raising=False)
     monkeypatch.setattr(libredwg, "_libdwg", None)
     monkeypatch.setattr(libredwg, "_libc", None)
 
@@ -330,7 +330,7 @@ def test_native_initialization_releases_handles_on_symbol_failure(
     monkeypatch.setattr(libredwg.os, "name", "nt")
     monkeypatch.setattr(libredwg.ctypes.util, "find_library", lambda _name: None)
     monkeypatch.setattr(libredwg.ctypes, "CDLL", fake_cdll)
-    monkeypatch.setattr(_ctypes, "FreeLibrary", close_calls.append)
+    monkeypatch.setattr(_ctypes, "FreeLibrary", close_calls.append, raising=False)
     monkeypatch.setattr(libredwg, "_libdwg", None)
     monkeypatch.setattr(libredwg, "_libc", None)
 

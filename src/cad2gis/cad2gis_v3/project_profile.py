@@ -611,7 +611,13 @@ def _reviewed_contract_state(
         configured_classes.add("CABLE")
     if registry.layers.get("zpm_boundary"):
         configured_classes.add("ZPM")
-    unconfigured_classes = expected_classes - configured_classes
+    # INFRASTRUCTURE and ZNRO are deterministic delivery derivatives: the
+    # total set of reviewed CABLE geometry and the parent zone of reviewed
+    # ZPM polygons.  They have no DWG mapping rules by design.
+    generated_delivery_classes = {"INFRASTRUCTURE", "ZNRO"}
+    unconfigured_classes = (
+        expected_classes - configured_classes - generated_delivery_classes
+    )
     if unconfigured_classes:
         raise ValueError(
             "Reviewed expectations contain feature classes with no mapping rules: "

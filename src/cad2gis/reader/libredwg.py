@@ -321,7 +321,9 @@ def _release_native_handle(handle) -> None:
             return
         try:
             if os.name == "nt":
-                _ctypes.FreeLibrary(raw_handle)
+                free_library = getattr(_ctypes, "FreeLibrary", None)
+                if free_library is not None:
+                    free_library(raw_handle)
             else:
                 _ctypes.dlclose(raw_handle)
         except Exception:

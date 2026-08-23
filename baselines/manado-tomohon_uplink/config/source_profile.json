@@ -22,7 +22,9 @@
       "PTECH": 61,
       "SITE": 1,
       "ZPM": 15,
-      "EMR": 2
+      "EMR": 2,
+      "INFRASTRUCTURE": 16,
+      "ZNRO": 1
     },
     "segment_gates": {},
     "source_geometry_gates": {},

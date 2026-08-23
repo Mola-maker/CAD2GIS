@@ -11,6 +11,7 @@ from dataclasses import replace
 from fnmatch import fnmatchcase
 from typing import Any, Iterable, Mapping, Sequence
 
+from .cable_legend import cable_spec_name, ptech_type_name
 from .config import MappingRegistry
 from .family_validation import annotation_pattern_specificity
 from .model import CadStyle, Feature, Relation, SourceEntity
@@ -67,6 +68,45 @@ def _polyline_nearest_distance(
         ),
         default=math.inf,
     )
+
+
+def _convex_hull(points: Sequence[Sequence[float]]) -> list[tuple[float, float]]:
+    """Andrew monotone-chain convex hull; returns CCW vertices."""
+    unique = sorted({(float(p[0]), float(p[1])) for p in points})
+    if len(unique) <= 2:
+        return unique
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+    lower = []
+    for point in unique:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], point) <= 0:
+            lower.pop()
+        lower.append(point)
+    upper = []
+    for point in reversed(unique):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], point) <= 0:
+            upper.pop()
+        upper.append(point)
+    return lower[:-1] + upper[:-1]
+
+
+def _polygon_area_signed(points: Sequence[Sequence[float]]) -> float:
+    """Twice the signed shoelace area (positive for CCW ordering)."""
+    total = 0.0
+    for left, right in zip(points, points[1:]):
+        total += float(left[0]) * float(right[1]) - float(right[0]) * float(left[1])
+    return total
+
+
+def _is_red_boundary(entity: SourceEntity) -> bool:
+    """A ZNRO boundary candidate must render red in the source drawing."""
+    true_color = str(getattr(entity.style, "true_color", "") or "").strip().upper().lstrip("#")
+    return entity.style.aci_color == 1 or true_color in {
+        "FF0000", "E00000", "CC0000", "B00000",
+    }
+
 
 
 def _is_placeholder_block(entity: SourceEntity) -> bool:
@@ -2090,6 +2130,22 @@ def classify_entities(
                 legend_core_keys.update(f.feature_key for f in group)
 
     for feature in features:
+        if feature.feature_class == "CABLE":
+            spec = cable_spec_name(feature.source_layer, feature.style)
+            if spec:
+                feature.attributes["delivery_style_render_key"] = f"CABLE:{spec}"
+                feature.field_provenance["delivery_style_render_key"] = (
+                    "DWG_DIRECT:cable-colour-legend"
+                )
+        elif feature.feature_class == "PTECH":
+            type_name = ptech_type_name(feature)
+            if type_name:
+                feature.attributes["delivery_style_render_key"] = f"PTECH:{type_name}"
+                feature.field_provenance["delivery_style_render_key"] = (
+                    "DWG_DIRECT:pole-legend-category"
+                )
+
+    for feature in features:
         device_number = feature.attributes.get("DEVICE_NUMBER")
         if device_number:
             text_label = feature.display_label.strip()
@@ -2118,6 +2174,149 @@ def classify_entities(
     if len(retained) != len(features):
         features = retained
         feature_by_key = {feature.feature_key: feature for feature in features}
+    # INFRASTRUCTURE is the continuous single-colour total set of every CABLE
+    # coloured line.  It repeats the immutable cable geometry with a legend
+    # colour that is deliberately distinct from all cable-type colours.
+    # Generation runs after the final noise filtering so the count always
+    # equals the delivered CABLE count.
+    for cable_feature in [
+        feature for feature in features if feature.feature_class == "CABLE"
+    ]:
+        infrastructure_style = replace(
+            cable_feature.style,
+            aci_color=8,
+            true_color="#808080",
+            linetype="Continuous",
+        )
+        infrastructure_feature = Feature(
+            feature_key=hashlib.sha256(
+                f"INFRASTRUCTURE|{cable_feature.feature_key}".encode()
+            ).hexdigest(),
+            feature_class="INFRASTRUCTURE",
+            geometry_kind="LineString",
+            native_points=list(cable_feature.native_points),
+            source_entity_key=cable_feature.source_entity_key,
+            source_handle=cable_feature.source_handle,
+            source_layer=cable_feature.source_layer,
+            geometry_role="SOURCE_ROUTE",
+            style=infrastructure_style,
+            attributes={"CODE": f"INFRA-CAD-{cable_feature.source_handle}"},
+            display_label="",
+            label_provenance="UNAVAILABLE",
+            field_provenance={
+                "CODE": "DWG_DERIVED:cable-collection-member",
+            },
+            lineage=[{
+                "operation": "identity",
+                "source_entity_key": cable_feature.source_entity_key,
+                "max_displacement_m": 0.0,
+            }],
+        )
+        features.append(infrastructure_feature)
+
+    # ZNRO is the parent service zone of ZPM polygons.  When the DWG carries
+    # an enclosing red dashed boundary it is the authoritative ZNRO; otherwise
+    # it is the convex hull of all ZPM polygons (cluster gaps removed).
+    delivered_zpm = [
+        feature for feature in features if feature.feature_class == "ZPM"
+    ]
+    if delivered_zpm:
+        zpm_points = [
+            point for feature in delivered_zpm for point in feature.native_points
+        ]
+        boundary_candidates = [
+            entity for entity in model_entities
+            if entity.dwg_type.upper() in {"LWPOLYLINE", "POLYLINE", "POLYLINE_2D"}
+            and len(entity.points) >= 3
+            and (
+                "BOUNDARY" in entity.layer.upper()
+                or "BATAS" in entity.layer.upper()
+            )
+            and _is_red_boundary(entity)
+        ]
+        znro_entity = None
+        znro_points = None
+        znro_style = CadStyle(aci_color=1, true_color="#FF0000", linetype="DASHED")
+        if boundary_candidates:
+            # The authoritative ZNRO is the outer red boundary: it must
+            # enclose every delivered ZPM point.  A per-cluster boundary or a
+            # legend frame only encloses a subset and must not be mistaken for
+            # the parent zone.
+            enclosing = [
+                entity for entity in boundary_candidates
+                if all(
+                    min(p[0] for p in entity.points) - 0.5 <= point[0]
+                    <= max(p[0] for p in entity.points) + 0.5
+                    and min(p[1] for p in entity.points) - 0.5 <= point[1]
+                    <= max(p[1] for p in entity.points) + 0.5
+                    for point in zpm_points
+                )
+            ]
+            if enclosing:
+                znro_entity = max(
+                    enclosing,
+                    key=lambda entity: (
+                        abs(_polygon_area_signed(entity.points)),
+                        len(entity.points),
+                    ),
+                )
+        if znro_entity is not None:
+            znro_points = list(znro_entity.points)
+            # The reviewed legend renders the parent zone as a red dashed
+            # boundary even when the reader reports the source linetype as
+            # ByLayer/Continuous; normalise the delivery style to that legend.
+            znro_style = replace(
+                znro_entity.style,
+                aci_color=1,
+                true_color="#FF0000",
+                entity_aci_color=1,
+                layer_aci_color=1,
+                linetype="DASHED",
+                entity_linetype="DASHED",
+                layer_linetype="DASHED",
+            )
+            source_key = znro_entity.entity_key
+            source_handle = znro_entity.handle
+        else:
+            hull = _convex_hull(zpm_points)
+            znro_points = hull + [hull[0]]
+            source_key = hashlib.sha256(
+                (
+                    "ZNRO|" + "|".join(
+                        f"{point[0]:.6f},{point[1]:.6f}" for point in hull
+                    )
+                ).encode()
+            ).hexdigest()
+            source_handle = "ZNRO-CONVEX-HULL"
+        features.append(Feature(
+            feature_key=hashlib.sha256(
+                f"ZNRO|{source_key}".encode()
+            ).hexdigest(),
+            feature_class="ZNRO",
+            geometry_kind="Polygon",
+            native_points=znro_points,
+            source_entity_key=source_key,
+            source_handle=source_handle,
+            source_layer=(
+                znro_entity.layer if znro_entity is not None else "ZPM-CONVEX-HULL"
+            ),
+            geometry_role="SOURCE_BOUNDARY",
+            style=znro_style,
+            attributes={"CODE": f"ZNRO-CAD-{source_handle}"},
+            display_label="",
+            label_provenance="UNAVAILABLE",
+            field_provenance={"CODE": "DWG_DERIVED:znro-parent-zone"},
+            lineage=[{
+                "operation": (
+                    "identity"
+                    if znro_entity is not None
+                    else "convex_hull_of_zpm"
+                ),
+                "source_entity_key": source_key,
+                "max_displacement_m": 0.0,
+            }],
+        ))
+
 
     selected_policy = normalize_observability_policy(
         coverage_policy,
