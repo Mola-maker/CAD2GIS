@@ -119,6 +119,38 @@ def _connected_components(
     return components
 
 
+def _morphological_gap_fill(
+    polygons: Sequence[Polygon],
+    gap_bridge_m: float,
+) -> list[Polygon]:
+    """Union the parcels, fill gaps narrower than ``gap_bridge_m``, then hug
+    their original edges again.
+
+    Closing (buffer out by half the bridge gap, then buffer back) fills only
+    the narrow gaps that made the parcels a continuous component.  It keeps
+    the result's area nearly equal to the parcel union instead of inflating
+    it to an alpha/convex hull.
+    """
+    half = gap_bridge_m / 2.0 + 0.5
+    closed = unary_union([
+        polygon.buffer(half) for polygon in polygons
+    ]).buffer(-half)
+    if closed.is_empty:
+        return []
+    if closed.geom_type == "MultiPolygon":
+        parts = list(closed.geoms)
+    else:
+        parts = [closed]
+    filled = []
+    for part in parts:
+        if part.geom_type != "Polygon":
+            part = part.convex_hull
+        polygon = Polygon(part.exterior.coords)
+        if polygon.is_valid and polygon.area > 0.0:
+            filled.append(polygon)
+    return filled
+
+
 def conservative_znro_polygons(
     polygons: Sequence[Sequence[Sequence[float]]],
     *,
@@ -129,8 +161,9 @@ def conservative_znro_polygons(
     - An isolated ZPM polygon (no other ZPM within ``gap_bridge_m``) is
       returned unchanged: ZNRO equals that ZPM region.
     - ZPM polygons distributed continuously with narrow gaps between them
-      form one component; the component's gaps are filled with the alpha
-      shape of its vertices, producing one parent polygon per component.
+      form one component; only those narrow gaps are filled while the result
+      keeps hugging the original parcel edges (morphological closing), so its
+      area stays close to the parcel union.
 
     The result is deterministic (components sorted by their smallest source
     index) and may contain several polygons; it never bridges a large empty
@@ -150,12 +183,10 @@ def conservative_znro_polygons(
         if len(component) == 1:
             results.append(source_polygons[component[0]])
             continue
-        coordinates = [
-            list(source_polygons[index].exterior.coords)
-            for index in component
-        ]
-        parent = alpha_shape_union(coordinates)
-        results.append(parent)
+        results.extend(_morphological_gap_fill(
+            [source_polygons[index] for index in component],
+            gap_bridge_m,
+        ))
     results.sort(key=lambda polygon: (-polygon.area, polygon.wkt))
     return results
 

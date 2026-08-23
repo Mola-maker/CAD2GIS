@@ -54,4 +54,4 @@ def test_conservative_znro_keeps_isolated_parcels_and_merges_contiguous_group():
     results = conservative_znro_polygons([isolated, *contiguous], gap_bridge_m=8.0)
     assert len(results) == 2
     areas = sorted(round(polygon.area, 3) for polygon in results)
-    assert areas == [100.0, 342.0]
+    assert areas == [100.0, 344.063]
