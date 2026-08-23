@@ -636,6 +636,15 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         route.feature_key: delivery_segments(route, require_materialized=False)
         for route in routes
     }
+    # A raw SLING WIRE entity is normally the source entity of the delivered
+    # CABLE route with the same immutable source segments.  When a DIMENSION
+    # matches the raw entity but not the materialized segment signature, this
+    # source-identity map promotes it back to the delivered CABLE segment
+    # without any geometric threshold guesswork.
+    route_key_by_source_entity = {
+        route.source_entity_key: route.feature_key
+        for route in routes
+    }
     exact_value = registry.thresholds.get("exact")
     if exact_value is None:
         raise RuntimeError("Topology requires a reviewed 'exact' distance threshold")
@@ -939,8 +948,21 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             route_segment_dimensions[(owner_key, segment_index)].append(dimension)
         elif len(sling_matches) == 1:
             owner_key, segment_index = sling_matches[0]
-            span_role = "sling_wire_span"
-            target_key = f"{owner_key}:segment:{segment_index}"
+            route_key = route_key_by_source_entity.get(owner_key)
+            if route_key is not None and any(
+                int(segment["source_segment_index"]) == segment_index
+                for segment in route_source_segments[route_key]
+            ):
+                # The raw sling segment is the immutable source segment of a
+                # delivered CABLE route; promote the DIMENSION to that CABLE
+                # segment instead of leaving the delivery row unlabelled.
+                owner_key = route_key
+                span_role = "cable_route_span"
+                target_key = f"{owner_key}:segment:{segment_index}"
+                route_segment_dimensions[(owner_key, segment_index)].append(dimension)
+            else:
+                span_role = "sling_wire_span"
+                target_key = f"{owner_key}:segment:{segment_index}"
         else:
             span_role = "unresolved_segment_role"
             target_key = ""
