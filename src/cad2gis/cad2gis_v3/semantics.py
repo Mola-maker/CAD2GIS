@@ -41,6 +41,20 @@ _PTECH_CABLE_ENDPOINT_BRIDGE_M = 12.0
 _PTECH_CABLE_ENDPOINT_MIN_GAP_M = 0.5
 
 
+_NOISE_BOITE_TRUECOLORS = frozenset({"#003FFF", "#4C995F", "#FFFFFF"})
+_ZNRO_BOUNDARY_TOLERANCE_M = 3.0
+
+
+def _is_noise_boite(feature: Feature) -> bool:
+    """Reviewed colour-marked noise boxes that are not FDT BOITE assets."""
+    if feature.feature_class != "BOITE":
+        return False
+    true_color = str(getattr(feature.style, "true_color", "") or "").strip().upper()
+    if not true_color.startswith("#"):
+        true_color = f"#{true_color}"
+    return true_color in _NOISE_BOITE_TRUECOLORS
+
+
 def _point_segment_distance(
     point: Sequence[float],
     start: Sequence[float],
@@ -107,6 +121,92 @@ def _is_red_boundary(entity: SourceEntity) -> bool:
         "FF0000", "E00000", "CC0000", "B00000",
     }
 
+
+def _znro_boundary_style(entity: SourceEntity) -> CadStyle:
+    """The reviewed legend renders ZNRO as a red dashed boundary."""
+    return replace(
+        entity.style,
+        aci_color=1,
+        true_color="#FF0000",
+        entity_aci_color=1,
+        layer_aci_color=1,
+        linetype="DASHED",
+        entity_linetype="DASHED",
+        layer_linetype="DASHED",
+    )
+
+
+def _znro_feature(
+    points: Sequence[Sequence[float]],
+    *,
+    source_key: str,
+    source_handle: str,
+    source_layer: str,
+    style: CadStyle,
+    operation: str,
+) -> Feature:
+    return Feature(
+        feature_key=hashlib.sha256(
+            f"ZNRO|{source_key}".encode()
+        ).hexdigest(),
+        feature_class="ZNRO",
+        geometry_kind="Polygon",
+        native_points=[tuple(float(coord) for coord in point) for point in points],
+        source_entity_key=source_key,
+        source_handle=source_handle,
+        source_layer=source_layer,
+        geometry_role="SOURCE_BOUNDARY",
+        style=style,
+        attributes={"CODE": f"ZNRO-CAD-{source_handle}"},
+        display_label="",
+        label_provenance="UNAVAILABLE",
+        field_provenance={"CODE": "DWG_DERIVED:znro-parent-zone"},
+        lineage=[{
+            "operation": operation,
+            "source_entity_key": source_key,
+            "max_displacement_m": 0.0,
+        }],
+    )
+
+
+def _znro_boundary_features(rings: Sequence[Mapping[str, Any]]) -> list[Feature]:
+    features = []
+    for ring in rings:
+        entity = ring["entity"]
+        features.append(_znro_feature(
+            ring.get("points", entity.points),
+            source_key=entity.entity_key,
+            source_handle=entity.handle,
+            source_layer=entity.layer,
+            style=_znro_boundary_style(entity),
+            operation="identity",
+        ))
+    return features
+
+
+def _znro_synthetic_feature(
+    points: Sequence[Sequence[float]],
+    *,
+    source_layer: str,
+    operation: str,
+) -> Feature:
+    rounded = [tuple(float(coord) for coord in point) for point in points]
+    source_key = hashlib.sha256(
+        (
+            "ZNRO|" + "|".join(
+                f"{point[0]:.6f},{point[1]:.6f}" for point in rounded
+            )
+        ).encode()
+    ).hexdigest()
+    source_handle = source_layer
+    return _znro_feature(
+        rounded,
+        source_key=source_key,
+        source_handle=source_handle,
+        source_layer=source_layer,
+        style=CadStyle(aci_color=1, true_color="#FF0000", linetype="DASHED"),
+        operation=operation,
+    )
 
 
 def _is_placeholder_block(entity: SourceEntity) -> bool:
@@ -931,6 +1031,8 @@ def classify_entities(
     coverage_policy: str | None = None,
     coverage_allowlist: Sequence[str | Mapping[str, Any]] | None = None,
     catalog_roots: frozenset[str] = frozenset(),
+    project_id: str = "",
+    project_slug: str = "",
 ):
     """Classify only reviewed semantic mappings and account for every abstention.
 
@@ -2170,6 +2272,12 @@ def classify_entities(
                 source, "annotation_callout_noise", feature.feature_class,
             ))
             continue
+        if _is_noise_boite(feature):
+            source = entity_by_key.get(feature.source_entity_key)
+            coverage_records.append(_coverage_record(
+                source, "reviewed_noise_boite_color", feature.feature_class,
+            ))
+            continue
         retained.append(feature)
     if len(retained) != len(features):
         features = retained
@@ -2214,109 +2322,98 @@ def classify_entities(
         )
         features.append(infrastructure_feature)
 
-    # ZNRO is the parent service zone of ZPM polygons.  When the DWG carries
-    # an enclosing red dashed boundary it is the authoritative ZNRO; otherwise
-    # it is the convex hull of all ZPM polygons (cluster gaps removed).
+    # ZNRO rules:
+    # - SF projects never deliver ZNRO.
+    # - A large red outer boundary ring in the main drawing is authoritative
+    #   and may exist even when the drawing has no ZPM (Tinggar's two rings).
+    # - Otherwise, when ZPM polygons exist, ZNRO is the single alpha-shape
+    #   polygon that spans every ZPM polygon and fills only the narrow gaps
+    #   between them (never the convex hull's large empty regions).
     delivered_zpm = [
         feature for feature in features if feature.feature_class == "ZPM"
     ]
-    if delivered_zpm:
-        zpm_points = [
-            point for feature in delivered_zpm for point in feature.native_points
-        ]
-        boundary_candidates = [
+    project_is_sf = str(project_slug or project_id or "").lower().endswith("_sf")
+    if not project_is_sf:
+        from shapely.geometry import Point, Polygon as ShapelyPolygon
+
+        from .znro_shape import alpha_shape_union
+
+        boundary_entities = [
             entity for entity in model_entities
             if entity.dwg_type.upper() in {"LWPOLYLINE", "POLYLINE", "POLYLINE_2D"}
-            and len(entity.points) >= 3
+            and str(getattr(entity, "cad_role", "")).lower() == "model"
+            and len(entity.points) >= 4
             and (
                 "BOUNDARY" in entity.layer.upper()
                 or "BATAS" in entity.layer.upper()
             )
             and _is_red_boundary(entity)
+            and math.dist(entity.points[0], entity.points[-1]) <= 0.05
         ]
-        znro_entity = None
-        znro_points = None
-        znro_style = CadStyle(aci_color=1, true_color="#FF0000", linetype="DASHED")
-        if boundary_candidates:
-            # The authoritative ZNRO is the outer red boundary: it must
-            # enclose every delivered ZPM point.  A per-cluster boundary or a
-            # legend frame only encloses a subset and must not be mistaken for
-            # the parent zone.
-            enclosing = [
-                entity for entity in boundary_candidates
+        boundary_rings: list[dict[str, Any]] = []
+        for entity in sorted(
+            boundary_entities, key=lambda item: (item.layer, item.handle),
+        ):
+            raw_polygon = ShapelyPolygon(entity.points)
+            polygon = raw_polygon.buffer(0)
+            if polygon.geom_type != "Polygon" or not polygon.is_valid:
+                continue
+            if polygon.area <= 0.0:
+                continue
+            if any(
+                polygon.equals(existing["polygon"])
+                for existing in boundary_rings
+            ):
+                continue
+            boundary_rings.append({
+                "entity": entity,
+                "polygon": polygon,
+                "points": list(polygon.exterior.coords),
+                "area": float(polygon.area),
+            })
+
+        delivered_cable_points = [
+            point
+            for feature in features
+            if feature.feature_class == "CABLE"
+            for point in feature.native_points
+        ]
+        boundary_features: list[Feature] = []
+        if delivered_zpm:
+            zpm_polygons = [
+                list(feature.native_points)
+                for feature in delivered_zpm
+                if len(feature.native_points) >= 3
+            ]
+            zpm_points = [point for polygon in zpm_polygons for point in polygon]
+            enclosing_rings = [
+                ring for ring in boundary_rings
                 if all(
-                    min(p[0] for p in entity.points) - 0.5 <= point[0]
-                    <= max(p[0] for p in entity.points) + 0.5
-                    and min(p[1] for p in entity.points) - 0.5 <= point[1]
-                    <= max(p[1] for p in entity.points) + 0.5
+                    ring["polygon"].distance(Point(point)) <= _ZNRO_BOUNDARY_TOLERANCE_M
                     for point in zpm_points
                 )
             ]
-            if enclosing:
-                znro_entity = max(
-                    enclosing,
-                    key=lambda entity: (
-                        abs(_polygon_area_signed(entity.points)),
-                        len(entity.points),
-                    ),
-                )
-        if znro_entity is not None:
-            znro_points = list(znro_entity.points)
-            # The reviewed legend renders the parent zone as a red dashed
-            # boundary even when the reader reports the source linetype as
-            # ByLayer/Continuous; normalise the delivery style to that legend.
-            znro_style = replace(
-                znro_entity.style,
-                aci_color=1,
-                true_color="#FF0000",
-                entity_aci_color=1,
-                layer_aci_color=1,
-                linetype="DASHED",
-                entity_linetype="DASHED",
-                layer_linetype="DASHED",
-            )
-            source_key = znro_entity.entity_key
-            source_handle = znro_entity.handle
-        else:
-            hull = _convex_hull(zpm_points)
-            znro_points = hull + [hull[0]]
-            source_key = hashlib.sha256(
-                (
-                    "ZNRO|" + "|".join(
-                        f"{point[0]:.6f},{point[1]:.6f}" for point in hull
-                    )
-                ).encode()
-            ).hexdigest()
-            source_handle = "ZNRO-CONVEX-HULL"
-        features.append(Feature(
-            feature_key=hashlib.sha256(
-                f"ZNRO|{source_key}".encode()
-            ).hexdigest(),
-            feature_class="ZNRO",
-            geometry_kind="Polygon",
-            native_points=znro_points,
-            source_entity_key=source_key,
-            source_handle=source_handle,
-            source_layer=(
-                znro_entity.layer if znro_entity is not None else "ZPM-CONVEX-HULL"
-            ),
-            geometry_role="SOURCE_BOUNDARY",
-            style=znro_style,
-            attributes={"CODE": f"ZNRO-CAD-{source_handle}"},
-            display_label="",
-            label_provenance="UNAVAILABLE",
-            field_provenance={"CODE": "DWG_DERIVED:znro-parent-zone"},
-            lineage=[{
-                "operation": (
-                    "identity"
-                    if znro_entity is not None
-                    else "convex_hull_of_zpm"
-                ),
-                "source_entity_key": source_key,
-                "max_displacement_m": 0.0,
-            }],
-        ))
-
+            if enclosing_rings:
+                boundary_features = _znro_boundary_features(enclosing_rings)
+            elif zpm_polygons:
+                polygon = alpha_shape_union(zpm_polygons)
+                boundary_features = [_znro_synthetic_feature(
+                    polygon.exterior.coords,
+                    source_layer="ZPM-ALPHA-SHAPE",
+                    operation="alpha_shape_union_of_zpm",
+                )]
+        elif boundary_rings and delivered_cable_points:
+            largest_area = max(ring["area"] for ring in boundary_rings)
+            large_outer_rings = [
+                ring for ring in boundary_rings
+                if ring["area"] >= max(100.0, largest_area * 0.02)
+                and sum(
+                    1 for point in delivered_cable_points
+                    if ring["polygon"].distance(Point(point)) <= _ZNRO_BOUNDARY_TOLERANCE_M
+                ) >= 3
+            ]
+            boundary_features = _znro_boundary_features(large_outer_rings)
+        features.extend(boundary_features)
 
     selected_policy = normalize_observability_policy(
         coverage_policy,

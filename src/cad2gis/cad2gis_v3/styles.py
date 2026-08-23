@@ -592,7 +592,11 @@ def write_styles(
             layer_name,
             _contract_geometry_kind(LAYER_CONFIGS[layer_name]["geometry_type"]),
             styles,
-            label_field="length_label" if layer_name == "CABLE_SEGMENT" else "display_label",
+            label_field=(
+                "length_label"
+                if layer_name in {"CABLE", "CABLE_SEGMENT"}
+                else "display_label"
+            ),
         )
         qml_path.write_text(qml, encoding="utf-8")
         qml_by_layer[layer_name] = qml
@@ -602,7 +606,9 @@ def write_styles(
             "aci_categories": sorted({item[1] for item in styles}),
             "render_categories": [item[0] for item in styles],
             "label_field": (
-                "length_label" if layer_name == "CABLE_SEGMENT" else "display_label"
+                "length_label"
+                if layer_name in {"CABLE", "CABLE_SEGMENT"}
+                else "display_label"
             ),
             "embedded_as_default": delivery_path is not None,
             "geometry_simplification": "disabled_for_source_fidelity",

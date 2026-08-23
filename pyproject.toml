@@ -10,7 +10,7 @@ readme = { text = "CAD2GIS provides a lightweight canonical API and CLI. The pin
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [{ name = "CAD2GIS contributors" }]
-dependencies = []
+dependencies = ["numpy>=1.24", "scipy>=1.10", "shapely>=2.0"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",

@@ -47,6 +47,7 @@ CABLE_SEGMENT = {
     "geometry_type": "LineString",
     "layer_name": "CABLE_SEGMENT",
     "fields": [
+        {"full_name": "CODE", "type": "Text", "length": 120},
         {"full_name": "route_key", "type": "Text", "length": 120},
         {"full_name": "source_entity_key", "type": "Text", "length": 120},
         {"full_name": "source_handle", "type": "Text", "length": 80},
@@ -77,8 +78,19 @@ CABLE_SEGMENT = {
     ],
 }
 LAYER_CONFIGS["CABLE_SEGMENT"] = CABLE_SEGMENT
+# The delivery ``CABLE`` layer is the segment-normalised view: one row per
+# immutable source segment, with the DWG nominal dimension label on each row.
+# The layer keeps the reviewed layer name ``CABLE`` (and the colour-to-spec
+# legend categories), while the historical ``CABLE_SEGMENT`` schema supplies
+# the fields and closures.
+LAYER_CONFIGS["CABLE"] = {
+    **CABLE_SEGMENT,
+    "fc_name": "CABLE",
+    "layer_name": "CABLE",
+}
 LAYER_CONFIGS["EMR"] = EMR
-# QGIS layer-tree order follows the reviewed sample legend.
+# QGIS layer-tree order follows the reviewed sample legend.  Optional
+# special-purpose layers (e.g. EMR) are inserted immediately before IMB.
 LAYER_ORDER = (
     "SITE", "BOITE", "PTECH", "IMB", "INFRASTRUCTURE", "CABLE", "ZPM", "ZNRO",
 )
@@ -87,10 +99,12 @@ OPTIONAL_LAYER_ORDER = ("EMR",)
 
 def _active_layer_order(features):
     emitted = {feature.feature_class for feature in features}
-    optional = tuple(
-        name for name in OPTIONAL_LAYER_ORDER if name in emitted
-    )
-    return LAYER_ORDER + optional
+    order = list(LAYER_ORDER)
+    insertion_point = order.index("IMB")
+    for name in OPTIONAL_LAYER_ORDER:
+        if name in emitted:
+            order.insert(insertion_point, name)
+    return tuple(order)
 
 CABLE_SEGMENT_SCHEMA_VERSION = "cad2gis.cable_segment.v1"
 CABLE_SEGMENT_UNIT = "m"
@@ -285,19 +299,27 @@ def _finite_metric(value, name, *, allow_none=False):
 _DIMENSION_DISPLAY_NUMBER_RE = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?")
 
 
+def _format_dimension_length(value: float) -> str:
+    """Render a DWG dimension as the reviewed compact label (``27m``)."""
+    numeric = float(value)
+    if numeric.is_integer():
+        return f"{int(numeric)}m"
+    return f"{numeric:g}m"
+
+
 def _dimension_measurement_label(text: Any, value: float) -> str:
-    """Use the rendered DWG dimension text when present (``50m`` stays ``50 m``).
+    """Use the rendered DWG dimension text when present (``42m`` stays ``42m``).
 
     The reader stores the anonymous dimension block's MTEXT as
     ``dimension_text_override``.  A ``<>`` placeholder means the default
-    measurement was rendered, so the numeric fallback keeps its normal
-    three-decimal formatting.
+    measurement was rendered, so the numeric fallback keeps the compact
+    reviewed format instead of the legacy three-decimal audit format.
     """
     if isinstance(text, str) and text and "<>" not in text:
         tokens = _DIMENSION_DISPLAY_NUMBER_RE.findall(text)
         if tokens:
-            return f"{tokens[-1]} m [DWG DIMENSION]"
-    return f"{float(value):.3f} m [DWG DIMENSION]"
+            return _format_dimension_length(float(tokens[-1]))
+    return _format_dimension_length(value)
 
 
 def _cable_segment_records(features, transformer):
@@ -457,11 +479,11 @@ def _cable_segment_records(features, transformer):
                 # no length.  The immutable CAD curve supplies an independently
                 # auditable source length; delivery-grid and geodesic lengths
                 # remain separate fields and must not silently replace it.
+                # It must not, however, become a visible length label: only
+                # DWG nominal dimension annotations are labelled on delivery.
                 length_value = source_length
                 length_source = "dwg_curve_geometry"
-                dimension_label = (
-                    f"{length_value:.3f} m [CAD geometry; no DIMENSION]"
-                )
+                dimension_label = ""
                 total_unmeasured += 1
             route_grid_sum += grid_length
             route_geodesic_sum += geodesic_length
@@ -477,6 +499,7 @@ def _cable_segment_records(features, transformer):
             })
             route_records.append({
                 "route_key": route_key,
+                "CODE": feature.attributes.get("CODE"),
                 "source_entity_key": str(feature.source_entity_key),
                 "source_handle": str(feature.source_handle),
                 "source_layer": str(feature.source_layer),
@@ -630,31 +653,14 @@ def _populate_dataset(dataset, features, transformer):
         ):
             if name not in schema_fields:
                 layer.CreateField(ogr.FieldDefn(name, field_type))
-        if layer_name == "CABLE":
-            for name, field_type in (
-                ("curve_materialization_schema_version", ogr.OFTString),
-                ("curve_materialization_policy_version", ogr.OFTString),
-                ("curve_source_segment_count", ogr.OFTInteger),
-                ("curve_delivery_vertex_count", ogr.OFTInteger),
-                ("span_count", ogr.OFTInteger),
-                ("measured_span_count", ogr.OFTInteger),
-                ("unmeasured_span_count", ogr.OFTInteger),
-                ("dimension_measured_sum_m", ogr.OFTReal),
-                ("dimension_measurement_status", ogr.OFTString),
-                ("dimension_coverage_ratio", ogr.OFTReal),
-                ("span_schema_version", ogr.OFTString),
-                ("span_unit", ogr.OFTString),
-                ("span_metrics_json", ogr.OFTString),
-            ):
-                layer.CreateField(ogr.FieldDefn(name, field_type))
         count = 0
         items = (
             cable_segment_records
-            if layer_name == "CABLE_SEGMENT"
+            if layer_name in {"CABLE", "CABLE_SEGMENT"}
             else sorted(by_class[layer_name], key=lambda item: item.feature_key)
         )
         for feature in items:
-            if layer_name == "CABLE_SEGMENT":
+            if layer_name in {"CABLE", "CABLE_SEGMENT"}:
                 geometry = _line_geometry(feature["target_points"])
                 points = list(feature["target_points"])
                 row = ogr.Feature(layer.GetLayerDefn())
@@ -669,19 +675,19 @@ def _populate_dataset(dataset, features, transformer):
                         row.SetField(name, value)
                     except (TypeError, ValueError):
                         raise RuntimeError(
-                            f"Could not set CABLE_SEGMENT field {name} "
+                            f"Could not set CABLE delivery segment field {name} "
                             f"for {feature['route_key']}:segment:{feature['segment_index']}"
                         )
                 actual_grid_length = _grid_length_m(transformer, points)
                 if abs(actual_grid_length - float(feature["delivery_grid_length_m"])) > 1e-6:
                     raise RuntimeError(
-                        f"CABLE_SEGMENT geometry length closure failed for "
+                        f"CABLE delivery segment geometry length closure failed for "
                         f"{feature['route_key']}:segment:{feature['segment_index']}"
                     )
                 row.SetField("LONGUEUR", float(feature["delivery_grid_length_m"]))
                 if layer.CreateFeature(row) != 0:
                     raise RuntimeError(
-                        f"Could not write CABLE_SEGMENT feature "
+                        f"Could not write CABLE delivery segment feature "
                         f"{feature['route_key']}:segment:{feature['segment_index']}"
                     )
                 count += 1
