@@ -89,6 +89,78 @@ def _convex_hull(points: Sequence[Sequence[float]]) -> Polygon:
     return MultiPoint(points).convex_hull
 
 
+def _connected_components(
+    polygons: Sequence[Polygon],
+    gap_bridge_m: float,
+) -> list[list[int]]:
+    count = len(polygons)
+    adjacency: list[list[int]] = [[] for _ in range(count)]
+    for left in range(count):
+        for right in range(left + 1, count):
+            if polygons[left].distance(polygons[right]) <= gap_bridge_m:
+                adjacency[left].append(right)
+                adjacency[right].append(left)
+    components: list[list[int]] = []
+    seen: set[int] = set()
+    for start in range(count):
+        if start in seen:
+            continue
+        stack = [start]
+        component: list[int] = []
+        while stack:
+            node = stack.pop()
+            if node in seen:
+                continue
+            seen.add(node)
+            component.append(node)
+            stack.extend(neighbour for neighbour in adjacency[node] if neighbour not in seen)
+        component.sort()
+        components.append(component)
+    return components
+
+
+def conservative_znro_polygons(
+    polygons: Sequence[Sequence[Sequence[float]]],
+    *,
+    gap_bridge_m: float = 8.0,
+) -> list[Polygon]:
+    """Return the conservative ZNRO polygon set for reviewed ZPM parcels.
+
+    - An isolated ZPM polygon (no other ZPM within ``gap_bridge_m``) is
+      returned unchanged: ZNRO equals that ZPM region.
+    - ZPM polygons distributed continuously with narrow gaps between them
+      form one component; the component's gaps are filled with the alpha
+      shape of its vertices, producing one parent polygon per component.
+
+    The result is deterministic (components sorted by their smallest source
+    index) and may contain several polygons; it never bridges a large empty
+    separation between independent ZPM groups.
+    """
+    if not polygons:
+        return []
+    source_polygons = []
+    for coordinates in polygons:
+        polygon = Polygon(coordinates)
+        if not polygon.is_valid:
+            polygon = polygon.buffer(0)
+        source_polygons.append(polygon)
+    components = _connected_components(source_polygons, gap_bridge_m)
+    results: list[Polygon] = []
+    for component in components:
+        if len(component) == 1:
+            results.append(source_polygons[component[0]])
+            continue
+        coordinates = [
+            list(source_polygons[index].exterior.coords)
+            for index in component
+        ]
+        parent = alpha_shape_union(coordinates)
+        results.append(parent)
+    results.sort(key=lambda polygon: (-polygon.area, polygon.wkt))
+    return results
+
+
+
 def alpha_shape_union(
     polygons: Sequence[Sequence[Sequence[float]]],
     *,

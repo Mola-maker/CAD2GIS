@@ -42,6 +42,7 @@ _PTECH_CABLE_ENDPOINT_MIN_GAP_M = 0.5
 
 
 _ZNRO_BOUNDARY_TOLERANCE_M = 3.0
+_ZNRO_CONSERVATIVE_GAP_BRIDGE_M = 8.0
 # Frame-derived BOITE admission requires a reviewed asset-identifier label.
 # Generic alphanumeric labels such as ``NP7`` have specificity 1 and prove a
 # pole legend specimen, not a FAT device.
@@ -186,6 +187,7 @@ def _znro_synthetic_feature(
     *,
     source_layer: str,
     operation: str,
+    source_handle: str | None = None,
 ) -> Feature:
     rounded = [tuple(float(coord) for coord in point) for point in points]
     source_key = hashlib.sha256(
@@ -195,11 +197,10 @@ def _znro_synthetic_feature(
             )
         ).encode()
     ).hexdigest()
-    source_handle = source_layer
     return _znro_feature(
         rounded,
         source_key=source_key,
-        source_handle=source_handle,
+        source_handle=source_handle or source_layer,
         source_layer=source_layer,
         style=CadStyle(aci_color=1, true_color="#FF0000", linetype="DASHED"),
         operation=operation,
@@ -2365,7 +2366,7 @@ def classify_entities(
     if not project_is_sf:
         from shapely.geometry import Point, Polygon as ShapelyPolygon
 
-        from .znro_shape import alpha_shape_union
+        from .znro_shape import conservative_znro_polygons
 
         boundary_entities = [
             entity for entity in model_entities
@@ -2425,12 +2426,19 @@ def classify_entities(
             if enclosing_rings:
                 boundary_features = _znro_boundary_features(enclosing_rings)
             elif zpm_polygons:
-                polygon = alpha_shape_union(zpm_polygons)
-                boundary_features = [_znro_synthetic_feature(
-                    polygon.exterior.coords,
-                    source_layer="ZPM-ALPHA-SHAPE",
-                    operation="alpha_shape_union_of_zpm",
-                )]
+                conservative_polygons = conservative_znro_polygons(
+                    zpm_polygons,
+                    gap_bridge_m=_ZNRO_CONSERVATIVE_GAP_BRIDGE_M,
+                )
+                boundary_features = [
+                    _znro_synthetic_feature(
+                        polygon.exterior.coords,
+                        source_layer="ZPM-CONSERVATIVE-UNION",
+                        operation="conservative_znro_component",
+                        source_handle=f"ZPM-COMPONENT-{index + 1}",
+                    )
+                    for index, polygon in enumerate(conservative_polygons)
+                ]
         elif boundary_rings and delivered_cable_points:
             largest_area = max(ring["area"] for ring in boundary_rings)
             large_outer_rings = [
