@@ -73,3 +73,8 @@ baselines/apd_hutabohu/output/
 __pycache__/
 
 .dsh-funnel/
+
+tmp/
+tmp.screenshot/
+
+raw/
