@@ -98,16 +98,22 @@ def _load_delivery_partitions(config_dir: Path | None) -> list[dict[str, Any]]:
     return [item for item in partitions if item["region_id"]]
 
 
+_MAIN_PARTITION_ID = "MAIN"
+
+
 def _gcp_partition_for_controls(
     partitions: Sequence[Mapping[str, Any]],
     controls: Sequence[Any],
 ) -> str | None:
     """Identify the delivery partition that owns a GCP profile.
 
-    Manado-tomohon_uplink contains several independent APD panels.  A GCP
-    profile exported from one panel review workspace has control points only
-    in that panel; spatial coverage must be measured against that panel's
-    device extent, not the whole multi-panel drawing.
+    A decoupled DWG is carved into one residual MAIN panel plus zero or more
+    configured second-level panels.  (Manado-tomohon_uplink's two EMR panels
+    are one example; other projects may decouple into panels with entirely
+    different names, or not decouple at all.)  A GCP profile exported from
+    one panel review workspace has control points only in that panel, so
+    spatial coverage must be measured against that panel's device extent,
+    never against the whole multi-panel drawing.
     """
     if not partitions or not controls:
         return None
@@ -128,11 +134,10 @@ def _gcp_partition_for_controls(
         scored.append((inside, partition["region_id"]))
     scored.sort(reverse=True)
     if not scored or scored[0][0] == 0:
-        # The configured second-level panels own none of this profile's
-        # training points.  In a decoupled drawing that means the profile
-        # belongs to the MAIN panel: its coverage gates must use the MAIN
-        # feature extent, not the whole multi-panel drawing.
-        return "MAIN" if partitions else None
+        # No configured second-level panel owns this profile's training
+        # points.  In a decoupled drawing the remaining drawing space is the
+        # MAIN panel, so its coverage gates must use the MAIN feature extent.
+        return _MAIN_PARTITION_ID if partitions else None
     if len(scored) > 1 and scored[0][0] == scored[1][0]:
         return None
     return scored[0][1]
@@ -1704,10 +1709,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
         features, delivery_partitions,
     )
     if delivery_partitions:
-        # The MAIN panel is the remaining drawing space after configured
-        # second-level panels are carved out.  Its GCP coverage gates must be
-        # scoped to that panel too, exactly like EMR28560/EMR29619 are.
-        all_partitioned_features["MAIN"] = main_partition_features
+        # The MAIN panel is the remaining drawing space after the configured
+        # second-level panels are carved out.  Its GCP coverage gates are
+        # scoped to that residual panel too, exactly like every configured
+        # panel.
+        all_partitioned_features[_MAIN_PARTITION_ID] = main_partition_features
     gcp_partition_id: str | None = None
     if request.gcp_profile is not None:
         gcp_profile = GCPProfile.load(
