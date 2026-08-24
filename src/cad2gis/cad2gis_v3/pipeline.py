@@ -128,7 +128,11 @@ def _gcp_partition_for_controls(
         scored.append((inside, partition["region_id"]))
     scored.sort(reverse=True)
     if not scored or scored[0][0] == 0:
-        return None
+        # The configured second-level panels own none of this profile's
+        # training points.  In a decoupled drawing that means the profile
+        # belongs to the MAIN panel: its coverage gates must use the MAIN
+        # feature extent, not the whole multi-panel drawing.
+        return "MAIN" if partitions else None
     if len(scored) > 1 and scored[0][0] == scored[1][0]:
         return None
     return scored[0][1]
@@ -1696,9 +1700,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
     delivery_partitions = _load_delivery_partitions(
         request.mapping_registry.parent,
     )
-    _, all_partitioned_features = _partition_features(
+    main_partition_features, all_partitioned_features = _partition_features(
         features, delivery_partitions,
     )
+    if delivery_partitions:
+        # The MAIN panel is the remaining drawing space after configured
+        # second-level panels are carved out.  Its GCP coverage gates must be
+        # scoped to that panel too, exactly like EMR28560/EMR29619 are.
+        all_partitioned_features["MAIN"] = main_partition_features
     gcp_partition_id: str | None = None
     if request.gcp_profile is not None:
         gcp_profile = GCPProfile.load(

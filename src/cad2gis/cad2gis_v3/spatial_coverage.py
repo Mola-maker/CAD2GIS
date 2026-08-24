@@ -399,7 +399,10 @@ def evaluate_corridor_coverage(
         )
 
     # Along-route extrapolation: each device must be within max_gap of a
-    # training projection on the cable it belongs to.
+    # training projection on the cable it belongs to.  A device without any
+    # cable projection — or on a cable without training projections — leaves
+    # the metric undefined (None), never math.inf: inf would leak into JSON
+    # manifests as an Infinity literal and break downstream consumers.
     max_device_gap = 0.0
     max_device_gap_detail = None
     for point in devices:
@@ -410,15 +413,21 @@ def evaluate_corridor_coverage(
             if best is None or candidate < best:
                 best = candidate
         if best is None:
-            max_device_gap = math.inf
+            max_device_gap = None
             max_device_gap_detail = {"device": point, "status": "no_cable_projection"}
             continue
         _, index, along = best
         projections = training_projections.get(index, ())
-        gap = min(
-            (abs(along - value) for value in projections),
-            default=math.inf,
-        )
+        if not projections:
+            max_device_gap = None
+            max_device_gap_detail = {
+                "device": point, "cable_index": index,
+                "status": "no_training_projection",
+            }
+            continue
+        gap = min(abs(along - value) for value in projections)
+        if max_device_gap is None:
+            continue
         if gap > max_device_gap:
             max_device_gap = gap
             max_device_gap_detail = {
@@ -426,7 +435,12 @@ def evaluate_corridor_coverage(
             }
     result["max_device_to_training_along_cable_m"] = max_device_gap
     result["max_device_gap_detail"] = max_device_gap_detail
-    if max_device_gap > max_gap:
+    if max_device_gap is None:
+        result["failures"].append(
+            "corridor_max_device_to_training_along_cable_m is unavailable: "
+            f"{max_device_gap_detail.get('status', 'undefined')}"
+        )
+    elif max_device_gap > max_gap:
         result["failures"].append(
             "corridor_max_device_to_training_along_cable_m "
             f"{max_device_gap:.6f} > allowed {max_gap:.6f}"

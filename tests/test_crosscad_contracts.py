@@ -1077,3 +1077,23 @@ def test_optional_emr_layer_is_inserted_before_imb():
         "SITE", "BOITE", "PTECH", "EMR", "IMB",
         "INFRASTRUCTURE", "CABLE", "ZPM", "ZNRO",
     )
+
+
+def test_gcp_partition_scope_includes_main_panel_in_decoupled_drawings():
+    pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
+    partitions = [
+        {"region_id": "EMR28560", "bbox": [0.0, 0.0, 100.0, 100.0]},
+        {"region_id": "EMR29619", "bbox": [200.0, 0.0, 300.0, 100.0]},
+    ]
+    main_controls = [
+        SimpleNamespace(role="train", cad_point=(500.0, 50.0)),
+        SimpleNamespace(role="check", cad_point=(520.0, 60.0)),
+    ]
+    assert pipeline._gcp_partition_for_controls(partitions, main_controls) == "MAIN"
+
+    emr_controls = [
+        SimpleNamespace(role="train", cad_point=(50.0, 50.0)),
+    ]
+    assert pipeline._gcp_partition_for_controls(partitions, emr_controls) == "EMR28560"
+
+    assert pipeline._gcp_partition_for_controls([], main_controls) is None
