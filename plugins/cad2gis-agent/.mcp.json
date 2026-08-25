@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "cad2gis": {
+      "cwd": ".",
+      "command": "python",
+      "args": [
+        "./scripts/cad2gis_mcp.py",
+        "--transport",
+        "stdio"
+      ],
+      "env_vars": [
+        "CAD2GIS_PROJECT_ROOT",
+        "CAD2GIS_PROJECT_ROOTS",
+        "CAD2GIS_READER_BACKEND",
+        "CAD2GIS_BACKEND_PATH",
+        "CAD2GIS_GCP_TOOL_PATH",
+        "DEEPSEEK_API_KEY",
+        "NEWAPI_API_KEY"
+      ]
+    }
+  }
+}

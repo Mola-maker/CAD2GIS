@@ -12,7 +12,7 @@ import json
 import os
 import re
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -1464,7 +1464,9 @@ def compile_onboarding_proposal(
             for key in ("model_entities", "model_inserts", "model_dimensions")
         }
         profile_payload["expectations"]["feature_counts"] = feature_counts
-        profile_payload["expectations"]["annotation_families"] = {}
+        profile_payload["expectations"]["annotation_families"] = (
+            annotation_expectations
+        )
         profile_payload["review"] = dict(review)
         _atomic_write_json(profile_path, profile_payload)
         validation = validate_project(project_dir=root)

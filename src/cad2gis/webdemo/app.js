@@ -1,5 +1,56 @@
 const $ = (selector) => document.querySelector(selector);
 
+const terminalEvent = (level, message) => {
+  const root = $("#terminal-log");
+  if (!root) return;
+  root.querySelector(".terminal-empty")?.remove();
+  const row = document.createElement("div");
+  row.className = `terminal-line${level === "error" ? " is-error" : level === "warn" ? " is-warn" : ""}`;
+  const timestamp = document.createElement("time");
+  timestamp.textContent = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+  const tag = document.createElement("b");
+  tag.textContent = level.toUpperCase();
+  const text = document.createElement("span");
+  text.textContent = message;
+  row.append(timestamp, tag, text);
+  root.append(row);
+  while (root.children.length > 80) root.firstElementChild?.remove();
+  root.scrollTop = root.scrollHeight;
+};
+
+const copyText = async (value, successMessage) => {
+  const text = String(value || "").trim();
+  if (!text) throw new Error("没有可复制的内容");
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+  } else {
+    const input = document.createElement("textarea");
+    input.value = text;
+    input.setAttribute("readonly", "");
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.append(input);
+    input.select();
+    if (!document.execCommand("copy")) throw new Error("浏览器拒绝剪贴板访问");
+    input.remove();
+  }
+  toast(successMessage);
+  terminalEvent("ok", successMessage);
+};
+
+const activateTab = (name) => {
+  document.querySelectorAll(".tab-button").forEach((button) => {
+    const active = button.dataset.tab === name;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    const active = panel.id === `tab-${name}`;
+    panel.classList.toggle("is-active", active);
+    panel.hidden = !active;
+  });
+};
+
 const toast = (message, error = false) => {
   const node = $("#toast");
   node.textContent = message;
@@ -9,9 +60,16 @@ const toast = (message, error = false) => {
 };
 
 const fetchJSON = async (url, options = {}) => {
+  if (window.CAD2GIS_DEMO?.active) {
+    return window.CAD2GIS_DEMO.request(url, options);
+  }
   const response = await fetch(url, options);
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.detail || `${response.status} ${response.statusText}`);
+  if (!response.ok) {
+    const message = body.detail || `${response.status} ${response.statusText}`;
+    terminalEvent("error", `${options.method || "GET"} ${url}: ${message}`);
+    throw new Error(message);
+  }
   return body;
 };
 
@@ -27,6 +85,7 @@ let pendingCad = null;
 let pendingCadEvidence = null;
 let similarity = null;
 let runSummary = null;
+let lastTargetCoordinate = "";
 
 const palette = {
   CABLE: "#00a849", CABLE_SEGMENT: "#00a849", PTECH: "#d75173",
@@ -224,11 +283,13 @@ const renderControls = (registration = null) => {
   const checkCount = controls.filter((item) => item.role === "check").length;
   $("#fit-coverage").textContent = `${trainCount} / 4 训练；${checkCount} / 3 检查`;
   $("#export-gcp").disabled = !(registration?.activation_ready);
+  document.querySelector('[data-stage="registration"]')?.classList.toggle("is-complete", Boolean(registration?.activation_ready));
   document.querySelectorAll("[data-delete-gcp]").forEach((button) => {
     button.addEventListener("click", async () => {
       const pair = controls.find((item) => item.id === button.dataset.deleteGcp);
       if (!pair) return;
       await fetchJSON(`/api/review/features/${encodeURIComponent(pair.id)}?expected_revision=${pair.revision}`, { method: "DELETE" });
+      terminalEvent("info", `已删除控制点 ${pair.id}`);
       await loadControls();
     });
   });
@@ -290,6 +351,7 @@ const selectCadPoint = (coordinate) => {
     source_handle: evidence.feature.get("source_handle") || "",
   };
   $("#cad-coordinate").textContent = `${pendingCad[0].toFixed(3)}, ${pendingCad[1].toFixed(3)}（已吸附 ${evidence.layerName}）`;
+  terminalEvent("info", `CAD 点已吸附到 ${evidence.layerName}：${pendingCad[0].toFixed(3)}, ${pendingCad[1].toFixed(3)}`);
   toast("CAD 点已吸附；请在右图点击同一位置或输入经纬度");
 };
 
@@ -328,7 +390,10 @@ const savePair = async (cad, lonLat) => {
   const registration = await fetchJSON("/api/registration");
   const saved = registration.controls.find((item) => item.point_id === id);
   if (saved) {
-    $("#target-coordinate").textContent = `${saved.target_easting.toFixed(3)}, ${saved.target_northing.toFixed(3)} (${saved.target_crs})`;
+    lastTargetCoordinate = `${saved.target_easting.toFixed(3)}, ${saved.target_northing.toFixed(3)} (${saved.target_crs})`;
+    $("#target-coordinate").textContent = lastTargetCoordinate;
+    $("#copy-coordinate").disabled = false;
+    terminalEvent("ok", `坐标已传送：${lastTargetCoordinate}`);
   }
 };
 
@@ -410,11 +475,24 @@ const loadLayers = async () => {
   if (!ol.extent.isEmpty(localExtent)) {
     localMap.getView().fit(localExtent, { padding: [40, 40, 40, 40] });
   }
+  const visibleCount = layers.filter((descriptor) => descriptor.feature_count > 0).length;
+  terminalEvent("ok", `已加载 ${visibleCount} 个非空图层，共 ${layers.length} 个图层定义`);
 };
 
 const renderRun = (run) => {
   runSummary = run;
   $("#run-status").textContent = run.run_status || "UNKNOWN";
+  const sourcePath = run.source?.path || "";
+  const sourceName = sourcePath.split(/[\\/]/).pop() || "未命名 CAD 项目";
+  $("#project-name").textContent = sourceName;
+  $("#project-source").textContent = sourcePath || "未提供源路径";
+  document.querySelector('[data-stage="source"]')?.classList.add("is-complete");
+  document.querySelector('[data-stage="validation"]')?.classList.toggle(
+    "is-complete", ["VERIFIED", "CONDITIONAL"].includes(run.run_status),
+  );
+  document.querySelector('[data-stage="delivery"]')?.classList.toggle(
+    "is-complete", Boolean(run.artifacts || run.delivery_counts),
+  );
   const domain = run.crs?.coordinate_domain
     || run.validation?.georeference?.coordinate_domain
     || run.georeference?.coordinate_domain;
@@ -431,8 +509,10 @@ const renderRun = (run) => {
     ["独立 DIMENSION", `${measurement.measured ?? 0} 段`],
     ["无 DIMENSION", `${measurement.unmeasured ?? 0} 段（仍有 CAD 几何长度）`],
     ["审查存储", run.review_store || "—"],
+    ["源文件重连", run.source_available ? "已按 SHA-256 验证" : (run.source_blocker || "不可用")],
   ];
   $("#run-summary").innerHTML = rows.map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`).join("");
+  terminalEvent("ok", `已加载 ${sourceName}，运行状态 ${run.run_status || "UNKNOWN"}`);
 };
 
 localMap.on("pointermove", ({ coordinate }) => {
@@ -458,11 +538,21 @@ $("#use-map-center").addEventListener("click", () => {
   const [lon, lat] = ol.proj.toLonLat(worldMap.getView().getCenter());
   $("#target-lon").value = lon.toFixed(8);
   $("#target-lat").value = lat.toFixed(8);
+  terminalEvent("info", `已读取地图中心：${lon.toFixed(8)}, ${lat.toFixed(8)}`);
 });
 $("#clear-pending").addEventListener("click", () => {
   pendingCad = null;
   pendingCadEvidence = null;
   toast("已取消当前 CAD 点");
+  terminalEvent("info", "已取消待配对 CAD 点");
+});
+$("#copy-coordinate").addEventListener("click", async () => {
+  try {
+    await copyText(lastTargetCoordinate, "目标坐标已复制");
+  } catch (error) {
+    toast(error.message, true);
+    terminalEvent("error", error.message);
+  }
 });
 $("#export-gcp").addEventListener("click", async () => {
   try {
@@ -472,15 +562,34 @@ $("#export-gcp").addEventListener("click", async () => {
       body: JSON.stringify({ activate: true }),
     });
     $("#conversion-command").textContent = result.conversion_command;
+    $("#copy-command").disabled = !result.conversion_command;
     const sourceNote = $("#preview-source-note");
     if (sourceNote) {
       sourceNote.textContent = result.registered_delivery
         ? `修正结果已存在：${result.registered_delivery}。当前预览仍为配准前的原始 run。`
-        : `已生成修正命令（llm=${result.source_run_modes?.llm || "off"}）。执行后在 ${result.next_run_dir}/delivery.gpkg 查看修正结果；当前预览仍为配准前的原始 run。`;
+        : result.conversion_command
+          ? `已生成修正命令（llm=${result.source_run_modes?.llm || "off"}）。执行后在 ${result.next_run_dir}/delivery.gpkg 查看修正结果；当前预览仍为配准前的原始 run。`
+          : `${result.source_blocker}。GCP 配置已保存，但不会生成不可执行的命令。`;
     }
+    activateTab("console");
+    terminalEvent("ok", `GCP 配置已导出：${result.profile_path || "web_gcp_profile.json"}`);
+    terminalEvent(
+      result.conversion_command ? "info" : "error",
+      result.conversion_command
+        ? "转换命令已就绪；复制并执行后会创建新的不可变 run"
+        : result.source_blocker,
+    );
     toast("GCP 配置已通过规范校验并生成");
   } catch (error) {
     toast(error.message, true);
+  }
+});
+$("#copy-command").addEventListener("click", async () => {
+  try {
+    await copyText($("#conversion-command").textContent, "转换命令已复制");
+  } catch (error) {
+    toast(error.message, true);
+    terminalEvent("error", error.message);
   }
 });
 $("#tool-fit").addEventListener("click", () => {
@@ -501,11 +610,50 @@ $("#open-visual").addEventListener("click", async () => {
 });
 $("#close-visual").addEventListener("click", () => $("#visual-dialog").close());
 
+document.querySelectorAll(".tab-button").forEach((button) => {
+  button.addEventListener("click", () => activateTab(button.dataset.tab));
+});
+document.querySelectorAll(".workflow-step").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".workflow-step").forEach((item) => item.classList.remove("is-active"));
+    button.classList.add("is-active");
+    const stage = button.dataset.stage;
+    if (stage === "source" || stage === "registration") {
+      document.querySelector(`#stage-${stage}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (stage === "semantic") {
+      activateTab("agent");
+    } else {
+      activateTab("evidence");
+    }
+    terminalEvent("info", `已切换到 ${button.querySelector("strong")?.textContent || stage}`);
+  });
+});
+document.querySelectorAll("[data-copy-prompt]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    try {
+      await copyText(button.dataset.copyPrompt, "AI 审查提示词已复制");
+    } catch (error) {
+      toast(error.message, true);
+      terminalEvent("error", error.message);
+    }
+  });
+});
+
 const connectSocket = () => {
+  if (window.CAD2GIS_DEMO?.active) {
+    $("#connection-dot").className = "status-dot online";
+    $("#connection-label").textContent = "静态演示";
+    terminalEvent(
+      "warn",
+      "当前为合成交互演示；真实 DWG 读取、MCP 和 GeoPackage 生成必须在本地运行",
+    );
+    return;
+  }
   const socket = new WebSocket(`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`);
   socket.onopen = () => {
     $("#connection-dot").className = "status-dot online";
     $("#connection-label").textContent = "实时同步";
+    terminalEvent("ok", "WebSocket 已连接，审查 revision 将实时同步");
   };
   socket.onmessage = async ({ data }) => {
     if (JSON.parse(data).type === "review_event") await loadControls();
@@ -513,11 +661,14 @@ const connectSocket = () => {
   socket.onclose = () => {
     $("#connection-dot").className = "status-dot offline";
     $("#connection-label").textContent = "连接中断";
+    terminalEvent("warn", "实时连接中断，正在重连");
     setTimeout(connectSocket, 1800);
   };
 };
 
 const boot = async () => {
+  $("#terminal-log").innerHTML = '<div class="terminal-empty">等待 CAD2GIS 服务…</div>';
+  terminalEvent("info", "正在读取 run manifest 与图层目录");
   try {
     const run = await fetchJSON("/api/run");
     renderRun(run);
@@ -527,6 +678,7 @@ const boot = async () => {
   } catch (error) {
     toast(error.message, true);
     $("#connection-dot").className = "status-dot offline";
+    terminalEvent("error", `工作台初始化失败：${error.message}`);
   }
 };
 

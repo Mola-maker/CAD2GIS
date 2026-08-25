@@ -237,6 +237,29 @@ def _discover_library() -> str | None:
     return None
 
 
+def _explicit_library_platform_mismatch(library: str) -> bool:
+    """Reject an explicitly configured library for a different OS.
+
+    Passing an ELF ``.so`` to the Windows loader (or a PE ``.dll`` to a
+    Unix loader) can block in native loader error handling before Python can
+    report an actionable capability result.  Only recognized, contradictory
+    suffixes are rejected; extensionless test doubles and platform loader
+    names remain supported.
+    """
+
+    configured = os.environ.get(_LIBRARY_ENV)
+    if configured is None:
+        configured = os.environ.get(_LEGACY_LIBRARY_ENV)
+    if configured is None or configured != library:
+        return False
+    name = Path(library).name.casefold()
+    if os.name == "nt":
+        return ".so" in name or name.endswith(".dylib")
+    if sys.platform == "darwin":
+        return name.endswith(".dll") or ".so" in name
+    return name.endswith(".dll") or name.endswith(".dylib")
+
+
 def libredwg_capability() -> ReaderCapability:
     with _reader_lock:
         return _libredwg_capability()
@@ -383,6 +406,10 @@ def _init_libredwg_unlocked():
     library = _discover_library()
     if library is None:
         raise RuntimeError("LibreDWG shared library is unavailable")
+    if _explicit_library_platform_mismatch(library):
+        raise RuntimeError(
+            "Configured LibreDWG shared library format does not match this platform"
+        )
 
     native_handle = None
     allocator_handle = None

@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from cad2gis.cad2gis_v3 import onboarding
+from cad2gis.cad2gis_v3 import project_profile
 from cad2gis.cad2gis_v3.model import SourceEntity
 from cad2gis.cad2gis_v3.project_profile import bootstrap_project, validate_project
 
@@ -195,6 +196,14 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
         onboarding,
         "ingest",
         lambda *_args, **_kwargs: ([route], diagnostics),
+    )
+    # Keep this unit test independent of an installed LibreDWG/AutoCAD
+    # backend.  The canonical reader contract is covered separately; here we
+    # are proving transactional proposal compilation and admission.
+    monkeypatch.setattr(
+        project_profile,
+        "_model_space_entities",
+        lambda *_args, **_kwargs: [route],
     )
 
     # The route-regex check chain auto-repairs an empty route_layers proposal:

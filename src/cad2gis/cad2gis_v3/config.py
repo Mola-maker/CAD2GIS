@@ -1012,16 +1012,20 @@ class MappingRegistry:
                     f"Annotation family {normalized['family_id']} max_distance_native_m "
                     "must be a finite positive number"
                 )
-            for field in ("text_pattern", "source_layer_pattern", "target_layer_pattern"):
+            for field_name in (
+                "text_pattern", "source_layer_pattern", "target_layer_pattern"
+            ):
                 try:
-                    compiled = re.compile(normalized[field])
+                    compiled = re.compile(normalized[field_name])
                 except re.error as exc:
                     raise ValueError(
-                        f"Invalid {field} for annotation family {normalized['family_id']}: {exc}"
+                        f"Invalid {field_name} for annotation family "
+                        f"{normalized['family_id']}: {exc}"
                     ) from exc
                 if compiled.fullmatch(""):
                     raise ValueError(
-                        f"Annotation family {normalized['family_id']} {field} must not match empty text"
+                        f"Annotation family {normalized['family_id']} "
+                        f"{field_name} must not match empty text"
                     )
             if normalized["rule_id"] not in normalized["provenance"]:
                 raise ValueError(

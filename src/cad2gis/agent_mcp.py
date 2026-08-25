@@ -54,6 +54,21 @@ def get_capabilities() -> dict[str, Any]:
             "OSM or visual controls are relative references only; surveyed "
             "controls are required to verify absolute positional accuracy"
         ),
+        "filesystem_roots": [str(root) for root in _roots()],
+        "workflow": [
+            "inspect_source",
+            "bootstrap_project",
+            "prepare_ai_onboarding",
+            "apply_ai_onboarding",
+            "validate_project",
+            "run_conversion",
+            "inspect_run",
+            "audit_run",
+        ],
+        "review_contract": (
+            "review edits are revisioned separately; registration export "
+            "returns a command that creates a new immutable run"
+        ),
     }
 
 
@@ -101,6 +116,110 @@ def inspect_run(run_dir: str) -> dict[str, Any]:
         "reasoning": reasoning,
         "artifacts": manifest.get("artifacts"),
         "validation": manifest.get("validation"),
+    }
+
+
+def audit_run(run_dir: str) -> dict[str, Any]:
+    """Verify one immutable run's artifacts and delivered layer census."""
+
+    from .review_server import (
+        GeoPackageProvider,
+        ReviewServerError,
+        _artifact_path,
+        _sha256_file,
+        _source_path,
+    )
+
+    directory = _path(run_dir)
+    if not directory.is_dir():
+        raise MCPServiceError(f"Run path is not a directory: {directory}")
+    manifest = _json_object(_path(directory / "run_manifest.json"))
+    artifact_records = manifest.get("artifacts")
+    artifact_records = (
+        dict(artifact_records) if isinstance(artifact_records, dict) else {}
+    )
+    artifact_checks: dict[str, dict[str, Any]] = {}
+    failures: list[str] = []
+    for name, record in sorted(artifact_records.items()):
+        expected_sha = (
+            str(record.get("sha256", "")).strip().casefold()
+            if isinstance(record, dict) else ""
+        )
+        try:
+            artifact = _artifact_path(manifest, name, run_dir=directory)
+            exists = artifact.is_file()
+            actual_sha = _sha256_file(artifact) if exists else None
+            passed = bool(exists and expected_sha and actual_sha == expected_sha)
+            detail = None
+        except ReviewServerError as exc:
+            artifact = None
+            exists = False
+            actual_sha = None
+            passed = False
+            detail = str(exc)
+        artifact_checks[name] = {
+            "passed": passed,
+            "path": str(artifact) if artifact is not None else None,
+            "exists": exists,
+            "expected_sha256": expected_sha or None,
+            "actual_sha256": actual_sha,
+            "detail": detail,
+        }
+        if not passed:
+            failures.append(f"artifact:{name}")
+
+    expected_counts_raw = manifest.get("delivery_counts")
+    expected_counts = {
+        str(name): int(count)
+        for name, count in (
+            expected_counts_raw.items()
+            if isinstance(expected_counts_raw, dict) else ()
+        )
+    }
+    actual_counts: dict[str, int] = {}
+    layer_failures: dict[str, dict[str, int | None]] = {}
+    delivery_check = artifact_checks.get("delivery", {})
+    delivery_path = delivery_check.get("path")
+    if delivery_check.get("passed") and isinstance(delivery_path, str):
+        try:
+            descriptors = GeoPackageProvider(delivery_path).layers()
+            actual_counts = {
+                str(item["name"]): int(item["feature_count"])
+                for item in descriptors
+            }
+        except ReviewServerError as exc:
+            failures.append("delivery:open")
+            delivery_check["detail"] = str(exc)
+    else:
+        failures.append("delivery:unavailable")
+    for name in sorted(set(expected_counts) | set(actual_counts)):
+        expected = expected_counts.get(name)
+        actual = actual_counts.get(name)
+        if expected != actual:
+            layer_failures[name] = {"expected": expected, "actual": actual}
+    if layer_failures:
+        failures.append("delivery:layer_census")
+
+    source_path, source_blocker = _source_path(manifest, run_dir=directory)
+    warnings = [] if source_path is not None else ["source:not_replayable"]
+    return {
+        "schema_version": "cad2gis.run_audit.v1",
+        "run_dir": str(directory),
+        "run_status": manifest.get("run_status"),
+        "audit_status": "PASS" if not failures else "FAIL",
+        "artifacts": artifact_checks,
+        "delivery": {
+            "expected_counts": expected_counts,
+            "actual_counts": actual_counts,
+            "mismatches": layer_failures,
+        },
+        "source_replay": {
+            "available": source_path is not None,
+            "path": str(source_path) if source_path is not None else None,
+            "blocker": source_blocker,
+        },
+        "failures": sorted(set(failures)),
+        "warnings": warnings,
     }
 
 
@@ -582,6 +701,7 @@ def create_server(
     server.tool()(apply_ai_onboarding)
     server.tool()(auto_onboard_and_convert)
     server.tool()(inspect_run)
+    server.tool()(audit_run)
     server.tool()(list_evidence_nodes)
     server.tool()(get_evidence_node)
     server.tool()(list_visual_regions)
@@ -629,6 +749,7 @@ if __name__ == "__main__":  # pragma: no cover
 __all__ = [
     "MCPServiceError",
     "apply_ai_onboarding",
+    "audit_run",
     "auto_onboard_and_convert",
     "bootstrap_project",
     "create_decision_pack",

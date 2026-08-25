@@ -7,6 +7,7 @@ import itertools
 import math
 import re
 from collections import Counter, defaultdict
+from typing import Any
 
 from .curve_geometry import delivery_points, delivery_segments
 from .model import Relation

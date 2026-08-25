@@ -6,7 +6,8 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from cad2gis.agent_mcp import prepare_review_workspace
+from cad2gis.agent_mcp import audit_run, prepare_review_workspace
+from cad2gis import review_server
 from cad2gis.review_server import (
     ReviewConflictError,
     ReviewServerError,
@@ -33,13 +34,18 @@ def _feature(feature_id: str = "review:1") -> dict:
 def _run_fixture(tmp_path) -> tuple:
     run_dir = tmp_path / "run"
     run_dir.mkdir()
+    source = run_dir / "fixture.dwg"
+    source.write_bytes(b"immutable-source-fixture")
     delivery = run_dir / "delivery.gpkg"
     delivery.write_bytes(b"immutable-delivery-fixture")
     manifest = {
         "schema_version": "cad2gis-run-manifest-v4",
         "run_status": "CONDITIONAL",
         "modes": {"domain": "auto", "llm": "assist"},
-        "source": {"path": "fixture.dwg", "sha256": "a" * 64},
+        "source": {
+            "path": "fixture.dwg",
+            "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        },
         "artifacts": {
             "delivery": {"path": str(delivery), "sha256": "fixture"},
         },
@@ -93,6 +99,90 @@ def test_review_store_rejects_non_wgs84_or_nonfinite_geometry(tmp_path) -> None:
         store.upsert(invalid, expected_revision=0, actor="tester")
 
 
+def test_review_relocates_copied_run_artifact_only_by_matching_hash(
+    tmp_path, monkeypatch,
+) -> None:
+    monkeypatch.delenv("CAD2GIS_REVIEW_POSTGIS_DSN", raising=False)
+    run_dir = tmp_path / "copied-run"
+    run_dir.mkdir()
+    delivery = run_dir / "delivery.gpkg"
+    delivery.write_bytes(b"portable-delivery")
+    manifest = {
+        "schema_version": "cad2gis-run-manifest-v4",
+        "run_status": "CONDITIONAL",
+        "source": {"path": "/old-host/drawing.dwg", "sha256": "a" * 64},
+        "artifacts": {
+            "delivery": {
+                "path": "/old-host/run/delivery.gpkg",
+                "sha256": hashlib.sha256(delivery.read_bytes()).hexdigest(),
+            },
+        },
+        "crs": {"source_crs": "EPSG:32749", "target_crs": "EPSG:32749"},
+        "validation": {},
+        "reasoning": {},
+    }
+    manifest_path = run_dir / "run_manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    client = TestClient(create_review_app(run_dir, workspace_dir=tmp_path / "review"))
+    assert client.get("/api/health").json()["status"] == "ok"
+    run = client.get("/api/run").json()
+    assert run["source_available"] is False
+    assert "SHA-256" in run["source_blocker"]
+
+    manifest["artifacts"]["delivery"]["sha256"] = "b" * 64
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ReviewServerError, match="SHA-256 mismatch"):
+        create_review_app(run_dir, workspace_dir=tmp_path / "review-2")
+
+
+def test_mcp_run_audit_verifies_hashes_counts_and_source_replay(
+    tmp_path, monkeypatch,
+) -> None:
+    monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    source = run_dir / "drawing.dwg"
+    source.write_bytes(b"source")
+    delivery = run_dir / "delivery.gpkg"
+    delivery.write_bytes(b"delivery")
+    manifest = {
+        "schema_version": "cad2gis-run-manifest-v4",
+        "run_status": "CONDITIONAL",
+        "source": {
+            "path": str(source),
+            "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        },
+        "artifacts": {
+            "delivery": {
+                "path": str(delivery),
+                "sha256": hashlib.sha256(delivery.read_bytes()).hexdigest(),
+            },
+        },
+        "delivery_counts": {"CABLE": 2},
+    }
+    (run_dir / "run_manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8",
+    )
+
+    class FakeProvider:
+        def __init__(self, _path):
+            pass
+
+        def layers(self):
+            return [{"name": "CABLE", "feature_count": 2}]
+
+    monkeypatch.setattr(review_server, "GeoPackageProvider", FakeProvider)
+    passed = audit_run(str(run_dir))
+    assert passed["audit_status"] == "PASS"
+    assert passed["source_replay"]["available"] is True
+
+    delivery.write_bytes(b"tampered")
+    failed = audit_run(str(run_dir))
+    assert failed["audit_status"] == "FAIL"
+    assert "artifact:delivery" in failed["failures"]
+
+
 def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None:
     monkeypatch.delenv("CAD2GIS_REVIEW_POSTGIS_DSN", raising=False)
     run_dir, delivery, manifest_path = _run_fixture(tmp_path)
@@ -106,7 +196,7 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     )
 
     assert client.get("/api/health").json()["status"] == "ok"
-    assert "配准、坐标传送与叠加审查" in client.get("/").text
+    assert "图纸理解、配准与交付审查" in client.get("/").text
     response = client.post("/api/review/features", json={
         "feature": _feature(),
         "expected_revision": 0,
@@ -189,6 +279,14 @@ def test_review_app_transfers_coordinates_and_exports_active_profile(
     assert result["source_run_modes"] == {"domain": "auto", "llm": "assist"}
     assert (workspace / "web_gcp_profile.json").is_file()
 
+    (run_dir / "fixture.dwg").unlink()
+    archived = client.post(
+        "/api/registration/export", json={"activate": True},
+    ).json()
+    assert archived["source_available"] is False
+    assert archived["conversion_command"] is None
+    assert "SHA-256" in archived["source_blocker"]
+
 
 def test_mcp_prepares_separate_review_workspace(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
@@ -204,3 +302,33 @@ def test_mcp_prepares_separate_review_workspace(tmp_path, monkeypatch) -> None:
     assert result["url"] == "http://127.0.0.1:9876"
     assert "cad2gis review" in result["launch_command"]
     assert (tmp_path / "run.review" / "review.sqlite3").is_file()
+
+
+def test_review_console_exposes_toc_copy_and_accessibility_contracts(
+    tmp_path, monkeypatch,
+) -> None:
+    monkeypatch.delenv("CAD2GIS_REVIEW_POSTGIS_DSN", raising=False)
+    run_dir, _, _ = _run_fixture(tmp_path)
+    client = TestClient(create_review_app(run_dir, workspace_dir=tmp_path / "review"))
+
+    page = client.get("/")
+    assert page.status_code == 200
+    assert 'aria-label="转换目录"' in page.text
+    assert 'data-tab="console"' in page.text
+    assert 'id="copy-command"' in page.text
+    assert 'id="copy-coordinate"' in page.text
+    assert './assets/demo-fixture.js' in page.text
+
+    script = client.get("/assets/app.js")
+    assert script.status_code == 200
+    assert "navigator.clipboard" in script.text
+    assert "terminalEvent" in script.text
+
+    demo = client.get("/assets/demo-fixture.js")
+    assert demo.status_code == 200
+    assert "公开页面仅含合成证据" in demo.text
+    assert "window.CAD2GIS_DEMO" in demo.text
+
+    stylesheet = client.get("/assets/styles.css")
+    assert stylesheet.status_code == 200
+    assert "prefers-reduced-motion" in stylesheet.text

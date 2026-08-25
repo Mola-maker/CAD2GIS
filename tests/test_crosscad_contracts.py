@@ -636,7 +636,16 @@ def _run_fake_conversion(
     source_hash = _sha256_bytes(source.read_bytes())
     (tmp_path / "source_profile.json").write_text("{}", encoding="utf-8")
     (tmp_path / "mapping_registry.json").write_text("{}", encoding="utf-8")
-    entity = _source_entity(model, "source-line", kind="LINE", layer="FIBER")
+    # Use coordinates that are plausible for the declared Web Mercator CRS.
+    # Near-origin CAD fixture coordinates intentionally fail the production
+    # coordinate-domain gate and belong in registration-required tests.
+    entity = _source_entity(
+        model,
+        "source-line",
+        kind="LINE",
+        layer="FIBER",
+        points=((12_600_000.0, -800_000.0), (12_600_001.0, -800_000.0)),
+    )
 
     class FakeProfile:
         path = tmp_path / "source_profile.json"

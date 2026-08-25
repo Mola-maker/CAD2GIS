@@ -1,0 +1,4 @@
+interface:
+  display_name: "Convert CAD to GIS"
+  short_description: "Evidence-first DWG conversion and registration"
+  default_prompt: "Inspect this CAD source, use only observed evidence, run the canonical conversion, and explain geometry, topology, length, and coordinate-accuracy status separately."

@@ -37,7 +37,10 @@ demo/output/
 .worktrees/
 
 # Plugins
-/plugins/
+# Keep local/experimental plugins ignored, but version the supported agent plugin.
+/plugins/*
+!/plugins/cad2gis-agent/
+!/plugins/cad2gis-agent/**
 
 # Official reference Shape files
 /official/Shape/
