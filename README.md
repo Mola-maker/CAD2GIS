@@ -19,8 +19,18 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 
 完整定义与两份清单见 [docs/GLOSSARY.md](docs/GLOSSARY.md)。
 
-##怎么使用呢宝贝
-直接把插件喂给AI叫它给你装就好了
+## 快速开始
+
+1. 按下方“安装”创建固定运行环境并执行 `cad2gis doctor`；
+2. 安装 [`plugins/cad2gis-agent`](plugins/cad2gis-agent)，或把对应
+   [`clients`](plugins/cad2gis-agent/clients) 模板加入现有智能体；
+3. 显式设置 `CAD2GIS_PROJECT_ROOTS`，然后让智能体先调用
+   `get_capabilities` 和 `inspect_source`；
+4. 转换后用 `cad2gis review` 打开 ToC 审查控制台，检查图层、标签、长度、
+   拓扑和地图定位，再生成新的校准 run。
+
+插件是 canonical Python 流水线的薄接入层。没有安装 GIS runtime、DWG reader
+或没有授权项目根目录时，插件会失败关闭，而不会输出伪成功 GeoPackage。
 
 ## 架构
 
@@ -56,6 +66,10 @@ conda activate cad2gis
 pip install -e ".[mcp,review,test]"
 cad2gis doctor --deep --strict --json
 ```
+
+支持 Python 3.11–3.12。MCP、证据协议和 GeoPackage 交付结构跨 Windows、Linux、
+macOS 一致；AutoCAD/Core Console reader 仅限 Windows，其他系统需配置项目支持的
+LibreDWG/ODA reader。安装后还可直接使用 `cad2gis-agent-mcp` 启动 MCP 服务。
 
 Windows 使用 AutoCAD reader：
 
@@ -124,10 +138,21 @@ cad2gis review "<RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
 3. 服务端立即把经纬度转换到 run manifest 的目标投影 CRS；
 4. 使用至少 4 个分布合理的训练点和 3 个独立检查点；
 5. 生成 source-bound `web_gcp_profile.json` 和下一次转换命令。
+6. 在“控制台”标签复制命令；执行后生成新的校准 GeoPackage，原 run 保持不变。
+
+界面还提供 `?demo=1` 合成交互模式，用于公开展示图层开关、CAD 几何吸附和
+坐标传送，不读取或上传真实 DWG，也不会伪装成已执行转换。例如：
+`http://127.0.0.1:8765/?demo=1`。真实产物仍必须由本地 CLI/MCP 流水线生成。
+
+左侧 ToC 将源事实、语义映射、空间配准、独立校验和 GIS 交付分开显示；右侧
+“证据 / 控制台 / AI 协作”标签只记录有效审查动作，并提供目标坐标、转换命令和
+受约束 AI 提示词的复制功能。
 
 Web 修改只写独立 revision store，不会修改源文件、evidence 或原 delivery
 GeoPackage。OSM 控制点的精度类别固定为
 `RELATIVE_OSM_REFERENCE_ONLY`；若要证明绝对精度，必须替换为测量或权威控制点。
+复制或归档 run 后，服务只接受 SHA-256 与 manifest 完全一致的同目录产物；若
+原 DWG 未重新附加，则允许审查但不生成一条必然失败的校准转换命令。
 
 ## MCP 与主流智能体
 
@@ -135,7 +160,7 @@ MCP 服务支持标准 `stdio` 和 Streamable HTTP：
 
 ```powershell
 # stdio（通常由智能体自动启动）
-python -m cad2gis.agent_mcp --transport stdio
+cad2gis-agent-mcp --transport stdio
 
 # 本机 Streamable HTTP
 python -m cad2gis.agent_mcp `
@@ -151,6 +176,8 @@ Claude Code、Cursor、VS Code/GitHub Copilot、Codex 和通用 HTTP 客户端�
 [`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients)。服务暴露
 `get_capabilities`，智能体可先读取转换边界、transport 和精度声明，再调用
 inspection、onboarding、conversion、evidence、repair 与 review 工具。
+转换完成后调用 `audit_run`，可校验每个产物的 SHA-256、实际 GeoPackage 图层
+计数与 manifest census 是否一致，并单独报告源 DWG 是否仍可重放。
 
 MCP 只能访问下列根目录中的文件：
 
@@ -207,7 +234,7 @@ python -m pytest tests/test_apd_test_compatibility.py -q
 
 - `src/cad2gis/`：唯一生产实现、CLI、reader、MCP、review server
 - `tests/`：自动化契约与回归测试
-- `baselines/`：不可变 source-bound 回归证据
+- `baselines/`：source-bound 基线配置；大型 GeoPackage/清单证据可作为外部语料挂载
 - `raw/`：开发基线 APD 4 张 + 验证集 APD 6 张
 - `experiment/`：APD reviewed 兼容项目
 - `plugins/cad2gis-agent/`：智能体插件和 MCP 客户端模板

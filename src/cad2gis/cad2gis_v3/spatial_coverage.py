@@ -316,7 +316,6 @@ def evaluate_corridor_coverage(
     }
     if not corridors or not devices or not trainings:
         return result
-    diagonal = _span(_bbox(devices), "x"), _span(_bbox(devices), "y")
     device_bbox = _bbox(devices)
     drawing_diagonal = (
         None

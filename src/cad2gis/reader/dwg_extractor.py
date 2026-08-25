@@ -32,14 +32,10 @@ from pathlib import Path
 from typing import Any
 
 from ..cad_common import (
-    ACI_TO_RGB,
-    DEFAULT_COLOR_RGB,
     _centroid,
     _chord_length,
     _cstr,
     _flush_cursor,
-    _generate_aci_table,
-    _hsv_bytes,
     aci_to_rgb,
 )
 

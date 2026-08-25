@@ -11,7 +11,7 @@ import shutil
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -31,7 +31,7 @@ from .georef import (
 )
 from .ingest import ingest
 from .implementation import implementation_manifest_fields, production_conversion_provenance
-from .model import canonical_curve_fingerprint
+from .model import SourceEntity, canonical_curve_fingerprint
 from .semantics import classify_entities
 from .spatial_coverage import evaluate_corridor_coverage, evaluate_spatial_coverage
 from .styles import write_styles
@@ -1464,7 +1464,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
     # ── OSM place-name anchor for local engineering coordinates ────────
     osm_anchor: dict[str, Any] | None = None
     if request.gcp_profile is None:
-        from .osm_anchor import apply_osm_anchor, derive_osm_anchor
+        from .osm_anchor import derive_osm_anchor
 
         # A cached/reviewed anchor is explicit project configuration and wins
         # even when the coordinate-domain heuristic accepted the declared CRS

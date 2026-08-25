@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cad2gis": {
+      "command": "cad2gis-agent-mcp",
+      "args": ["--transport", "stdio"],
+      "env": {"CAD2GIS_PROJECT_ROOTS": "<ABSOLUTE_PROJECT_ROOT>"}
+    }
+  }
+}

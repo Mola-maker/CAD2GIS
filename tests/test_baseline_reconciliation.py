@@ -16,6 +16,14 @@ SOURCE_PROFILE = BASELINE / "config" / "source_profile.json"
 SOURCE_INVENTORY = BASELINE / "review" / "source_inventory.json"
 DELIVERY = BASELINE / "run" / "delivery.gpkg"
 
+pytestmark = pytest.mark.skipif(
+    not SOURCE_INVENTORY.is_file() or not DELIVERY.is_file(),
+    reason=(
+        "Optional Hutabohu evidence baseline is not present in this checkout; "
+        "run the external-corpus robustness suite instead"
+    ),
+)
+
 
 def _profile() -> SourceProfile:
     return SourceProfile.load(SOURCE_PROFILE)

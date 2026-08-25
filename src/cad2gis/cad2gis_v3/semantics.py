@@ -397,9 +397,7 @@ def _annotation_callout_component_keys(
                 any(
                     math.dist(far_endpoint, endpoint) <= 1.0
                     for _, endpoint in other_endpoints
-                    if not (
-                        endpoint in rect_points
-                    )
+                    if endpoint not in rect_points
                 )
                 or any(
                     math.dist(far_endpoint, asset_point) <= 2.0
@@ -1631,7 +1629,6 @@ def classify_entities(
         )
     fallback_annotations = annotations_by_family.pop(POLE_LABEL_FAMILY_ID, [])
     fallback_annotations.extend(unclaimed_pole_annotations)
-    fallback_targets: list[Feature] = []
     fallback_failure_annotations: list[SourceEntity] = []
     for family, _, _, target_layer_pattern in compiled_families:
         annotations = annotations_by_family[family.family_id]

@@ -1,0 +1,24 @@
+{
+  "name": "cad2gis-agent",
+  "version": "0.1.0",
+  "description": "Evidence-first DWG to GIS conversion, registration, and review through one canonical MCP service.",
+  "author": {
+    "name": "CAD2GIS contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "CAD2GIS Agent",
+    "shortDescription": "Evidence-first CAD conversion and geospatial review.",
+    "longDescription": "Inspect a DWG, build source-bound semantic decisions, run deterministic geometry/topology/length/CRS validation, and review GeoPackage delivery without duplicating the conversion engine.",
+    "developerName": "CAD2GIS contributors",
+    "category": "Developer Tools",
+    "capabilities": ["MCP", "Skills", "Interactive review"],
+    "defaultPrompt": [
+      "Inspect this DWG and report source, semantic, and CRS readiness.",
+      "Convert this CAD project and explain every validation gate.",
+      "Open the CAD2GIS review console and prepare GCP registration."
+    ],
+    "brandColor": "#0B6B61"
+  },
+  "mcpServers": "./.mcp.json"
+}

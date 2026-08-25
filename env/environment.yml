@@ -11,6 +11,8 @@ dependencies:
   - gdal=3.10.*
   - pyproj=3.7.*
   - ezdxf=1.4.*
+  - numpy>=1.24
+  - scipy>=1.10
   - shapely=2.1.*
   - pytest=9.0.*
   - ruff=0.12.*

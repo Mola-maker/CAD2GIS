@@ -17,6 +17,7 @@ import sqlite3
 import tempfile
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
 
 from osgeo import ogr
 

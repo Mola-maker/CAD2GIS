@@ -7,9 +7,12 @@ License: Proprietary
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
-Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: OS Independent
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: shapely>=2.0
 Provides-Extra: test
 Requires-Dist: pytest<10,>=8; extra == "test"
 Requires-Dist: build<2,>=1.2; extra == "test"

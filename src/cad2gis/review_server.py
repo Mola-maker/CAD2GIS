@@ -5,6 +5,7 @@ are optimistic, revisioned GeoJSON overlays and never rewrite source,
 evidence, or delivery GeoPackages.
 """
 
+import hashlib
 import json
 import math
 import os
@@ -642,8 +643,11 @@ class GeoPackageProvider:
         evidence = artifacts.get("evidence")
         if not isinstance(evidence, dict):
             return None
-        path = str(evidence.get("path") or "")
-        return Path(path).expanduser().resolve() if path else None
+        return _artifact_path(
+            manifest,
+            "evidence",
+            run_dir=manifest_path.parent,
+        )
 
     def _native_point_lookup(self) -> dict[str, Any] | None:
         """Map source entity keys to CAD-native point sequences."""
@@ -867,13 +871,91 @@ class _WebSocketHub:
             self.disconnect(client)
 
 
-def _artifact_path(manifest: dict[str, Any], name: str) -> Path:
+_PORTABLE_ARTIFACT_PATHS = {
+    "source": Path("source.gpkg"),
+    "evidence": Path("evidence.gpkg"),
+    "delivery": Path("delivery.gpkg"),
+    "styles": Path("qgis") / "styles" / "style_manifest.json",
+    "evidence_graph": Path("reasoning") / "evidence_graph.json",
+    "visual_evidence": Path("reasoning") / "visual" / "manifest.json",
+}
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _artifact_path(
+    manifest: dict[str, Any],
+    name: str,
+    *,
+    run_dir: Path | None = None,
+) -> Path:
+    """Resolve a copied run artifact without weakening content identity."""
+
     artifacts = manifest.get("artifacts")
     record = artifacts.get(name) if isinstance(artifacts, dict) else None
     raw_path = record.get("path") if isinstance(record, dict) else None
     if not isinstance(raw_path, str) or not raw_path.strip():
         raise ReviewServerError(f"Run manifest has no {name} artifact")
-    return Path(raw_path).expanduser().resolve()
+    original = Path(raw_path).expanduser().resolve()
+    if original.is_file() or run_dir is None:
+        return original
+    relative = _PORTABLE_ARTIFACT_PATHS.get(name)
+    expected_sha = str(record.get("sha256", "")).strip().casefold()
+    if relative is None or re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
+        return original
+    portable = (run_dir / relative).resolve()
+    if not portable.is_file():
+        return original
+    if _sha256_file(portable) != expected_sha:
+        raise ReviewServerError(
+            f"Portable {name} artifact SHA-256 mismatch: {portable}"
+        )
+    return portable
+
+
+def _source_path(
+    manifest: dict[str, Any],
+    *,
+    run_dir: Path,
+) -> tuple[Path | None, str | None]:
+    """Resolve a source drawing by content identity, never by name alone."""
+
+    record = manifest.get("source")
+    raw_path = record.get("path") if isinstance(record, dict) else None
+    expected_sha = (
+        str(record.get("sha256", "")).strip().casefold()
+        if isinstance(record, dict) else ""
+    )
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        return None, "运行清单未记录源 CAD 路径"
+    if re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
+        return None, "运行清单缺少有效的源 CAD SHA-256，无法安全重连"
+
+    declared = Path(raw_path).expanduser()
+    candidates = [
+        declared if declared.is_absolute() else run_dir / declared,
+        run_dir / declared.name,
+        run_dir / "source" / declared.name,
+    ]
+    checked: set[Path] = set()
+    for candidate in candidates:
+        candidate = candidate.resolve()
+        if candidate in checked or not candidate.is_file():
+            continue
+        checked.add(candidate)
+        if _sha256_file(candidate) == expected_sha:
+            return candidate, None
+    return (
+        None,
+        "源 CAD 在当前机器不可用或内容哈希不匹配；请按原 SHA-256 "
+        "重新附加源文件后再复制转换命令",
+    )
 
 
 def _registration_controls(
@@ -1162,7 +1244,9 @@ def create_review_app(
         manifest["run_dir"] = str(run_path)
     else:
         raise ReviewServerError(f"Run manifest does not exist: {manifest_path}")
-    delivery = GeoPackageProvider(_artifact_path(manifest, "delivery"))
+    delivery = GeoPackageProvider(
+        _artifact_path(manifest, "delivery", run_dir=run_path)
+    )
     workspace = (
         Path(workspace_dir).expanduser().resolve()
         if workspace_dir is not None
@@ -1216,12 +1300,20 @@ def create_review_app(
 
     @app.get("/api/run")
     async def run_summary():
+        resolved_source, source_blocker = _source_path(
+            manifest, run_dir=run_path,
+        )
         return {
             "schema_version": manifest.get("schema_version"),
             "run_dir": str(run_path),
             "workspace_dir": str(workspace),
             "run_status": manifest.get("run_status"),
             "source": manifest.get("source"),
+            "source_available": resolved_source is not None,
+            "source_resolved_path": (
+                str(resolved_source) if resolved_source is not None else None
+            ),
+            "source_blocker": source_blocker,
             "crs": manifest.get("crs"),
             "validation": manifest.get("validation"),
             "reasoning": manifest.get("reasoning"),
@@ -1325,18 +1417,19 @@ def create_review_app(
                     f"Generated source profile failed canonical validation: {exc}"
                 ) from exc
 
-        source = manifest.get("source")
-        source_path = (
-            str(source.get("path", ""))
-            if isinstance(source, dict) else ""
+        source_path, source_blocker = _source_path(
+            manifest, run_dir=run_path,
         )
         next_run = workspace / "registered-run"
-        command_parts = [
-            "cad2gis convert",
-            f'"{source_path}"',
-            f'--run-dir "{next_run}"',
-            f'--gcp-profile "{profile_path}"',
-        ]
+        command_parts = (
+            [
+                "cad2gis convert",
+                f'"{source_path}"',
+                f'--run-dir "{next_run}"',
+                f'--gcp-profile "{profile_path}"',
+            ]
+            if source_path is not None else []
+        )
         # The registered re-run must reproduce the reviewed source run's
         # supervision mode.  The web workflow edits coordinates only; it must
         # not silently downgrade an ``--llm assist`` source run to the CLI
@@ -1377,7 +1470,14 @@ def create_review_app(
                 str(registered_delivery)
                 if registered_delivery.is_file() else None
             ),
-            "conversion_command": " ".join(command_parts),
+            "source_available": source_path is not None,
+            "source_resolved_path": (
+                str(source_path) if source_path is not None else None
+            ),
+            "source_blocker": source_blocker,
+            "conversion_command": (
+                " ".join(command_parts) if source_path is not None else None
+            ),
             "warning": (
                 "OSM controls improve relative placement only; absolute "
                 "survey accuracy remains unverified. The web preview layers "

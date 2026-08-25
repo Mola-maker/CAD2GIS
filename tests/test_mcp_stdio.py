@@ -39,6 +39,10 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
     project_root = Path(__file__).resolve().parents[1]
     environment = dict(os.environ)
     environment["CAD2GIS_PROJECT_ROOT"] = str(project_root)
+    environment["PYTHONPATH"] = os.pathsep.join(filter(None, (
+        str(project_root / "src"),
+        environment.get("PYTHONPATH", ""),
+    )))
 
     async def exercise() -> set[str]:
         parameters = StdioServerParameters(
@@ -55,6 +59,7 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
     names = asyncio.run(exercise())
     assert names == {
         "apply_ai_onboarding",
+        "audit_run",
         "auto_onboard_and_convert",
         "bootstrap_project",
         "create_decision_pack",
