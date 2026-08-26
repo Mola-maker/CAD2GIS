@@ -1,0 +1,20 @@
+{
+  "name": "cad2gis",
+  "interface": {
+    "displayName": "CAD2GIS"
+  },
+  "plugins": [
+    {
+      "name": "cad2gis-agent",
+      "source": {
+        "source": "local",
+        "path": "./plugins/cad2gis-agent"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

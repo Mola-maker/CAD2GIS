@@ -141,18 +141,20 @@ def collect_checks(
     """Collect diagnostics; native modules are imported only with ``deep``."""
 
     version = sys.version_info
-    target_python = version.major == 3 and version.minor == 12
-    supported_public_api = version.major == 3 and version.minor >= 11
+    supported_python = version.major == 3 and version.minor in {11, 12}
     checks: list[Check] = [
         Check(
             name="python",
-            status="ok" if target_python else ("warning" if supported_public_api else "error"),
-            detail=f"{platform.python_version()} (pinned GIS runtime is Python 3.12)",
+            status="ok" if supported_python else "error",
+            detail=(
+                f"{platform.python_version()} "
+                "(supported API: Python 3.11-3.12; pinned GIS runtime: 3.12)"
+            ),
             required_for_conversion=True,
             remediation=(
                 None
-                if target_python
-                else "Use the Conda environment defined by env/environment.yml for conversion."
+                if supported_python
+                else "Use Python 3.11 or the pinned Python 3.12 Conda environment."
             ),
         )
     ]

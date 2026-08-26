@@ -1,3 +1,0 @@
-[console_scripts]
-cad2gis = cad2gis.cli:main
-cad2gis-agent-mcp = cad2gis.agent_mcp:main

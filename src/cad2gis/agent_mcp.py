@@ -31,6 +31,9 @@ class MCPServiceError(ValueError):
     """An MCP request escaped its configured project roots or schema."""
 
 
+AGENT_PROMPT_CONTRACT_VERSION = "cad2gis.agent_prompt.v2"
+
+
 def get_capabilities() -> dict[str, Any]:
     """Describe the stable cross-agent protocol and accuracy boundaries."""
 
@@ -69,6 +72,24 @@ def get_capabilities() -> dict[str, Any]:
             "review edits are revisioned separately; registration export "
             "returns a command that creates a new immutable run"
         ),
+        "prompt_contract": {
+            "version": AGENT_PROMPT_CONTRACT_VERSION,
+            "proposal_mode": "typed JSON tool arguments",
+            "identity_rule": (
+                "select only source-observed layer, block, entity, evidence, "
+                "endpoint, and candidate IDs"
+            ),
+            "failure_rule": (
+                "leave unsupported or ambiguous entities unresolved; never "
+                "invent coordinates, geometry, length, CRS, or source facts"
+            ),
+            "required_claims": [
+                "source_geometry",
+                "topology",
+                "length",
+                "coordinate_accuracy",
+            ],
+        },
     }
 
 
@@ -747,6 +768,7 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 __all__ = [
+    "AGENT_PROMPT_CONTRACT_VERSION",
     "MCPServiceError",
     "apply_ai_onboarding",
     "audit_run",

@@ -48,6 +48,8 @@ demo/output/
 # robustness: test temp & build junk (cleaned at branch creation)
 .pytest-tmp-*
 build/
+/_site/
+/.pytest-webdemo-build-*/
 ErrorReports/
 
 # robustness: dev replay artifacts
@@ -74,6 +76,7 @@ baselines/apd_hutabohu/output/
 # robustness: temp venv caches
 .pytest_cache/
 __pycache__/
+*.egg-info/
 
 .dsh-funnel/
 

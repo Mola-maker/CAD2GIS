@@ -7,7 +7,7 @@ name = "cad2gis"
 version = "0.1.0"
 description = "Deterministic CAD-to-GIS orchestration and verification CLI"
 readme = { text = "CAD2GIS provides a lightweight canonical API and CLI. The pinned GIS runtime and separately deployed cad2gis_v3 backend are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 license = { text = "Proprietary" }
 authors = [{ name = "CAD2GIS contributors" }]
 dependencies = ["numpy>=1.24", "scipy>=1.10", "shapely>=2.0"]
@@ -19,7 +19,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8,<10", "build>=1.2,<2"]
+test = ["pytest>=8,<10", "build>=1.2,<2", "ruff>=0.12,<1"]
 mcp = ["mcp>=1.0,<2"]
 review = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1"]
 review-postgis = ["psycopg[binary]>=3.2,<4"]

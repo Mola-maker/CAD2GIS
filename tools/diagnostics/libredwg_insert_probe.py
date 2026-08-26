@@ -28,9 +28,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import subprocess
-import tempfile
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -195,13 +193,6 @@ def _probe_dwg(source: Path, out_dir: Path) -> dict[str, Any]:
         except Exception as exc:
             extrusion = None
             errors.append(f"extrusion_unreadable[{type(exc).__name__}]")
-        try:
-            normal_value = getattr(ent, "normal", None)
-            normal = _raw_value(normal_value)
-        except Exception as exc:
-            normal = None
-            errors.append(f"normal_unreadable[{type(exc).__name__}]")
-
         try:
             block_ref = getattr(ent, "block_header", None)
             block_header_ref = _ref_absolute(block_ref)

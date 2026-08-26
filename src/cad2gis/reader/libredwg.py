@@ -40,8 +40,6 @@ from typing import Any
 
 from .contracts import ReaderCapability, ReaderUnavailableError
 
-# ── LibreDWG SWIG location (installed system-wide on the Linux dev box) ────
-_LIBREDWG_PKG = "/usr/local/lib/python3.12/dist-packages"
 _PYTHON_PATH_ENV = "CAD2GIS_LIBREDWG_PYTHON_PATH"
 _LIBRARY_ENV = "CAD2GIS_LIBREDWG_LIBRARY"
 _LEGACY_LIBRARY_ENV = "CAD2GIS_LIBREDWG_DLL"
@@ -117,12 +115,13 @@ _python_bindings_error: BaseException | None = None
 
 
 def _python_binding_paths() -> tuple[str, ...]:
-    """Return configured binding paths, or the existing system default."""
+    """Return explicit binding paths; normal imports use this interpreter."""
     configured = os.environ.get(_PYTHON_PATH_ENV)
-    if configured is None:
-        values = [_LIBREDWG_PKG]
-    else:
-        values = [item for item in configured.split(os.pathsep) if item]
+    values = (
+        []
+        if configured is None
+        else [item for item in configured.split(os.pathsep) if item]
+    )
     normalized: list[str] = []
     for value in values:
         path = Path(value).expanduser()

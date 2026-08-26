@@ -12,6 +12,7 @@ or CRS algorithms inside the host agent or plugin.
 ## Required opening sequence
 
 1. Call `get_capabilities` and report its configured filesystem roots.
+   Confirm `prompt_contract.version` before constructing any proposal.
 2. Call `inspect_source` for a new DWG, or `inspect_run` for an existing run.
 3. Keep source facts, semantic interpretation, geometry/topology/length checks,
    and coordinate accuracy as separate claims.
@@ -24,11 +25,13 @@ or CRS algorithms inside the host agent or plugin.
 2. `bootstrap_project`
 3. `prepare_ai_onboarding`
 4. Select only observed layer/block/entity identifiers and supplied candidates.
-5. `apply_ai_onboarding`
-6. `validate_project`
-7. `run_conversion`
-8. `inspect_run`
-9. `audit_run`
+5. Submit typed JSON tool arguments that cite those exact identifiers; do not
+   return prose in place of a proposal object.
+6. `apply_ai_onboarding`
+7. `validate_project`
+8. `run_conversion`
+9. `inspect_run`
+10. `audit_run`
 
 Provider-backed onboarding may use `auto_onboard_and_convert`, but its proposal
 still passes deterministic compilation and admission gates.
@@ -45,6 +48,8 @@ still passes deterministic compilation and admission gates.
 
 Read [decision-contract.md](references/decision-contract.md) before creating or
 diagnosing a decision pack.
+Read [agent-prompt-contract.md](references/agent-prompt-contract.md) when a host
+agent needs to construct onboarding or repair arguments directly.
 
 ## Accuracy and safety rules
 
