@@ -50,7 +50,7 @@ jobs:
         shell: bash
 
       - name: Generate repo-native SVG geometry
-        run: npm run build:hero
+        run: npm run build:hero && micromamba run -n cad2gis python tools/build_hero_font.py
         shell: bash
 
       - name: Verify browser scripts and contracts

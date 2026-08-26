@@ -77,3 +77,4 @@ SVG 由本项目脚本生成或手写为 repo-native vector；不下载/嵌入�
 - 正文使用中文系统无衬线字体；导航、状态、指标和证据标签使用等宽 UI 字体；Hero 标题单独使用 `CAD2GIS Hero Display`，形成“叙事 / 数据 / 控制”三层字级。
 - Hero 的滚动变量不直接跟随 `scrollY`，而是用指数阻尼插值追踪目标进度；网格、Hero 视觉体和视差各自使用低幅度位移，保留原生滚动可访问性，不接管滚轮惯性。
 - `prefers-reduced-motion` 会关闭自研字体之外的所有动画、视差和 smooth scroll，并保留最终可读数值。
+- 本地完整生成命令为 `npm run build:hero:all`；CI/Pages 将 SVG 生成和 WOFF2 生成分别绑定到各自的 micromamba Python 环境。
