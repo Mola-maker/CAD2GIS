@@ -66,7 +66,7 @@ jobs:
 
       - name: Generate repo-native SVG geometry
         if: runner.os == 'Linux' && matrix.python == '3.12'
-        run: npm ci && npm run build:hero
+        run: npm ci && npm run build:hero && micromamba run -n cad2gis-ci python tools/build_hero_font.py
 
       - name: Run contract and regression tests
         env:
