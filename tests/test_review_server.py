@@ -196,7 +196,13 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     )
 
     assert client.get("/api/health").json()["status"] == "ok"
-    assert "图纸理解、配准与交付审查" in client.get("/").text
+    page = client.get("/").text
+    assert "图纸理解、配准与交付审查" in page
+    assert "把不可信的" in page
+    assert "DWG" in page
+    assert 'id="hero-page"' in page
+    assert 'data-count="9896"' in page
+    assert "assets/hero-evidence-graph.svg" in page
     response = client.post("/api/review/features", json={
         "feature": _feature(),
         "expected_revision": 0,

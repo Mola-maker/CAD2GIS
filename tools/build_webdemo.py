@@ -15,9 +15,11 @@ PUBLIC_FILES = (
     "index.html",
     "styles.css",
     "app.js",
+    "hero-motion.js",
     "demo-fixture.js",
     "demo-data.json",
 )
+PUBLIC_ASSET_DIR = SOURCE_ROOT / "assets"
 BUILD_SENTINEL = ".cad2gis-webdemo-build"
 BUILD_SENTINEL_VALUE = "cad2gis.webdemo_build.v1\n"
 FORBIDDEN_SUFFIXES = {
@@ -78,12 +80,24 @@ def _assert_source_boundary() -> None:
     leaked = [value for value in forbidden_markers if value in serialized]
     if leaked:
         raise ValueError("WebDemo data contains private source markers: " + ", ".join(leaked))
+    if not PUBLIC_ASSET_DIR.is_dir():
+        raise ValueError("WebDemo hero assets are missing")
+    hero_assets = sorted(
+        path for path in PUBLIC_ASSET_DIR.rglob("*")
+        if path.is_file() and path.suffix.casefold() in {".svg", ".json"}
+    )
+    if not hero_assets:
+        raise ValueError("WebDemo hero asset directory is empty")
 
 
 def build_webdemo(destination: Path) -> dict[str, object]:
     """Create the exact directory layout consumed by GitHub Pages."""
 
     _assert_source_boundary()
+    hero_assets = sorted(
+        path for path in PUBLIC_ASSET_DIR.rglob("*")
+        if path.is_file() and path.suffix.casefold() in {".svg", ".json"}
+    )
     target = destination.expanduser().resolve()
     if target == REPOSITORY_ROOT or REPOSITORY_ROOT not in target.parents:
         raise ValueError("WebDemo destination must be inside the repository")
@@ -105,8 +119,13 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     )
 
     shutil.copy2(SOURCE_ROOT / "index.html", target / "index.html")
-    for name in ("styles.css", "app.js", "demo-fixture.js", "demo-data.json"):
+    for name in ("styles.css", "app.js", "hero-motion.js", "demo-fixture.js", "demo-data.json"):
         shutil.copy2(SOURCE_ROOT / name, assets / name)
+    for source in PUBLIC_ASSET_DIR.rglob("*"):
+        if source.is_file():
+            asset_target = assets / source.relative_to(PUBLIC_ASSET_DIR)
+            asset_target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, asset_target)
     (target / ".nojekyll").write_text("", encoding="utf-8")
 
     page = (target / "index.html").read_text(encoding="utf-8")
@@ -128,8 +147,9 @@ def build_webdemo(destination: Path) -> dict[str, object]:
         [BUILD_SENTINEL, ".nojekyll", "index.html"]
         + [
             f"assets/{name}"
-            for name in ("styles.css", "app.js", "demo-fixture.js", "demo-data.json")
+            for name in ("styles.css", "app.js", "hero-motion.js", "demo-fixture.js", "demo-data.json")
         ]
+        + [f"assets/{path.relative_to(PUBLIC_ASSET_DIR).as_posix()}" for path in hero_assets]
     )
     if files != expected:
         raise ValueError(f"Unexpected WebDemo artifact set: {files}")
