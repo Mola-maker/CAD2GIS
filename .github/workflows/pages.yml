@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/pages.yml"
+      - "pyproject.toml"
       - "src/cad2gis/webdemo/**"
       - "tools/build_webdemo.py"
       - "tests/test_webdemo_build.py"
