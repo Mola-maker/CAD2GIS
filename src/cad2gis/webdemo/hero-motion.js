@@ -1,25 +1,78 @@
 const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 const hero = document.querySelector("#hero-page");
+const visual = document.querySelector("[data-parallax]");
+const motion = {
+  frame: 0,
+  lastTime: 0,
+  targetScroll: 0,
+  scroll: 0,
+  targetPointerX: 0,
+  targetPointerY: 0,
+  pointerX: 0,
+  pointerY: 0,
+};
+
+const requestMotionFrame = () => {
+  if (!motion.frame) motion.frame = requestAnimationFrame(updateMotion);
+};
+
+const updateMotion = (time) => {
+  motion.frame = 0;
+  const delta = Math.min((time - (motion.lastTime || time)) / 1000, 0.05);
+  motion.lastTime = time;
+  const blend = 1 - Math.exp(-10 * Math.max(delta, 1 / 120));
+  motion.scroll += (motion.targetScroll - motion.scroll) * blend;
+  motion.pointerX += (motion.targetPointerX - motion.pointerX) * blend;
+  motion.pointerY += (motion.targetPointerY - motion.pointerY) * blend;
+  if (hero) {
+    hero.style.setProperty("--hero-scroll", motion.scroll.toFixed(4));
+    hero.style.setProperty("--hero-grid-shift", `${(-18 * motion.scroll).toFixed(2)}px`);
+    hero.style.setProperty("--hero-scroll-y", `${(-28 * motion.scroll).toFixed(2)}px`);
+  }
+  if (visual) {
+    visual.style.setProperty("--hero-pointer-x", `${motion.pointerX.toFixed(2)}px`);
+    visual.style.setProperty("--hero-pointer-y", `${motion.pointerY.toFixed(2)}px`);
+  }
+  const moving = Math.abs(motion.targetScroll - motion.scroll) > 0.0005
+    || Math.abs(motion.targetPointerX - motion.pointerX) > 0.05
+    || Math.abs(motion.targetPointerY - motion.pointerY) > 0.05;
+  if (moving) requestMotionFrame();
+};
 
 const setHeroScroll = () => {
   if (!hero || reduceMotion) return;
   const max = Math.max(hero.offsetHeight - window.innerHeight, 1);
-  hero.style.setProperty("--hero-scroll", `${Math.min(window.scrollY / max, 1)}`);
+  motion.targetScroll = Math.min(window.scrollY / max, 1);
+  requestMotionFrame();
 };
 
 const attachParallax = () => {
-  const visual = document.querySelector("[data-parallax]");
   if (!visual || reduceMotion) return;
-  let raf = 0;
   window.addEventListener("pointermove", (event) => {
-    if (raf) return;
-    raf = requestAnimationFrame(() => {
-      raf = 0;
-      const x = (event.clientX / Math.max(window.innerWidth, 1) - .5) * 16;
-      const y = (event.clientY / Math.max(window.innerHeight, 1) - .5) * 12;
-      visual.style.transform = `translate3d(${x * .35}px, ${y * .35}px, 0)`;
-    });
+    motion.targetPointerX = (event.clientX / Math.max(window.innerWidth, 1) - .5) * 5.6;
+    motion.targetPointerY = (event.clientY / Math.max(window.innerHeight, 1) - .5) * 4.2;
+    requestMotionFrame();
   }, { passive: true });
+  visual.addEventListener("pointerleave", () => {
+    motion.targetPointerX = 0;
+    motion.targetPointerY = 0;
+    requestMotionFrame();
+  }, { passive: true });
+};
+
+const attachSmoothAnchors = () => {
+  if (reduceMotion) return;
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const selector = anchor.getAttribute("href");
+      const target = selector && document.querySelector(selector);
+      if (!target) return;
+      event.preventDefault();
+      history.pushState(null, "", selector);
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
 };
 
 const animateCount = (node) => {
@@ -70,4 +123,5 @@ const observeMotion = () => {
 window.addEventListener("scroll", setHeroScroll, { passive: true });
 setHeroScroll();
 attachParallax();
+attachSmoothAnchors();
 observeMotion();

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:hero": "node tools/build_hero_assets.mjs"
+    "build:hero": "node tools/build_hero_assets.mjs && python tools/build_hero_font.py"
   },
   "dependencies": {
     "@wenhaoqi/wasm_design_utils": "^0.2.0"
