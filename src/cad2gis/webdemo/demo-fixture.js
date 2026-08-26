@@ -68,6 +68,7 @@
       feature_count: collection.features?.length || 0,
     }));
     if (url === "/api/run") return clone(fixture.run);
+    if (url === "/api/layers") return clone({ layers: layerDescriptors });
     const layerMatch = url.match(/^\/api\/layers\/([^/]+)\/local-geojson$/);
     if (layerMatch) {
       const name = decodeURIComponent(layerMatch[1]);
