@@ -43,6 +43,7 @@ from .contracts import ReaderCapability, ReaderUnavailableError
 _PYTHON_PATH_ENV = "CAD2GIS_LIBREDWG_PYTHON_PATH"
 _LIBRARY_ENV = "CAD2GIS_LIBREDWG_LIBRARY"
 _LEGACY_LIBRARY_ENV = "CAD2GIS_LIBREDWG_DLL"
+_OS_NAME = os.name
 
 _BINDING_EXPORTS = (
     "Dwg_Data",
@@ -198,7 +199,7 @@ def _library_candidates() -> tuple[str, ...]:
         configured = os.environ.get(_LEGACY_LIBRARY_ENV)
     if configured is not None:
         return (configured,)
-    if os.name == "nt":
+    if _OS_NAME == "nt":
         return (
             "C:/Program Files/LibreDWG/libredwg.dll",
             "C:/libredwg/libredwg.dll",
@@ -227,7 +228,7 @@ def _discover_library() -> str | None:
     for candidate in _library_candidates():
         if Path(candidate).is_file():
             return candidate
-        if os.name == "nt" and candidate == "libredwg.dll":
+        if _OS_NAME == "nt" and candidate == "libredwg.dll":
             return candidate
         if Path(candidate).name == candidate:
             found = ctypes.util.find_library("redwg")
@@ -252,7 +253,7 @@ def _explicit_library_platform_mismatch(library: str) -> bool:
     if configured is None or configured != library:
         return False
     name = Path(library).name.casefold()
-    if os.name == "nt":
+    if _OS_NAME == "nt":
         return ".so" in name or name.endswith(".dylib")
     if sys.platform == "darwin":
         return name.endswith(".dll") or ".so" in name
@@ -342,7 +343,7 @@ def _release_native_handle(handle) -> None:
         if not raw_handle:
             return
         try:
-            if os.name == "nt":
+            if _OS_NAME == "nt":
                 free_library = getattr(_ctypes, "FreeLibrary", None)
                 if free_library is not None:
                     free_library(raw_handle)
@@ -378,7 +379,7 @@ def _require_libredwg_unlocked() -> None:
 
 
 def _allocator_library() -> str | None:
-    if os.name == "nt":
+    if _OS_NAME == "nt":
         return "msvcrt"
     return ctypes.util.find_library("c")
 

@@ -178,7 +178,7 @@ def test_bare_explicit_library_override_is_passed_to_cdll(
     monkeypatch.delenv("CAD2GIS_LIBREDWG_LIBRARY", raising=False)
     monkeypatch.delenv("CAD2GIS_LIBREDWG_DLL", raising=False)
     monkeypatch.setenv(environment_name, "custom-redwg.dll")
-    monkeypatch.setattr(libredwg.os, "name", "nt")
+    monkeypatch.setattr(libredwg, "_OS_NAME", "nt")
     monkeypatch.setattr(
         libredwg.ctypes.util, "find_library", lambda _name: "unrelated-system-redwg"
     )
@@ -199,7 +199,7 @@ def test_windows_default_library_uses_bare_path_candidate(
 
     monkeypatch.delenv("CAD2GIS_LIBREDWG_LIBRARY", raising=False)
     monkeypatch.delenv("CAD2GIS_LIBREDWG_DLL", raising=False)
-    monkeypatch.setattr(libredwg.os, "name", "nt")
+    monkeypatch.setattr(libredwg, "_OS_NAME", "nt")
     monkeypatch.setattr(libredwg.Path, "is_file", lambda _path: False)
     monkeypatch.setattr(libredwg.ctypes.util, "find_library", lambda _name: None)
 
@@ -290,7 +290,7 @@ def test_capability_rejects_loadable_library_without_required_symbols(
     monkeypatch.setattr(
         libredwg, "_discover_library", lambda: "wrong-libredwg"
     )
-    monkeypatch.setattr(libredwg.os, "name", "nt")
+    monkeypatch.setattr(libredwg, "_OS_NAME", "nt")
     monkeypatch.setattr(libredwg.ctypes.util, "find_library", lambda _name: None)
     monkeypatch.setattr(libredwg.ctypes, "CDLL", fake_cdll)
     monkeypatch.setattr(_ctypes, "FreeLibrary", lambda _handle: None, raising=False)
@@ -327,7 +327,7 @@ def test_native_initialization_releases_handles_on_symbol_failure(
     monkeypatch.setattr(
         libredwg, "_discover_library", lambda: "wrong-libredwg"
     )
-    monkeypatch.setattr(libredwg.os, "name", "nt")
+    monkeypatch.setattr(libredwg, "_OS_NAME", "nt")
     monkeypatch.setattr(libredwg.ctypes.util, "find_library", lambda _name: None)
     monkeypatch.setattr(libredwg.ctypes, "CDLL", fake_cdll)
     monkeypatch.setattr(_ctypes, "FreeLibrary", close_calls.append, raising=False)
@@ -473,7 +473,7 @@ def test_windows_native_initialization_uses_msvcrt_and_rolls_back(
 
     monkeypatch.setattr(libredwg, "_load_python_bindings", lambda: object())
     monkeypatch.setattr(libredwg, "_discover_library", lambda: "libredwg-test")
-    monkeypatch.setattr(libredwg.os, "name", "nt")
+    monkeypatch.setattr(libredwg, "_OS_NAME", "nt")
     monkeypatch.setattr(libredwg.ctypes.util, "find_library", lambda _name: None)
     monkeypatch.setattr(libredwg.ctypes, "CDLL", fake_cdll)
     monkeypatch.setattr(libredwg, "_libdwg", None)
