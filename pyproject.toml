@@ -46,7 +46,7 @@ include = ["cad2gis*"]
 namespaces = true
 
 [tool.setuptools.package-data]
-cad2gis = ["webdemo/*.html", "webdemo/*.css", "webdemo/*.js"]
+cad2gis = ["webdemo/*.html", "webdemo/*.css", "webdemo/*.js", "webdemo/*.json", "webdemo/assets/*.svg", "webdemo/assets/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
