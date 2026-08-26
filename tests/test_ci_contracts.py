@@ -28,6 +28,7 @@ def test_pages_cd_builds_only_the_verified_site_directory() -> None:
         encoding="utf-8"
     )
     assert "python tools/build_webdemo.py --output _site" in workflow
+    assert '- "pyproject.toml"' in workflow
     assert "path: _site" in workflow
     assert "path: src/cad2gis/webdemo" not in workflow
     assert "actions/upload-pages-artifact@v5" in workflow
