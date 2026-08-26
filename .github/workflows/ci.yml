@@ -62,7 +62,11 @@ jobs:
         run: micromamba run -n cad2gis-ci python -m compileall -q src/cad2gis plugins/cad2gis-agent/scripts
 
       - name: Check WebDemo JavaScript
-        run: node --check src/cad2gis/webdemo/app.js && node --check src/cad2gis/webdemo/demo-fixture.js
+        run: node --check src/cad2gis/webdemo/app.js && node --check src/cad2gis/webdemo/demo-fixture.js && node --check tools/build_hero_assets.mjs
+
+      - name: Generate repo-native SVG geometry
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: npm ci && npm run build:hero
 
       - name: Run contract and regression tests
         env:

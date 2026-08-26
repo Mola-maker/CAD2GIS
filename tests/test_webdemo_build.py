@@ -23,20 +23,30 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
         result = builder.build_webdemo(destination)
         assert result["contains_project_data"] is True
         assert result["contains_source_binaries"] is False
-        assert result["local_assets"] == [
+        assert result["local_assets"] == sorted([
             "assets/app.js",
             "assets/demo-fixture.js",
+            "assets/hero-evidence-graph.svg",
+            "assets/hero-stickers.svg",
+            "assets/hero-tunnel.svg",
+            "assets/hero-motion.js",
             "assets/styles.css",
-        ]
-        assert result["files"] == [
+        ])
+        assert result["files"] == sorted([
             ".cad2gis-webdemo-build",
             ".nojekyll",
             "assets/app.js",
             "assets/demo-data.json",
             "assets/demo-fixture.js",
+            "assets/hero-evidence-graph.svg",
+            "assets/hero-geometry.json",
+            "assets/hero-grid.svg",
+            "assets/hero-motion.js",
+            "assets/hero-stickers.svg",
+            "assets/hero-tunnel.svg",
             "assets/styles.css",
             "index.html",
-        ]
+        ])
         assert (destination / "assets" / "app.js").is_file()
         assert (destination / "assets" / "demo-data.json").is_file()
         assert not any(
