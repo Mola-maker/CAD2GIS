@@ -21,7 +21,8 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
     destination = ROOT / f".pytest-webdemo-build-{tmp_path.name}"
     try:
         result = builder.build_webdemo(destination)
-        assert result["contains_project_data"] is False
+        assert result["contains_project_data"] is True
+        assert result["contains_source_binaries"] is False
         assert result["local_assets"] == [
             "assets/app.js",
             "assets/demo-fixture.js",
@@ -31,11 +32,13 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             ".cad2gis-webdemo-build",
             ".nojekyll",
             "assets/app.js",
+            "assets/demo-data.json",
             "assets/demo-fixture.js",
             "assets/styles.css",
             "index.html",
         ]
         assert (destination / "assets" / "app.js").is_file()
+        assert (destination / "assets" / "demo-data.json").is_file()
         assert not any(
             path.suffix.casefold() in builder.FORBIDDEN_SUFFIXES
             for path in destination.rglob("*")

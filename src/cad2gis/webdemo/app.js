@@ -226,7 +226,8 @@ const refreshPreview = () => {
   similarity = fitSimilarity(controls);
   for (const layer of previewLayers.values()) worldMap.removeLayer(layer);
   previewLayers.clear();
-  if (!similarity) {
+  const nominalPreview = !similarity && runSummary?.demo?.nominal_map_preview;
+  if (!similarity && !nominalPreview) {
     $("#fit-model").textContent = "至少需要 2 个训练点进行预览";
     $("#fit-rmse").textContent = "—";
     return;
@@ -238,7 +239,9 @@ const refreshPreview = () => {
       feature.getGeometry()?.applyTransform((input, output, stride) => {
         const target = output || input;
         for (let i = 0; i < input.length; i += stride) {
-          const [x, y] = similarity.apply([input[i], input[i + 1]]);
+          const [x, y] = similarity
+            ? similarity.apply([input[i], input[i + 1]])
+            : [input[i], input[i + 1]];
           target[i] = x;
           target[i + 1] = y;
           for (let j = 2; j < stride; j += 1) target[i + j] = input[i + j];
@@ -254,8 +257,12 @@ const refreshPreview = () => {
     worldMap.addLayer(layer);
     previewLayers.set(name, layer);
   }
-  $("#fit-model").textContent = `相似变换 · 比例 ${similarity.scale.toFixed(6)} · 旋转 ${(similarity.rotation * 180 / Math.PI).toFixed(3)}°`;
-  $("#fit-rmse").textContent = `${similarity.rmse.toFixed(3)} m（Web Mercator 预览）`;
+  $("#fit-model").textContent = similarity
+    ? `相似变换 · 比例 ${similarity.scale.toFixed(6)} · 旋转 ${(similarity.rotation * 180 / Math.PI).toFixed(3)}°`
+    : "名义 EPSG:3857 预览（未证明绝对精度）";
+  $("#fit-rmse").textContent = similarity
+    ? `${similarity.rmse.toFixed(3)} m（Web Mercator 预览）`
+    : "—（请使用控制点验证）";
   const extents = [...previewLayers.values()].map((layer) => layer.getSource().getExtent());
   if (extents.length) {
     const extent = extents.reduce((acc, value) => ol.extent.extend(acc, value), ol.extent.createEmpty());
@@ -645,7 +652,8 @@ const connectSocket = () => {
     $("#connection-label").textContent = "静态演示";
     terminalEvent(
       "warn",
-      "当前为合成交互演示；真实 DWG 读取、MCP 和 GeoPackage 生成必须在本地运行",
+      window.CAD2GIS_DEMO.publicationBoundary
+        || "当前为静态派生数据演示；真实 DWG 读取、MCP 和 GeoPackage 生成必须在本地运行",
     );
     return;
   }

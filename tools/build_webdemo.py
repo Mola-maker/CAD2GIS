@@ -11,7 +11,13 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = REPOSITORY_ROOT / "src" / "cad2gis" / "webdemo"
-PUBLIC_FILES = ("index.html", "styles.css", "app.js", "demo-fixture.js")
+PUBLIC_FILES = (
+    "index.html",
+    "styles.css",
+    "app.js",
+    "demo-fixture.js",
+    "demo-data.json",
+)
 BUILD_SENTINEL = ".cad2gis-webdemo-build"
 BUILD_SENTINEL_VALUE = "cad2gis.webdemo_build.v1\n"
 FORBIDDEN_SUFFIXES = {
@@ -44,7 +50,8 @@ def _assert_source_boundary() -> None:
     fixture = (SOURCE_ROOT / "demo-fixture.js").read_text(encoding="utf-8")
     required_markers = (
         "window.CAD2GIS_DEMO",
-        "公开页面仅含合成证据",
+        "HUTABOHU_DERIVED_FIXTURE",
+        "公开页面仅含 Hutabohu 真实转换的筛选派生证据",
         "RELATIVE_OSM_REFERENCE_ONLY",
     )
     missing_markers = [value for value in required_markers if value not in fixture]
@@ -53,6 +60,24 @@ def _assert_source_boundary() -> None:
             "Synthetic demo boundary markers are missing: "
             + ", ".join(missing_markers)
         )
+    try:
+        data = json.loads((SOURCE_ROOT / "demo-data.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("Hutabohu WebDemo data is not valid JSON") from exc
+    if data.get("provenance", {}).get("fixture_kind") != "HUTABOHU_DERIVED_FIXTURE":
+        raise ValueError("WebDemo data must be the reviewed Hutabohu fixture")
+    serialized = json.dumps(data, ensure_ascii=False)
+    forbidden_markers = (
+        "E:\\",
+        "C:\\",
+        "/home/",
+        "delivery.gpkg",
+        "evidence.gpkg",
+        "source.gpkg",
+    )
+    leaked = [value for value in forbidden_markers if value in serialized]
+    if leaked:
+        raise ValueError("WebDemo data contains private source markers: " + ", ".join(leaked))
 
 
 def build_webdemo(destination: Path) -> dict[str, object]:
@@ -80,7 +105,7 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     )
 
     shutil.copy2(SOURCE_ROOT / "index.html", target / "index.html")
-    for name in ("styles.css", "app.js", "demo-fixture.js"):
+    for name in ("styles.css", "app.js", "demo-fixture.js", "demo-data.json"):
         shutil.copy2(SOURCE_ROOT / name, assets / name)
     (target / ".nojekyll").write_text("", encoding="utf-8")
 
@@ -101,7 +126,10 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     )
     expected = sorted(
         [BUILD_SENTINEL, ".nojekyll", "index.html"]
-        + [f"assets/{name}" for name in ("styles.css", "app.js", "demo-fixture.js")]
+        + [
+            f"assets/{name}"
+            for name in ("styles.css", "app.js", "demo-fixture.js", "demo-data.json")
+        ]
     )
     if files != expected:
         raise ValueError(f"Unexpected WebDemo artifact set: {files}")
@@ -110,7 +138,8 @@ def build_webdemo(destination: Path) -> dict[str, object]:
         "destination": str(target),
         "files": files,
         "local_assets": local_assets,
-        "contains_project_data": False,
+        "contains_project_data": True,
+        "contains_source_binaries": False,
     }
 
 
