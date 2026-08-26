@@ -94,9 +94,18 @@ def get_capabilities() -> dict[str, Any]:
 
 
 def _roots() -> tuple[Path, ...]:
-    raw = os.environ.get("CAD2GIS_PROJECT_ROOTS") or os.environ.get("CAD2GIS_PROJECT_ROOT")
-    values = raw.split(os.pathsep) if raw else [str(Path.cwd())]
-    return tuple(Path(value).expanduser().resolve() for value in values if value.strip())
+    values: list[str] = []
+    for name in ("CAD2GIS_PROJECT_ROOTS", "CAD2GIS_PROJECT_ROOT"):
+        raw = os.environ.get(name, "")
+        values.extend(part for part in raw.split(os.pathsep) if part.strip())
+    if not values:
+        values.append(str(Path.cwd()))
+    roots: list[Path] = []
+    for value in values:
+        root = Path(value).expanduser().resolve()
+        if root not in roots:
+            roots.append(root)
+    return tuple(roots)
 
 
 def _path(value: str | Path, *, must_exist: bool = True) -> Path:
