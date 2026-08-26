@@ -13,7 +13,9 @@ def test_cross_platform_ci_uses_native_gis_runtime() -> None:
     assert "mamba-org/setup-micromamba@v3" in workflow
     assert "gdal=3.10.*" in workflow
     assert "pyproj=3.7.*" in workflow
-    assert workflow.count("shell: micromamba-shell {0}") == 7
+    assert workflow.count("shell: ${{ matrix.shell }}") == 7
+    assert 'shell: "bash -el {0}"' in workflow
+    assert 'shell: "pwsh"' in workflow
     for value in (
         'os: ubuntu-latest\n            python: "3.11"',
         'os: ubuntu-latest\n            python: "3.12"',
@@ -32,7 +34,7 @@ def test_pages_cd_builds_only_the_verified_site_directory() -> None:
     assert '- "env/environment.yml"' in workflow
     assert "mamba-org/setup-micromamba@v3" in workflow
     assert "environment-file: env/environment.yml" in workflow
-    assert "shell: micromamba-shell {0}" in workflow
+    assert "shell: bash -el {0}" in workflow
     assert "path: _site" in workflow
     assert "path: src/cad2gis/webdemo" not in workflow
     assert "actions/upload-pages-artifact@v5" in workflow
