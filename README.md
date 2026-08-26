@@ -261,8 +261,9 @@ python -m pytest tests/test_apd_test_compatibility.py -q
 ```
 
 仓库 CI 在 Ubuntu/Python 3.11、Ubuntu/Python 3.12、Windows/Python 3.12
-和 macOS/Python 3.12 上分别执行安装、Ruff、Python 编译、WebDemo JavaScript
-语法、MCP/插件契约和完整 pytest 回归。Pages CD 会重新验证浏览器契约，使用
+和 macOS/Python 3.12 上用 Micromamba 创建包含 GDAL/PROJ 的原生 GIS runtime，
+再分别执行安装、锁版 Ruff、Python 编译、WebDemo JavaScript 语法、MCP/插件
+契约和完整 pytest 回归。Pages CD 会重新验证浏览器契约，使用
 `tools/build_webdemo.py` 构建严格限定的 `_site`，只发布合成 HTML/CSS/JS，拒绝
 DWG、DXF、GeoPackage、QGIS 工程或审查数据库进入公开 artifact。
 
