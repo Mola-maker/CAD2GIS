@@ -48,6 +48,8 @@ jobs:
             scipy>=1.10
             shapely=2.1.*
             pillow>=11,<13
+            fonttools=4.63.*
+            brotli-python=1.1.*
           cache-environment: true
           cache-downloads: true
           init-shell: none
