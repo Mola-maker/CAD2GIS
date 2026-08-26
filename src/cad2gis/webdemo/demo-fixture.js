@@ -6,7 +6,7 @@
   const FIXTURE_KIND = "HUTABOHU_DERIVED_FIXTURE";
   const PUBLICATION_BOUNDARY = "公开页面仅含 Hutabohu 真实转换的筛选派生证据，不包含任何 DWG/GPKG 原始文件";
   const fixtureUrl = new URL(
-    "./demo-data.json?v=hutabohu-20260826",
+    "./demo-data.json?v=hutabohu-20260826-layers",
     document.currentScript?.src || location.href,
   );
   let fixturePromise;
