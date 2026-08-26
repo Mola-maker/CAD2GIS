@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import tomllib
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,6 +14,14 @@ from cad2gis.agent_mcp import get_capabilities
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "cad2gis-agent"
+
+
+def test_clean_runner_dependencies_are_explicit_and_lint_is_pinned() -> None:
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = project["project"]["dependencies"]
+    test_dependencies = project["project"]["optional-dependencies"]["test"]
+    assert any(re.match(r"pyproj(?:[<>=!~].*)?$", item) for item in dependencies)
+    assert "ruff==0.12.12" in test_dependencies
 
 
 def _json(path: Path) -> dict[str, object]:
