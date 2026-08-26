@@ -15,7 +15,8 @@ def test_cross_platform_ci_uses_native_gis_runtime() -> None:
     assert "pyproj=3.7.*" in workflow
     assert "init-shell: none" in workflow
     assert "shell: ${{ matrix.shell }}" not in workflow
-    assert workflow.count("micromamba run -n cad2gis-ci") == 7
+    assert workflow.count("micromamba run -n cad2gis-ci") == 8
+    assert "python tools/build_hero_font.py" in workflow
     for value in (
         'os: ubuntu-latest\n            python: "3.11"',
         'os: ubuntu-latest\n            python: "3.12"',

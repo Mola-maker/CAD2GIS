@@ -10,6 +10,7 @@ on:
       - "src/cad2gis/webdemo/**"
       - "tools/build_webdemo.py"
       - "tools/build_hero_assets.mjs"
+      - "tools/build_hero_font.py"
       - "package.json"
       - "package-lock.json"
       - "tests/test_webdemo_build.py"
@@ -49,7 +50,7 @@ jobs:
         shell: bash
 
       - name: Generate repo-native SVG geometry
-        run: npm run build:hero
+        run: npm run build:hero && micromamba run -n cad2gis python tools/build_hero_font.py
         shell: bash
 
       - name: Verify browser scripts and contracts

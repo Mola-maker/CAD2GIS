@@ -48,6 +48,8 @@ jobs:
             scipy>=1.10
             shapely=2.1.*
             pillow>=11,<13
+            fonttools=4.63.*
+            brotli-python=1.1.*
           cache-environment: true
           cache-downloads: true
           init-shell: none
@@ -59,14 +61,14 @@ jobs:
         run: micromamba run -n cad2gis-ci python -m ruff check src tests tools plugins/cad2gis-agent/scripts
 
       - name: Compile Python modules
-        run: micromamba run -n cad2gis-ci python -m compileall -q src/cad2gis plugins/cad2gis-agent/scripts
+        run: micromamba run -n cad2gis-ci python -m compileall -q src/cad2gis plugins/cad2gis-agent/scripts tools/build_webdemo.py tools/build_hero_font.py
 
       - name: Check WebDemo JavaScript
         run: node --check src/cad2gis/webdemo/app.js && node --check src/cad2gis/webdemo/demo-fixture.js && node --check tools/build_hero_assets.mjs
 
       - name: Generate repo-native SVG geometry
         if: runner.os == 'Linux' && matrix.python == '3.12'
-        run: npm ci && npm run build:hero
+        run: npm ci && npm run build:hero && micromamba run -n cad2gis-ci python tools/build_hero_font.py
 
       - name: Run contract and regression tests
         env:

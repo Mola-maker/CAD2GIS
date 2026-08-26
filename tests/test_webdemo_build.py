@@ -25,6 +25,7 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
         assert result["contains_source_binaries"] is False
         assert result["local_assets"] == sorted([
             "assets/app.js",
+            "assets/cad2gis-hero-display.woff2",
             "assets/demo-fixture.js",
             "assets/hero-evidence-graph.svg",
             "assets/hero-stickers.svg",
@@ -36,6 +37,7 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             ".cad2gis-webdemo-build",
             ".nojekyll",
             "assets/app.js",
+            "assets/cad2gis-hero-display.woff2",
             "assets/demo-data.json",
             "assets/demo-fixture.js",
             "assets/hero-evidence-graph.svg",
