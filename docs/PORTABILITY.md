@@ -11,7 +11,8 @@ $env:CAD2GIS_READER_BACKEND = "autocad"   # Windows
 ```
 
 Use `CAD2GIS_LIBREDWG_DLL` for an explicit LibreDWG library path or
-`CAD2GIS_ACCORECONSOLE` for an explicit Core Console executable. Run
+`CAD2GIS_LIBREDWG_PYTHON_PATH` for bindings outside the active interpreter's
+normal import paths. Use `CAD2GIS_ACCORECONSOLE` for an explicit Core Console executable. Run
 `cad2gis doctor --json` to inspect the selected runtime before conversion.
 
 ## Runtime

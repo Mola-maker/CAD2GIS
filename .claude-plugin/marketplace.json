@@ -1,0 +1,16 @@
+{
+  "name": "cad2gis-tools",
+  "owner": {
+    "name": "CAD2GIS contributors"
+  },
+  "description": "Evidence-first CAD conversion, registration, validation, and GIS delivery tools.",
+  "plugins": [
+    {
+      "name": "cad2gis-agent",
+      "source": "./plugins/cad2gis-agent",
+      "description": "Source-bound DWG conversion and geospatial review over MCP.",
+      "category": "development",
+      "tags": ["cad", "gis", "mcp", "geopackage"]
+    }
+  ]
+}

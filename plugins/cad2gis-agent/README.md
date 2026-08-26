@@ -39,6 +39,24 @@ The repository plugin works directly in Codex. For Claude Code, Cursor, VS
 Code/GitHub Copilot, or a generic MCP host, copy the matching file from
 [`clients`](clients) and replace `<ABSOLUTE_PROJECT_ROOT>`.
 
+Every stdio registration resolves the installed `cad2gis-agent-mcp` console
+entry point rather than a repository-relative Python file. This avoids drive,
+user-name, shell, plugin-cache, and `python`/`python3` differences. If the
+command is not found, install the runtime with the same Python environment used
+by the host, then restart that host.
+
+The recommended cross-platform runtime install is:
+
+```text
+uv tool install --python 3.12 --force ".[mcp,review]"
+```
+
+From a machine without a checkout, install from the public repository with
+`uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"`.
+Confirm `cad2gis-agent-mcp` is on `PATH` before installing or enabling the
+plugin. Plugin registration intentionally does not download Python packages or
+silently select another interpreter.
+
 All stdio clients invoke the installed `cad2gis-agent-mcp` entry point. Local
 HTTP uses `http://127.0.0.1:8768/mcp`; expose it beyond loopback only through an
 authenticated TLS reverse proxy.

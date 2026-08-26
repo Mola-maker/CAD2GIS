@@ -1,5 +1,8 @@
 # CAD2GIS
 
+[![CAD2GIS CI](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml)
+[![Web Demo](https://github.com/Mola-maker/CAD2GIS/actions/workflows/pages.yml/badge.svg)](https://mola-maker.github.io/CAD2GIS/?demo=1)
+
 CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Python API、
 Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
 canonical 流水线，不为某张测试图维护硬编码分支。
@@ -31,6 +34,29 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 
 插件是 canonical Python 流水线的薄接入层。没有安装 GIS runtime、DWG reader
 或没有授权项目根目录时，插件会失败关闭，而不会输出伪成功 GeoPackage。
+
+克隆仓库并安装 Python runtime 后，可按客户端注册：
+
+```powershell
+# 先把 canonical CLI/MCP 安装成隔离工具（Windows/macOS/Linux 相同）
+uv tool install --python 3.12 --force ".[mcp,review]"
+
+# Codex：把仓库 marketplace 加入一次，然后安装插件
+codex plugin marketplace add "<CAD2GIS_REPOSITORY_ROOT>"
+codex plugin add cad2gis-agent@cad2gis
+
+# Claude Code：从 GitHub marketplace 安装
+claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools
+```
+
+若不保留源码 checkout，也可在仓库公开后直接安装：
+`uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"`。
+`Get-Command cad2gis-agent-mcp`（Windows）或 `command -v cad2gis-agent-mcp`
+（macOS/Linux）必须能找到入口；否则 agent 只能看到插件清单，无法启动 MCP。
+
+Cursor 与 VS Code/Copilot 使用
+[`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients) 中对应模板。
 
 ## 架构
 
@@ -144,6 +170,10 @@ cad2gis review "<RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
 坐标传送，不读取或上传真实 DWG，也不会伪装成已执行转换。例如：
 `http://127.0.0.1:8765/?demo=1`。真实产物仍必须由本地 CLI/MCP 流水线生成。
 
+公开的合成演示由 GitHub Pages 发布：
+[ULTRA CAD2GIS Web Demo](https://mola-maker.github.io/CAD2GIS/?demo=1)。该页面只含
+`demo-fixture.js` 中的合成对象；真实 CAD/GIS 处理仍在本地运行。
+
 左侧 ToC 将源事实、语义映射、空间配准、独立校验和 GIS 交付分开显示；右侧
 “证据 / 控制台 / AI 协作”标签只记录有效审查动作，并提供目标坐标、转换命令和
 受约束 AI 提示词的复制功能。
@@ -229,6 +259,12 @@ python -m pytest -q
 $env:CAD2GIS_FULL_DWG_TESTS = "1"
 python -m pytest tests/test_apd_test_compatibility.py -q
 ```
+
+仓库 CI 在 Ubuntu/Python 3.11、Ubuntu/Python 3.12、Windows/Python 3.12
+和 macOS/Python 3.12 上分别执行安装、Ruff、Python 编译、WebDemo JavaScript
+语法、MCP/插件契约和完整 pytest 回归。Pages CD 会重新验证浏览器契约，使用
+`tools/build_webdemo.py` 构建严格限定的 `_site`，只发布合成 HTML/CSS/JS，拒绝
+DWG、DXF、GeoPackage、QGIS 工程或审查数据库进入公开 artifact。
 
 仓库目录：
 

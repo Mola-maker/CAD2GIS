@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "cad2gis": {
-      "cwd": ".",
-      "command": "python",
+      "command": "cad2gis-agent-mcp",
       "args": [
-        "./scripts/cad2gis_mcp.py",
         "--transport",
         "stdio"
       ],

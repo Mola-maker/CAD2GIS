@@ -14,6 +14,18 @@ dependencies:
   - numpy>=1.24
   - scipy>=1.10
   - shapely=2.1.*
+  - pillow>=11,<13
+  - fastapi>=0.115,<1
+  - uvicorn>=0.30,<1
+  - websockets>=13,<16
+  # Keep ABI-sensitive transitive dependencies in the Conda layer. This
+  # prevents stale wheels from a previous Python minor from surviving an
+  # in-place runtime update.
+  - cffi=2.1.*
   - pytest=9.0.*
   - ruff=0.12.*
   - basedpyright=1.29.*
+  - pip:
+      # Optional agent/plugin control plane.  It does not replace the pinned
+      # GDAL/QGIS conversion runtime or enter reader/geometry calculations.
+      - mcp>=1.0,<2

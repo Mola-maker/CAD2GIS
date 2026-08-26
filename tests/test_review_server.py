@@ -313,6 +313,7 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
 
     page = client.get("/")
     assert page.status_code == 200
+    assert '<meta name="theme-color" content="#f5f8f7">' in page.text
     assert 'aria-label="转换目录"' in page.text
     assert 'data-tab="console"' in page.text
     assert 'id="copy-command"' in page.text
@@ -331,4 +332,7 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
 
     stylesheet = client.get("/assets/styles.css")
     assert stylesheet.status_code == 200
+    assert "color-scheme: light" in stylesheet.text
+    assert "--accent: #006c67" in stylesheet.text
+    assert "color-scheme: dark" not in stylesheet.text
     assert "prefers-reduced-motion" in stylesheet.text

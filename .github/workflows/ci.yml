@@ -1,0 +1,67 @@
+name: CAD2GIS CI
+
+on:
+  push:
+    branches: [main, robustness]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: "3.11"
+          - os: ubuntu-latest
+            python: "3.12"
+          - os: windows-latest
+            python: "3.12"
+          - os: macos-latest
+            python: "3.12"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package and quality tools
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[mcp,review,test]"
+
+      - name: Lint Python
+        run: python -m ruff check src tests tools plugins/cad2gis-agent/scripts
+
+      - name: Compile Python modules
+        run: python -m compileall -q src/cad2gis plugins/cad2gis-agent/scripts
+
+      - name: Check WebDemo JavaScript
+        run: node --check src/cad2gis/webdemo/app.js && node --check src/cad2gis/webdemo/demo-fixture.js
+
+      - name: Run contract and regression tests
+        env:
+          CAD2GIS_FULL_DWG_TESTS: "0"
+        run: python -m pytest -q
+
+      - name: Build Python distribution
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python -m build
+
+      - name: Build data-free WebDemo artifact
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python tools/build_webdemo.py --output _site
