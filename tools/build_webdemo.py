@@ -20,6 +20,7 @@ PUBLIC_FILES = (
     "demo-data.json",
 )
 PUBLIC_ASSET_DIR = SOURCE_ROOT / "assets"
+HERO_ASSET_SUFFIXES = {".svg", ".json", ".woff2"}
 BUILD_SENTINEL = ".cad2gis-webdemo-build"
 BUILD_SENTINEL_VALUE = "cad2gis.webdemo_build.v1\n"
 FORBIDDEN_SUFFIXES = {
@@ -84,7 +85,7 @@ def _assert_source_boundary() -> None:
         raise ValueError("WebDemo hero assets are missing")
     hero_assets = sorted(
         path for path in PUBLIC_ASSET_DIR.rglob("*")
-        if path.is_file() and path.suffix.casefold() in {".svg", ".json"}
+        if path.is_file() and path.suffix.casefold() in HERO_ASSET_SUFFIXES
     )
     if not hero_assets:
         raise ValueError("WebDemo hero asset directory is empty")
@@ -96,7 +97,7 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     _assert_source_boundary()
     hero_assets = sorted(
         path for path in PUBLIC_ASSET_DIR.rglob("*")
-        if path.is_file() and path.suffix.casefold() in {".svg", ".json"}
+        if path.is_file() and path.suffix.casefold() in HERO_ASSET_SUFFIXES
     )
     target = destination.expanduser().resolve()
     if target == REPOSITORY_ROOT or REPOSITORY_ROOT not in target.parents:

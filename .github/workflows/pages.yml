@@ -10,6 +10,7 @@ on:
       - "src/cad2gis/webdemo/**"
       - "tools/build_webdemo.py"
       - "tools/build_hero_assets.mjs"
+      - "tools/build_hero_font.py"
       - "package.json"
       - "package-lock.json"
       - "tests/test_webdemo_build.py"

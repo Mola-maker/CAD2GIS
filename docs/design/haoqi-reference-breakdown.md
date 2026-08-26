@@ -70,3 +70,10 @@ SVG 由本项目脚本生成或手写为 repo-native vector；不下载/嵌入�
 - `StageCard` → `Stage=01..05`，文案和指标绑定为文本属性。
 - `StatusPill` → `Tone=teal|amber|violet|ink`，`State=default|active`。
 - 代码里的 CSS motion 是最终运行时真相；Figma motion 记录用于审查和 handoff，不把 Figma 原型当作浏览器运行时。
+
+## 7. Hero 字体与滚动阻尼
+
+- `CAD2GIS Hero Display` 是本项目自研的窄字面、硬切角几何字形，仅覆盖 Hero 使用的拉丁大写、数字和标点；中文回退到 `Noto Sans SC` / `Microsoft YaHei`，避免把英文展示字形错误地套到中文正文。
+- 正文使用中文系统无衬线字体；导航、状态、指标和证据标签使用等宽 UI 字体；Hero 标题单独使用 `CAD2GIS Hero Display`，形成“叙事 / 数据 / 控制”三层字级。
+- Hero 的滚动变量不直接跟随 `scrollY`，而是用指数阻尼插值追踪目标进度；网格、Hero 视觉体和视差各自使用低幅度位移，保留原生滚动可访问性，不接管滚轮惯性。
+- `prefers-reduced-motion` 会关闭自研字体之外的所有动画、视差和 smooth scroll，并保留最终可读数值。
