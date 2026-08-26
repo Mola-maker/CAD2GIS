@@ -4,11 +4,84 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f8f7">
-  <title>CAD2GIS 空间转化控制台</title>
+  <title>CAD2GIS — 可验证的 GIS 交付</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
   <link rel="stylesheet" href="./assets/styles.css?v=hutabohu-20260826-layers">
 </head>
 <body>
+  <section id="hero-page" class="hero-page" aria-labelledby="hero-title">
+    <div class="hero-grid-layer" aria-hidden="true"></div>
+    <header class="hero-nav">
+      <a class="hero-brand" href="#hero-page" aria-label="CAD2GIS 首页"><span class="hero-brand-mark">C2G</span><span>CAD2GIS <i>/</i> EVIDENCE FIRST</span></a>
+      <nav class="hero-nav-links" aria-label="Landing page navigation">
+        <a href="#product-infinite">PRODUCT INFINITE</a>
+        <a href="#validation-tunnel">VALIDATION</a>
+        <a href="#console-app">LIVE DEMO</a>
+      </nav>
+      <div class="hero-nav-status"><span class="hero-live-dot"></span><span>HUTABOHU / RUN 03</span><b>CONDITIONAL</b></div>
+    </header>
+
+    <div class="hero-viewport">
+      <div class="hero-copy">
+        <p class="hero-overline"><span>01</span> SOURCE FACTS → GIS DELIVERY</p>
+        <h2 id="hero-title">把不可信的<br><em>DWG</em>，变成<br><strong>可验证的 GIS 交付。</strong></h2>
+        <p class="hero-lede">CAD2GIS 从不可变源事实出发，分别验证几何、拓扑、长度和坐标精度，再生成可追溯、可重放的 GeoPackage 交付。</p>
+        <div class="hero-actions"><a class="hero-button hero-button-primary" href="#console-app">打开真实运行演示 <span>↗</span></a><a class="hero-button hero-button-secondary" href="#product-infinite">查看证据链 <span>↓</span></a></div>
+        <p class="hero-guardrail">AI 负责理解与提案，不改写坐标。</p>
+      </div>
+      <div class="hero-visual" data-parallax="0.12">
+        <div class="hero-visual-meta"><span>DERIVED RUN / HUTABOHU</span><span>01—05</span></div>
+        <img src="./assets/hero-evidence-graph.svg" alt="从源事实到 GIS 交付的证据链示意图">
+        <div class="hero-visual-readout"><span>GRAPH STATUS</span><strong>14,702 <small>nodes</small></strong><span>20,074 relationships / replayable</span></div>
+      </div>
+    </div>
+
+    <div class="hero-intro hero-section-width">
+      <p class="hero-overline"><span>02</span> WHY THIS EXISTS</p>
+      <div class="hero-intro-grid"><h3>几何会说真话。<br><span>坐标需要证据。</span></h3><p>一张 CAD 图可以有漂亮的线，也可以有正确的长度，但这并不自动证明它已经处于正确的地理位置。CAD2GIS 把这些声明拆开，让每一次理解、配准和交付都留下可审查的痕迹。</p></div>
+      <div class="hero-intro-note"><span>HUTABOHU REAL DERIVED RUN</span><strong>CONDITIONAL</strong><span>PUBLIC DERIVATIVE ONLY / NO RAW DWG</span></div>
+    </div>
+
+    <section id="product-infinite" class="product-infinite hero-section-width" aria-labelledby="product-infinite-title">
+      <div class="product-heading"><p class="hero-overline"><span>03</span> CRAFT INFINITE PRODUCT</p><h3 id="product-infinite-title">证据不是最后一页报告。<br><span>它是产品的连续表面。</span></h3><p>从第一条源曲线到最后一个交付图层，五个阶段都可以独立阅读、独立校验、独立重放。</p></div>
+      <div class="stage-rail" aria-label="CAD2GIS 五阶段证据链">
+        <div class="stage-rail-line" aria-hidden="true"></div>
+        <article class="stage-card-hero is-active" data-stage-card="source" tabindex="0"><span class="stage-index">01</span><h4>Source facts</h4><p>源实体、样式、标签、SHA-256 与原生曲线事实。</p><span class="stage-data">9,896 ENTITIES</span></article>
+        <article class="stage-card-hero" data-stage-card="semantic" tabindex="0"><span class="stage-index">02</span><h4>Semantic mapping</h4><p>来源绑定的分类，未解析对象不会被伪装成已知资产。</p><span class="stage-data">281 UNRESOLVED</span></article>
+        <article class="stage-card-hero" data-stage-card="registration" tabindex="0"><span class="stage-index">03</span><h4>Registration</h4><p>训练点、独立检查点、相似变换、残差与覆盖度。</p><span class="stage-data">GCP / RESIDUALS</span></article>
+        <article class="stage-card-hero" data-stage-card="validation" tabindex="0"><span class="stage-index">04</span><h4>Independent validation</h4><p>几何、拓扑、长度和坐标精度四条互相独立的检查轨道。</p><span class="stage-data">4 TRACKS</span></article>
+        <article class="stage-card-hero" data-stage-card="delivery" tabindex="0"><span class="stage-index">05</span><h4>GIS delivery</h4><p>GeoPackage、QML、manifest 和证据图，动作可回放。</p><span class="stage-data">1,150 FEATURES</span></article>
+      </div>
+    </section>
+
+    <section class="hero-metrics hero-section-width" aria-label="Hutabohu 真实派生运行指标">
+      <p class="hero-overline"><span>04</span> ONE RUN / MANY PROOFS</p>
+      <div class="metric-grid-hero">
+        <article><strong data-count="9896">0</strong><span>source entities</span><small>immutable inventory</small></article>
+        <article><strong data-count="1150">0</strong><span>delivery features</span><small>8 reviewed layers</small></article>
+        <article><strong data-count="14702">0</strong><span>evidence nodes</span><small>content-addressed graph</small></article>
+        <article><strong data-count="170">0</strong><span>DWG DIMENSION segments</span><small>of 179 cable segments</small></article>
+      </div>
+    </section>
+
+    <section id="validation-tunnel" class="validation-tunnel" aria-labelledby="tunnel-title">
+      <img class="tunnel-art" src="./assets/hero-tunnel.svg" alt="四条独立校验轨道的径向示意图">
+      <div class="tunnel-copy"><p class="hero-overline"><span>05</span> INDEPENDENT CLAIMS</p><h3 id="tunnel-title">几何正确，<br><em>不等于坐标准确。</em></h3><p>我们不会把一个绿色的总分当成全部答案。源几何、拓扑、长度和坐标精度各自拥有证据，各自拥有失败方式。</p><div class="validation-tracks"><span>01 / SOURCE GEOMETRY</span><span>02 / TOPOLOGY</span><span>03 / LENGTH</span><span>04 / COORDINATE ACCURACY</span></div></div>
+    </section>
+
+    <section class="hero-stories hero-section-width" aria-label="产品能力故事">
+      <div class="story-intro"><p class="hero-overline"><span>06</span> THE PRODUCT SURFACE</p><h3>让复杂的转换<br><span>变得可以被复核。</span></h3></div>
+      <div class="story-grid"><article><span>READ</span><h4>先看源事实</h4><p>源坐标、曲线指纹和标签 provenance 保持不可变，审查从事实开始。</p></article><article><span>MAP</span><h4>再提语义</h4><p>AI 可以提案，但每个语义结果都必须回到来源证据和 registry。</p></article><article><span>TEST</span><h4>分开做验证</h4><p>独立的验证轨道让“形状像”与“位置对”不再互相冒充。</p></article><article><span>DELIVER</span><h4>最后交付</h4><p>交付物、清单与证据图一起生成，下一次运行可以重放。</p></article></div>
+    </section>
+
+    <section class="hero-final hero-section-width" aria-labelledby="final-title">
+      <img class="hero-stickers" src="./assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
+      <div class="hero-final-copy"><p class="hero-overline"><span>07</span> OPEN THE RUN</p><h3 id="final-title">把一张图，<br>变成一条可追溯的链。</h3><p>这是 Hutabohu 的真实派生演示。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">进入派生演示 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
+      <div class="hero-final-footer"><span>CAD2GIS / v4 EVIDENCE-FIRST PIPELINE</span><span>EPSG:3857 NOMINAL DOMAIN · ABSOLUTE ACCURACY NOT VERIFIED</span></div>
+    </section>
+  </section>
+
+  <div id="console-app">
   <header class="topbar">
     <div class="brand-lockup">
       <span class="brand-mark" aria-hidden="true">C2G</span>
@@ -164,6 +237,7 @@
       </div>
     </aside>
   </main>
+  </div>
 
   <dialog id="visual-dialog">
     <div class="dialog-head"><div><span class="section-kicker">Multi-scale evidence</span><h2>CAD 多尺度视觉证据</h2></div><button id="close-visual" aria-label="关闭">×</button></div>
@@ -172,6 +246,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
   <script src="./assets/demo-fixture.js?v=hutabohu-20260826-layers"></script>
+  <script type="module" src="./assets/hero-motion.js?v=hero-motion-20260826"></script>
   <script type="module" src="./assets/app.js?v=hutabohu-20260826-layers"></script>
 </body>
 </html>

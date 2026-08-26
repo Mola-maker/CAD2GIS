@@ -1,0 +1,12 @@
+{
+  "name": "cad2gis-webdemo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:hero": "node tools/build_hero_assets.mjs"
+  },
+  "dependencies": {
+    "@wenhaoqi/wasm_design_utils": "^0.2.0"
+  }
+}
