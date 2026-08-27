@@ -7,7 +7,7 @@
   <title>CAD2GIS — 可验证的 GIS 交付</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
   <link rel="preload" href="./assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./assets/styles.css?v=hero-motion-20260827-damping">
+  <link rel="stylesheet" href="./assets/styles.css?v=terminal-replay-20260827">
 </head>
 <body>
   <section id="hero-page" class="hero-page" aria-labelledby="hero-title">
@@ -17,7 +17,7 @@
       <nav class="hero-nav-links" aria-label="Landing page navigation">
         <a href="#product-infinite">PRODUCT INFINITE</a>
         <a href="#validation-tunnel">VALIDATION</a>
-        <a href="#console-app">LIVE DEMO</a>
+        <a href="#process-terminal">RUN REPLAY</a>
       </nav>
       <div class="hero-nav-status"><span class="hero-live-dot"></span><span>HUTABOHU / RUN 03</span><b>CONDITIONAL</b></div>
     </header>
@@ -27,7 +27,7 @@
         <p class="hero-overline"><span>01</span> SOURCE FACTS → GIS DELIVERY</p>
         <h2 id="hero-title">把不可信的<br><em>DWG</em>，变成<br><strong>可验证的 GIS 交付。</strong></h2>
         <p class="hero-lede">CAD2GIS 从不可变源事实出发，分别验证几何、拓扑、长度和坐标精度，再生成可追溯、可重放的 GeoPackage 交付。</p>
-        <div class="hero-actions"><a class="hero-button hero-button-primary" href="#console-app">打开真实运行演示 <span>↗</span></a><a class="hero-button hero-button-secondary" href="#product-infinite">查看证据链 <span>↓</span></a></div>
+        <div class="hero-actions"><a class="hero-button hero-button-primary" href="#process-terminal">播放真实转换过程 <span>↗</span></a><a class="hero-button hero-button-secondary" href="#product-infinite">查看证据链 <span>↓</span></a></div>
         <p class="hero-guardrail">AI 负责理解与提案，不改写坐标。</p>
       </div>
       <div class="hero-visual" data-parallax="0.12">
@@ -75,9 +75,73 @@
       <div class="story-grid"><article><span>READ</span><h4>先看源事实</h4><p>源坐标、曲线指纹和标签 provenance 保持不可变，审查从事实开始。</p></article><article><span>MAP</span><h4>再提语义</h4><p>AI 可以提案，但每个语义结果都必须回到来源证据和 registry。</p></article><article><span>TEST</span><h4>分开做验证</h4><p>独立的验证轨道让“形状像”与“位置对”不再互相冒充。</p></article><article><span>DELIVER</span><h4>最后交付</h4><p>交付物、清单与证据图一起生成，下一次运行可以重放。</p></article></div>
     </section>
 
+    <section id="process-terminal" class="process-terminal hero-section-width" aria-labelledby="process-terminal-title">
+      <div class="process-terminal-heading">
+        <div>
+          <p class="hero-overline"><span>07</span> REPLAY THE RUN</p>
+          <h3 id="process-terminal-title">把工作页，<br><em>播放成一条终端记录。</em></h3>
+        </div>
+        <div class="process-terminal-intro">
+          <p>按真实 Hutabohu 派生运行的证据顺序重放：读取、语义、配准、独立验证与交付。这里展示的是可审查记录，不是假装正在运行的后端。</p>
+          <div class="process-terminal-actions">
+            <button type="button" data-terminal-replay>从头重播 <span aria-hidden="true">↻</span></button>
+            <button type="button" data-terminal-pause disabled aria-pressed="false">暂停</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="process-terminal-shell" data-process-terminal data-state="idle" style="--terminal-progress: 0%">
+        <header class="process-terminal-bar">
+          <div class="process-terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="process-terminal-title"><span>cad2gis://hutabohu/run-03</span><small>DERIVED REPLAY · NOT LIVE EXECUTION</small></div>
+          <span class="process-terminal-state"><i aria-hidden="true"></i><b data-terminal-state>READY</b></span>
+        </header>
+
+        <div class="process-terminal-grid">
+          <div class="process-terminal-window">
+            <div class="process-terminal-command"><span aria-hidden="true">$</span><code>cad2gis convert hutabohu.dwg --crs EPSG:3857 --evidence-first</code></div>
+            <ol class="process-terminal-lines" data-terminal-lines aria-label="Hutabohu 转换回放记录">
+              <li data-terminal-line data-stage="boot" data-delay="180"><time>+00.0s</time><span class="process-terminal-tag">BOOT</span><span>pipeline schema cad2gis.run.v4 · evidence-first mode</span></li>
+              <li data-terminal-line data-stage="source" data-delay="260"><time>+00.2s</time><span class="process-terminal-tag">SRC</span><span>open “APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg”</span></li>
+              <li data-terminal-line data-stage="source" data-delay="320"><time>+00.5s</time><span class="process-terminal-tag ok">PASS</span><span>source SHA-256 <code>557e01413c39…</code> pinned</span></li>
+              <li data-terminal-line data-stage="source" data-delay="360"><time>+00.9s</time><span class="process-terminal-tag ok">READ</span><span>9,896 immutable source entities inventoried</span></li>
+              <li data-terminal-line data-stage="semantic" data-delay="420"><time>+01.4s</time><span class="process-terminal-tag warn">WARN</span><span>semantic registry left 281 entities unresolved for review</span></li>
+              <li data-terminal-line data-stage="registration" data-delay="320"><time>+01.8s</time><span class="process-terminal-tag">REG</span><span>declared coordinate domain EPSG:3857 · nominal direct model</span></li>
+              <li data-terminal-line data-stage="registration" data-delay="390"><time>+02.2s</time><span class="process-terminal-tag warn">WARN</span><span>no surveyed GCP supplied · absolute accuracy not verified</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="360"><time>+02.6s</time><span class="process-terminal-tag ok">PASS</span><span>source geometry 31 / 31 cable curves immutable</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="350"><time>+03.0s</time><span class="process-terminal-tag ok">PASS</span><span>topology check · 0 crossing connections</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="400"><time>+03.4s</time><span class="process-terminal-tag warn">WARN</span><span>route components 21 ≠ segment graph components 1</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="430"><time>+03.9s</time><span class="process-terminal-tag ok">PASS</span><span>DWG DIMENSION verified 170 / 179 spans · max |error| 0.493 m</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="380"><time>+04.4s</time><span class="process-terminal-tag">OUT</span><span>8 reviewed layers · 1,150 delivery features</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="360"><time>+04.8s</time><span class="process-terminal-tag ok">INDEX</span><span>evidence graph 14,702 nodes · 20,074 relationships</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="520"><time>+05.4s</time><span class="process-terminal-tag warn">DONE</span><span>delivery gate → <strong>CONDITIONAL</strong> · review required</span></li>
+            </ol>
+          </div>
+
+          <aside class="process-terminal-rail" aria-label="转换阶段">
+            <p>CURRENT STAGE</p>
+            <ol>
+              <li data-terminal-stage="source"><span>01</span><div><b>READ</b><small>source facts</small></div></li>
+              <li data-terminal-stage="semantic"><span>02</span><div><b>MAP</b><small>semantic registry</small></div></li>
+              <li data-terminal-stage="registration"><span>03</span><div><b>PLACE</b><small>coordinate claim</small></div></li>
+              <li data-terminal-stage="validation"><span>04</span><div><b>TEST</b><small>independent tracks</small></div></li>
+              <li data-terminal-stage="delivery"><span>05</span><div><b>SHIP</b><small>reviewed output</small></div></li>
+            </ol>
+            <div class="process-terminal-fact"><span>PUBLIC BOUNDARY</span><strong>DERIVATIVES ONLY</strong><small>NO RAW DWG / GPKG</small></div>
+          </aside>
+        </div>
+
+        <footer class="process-terminal-footer">
+          <div class="process-terminal-progress" aria-hidden="true"><i></i></div>
+          <p data-terminal-status aria-live="polite">滚动到这里后自动播放，也可以手动重播。</p>
+          <a href="#console-app">进入完整工作台 <span aria-hidden="true">↗</span></a>
+        </footer>
+      </div>
+    </section>
+
     <section class="hero-final hero-section-width" aria-labelledby="final-title">
       <img class="hero-stickers" src="./assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
-      <div class="hero-final-copy"><p class="hero-overline"><span>07</span> OPEN THE RUN</p><h3 id="final-title">把一张图，<br>变成一条可追溯的链。</h3><p>这是 Hutabohu 的真实派生演示。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">进入派生演示 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
+      <div class="hero-final-copy"><p class="hero-overline"><span>08</span> OPEN THE RUN</p><h3 id="final-title">把一张图，<br>变成一条可追溯的链。</h3><p>这是 Hutabohu 的真实派生演示。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">进入派生演示 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
       <div class="hero-final-footer"><span>CAD2GIS / v4 EVIDENCE-FIRST PIPELINE</span><span>EPSG:3857 NOMINAL DOMAIN · ABSOLUTE ACCURACY NOT VERIFIED</span></div>
     </section>
   </section>
@@ -247,7 +311,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
   <script src="./assets/demo-fixture.js?v=hutabohu-20260826-layers"></script>
-  <script type="module" src="./assets/hero-motion.js?v=hero-motion-20260827-damping"></script>
+  <script type="module" src="./assets/hero-motion.js?v=terminal-replay-20260827"></script>
   <script type="module" src="./assets/app.js?v=hutabohu-20260826-layers"></script>
 </body>
 </html>

@@ -17,6 +17,7 @@ def test_cross_platform_ci_uses_native_gis_runtime() -> None:
     assert "shell: ${{ matrix.shell }}" not in workflow
     assert workflow.count("micromamba run -n cad2gis-ci") == 8
     assert "python tools/build_hero_font.py" in workflow
+    assert "node --check src/cad2gis/webdemo/hero-motion.js" in workflow
     for value in (
         'os: ubuntu-latest\n            python: "3.11"',
         'os: ubuntu-latest\n            python: "3.12"',
