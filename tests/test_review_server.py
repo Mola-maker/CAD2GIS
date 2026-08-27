@@ -203,6 +203,15 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     assert 'id="hero-page"' in page
     assert 'data-count="9896"' in page
     assert "assets/hero-evidence-graph.svg" in page
+    assert 'id="process-terminal"' in page
+    assert 'data-process-terminal' in page
+    assert page.count('data-terminal-line data-stage=') == 14
+    assert "DERIVED REPLAY · NOT LIVE EXECUTION" in page
+    assert "9,896 immutable source entities" in page
+    assert "281 entities unresolved" in page
+    assert "170 / 179 spans" in page
+    assert "max |error| 0.493 m" in page
+    assert "1,150 delivery features" in page
     response = client.post("/api/review/features", json={
         "feature": _feature(),
         "expected_revision": 0,
