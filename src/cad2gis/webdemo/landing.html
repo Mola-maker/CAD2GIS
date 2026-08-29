@@ -35,55 +35,43 @@
       </div>
       <svg class="flow-word" viewBox="0 0 1440 560" role="img" aria-labelledby="flow-word-title flow-word-description">
         <title id="flow-word-title">CAD 流向 GIS 的立体管线字形</title>
-        <desc id="flow-word-description">一条连续、柔软的蓝色工程管线组成 CAD 与 GIS 字样，中间由荧光绿色箭头连接。</desc>
+        <desc id="flow-word-description">一条连续、柔软的蓝色工程管线以手写形态组成 cad 与 gis 字样，中间由荧光绿色箭头连接。</desc>
         <defs>
+          <path id="tube-wordline" pathLength="1" d="M267 178 C217 95 92 107 70 276 C49 446 190 490 286 380 M410 206 C347 143 286 210 286 323 C286 428 388 442 425 330 C443 277 450 222 463 160 C459 245 458 339 493 414 M618 209 C555 144 494 213 495 325 C497 427 598 440 631 329 C654 251 653 153 650 74 C650 232 663 351 693 414 M990 209 C923 145 860 211 860 324 C859 427 960 442 1000 328 C1016 282 1028 222 1037 165 C1026 314 1014 444 956 505 C918 546 864 523 868 475 M1101 208 C1092 289 1092 362 1110 414 M1300 206 C1257 150 1169 173 1171 248 C1174 318 1280 294 1280 361 C1280 431 1187 455 1149 401"/>
           <linearGradient id="tube-gradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#eef1ff"/>
-            <stop offset="0.18" stop-color="#9da8ff"/>
-            <stop offset="0.52" stop-color="#2f54e8"/>
-            <stop offset="0.82" stop-color="#152c9d"/>
-            <stop offset="1" stop-color="#7185ff"/>
+            <stop offset="0" stop-color="#7182ff"/>
+            <stop offset=".24" stop-color="#3f50dd"/>
+            <stop offset=".52" stop-color="#192a9b"/>
+            <stop offset=".76" stop-color="#101d79"/>
+            <stop offset="1" stop-color="#5369f1"/>
           </linearGradient>
-          <linearGradient id="tube-highlight" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#ffffff" stop-opacity=".92"/>
-            <stop offset=".42" stop-color="#bec6ff" stop-opacity=".72"/>
-            <stop offset="1" stop-color="#7080ff" stop-opacity=".12"/>
+          <linearGradient id="tube-surface" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#dce1ff" stop-opacity=".84"/>
+            <stop offset=".28" stop-color="#8f9dff" stop-opacity=".46"/>
+            <stop offset=".72" stop-color="#2637b1" stop-opacity=".12"/>
+            <stop offset="1" stop-color="#0b155f" stop-opacity=".38"/>
           </linearGradient>
-          <filter id="tube-glow" x="-30%" y="-35%" width="170%" height="180%">
-            <feGaussianBlur stdDeviation="13" result="blur"/>
-            <feColorMatrix in="blur" values="0.1 0 0 0 0.05 0 0.2 0 0 0.12 0 0 1 0 0.9 0 0 0 0.72 0" result="blueGlow"/>
-            <feMerge><feMergeNode in="blueGlow"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
+          <radialGradient id="tube-cap" cx="32%" cy="24%" r="78%">
+            <stop offset="0" stop-color="#edf0ff"/>
+            <stop offset=".22" stop-color="#8090ff"/>
+            <stop offset=".68" stop-color="#2538bb"/>
+            <stop offset="1" stop-color="#0d1768"/>
+          </radialGradient>
         </defs>
-        <g class="tube-shadow" aria-hidden="true">
-          <path pathLength="1" d="M264 142 C196 66 76 106 66 270 C56 430 187 484 276 380"/>
-          <path pathLength="1" d="M284 414 C330 315 364 207 414 104 C438 211 468 321 504 414 M342 304 C385 291 432 294 471 310"/>
-          <path pathLength="1" d="M542 106 C543 205 540 318 538 414 C724 441 758 123 542 106"/>
-          <path pathLength="1" d="M1104 156 C1027 72 916 107 900 266 C884 423 1022 478 1110 368 C1121 336 1119 306 1118 283 L1023 283"/>
-          <path pathLength="1" d="M1160 122 C1161 222 1158 320 1156 416"/>
-          <path pathLength="1" d="M1366 150 C1303 82 1208 117 1211 207 C1214 277 1301 276 1335 325 C1372 378 1336 451 1255 426"/>
-        </g>
-        <g class="tube-main" aria-hidden="true">
-          <path pathLength="1" d="M264 142 C196 66 76 106 66 270 C56 430 187 484 276 380"/>
-          <path pathLength="1" d="M284 414 C330 315 364 207 414 104 C438 211 468 321 504 414 M342 304 C385 291 432 294 471 310"/>
-          <path pathLength="1" d="M542 106 C543 205 540 318 538 414 C724 441 758 123 542 106"/>
-          <path pathLength="1" d="M1104 156 C1027 72 916 107 900 266 C884 423 1022 478 1110 368 C1121 336 1119 306 1118 283 L1023 283"/>
-          <path pathLength="1" d="M1160 122 C1161 222 1158 320 1156 416"/>
-          <path pathLength="1" d="M1366 150 C1303 82 1208 117 1211 207 C1214 277 1301 276 1335 325 C1372 378 1336 451 1255 426"/>
-        </g>
-        <g class="tube-sheen" aria-hidden="true">
-          <path pathLength="1" d="M264 142 C196 66 76 106 66 270 C56 430 187 484 276 380"/>
-          <path pathLength="1" d="M284 414 C330 315 364 207 414 104 C438 211 468 321 504 414 M342 304 C385 291 432 294 471 310"/>
-          <path pathLength="1" d="M542 106 C543 205 540 318 538 414 C724 441 758 123 542 106"/>
-          <path pathLength="1" d="M1104 156 C1027 72 916 107 900 266 C884 423 1022 478 1110 368 C1121 336 1119 306 1118 283 L1023 283"/>
-          <path pathLength="1" d="M1160 122 C1161 222 1158 320 1156 416"/>
-          <path pathLength="1" d="M1366 150 C1303 82 1208 117 1211 207 C1214 277 1301 276 1335 325 C1372 378 1336 451 1255 426"/>
+        <g class="tube-lettering" aria-hidden="true">
+          <g class="tube-shadow"><use href="#tube-wordline"/></g>
+          <g class="tube-rim"><use href="#tube-wordline"/></g>
+          <g class="tube-main"><use href="#tube-wordline"/></g>
+          <g class="tube-surface"><use href="#tube-wordline"/></g>
+          <g class="tube-sheen"><use href="#tube-wordline"/></g>
+          <g class="tube-glint"><use href="#tube-wordline"/></g>
+          <circle class="tube-dot tube-dot-i" cx="1104" cy="119" r="30"/>
         </g>
         <g class="flow-arrow" aria-hidden="true">
-          <path pathLength="1" d="M760 280 H844"/>
-          <path pathLength="1" d="M816 241 858 280 816 319"/>
+          <path class="flow-arrow-rim" d="M720 284 H824 M789 235 840 284 789 333"/>
+          <path class="flow-arrow-main" d="M720 284 H824 M789 235 840 284 789 333"/>
         </g>
-        <text class="flow-word-label" x="717" y="376" text-anchor="middle">SOURCE → EVIDENCE</text>
+        <text class="flow-word-label" x="784" y="390" text-anchor="middle">SOURCE → EVIDENCE</text>
       </svg>
       <div class="hero-note">DWG → SOURCE → EVIDENCE → DELIVERY</div>
     </section>
