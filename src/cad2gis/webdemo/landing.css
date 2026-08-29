@@ -208,39 +208,39 @@ button:focus-visible, a:focus-visible {
   transform-origin: 50% 48%;
   will-change: transform, opacity;
 }
-.tube-shadow path,
-.tube-main path,
-.tube-sheen path,
+.tube-lettering use,
 .flow-arrow path {
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.tube-shadow path,
-.tube-main path,
-.tube-sheen path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: tube-draw 1.1s var(--ease-out-expo) forwards;
-  animation-delay: calc(120ms + var(--letter-delay, 0ms));
+.tube-lettering {
+  opacity: 1;
 }
-.tube-shadow path { stroke: oklch(8% .12 264 / .52); stroke-width: 96; transform: translateY(18px); }
-.tube-main path { stroke: url(#tube-gradient); stroke-width: 78; filter: url(#tube-glow); }
-.tube-sheen { transform: translate(-8px, -9px); }
-.tube-sheen path { stroke: url(#tube-highlight); stroke-width: 9; opacity: .78; }
-.tube-shadow path:nth-child(2), .tube-main path:nth-child(2), .tube-sheen path:nth-child(2) { --letter-delay: 55ms; }
-.tube-shadow path:nth-child(3), .tube-main path:nth-child(3), .tube-sheen path:nth-child(3) { --letter-delay: 110ms; }
-.tube-shadow path:nth-child(4), .tube-main path:nth-child(4), .tube-sheen path:nth-child(4) { --letter-delay: 220ms; }
-.tube-shadow path:nth-child(5), .tube-main path:nth-child(5), .tube-sheen path:nth-child(5) { --letter-delay: 275ms; }
-.tube-shadow path:nth-child(6), .tube-main path:nth-child(6), .tube-sheen path:nth-child(6) { --letter-delay: 330ms; }
-.flow-arrow { filter: drop-shadow(0 0 14px color-mix(in oklch, var(--accent) 64%, transparent)); }
-.flow-arrow path {
-  stroke: var(--accent);
-  stroke-width: 13;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: tube-draw 640ms 620ms var(--ease-out-expo) forwards;
+.tube-shadow use { stroke: oklch(6% .09 264 / .62); stroke-width: 112; transform: translateY(22px); }
+.tube-rim use { stroke: oklch(13% .16 270); stroke-width: 104; }
+.tube-main use { stroke: url(#tube-gradient); stroke-width: 94; }
+.tube-surface { transform: translate(-4px, -7px); }
+.tube-surface use { stroke: url(#tube-surface); stroke-width: 72; opacity: .56; }
+.tube-sheen { transform: translate(-17px, -21px); }
+.tube-sheen use { stroke: oklch(91% .07 268 / .34); stroke-width: 15; }
+.tube-glint { transform: translate(-22px, -27px); }
+.tube-glint use { stroke: oklch(98% .025 260 / .82); stroke-width: 4; }
+.tube-dot {
+  fill: url(#tube-cap);
+  stroke: oklch(15% .16 268);
+  stroke-width: 5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tube-cap-in 720ms 520ms var(--ease-out-expo) both;
 }
+.tube-dot-i { animation-delay: 680ms; }
+.flow-arrow {
+  opacity: 1;
+}
+.flow-arrow path { opacity: 1; }
+.flow-arrow-rim { stroke: oklch(11% .08 264 / .72); stroke-width: 25; }
+.flow-arrow-main { stroke: var(--accent); stroke-width: 13; }
 .flow-word-label {
   fill: var(--ink-soft);
   font: 650 16px var(--font-mono);
@@ -374,6 +374,7 @@ button:focus-visible, a:focus-visible {
 }
 @keyframes orbit { to { transform: rotate(1turn); } }
 @keyframes tube-draw { to { stroke-dashoffset: 0; } }
+@keyframes tube-cap-in { from { opacity: 0; transform: scale(.72); } }
 
 @media (max-width: 760px) {
   :root { --header-h: 4.5rem; --footer-h: 3rem; --pad-x: 1.2rem; }
@@ -389,9 +390,11 @@ button:focus-visible, a:focus-visible {
   .hero-copy { grid-column: 1; }
   .hero-copy h1 { font-size: clamp(3.2rem, 16vw, 5.3rem); }
   .flow-word { top: 34%; left: -2%; width: 132vw; }
-  .tube-shadow path { stroke-width: 88; }
-  .tube-main path { stroke-width: 70; }
-  .tube-sheen path { stroke-width: 8; }
+  .tube-shadow use { stroke-width: 104; }
+  .tube-rim use { stroke-width: 96; }
+  .tube-main use { stroke-width: 86; }
+  .tube-surface use { stroke-width: 66; }
+  .tube-sheen use { stroke-width: 12; }
   .flow-word-label { font-size: 18px; }
   .hero-note { left: var(--pad-x); right: auto; font-size: .58rem; }
   .teaching-scene { grid-template-columns: 1fr; grid-template-rows: 42% 58%; }
