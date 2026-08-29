@@ -17,10 +17,14 @@ PUBLIC_FILES = (
     "app.js",
     "hero-motion.js",
     "demo-fixture.js",
+    "demo-catalog.json",
     "demo-data.json",
+    "demo-data-lamteh-main.json",
+    "demo-data-lamteh-sf.json",
+    "demo-data-kletek.json",
 )
 PUBLIC_ASSET_DIR = SOURCE_ROOT / "assets"
-HERO_ASSET_SUFFIXES = {".svg", ".json", ".woff2"}
+PUBLIC_ASSET_SUFFIXES = {".svg", ".json", ".woff2", ".txt"}
 BUILD_SENTINEL = ".cad2gis-webdemo-build"
 BUILD_SENTINEL_VALUE = "cad2gis.webdemo_build.v1\n"
 FORBIDDEN_SUFFIXES = {
@@ -53,9 +57,10 @@ def _assert_source_boundary() -> None:
     fixture = (SOURCE_ROOT / "demo-fixture.js").read_text(encoding="utf-8")
     required_markers = (
         "window.CAD2GIS_DEMO",
-        "HUTABOHU_DERIVED_FIXTURE",
-        "公开页面仅含 Hutabohu 真实转换的筛选派生证据",
+        "CAD2GIS_DERIVED_FIXTURE",
+        "公开页面仅含真实转换的筛选派生证据",
         "RELATIVE_OSM_REFERENCE_ONLY",
+        "selectProject",
     )
     missing_markers = [value for value in required_markers if value not in fixture]
     if missing_markers:
@@ -64,12 +69,27 @@ def _assert_source_boundary() -> None:
             + ", ".join(missing_markers)
         )
     try:
-        data = json.loads((SOURCE_ROOT / "demo-data.json").read_text(encoding="utf-8"))
+        catalog = json.loads((SOURCE_ROOT / "demo-catalog.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise ValueError("Hutabohu WebDemo data is not valid JSON") from exc
-    if data.get("provenance", {}).get("fixture_kind") != "HUTABOHU_DERIVED_FIXTURE":
-        raise ValueError("WebDemo data must be the reviewed Hutabohu fixture")
-    serialized = json.dumps(data, ensure_ascii=False)
+        raise ValueError("WebDemo project catalog is not valid JSON") from exc
+    projects = catalog.get("projects", [])
+    if len(projects) != 4 or catalog.get("default_project") != "hutabohu":
+        raise ValueError("WebDemo project catalog must define the four reviewed fixtures")
+    fixtures: list[dict[str, object]] = []
+    for project in projects:
+        fixture_name = str(project.get("fixture", ""))
+        fixture_path = SOURCE_ROOT / fixture_name
+        try:
+            data = json.loads(fixture_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"WebDemo fixture is not valid JSON: {fixture_name}") from exc
+        provenance = data.get("provenance", {})
+        if provenance.get("fixture_kind") != "CAD2GIS_DERIVED_FIXTURE":
+            raise ValueError(f"WebDemo fixture kind is invalid: {fixture_name}")
+        if provenance.get("project_id") != project.get("id"):
+            raise ValueError(f"WebDemo fixture project id is invalid: {fixture_name}")
+        fixtures.append(data)
+    serialized = json.dumps({"catalog": catalog, "fixtures": fixtures}, ensure_ascii=False)
     forbidden_markers = (
         "E:\\",
         "C:\\",
@@ -85,7 +105,7 @@ def _assert_source_boundary() -> None:
         raise ValueError("WebDemo hero assets are missing")
     hero_assets = sorted(
         path for path in PUBLIC_ASSET_DIR.rglob("*")
-        if path.is_file() and path.suffix.casefold() in HERO_ASSET_SUFFIXES
+        if path.is_file() and path.suffix.casefold() in PUBLIC_ASSET_SUFFIXES
     )
     if not hero_assets:
         raise ValueError("WebDemo hero asset directory is empty")
@@ -97,7 +117,7 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     _assert_source_boundary()
     hero_assets = sorted(
         path for path in PUBLIC_ASSET_DIR.rglob("*")
-        if path.is_file() and path.suffix.casefold() in HERO_ASSET_SUFFIXES
+        if path.is_file() and path.suffix.casefold() in PUBLIC_ASSET_SUFFIXES
     )
     target = destination.expanduser().resolve()
     if target == REPOSITORY_ROOT or REPOSITORY_ROOT not in target.parents:
@@ -120,7 +140,7 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     )
 
     shutil.copy2(SOURCE_ROOT / "index.html", target / "index.html")
-    for name in ("styles.css", "app.js", "hero-motion.js", "demo-fixture.js", "demo-data.json"):
+    for name in PUBLIC_FILES[1:]:
         shutil.copy2(SOURCE_ROOT / name, assets / name)
     for source in PUBLIC_ASSET_DIR.rglob("*"):
         if source.is_file():
@@ -148,7 +168,7 @@ def build_webdemo(destination: Path) -> dict[str, object]:
         [BUILD_SENTINEL, ".nojekyll", "index.html"]
         + [
             f"assets/{name}"
-            for name in ("styles.css", "app.js", "hero-motion.js", "demo-fixture.js", "demo-data.json")
+            for name in PUBLIC_FILES[1:]
         ]
         + [f"assets/{path.relative_to(PUBLIC_ASSET_DIR).as_posix()}" for path in hero_assets]
     )
