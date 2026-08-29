@@ -219,6 +219,28 @@ button:focus-visible, a:focus-visible {
   transform-origin: 50% 48%;
   will-change: transform, opacity;
 }
+.flow-word::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 6% 2% 2% 4%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 28% 38%, oklch(88% .1 224 / .22), transparent 31%),
+    radial-gradient(ellipse at 72% 63%, oklch(70% .15 235 / .16), transparent 28%);
+  filter: blur(22px);
+  mix-blend-mode: screen;
+  opacity: .9;
+  transform: translate3d(-1.5%, 0, 0) scale(.98);
+  animation: optical-field-drift 7.5s cubic-bezier(.65, 0, .35, 1) infinite alternate;
+}
+.light-mode .flow-word::before {
+  background:
+    radial-gradient(ellipse at 28% 38%, oklch(66% .15 235 / .17), transparent 31%),
+    radial-gradient(ellipse at 72% 63%, oklch(55% .15 245 / .12), transparent 28%);
+  mix-blend-mode: multiply;
+  opacity: .62;
+}
 .hero-tube-canvas,
 .flow-word-fallback {
   position: absolute;
@@ -258,9 +280,19 @@ button:focus-visible, a:focus-visible {
 .tube-surface { transform: translate(-4px, -7px); }
 .tube-surface use { stroke: url(#tube-surface); stroke-width: 72; opacity: .56; }
 .tube-sheen { transform: translate(-17px, -21px); }
-.tube-sheen use { stroke: var(--tube-sheen); stroke-width: 15; }
+.tube-sheen use {
+  stroke: var(--tube-sheen);
+  stroke-width: 15;
+  stroke-dasharray: 128 286;
+  animation: tube-optical-current 5.2s linear infinite;
+}
 .tube-glint { transform: translate(-22px, -27px); }
-.tube-glint use { stroke: var(--tube-glint); stroke-width: 4; }
+.tube-glint use {
+  stroke: var(--tube-glint);
+  stroke-width: 4;
+  stroke-dasharray: 28 362;
+  animation: tube-optical-current 3.7s linear infinite reverse;
+}
 .tube-dot {
   fill: url(#tube-cap);
   stroke: var(--tube-rim);
@@ -420,6 +452,11 @@ button:focus-visible, a:focus-visible {
 @keyframes orbit { to { transform: rotate(1turn); } }
 @keyframes tube-draw { to { stroke-dashoffset: 0; } }
 @keyframes tube-cap-in { from { opacity: 0; transform: scale(.72); } }
+@keyframes tube-optical-current { to { stroke-dashoffset: -780; } }
+@keyframes optical-field-drift {
+  from { opacity: .58; transform: translate3d(-1.5%, 0, 0) scale(.98); }
+  to { opacity: .94; transform: translate3d(2.5%, -1.8%, 0) scale(1.035); }
+}
 
 @media (max-width: 760px) {
   :root { --header-h: 4.5rem; --footer-h: 3rem; --pad-x: 1.2rem; }
