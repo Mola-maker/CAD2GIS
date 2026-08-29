@@ -1,0 +1,45 @@
+.workspace-subpage { overflow: hidden; }
+
+.workspace-subpage .topbar { gap: clamp(.75rem, 2vw, 2rem); }
+
+.workspace-subpage .brand-lockup {
+  color: inherit;
+  text-decoration: none;
+}
+
+.workspace-product-nav {
+  display: flex;
+  gap: .25rem;
+  align-items: center;
+  margin-left: auto;
+  font: 700 .62rem/1 ui-monospace, "Cascadia Code", monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.workspace-product-nav a {
+  position: relative;
+  border: 1px solid transparent;
+  padding: .65rem .75rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 160ms cubic-bezier(.16, 1, .3, 1), border-color 160ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.workspace-product-nav a:hover,
+.workspace-product-nav a:focus-visible {
+  border-color: var(--line-strong);
+  color: var(--accent);
+}
+
+.workspace-product-nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .workspace-subpage { overflow: auto; }
+  .workspace-product-nav { order: 3; width: 100%; margin-left: 0; }
+  .workspace-subpage .topbar { flex-wrap: wrap; }
+  .workspace-subpage .run-state { margin-left: auto; }
+}
