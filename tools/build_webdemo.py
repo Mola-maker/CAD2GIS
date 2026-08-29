@@ -18,10 +18,18 @@ PUBLIC_FILES = (
     "hero-motion.js",
     "demo-fixture.js",
     "demo-catalog.json",
-    "demo-data.json",
-    "demo-data-lamteh-main.json",
-    "demo-data-lamteh-sf.json",
-    "demo-data-kletek.json",
+)
+EXPECTED_PROJECT_IDS = (
+    "hutabohu",
+    "lamteh-main",
+    "lamteh-sf",
+    "kletek",
+    "darat-sekip-sf",
+    "manado-tomohon-uplink",
+    "semarang-sf",
+    "taipa",
+    "tinggar",
+    "tinggede",
 )
 PUBLIC_ASSET_DIR = SOURCE_ROOT / "assets"
 PUBLIC_ASSET_SUFFIXES = {".svg", ".json", ".woff2", ".txt"}
@@ -41,7 +49,7 @@ LOCAL_ASSET_PATTERN = re.compile(
 )
 
 
-def _assert_source_boundary() -> None:
+def _assert_source_boundary() -> tuple[str, ...]:
     missing = [name for name in PUBLIC_FILES if not (SOURCE_ROOT / name).is_file()]
     if missing:
         raise ValueError(f"WebDemo source is incomplete: {', '.join(missing)}")
@@ -73,11 +81,15 @@ def _assert_source_boundary() -> None:
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError("WebDemo project catalog is not valid JSON") from exc
     projects = catalog.get("projects", [])
-    if len(projects) != 4 or catalog.get("default_project") != "hutabohu":
-        raise ValueError("WebDemo project catalog must define the four reviewed fixtures")
+    project_ids = tuple(str(project.get("id", "")) for project in projects)
+    if project_ids != EXPECTED_PROJECT_IDS or catalog.get("default_project") != "hutabohu":
+        raise ValueError("WebDemo project catalog must define the ten reviewed fixtures")
     fixtures: list[dict[str, object]] = []
+    fixture_names: list[str] = []
     for project in projects:
         fixture_name = str(project.get("fixture", ""))
+        if not fixture_name or Path(fixture_name).name != fixture_name:
+            raise ValueError(f"WebDemo fixture path is invalid: {fixture_name}")
         fixture_path = SOURCE_ROOT / fixture_name
         try:
             data = json.loads(fixture_path.read_text(encoding="utf-8"))
@@ -89,6 +101,9 @@ def _assert_source_boundary() -> None:
         if provenance.get("project_id") != project.get("id"):
             raise ValueError(f"WebDemo fixture project id is invalid: {fixture_name}")
         fixtures.append(data)
+        fixture_names.append(fixture_name)
+    if len(set(fixture_names)) != len(fixture_names):
+        raise ValueError("WebDemo fixture names must be unique")
     serialized = json.dumps({"catalog": catalog, "fixtures": fixtures}, ensure_ascii=False)
     forbidden_markers = (
         "E:\\",
@@ -109,12 +124,14 @@ def _assert_source_boundary() -> None:
     )
     if not hero_assets:
         raise ValueError("WebDemo hero asset directory is empty")
+    return tuple(fixture_names)
 
 
 def build_webdemo(destination: Path) -> dict[str, object]:
     """Create the exact directory layout consumed by GitHub Pages."""
 
-    _assert_source_boundary()
+    fixture_names = _assert_source_boundary()
+    publish_files = PUBLIC_FILES + fixture_names
     hero_assets = sorted(
         path for path in PUBLIC_ASSET_DIR.rglob("*")
         if path.is_file() and path.suffix.casefold() in PUBLIC_ASSET_SUFFIXES
@@ -140,7 +157,7 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     )
 
     shutil.copy2(SOURCE_ROOT / "index.html", target / "index.html")
-    for name in PUBLIC_FILES[1:]:
+    for name in publish_files[1:]:
         shutil.copy2(SOURCE_ROOT / name, assets / name)
     for source in PUBLIC_ASSET_DIR.rglob("*"):
         if source.is_file():
@@ -168,7 +185,7 @@ def build_webdemo(destination: Path) -> dict[str, object]:
         [BUILD_SENTINEL, ".nojekyll", "index.html"]
         + [
             f"assets/{name}"
-            for name in PUBLIC_FILES[1:]
+            for name in publish_files[1:]
         ]
         + [f"assets/{path.relative_to(PUBLIC_ASSET_DIR).as_posix()}" for path in hero_assets]
     )
