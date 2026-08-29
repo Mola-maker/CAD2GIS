@@ -33,7 +33,9 @@
         <p class="hero-overline">不是把图“搬过去”</p>
         <h1 id="hero-title">让 CAD 证据<br>流向 GIS</h1>
       </div>
-      <svg class="flow-word" viewBox="0 0 1440 560" role="img" aria-labelledby="flow-word-title flow-word-description">
+      <div class="flow-word" role="img" aria-label="一条有真实体积和反光的蓝色管线组成 cad 与 gis 字样，中间由荧光绿色箭头连接">
+      <canvas id="hero-tube-canvas" class="hero-tube-canvas" aria-hidden="true"></canvas>
+      <svg class="flow-word-fallback" viewBox="0 0 1440 560" aria-hidden="true" focusable="false">
         <title id="flow-word-title">CAD 流向 GIS 的立体管线字形</title>
         <desc id="flow-word-description">一条连续、柔软的蓝色工程管线以手写形态组成 cad 与 gis 字样，中间由荧光绿色箭头连接。</desc>
         <defs>
@@ -73,6 +75,7 @@
         </g>
         <text class="flow-word-label" x="784" y="390" text-anchor="middle">SOURCE → EVIDENCE</text>
       </svg>
+      </div>
       <div class="hero-note">DWG → SOURCE → EVIDENCE → DELIVERY</div>
     </section>
 
@@ -150,6 +153,7 @@
   </aside>
 
   <script type="module" src="/assets/landing.js"></script>
+  <script type="module" src="/assets/hero-tube.js"></script>
   <script type="module" src="/assets/pointer.js"></script>
 </body>
 </html>

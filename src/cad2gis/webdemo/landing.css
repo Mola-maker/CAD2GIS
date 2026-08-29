@@ -204,10 +204,24 @@ button:focus-visible, a:focus-visible {
   top: 24%;
   left: 16%;
   width: min(82vw, 94rem);
+  aspect-ratio: 18 / 7;
   overflow: visible;
   transform-origin: 50% 48%;
   will-change: transform, opacity;
 }
+.hero-tube-canvas,
+.flow-word-fallback {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.hero-tube-canvas { opacity: 0; transition: opacity 420ms var(--ease-out-expo); }
+.flow-word-fallback { opacity: 1; transition: opacity 260ms var(--ease-out-expo); }
+.flow-word.is-webgl-ready .hero-tube-canvas { opacity: 1; }
+.flow-word.is-webgl-ready .flow-word-fallback { opacity: 0; }
 .tube-lettering use,
 .flow-arrow path {
   fill: none;
