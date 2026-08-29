@@ -198,20 +198,54 @@ button:focus-visible, a:focus-visible {
 }
 .hero-overline { margin-bottom: clamp(.75rem, 2vh, 1.5rem) !important; color: var(--accent); }
 .hero-copy h1 { font-size: clamp(3.4rem, 8.2vw, 8.5rem); }
-.route-ribbon {
+.flow-word {
   position: absolute;
-  z-index: 1;
-  top: 26%;
-  left: 20%;
-  width: min(79vw, 92rem);
+  z-index: 4;
+  top: 24%;
+  left: 16%;
+  width: min(82vw, 94rem);
   overflow: visible;
-  transform: rotate(-2deg);
+  transform-origin: 50% 48%;
+  will-change: transform, opacity;
 }
-.ribbon-shadow,
-.ribbon-main { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.ribbon-shadow { stroke: oklch(8% 0.12 264 / .45); stroke-width: 78; transform: translate(0, 18px); }
-.ribbon-main { stroke: url(#ribbon-gradient); stroke-width: 62; filter: url(#soft-glow); }
-.route-nodes circle { fill: var(--accent); stroke: var(--page); stroke-width: 5; }
+.tube-shadow path,
+.tube-main path,
+.tube-sheen path,
+.flow-arrow path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tube-shadow path,
+.tube-main path,
+.tube-sheen path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tube-draw 1.1s var(--ease-out-expo) forwards;
+  animation-delay: calc(120ms + var(--letter-delay, 0ms));
+}
+.tube-shadow path { stroke: oklch(8% .12 264 / .52); stroke-width: 96; transform: translateY(18px); }
+.tube-main path { stroke: url(#tube-gradient); stroke-width: 78; filter: url(#tube-glow); }
+.tube-sheen { transform: translate(-8px, -9px); }
+.tube-sheen path { stroke: url(#tube-highlight); stroke-width: 9; opacity: .78; }
+.tube-shadow path:nth-child(2), .tube-main path:nth-child(2), .tube-sheen path:nth-child(2) { --letter-delay: 55ms; }
+.tube-shadow path:nth-child(3), .tube-main path:nth-child(3), .tube-sheen path:nth-child(3) { --letter-delay: 110ms; }
+.tube-shadow path:nth-child(4), .tube-main path:nth-child(4), .tube-sheen path:nth-child(4) { --letter-delay: 220ms; }
+.tube-shadow path:nth-child(5), .tube-main path:nth-child(5), .tube-sheen path:nth-child(5) { --letter-delay: 275ms; }
+.tube-shadow path:nth-child(6), .tube-main path:nth-child(6), .tube-sheen path:nth-child(6) { --letter-delay: 330ms; }
+.flow-arrow { filter: drop-shadow(0 0 14px color-mix(in oklch, var(--accent) 64%, transparent)); }
+.flow-arrow path {
+  stroke: var(--accent);
+  stroke-width: 13;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tube-draw 640ms 620ms var(--ease-out-expo) forwards;
+}
+.flow-word-label {
+  fill: var(--ink-soft);
+  font: 650 16px var(--font-mono);
+  letter-spacing: .13em;
+}
 .hero-note { position: absolute; right: var(--pad-x); bottom: calc(var(--footer-h) + 1.1rem); color: var(--ink-soft); }
 
 .teaching-scene { display: grid; grid-template-columns: 35% 65%; align-items: center; }
@@ -339,6 +373,7 @@ button:focus-visible, a:focus-visible {
   --accent: oklch(78% .22 120);
 }
 @keyframes orbit { to { transform: rotate(1turn); } }
+@keyframes tube-draw { to { stroke-dashoffset: 0; } }
 
 @media (max-width: 760px) {
   :root { --header-h: 4.5rem; --footer-h: 3rem; --pad-x: 1.2rem; }
@@ -353,7 +388,11 @@ button:focus-visible, a:focus-visible {
   .scene-kicker > p { grid-column: 2; font-size: .68rem; }
   .hero-copy { grid-column: 1; }
   .hero-copy h1 { font-size: clamp(3.2rem, 16vw, 5.3rem); }
-  .route-ribbon { top: 35%; left: 6%; width: 120vw; }
+  .flow-word { top: 34%; left: -2%; width: 132vw; }
+  .tube-shadow path { stroke-width: 88; }
+  .tube-main path { stroke-width: 70; }
+  .tube-sheen path { stroke-width: 8; }
+  .flow-word-label { font-size: 18px; }
   .hero-note { left: var(--pad-x); right: auto; font-size: .58rem; }
   .teaching-scene { grid-template-columns: 1fr; grid-template-rows: 42% 58%; }
   .evidence-visual { width: min(72vw, 21rem); align-self: end; }
@@ -384,4 +423,5 @@ button:focus-visible, a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   #flow-canvas { opacity: .36; }
+  .flow-word { transform: rotate(-1.5deg) !important; }
 }
