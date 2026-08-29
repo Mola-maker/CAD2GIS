@@ -169,22 +169,30 @@ const start = () => {
       tube: new THREE.Color("#38b9ff"),
       emissive: new THREE.Color("#00345f"),
       sheen: new THREE.Color("#ddf5ff"),
+      flow: new THREE.Color("#effcff"),
+      flowSecondary: new THREE.Color("#5dd4ff"),
       arrow: new THREE.Color("#c7ff2f"),
       arrowEmissive: new THREE.Color("#5d8f00"),
       particle: new THREE.Color("#63c8ff"),
       edgeLight: new THREE.Color("#6bc9ff"),
       frontLight: new THREE.Color("#d8f3ff"),
+      causticLight: new THREE.Color("#7cddff"),
+      flowStrength: 0.92,
       exposure: 1.02,
     },
     light: {
       tube: new THREE.Color("#087fc9"),
       emissive: new THREE.Color("#001e3b"),
       sheen: new THREE.Color("#cceeff"),
+      flow: new THREE.Color("#e7faff"),
+      flowSecondary: new THREE.Color("#2fb7ef"),
       arrow: new THREE.Color("#78ba00"),
       arrowEmissive: new THREE.Color("#315800"),
       particle: new THREE.Color("#1688cf"),
       edgeLight: new THREE.Color("#248bd5"),
       frontLight: new THREE.Color("#a8dcf5"),
+      causticLight: new THREE.Color("#179de1"),
+      flowStrength: 0.72,
       exposure: 1.1,
     },
   };
@@ -212,6 +220,72 @@ const start = () => {
     ior: 1.42,
     envMapIntensity: 2.1,
   });
+
+  // Keep Three's physically based lighting, then add a restrained optical
+  // current that travels through each tube's longitudinal UV coordinate.
+  // The moving bands tighten roughness as they pass, so they read as a real
+  // reflection/refraction event rather than a flat color animation.
+  const flowUniforms = {
+    uFlowTime: { value: 0 },
+    uFlowColor: { value: themeTarget.flow.clone() },
+    uFlowSecondary: { value: themeTarget.flowSecondary.clone() },
+    uFlowStrength: { value: themeTarget.flowStrength },
+  };
+  tubeMaterial.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, flowUniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+varying vec2 vCadFlowUv;`,
+      )
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+vCadFlowUv = uv;`,
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+varying vec2 vCadFlowUv;
+uniform float uFlowTime;
+uniform vec3 uFlowColor;
+uniform vec3 uFlowSecondary;
+uniform float uFlowStrength;
+
+float cadOpticalFlow(vec2 flowUv) {
+  const float TAU = 6.28318530718;
+  float longitudinal = flowUv.x * 2.35 - uFlowTime * 0.16;
+  float mainBand = pow(max(0.0, cos(longitudinal * TAU)), 18.0);
+  float echoBand = pow(max(0.0, cos((longitudinal * 1.73 + 0.38) * TAU)), 32.0) * 0.46;
+  float curvedFace = 0.34 + 0.66 * pow(max(0.0, cos((flowUv.y - 0.17) * TAU)), 5.0);
+  return clamp((mainBand + echoBand) * curvedFace, 0.0, 1.0);
+}`,
+      )
+      .replace(
+        "#include <map_fragment>",
+        `#include <map_fragment>
+float cadFlowMask = cadOpticalFlow(vCadFlowUv);
+float cadFlowCore = pow(cadFlowMask, 1.45);
+diffuseColor.rgb = mix(
+  diffuseColor.rgb,
+  mix(uFlowSecondary, uFlowColor, cadFlowCore),
+  cadFlowMask * uFlowStrength * 0.42
+);`,
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>
+roughnessFactor = max(0.035, roughnessFactor * (1.0 - cadFlowMask * 0.68));`,
+      )
+      .replace(
+        "#include <opaque_fragment>",
+        `outgoingLight += uFlowColor * cadFlowMask * uFlowStrength * 0.13;
+#include <opaque_fragment>`,
+      );
+  };
+  tubeMaterial.customProgramCacheKey = () => "cad2gis-optical-flow-v1";
 
   const arrowMaterial = new THREE.MeshPhysicalMaterial({
     color: themeTarget.arrow,
@@ -284,6 +358,12 @@ const start = () => {
   const frontLight = new THREE.PointLight(themeTarget.frontLight, 38, 24, 1.7);
   frontLight.position.set(-3, 3.5, 8);
   scene.add(frontLight);
+  const causticLight = new THREE.PointLight(themeTarget.causticLight, 26, 18, 1.85);
+  causticLight.position.set(-6, 1.4, 5.5);
+  scene.add(causticLight);
+  const refractedEdgeLight = new THREE.PointLight(themeTarget.flowSecondary, 17, 15, 2);
+  refractedEdgeLight.position.set(5, -1.8, 4.8);
+  scene.add(refractedEdgeLight);
   const accentLight = new THREE.PointLight(0x9dff1b, 16, 9, 2);
   accentLight.position.set(0.5, -0.5, 5);
   scene.add(accentLight);
@@ -320,23 +400,54 @@ const start = () => {
       tubeMaterial.color.lerp(themeTarget.tube, themeBlend);
       tubeMaterial.emissive.lerp(themeTarget.emissive, themeBlend);
       tubeMaterial.sheenColor.lerp(themeTarget.sheen, themeBlend);
+      flowUniforms.uFlowColor.value.lerp(themeTarget.flow, themeBlend);
+      flowUniforms.uFlowSecondary.value.lerp(themeTarget.flowSecondary, themeBlend);
+      flowUniforms.uFlowStrength.value = THREE.MathUtils.lerp(
+        flowUniforms.uFlowStrength.value,
+        themeTarget.flowStrength,
+        themeBlend,
+      );
       arrowMaterial.color.lerp(themeTarget.arrow, themeBlend);
       arrowMaterial.emissive.lerp(themeTarget.arrowEmissive, themeBlend);
       particleMaterial.color.lerp(themeTarget.particle, themeBlend);
       edgeLight.color.lerp(themeTarget.edgeLight, themeBlend);
       frontLight.color.lerp(themeTarget.frontLight, themeBlend);
+      causticLight.color.lerp(themeTarget.causticLight, themeBlend);
+      refractedEdgeLight.color.lerp(themeTarget.flowSecondary, themeBlend);
       renderer.toneMappingExposure = THREE.MathUtils.lerp(
         renderer.toneMappingExposure,
         themeTarget.exposure,
         themeBlend,
       );
       if (!reducedMotion.matches) {
+        const seconds = time * 0.001;
         const blend = 1 - Math.exp(-delta * 5.2);
         pointer.lerp(pointerTarget, blend);
+        flowUniforms.uFlowTime.value = seconds;
         word.rotation.x = THREE.MathUtils.lerp(word.rotation.x, -0.08 + pointer.y * 0.045, blend);
         word.rotation.y = THREE.MathUtils.lerp(word.rotation.y, 0.055 + pointer.x * 0.085, blend);
         word.rotation.z = THREE.MathUtils.lerp(word.rotation.z, -0.018 - pointer.x * 0.012, blend);
-        word.position.y = -0.03 + Math.sin(time * 0.00072) * 0.035;
+        word.position.y = -0.03 + Math.sin(seconds * 0.72) * 0.035;
+        tubeMaterial.clearcoatRoughness = 0.065 + (Math.sin(seconds * 0.83) * 0.5 + 0.5) * 0.025;
+        tubeMaterial.transmission = 0.045 + (Math.sin(seconds * 0.61 + 0.8) * 0.5 + 0.5) * 0.035;
+        tubeMaterial.iridescence = 0.1 + (Math.sin(seconds * 0.47) * 0.5 + 0.5) * 0.1;
+        if (scene.environmentRotation) scene.environmentRotation.y = seconds * 0.075;
+        causticLight.position.set(
+          Math.sin(seconds * 0.58) * 7.2 + pointer.x * 1.1,
+          1.5 + Math.cos(seconds * 0.76) * 2.5 + pointer.y * 0.6,
+          5.6 + Math.sin(seconds * 0.41) * 1.1,
+        );
+        causticLight.intensity = 22 + (Math.sin(seconds * 1.24) * 0.5 + 0.5) * 12;
+        refractedEdgeLight.position.set(
+          Math.cos(seconds * 0.43 + 1.4) * 6.4,
+          -1.2 + Math.sin(seconds * 0.67) * 2.2,
+          4.2,
+        );
+        particles.rotation.z = seconds * 0.035;
+        particles.position.x = Math.sin(seconds * 0.52) * 0.07;
+        particleMaterial.opacity = 0.46 + (Math.sin(seconds * 1.45) * 0.5 + 0.5) * 0.2;
+        const arrowPulse = 1 + Math.sin(seconds * 2.1) * 0.018;
+        arrow.scale.setScalar(arrowPulse);
       }
       renderer.render(scene, camera);
     }
