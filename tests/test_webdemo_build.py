@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 
@@ -41,10 +42,16 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             "assets/app.js",
             "assets/cad2gis-hero-display.woff2",
             "assets/demo-catalog.json",
+            "assets/demo-data-darat-sekip-sf.json",
             "assets/demo-data.json",
             "assets/demo-data-kletek.json",
             "assets/demo-data-lamteh-main.json",
             "assets/demo-data-lamteh-sf.json",
+            "assets/demo-data-manado-tomohon-uplink.json",
+            "assets/demo-data-semarang-sf.json",
+            "assets/demo-data-taipa.json",
+            "assets/demo-data-tinggar.json",
+            "assets/demo-data-tinggede.json",
             "assets/demo-fixture.js",
             "assets/font-licenses/OFL-IBMPlexMono.txt",
             "assets/font-licenses/OFL-NotoSansSC.txt",
@@ -67,7 +74,13 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
         assert (destination / "assets" / "app.js").is_file()
         assert (destination / "assets" / "demo-catalog.json").is_file()
         assert (destination / "assets" / "demo-data.json").is_file()
-        assert (destination / "assets" / "demo-data-kletek.json").is_file()
+        catalog = json.loads(
+            (destination / "assets" / "demo-catalog.json").read_text(encoding="utf-8")
+        )
+        assert all(
+            (destination / "assets" / project["fixture"]).is_file()
+            for project in catalog["projects"]
+        )
         assert not any(
             path.suffix.casefold() in builder.FORBIDDEN_SUFFIXES
             for path in destination.rglob("*")

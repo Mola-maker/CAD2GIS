@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WEBDEMO = ROOT / "src" / "cad2gis" / "webdemo"
 
 
-def test_catalog_exposes_four_source_bound_real_runs() -> None:
+def test_catalog_exposes_ten_source_bound_real_runs() -> None:
     catalog = json.loads((WEBDEMO / "demo-catalog.json").read_text(encoding="utf-8"))
 
     assert catalog["schema_version"] == "cad2gis.webdemo_catalog.v1"
@@ -19,6 +19,12 @@ def test_catalog_exposes_four_source_bound_real_runs() -> None:
         "lamteh-main",
         "lamteh-sf",
         "kletek",
+        "darat-sekip-sf",
+        "manado-tomohon-uplink",
+        "semarang-sf",
+        "taipa",
+        "tinggar",
+        "tinggede",
     ]
     assert all(len(project["source_sha256"]) == 64 for project in catalog["projects"])
 
@@ -39,22 +45,23 @@ def test_catalog_exposes_four_source_bound_real_runs() -> None:
         assert "delivery.gpkg" not in serialized
 
 
-def test_map_anchors_translate_local_cad_without_rewriting_source_geometry() -> None:
-    for fixture_name in (
-        "demo-data-lamteh-main.json",
-        "demo-data-lamteh-sf.json",
-        "demo-data-kletek.json",
-    ):
+def test_map_previews_stay_near_their_declared_real_locations() -> None:
+    catalog = json.loads((WEBDEMO / "demo-catalog.json").read_text(encoding="utf-8"))
+    for project in catalog["projects"]:
+        fixture_name = project["fixture"]
         fixture = json.loads((WEBDEMO / fixture_name).read_text(encoding="utf-8"))
         demo = fixture["run"]["demo"]
         transform = demo["nominal_transform"]
         assert transform["a"] == 1.0
         assert transform["b"] == 0.0
-        assert demo["map_anchor"]["precision"] == "coarse_bbox_centre"
-        assert demo["map_anchor"]["geometry_positioning"] in {
-            "delivery_already_in_epsg3857",
-            "coarse_anchor_translation",
-        }
+        if project["map_precision"] == "coarse_bbox_centre":
+            assert demo["map_anchor"]["precision"] == "coarse_bbox_centre"
+            assert demo["map_anchor"]["geometry_positioning"] in {
+                "delivery_already_in_epsg3857",
+                "coarse_anchor_translation",
+            }
+        else:
+            assert demo["map_anchor"] is None
 
         coordinates: list[tuple[float, float]] = []
 
@@ -77,7 +84,7 @@ def test_map_anchors_translate_local_cad_without_rewriting_source_geometry() -> 
         anchor_lon, anchor_lat = demo["map_center_lonlat"]
         anchor_x = math.radians(anchor_lon) * 6_378_137
         anchor_y = 6_378_137 * math.log(math.tan(math.pi / 4 + math.radians(anchor_lat) / 2))
-        assert math.hypot(preview_x - anchor_x, preview_y - anchor_y) < 10_000
+        assert math.hypot(preview_x - anchor_x, preview_y - anchor_y) < 10_000, project["id"]
 
     app = (WEBDEMO / "app.js").read_text(encoding="utf-8")
     assert "nominalTransform.a * input[i]" in app
