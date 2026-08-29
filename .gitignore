@@ -54,6 +54,7 @@ demo/output/
 # robustness: test temp & build junk (cleaned at branch creation)
 .pytest-tmp-*
 build/
+_site/
 ErrorReports/
 
 # robustness: dev replay artifacts

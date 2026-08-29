@@ -1,0 +1,58 @@
+name: Deploy CAD2GIS product site
+
+on:
+  push:
+    branches:
+      - main
+      - feature/land-robustness
+    paths:
+      - .github/workflows/pages.yml
+      - scripts/build_pages.py
+      - src/cad2gis/webdemo/landing.html
+      - src/cad2gis/webdemo/landing.css
+      - src/cad2gis/webdemo/landing.js
+      - src/cad2gis/webdemo/install.html
+      - src/cad2gis/webdemo/install.css
+      - src/cad2gis/webdemo/install.js
+      - src/cad2gis/webdemo/pointer.css
+      - src/cad2gis/webdemo/pointer.js
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build static site
+        run: python scripts/build_pages.py --output _site
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
