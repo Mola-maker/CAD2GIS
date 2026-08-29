@@ -3,24 +3,30 @@ const progressButtons = [...document.querySelectorAll("[data-scene-jump]")];
 const sceneStatus = document.querySelector("#scene-status");
 const sceneCoordinate = document.querySelector("#scene-coordinate");
 const themeToggle = document.querySelector("#theme-toggle");
-const ribbon = document.querySelector(".ribbon-main");
+const flowWord = document.querySelector(".flow-word");
 const canvas = document.querySelector("#flow-canvas");
 const context = canvas.getContext("2d", { alpha: true });
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 let target = 0;
 let current = 0;
+let scrollVelocity = 0;
 let activeScene = 0;
 let pointerX = window.innerWidth * 0.5;
 let pointerY = window.innerHeight * 0.5;
 let touchY = null;
+let touchTravel = 0;
 let lastWheelJump = 0;
+let wheelTravel = 0;
+let wheelSettleTimer = null;
+let lastFrameTime = 0;
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const mix = (from, to, amount) => from + (to - from) * amount;
 
 const selectScene = (index) => {
   target = clamp(index, 0, scenes.length - 1);
+  scrollVelocity = 0;
   if (reducedMotion.matches) current = target;
 };
 
@@ -41,10 +47,12 @@ const updateScenes = () => {
     button.classList.toggle("is-active", Number(button.dataset.sceneJump) === activeScene);
   });
   sceneStatus.textContent = `SCENE ${String(activeScene + 1).padStart(2, "0")} / ${String(scenes.length).padStart(2, "0")}`;
-  if (ribbon) {
-    const reveal = clamp(1 - current * 0.9, 0, 1);
-    ribbon.style.strokeDasharray = "1600";
-    ribbon.style.strokeDashoffset = String((1 - reveal) * 1600);
+  if (flowWord) {
+    const x = (pointerX / window.innerWidth - 0.5) * 16;
+    const y = (pointerY / window.innerHeight - 0.5) * 12 - current * 34;
+    const rotate = -1.6 + (pointerX / window.innerWidth - 0.5) * 1.15 - current * 0.7;
+    const scale = 1 - Math.min(current * 0.025, 0.07);
+    flowWord.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) rotate(${rotate.toFixed(3)}deg) scale(${scale.toFixed(4)})`;
   }
 };
 
@@ -116,15 +124,48 @@ const drawFlow = (time) => {
 };
 
 const frame = (time) => {
-  const easing = reducedMotion.matches ? 1 : 0.085;
-  current += (target - current) * easing;
-  if (Math.abs(target - current) < 0.0005) current = target;
+  const deltaTime = lastFrameTime ? Math.min((time - lastFrameTime) / 1000, 1 / 30) : 1 / 60;
+  lastFrameTime = time;
+  if (reducedMotion.matches) {
+    current = target;
+    scrollVelocity = 0;
+  } else {
+    const spring = 68;
+    const damping = 15.5;
+    scrollVelocity += (target - current) * spring * deltaTime;
+    scrollVelocity *= Math.exp(-damping * deltaTime);
+    current += scrollVelocity * deltaTime;
+    if (current <= 0 || current >= scenes.length - 1) {
+      current = clamp(current, 0, scenes.length - 1);
+      scrollVelocity *= 0.32;
+    }
+    if (Math.abs(target - current) < 0.00035 && Math.abs(scrollVelocity) < 0.002) {
+      current = target;
+      scrollVelocity = 0;
+    }
+  }
   updateScenes();
   drawFlow(time);
   window.requestAnimationFrame(frame);
 };
 
+const settleWheelGesture = () => {
+  window.clearTimeout(wheelSettleTimer);
+  wheelSettleTimer = window.setTimeout(() => {
+    if (Math.abs(wheelTravel) > 28) {
+      target = wheelTravel > 0
+        ? Math.ceil(target - 0.001)
+        : Math.floor(target + 0.001);
+    } else {
+      target = Math.round(target);
+    }
+    target = clamp(target, 0, scenes.length - 1);
+    wheelTravel = 0;
+  }, 145);
+};
+
 window.addEventListener("wheel", (event) => {
+  if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
   event.preventDefault();
   if (reducedMotion.matches) {
     const now = performance.now();
@@ -133,11 +174,18 @@ window.addEventListener("wheel", (event) => {
     selectScene(activeScene + Math.sign(event.deltaY));
     return;
   }
-  target = clamp(target + event.deltaY / 640, 0, scenes.length - 1);
+  const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+  const delta = event.deltaY * unit;
+  const impulse = clamp(delta, -220, 220) / 560;
+  target = clamp(target + impulse, 0, scenes.length - 1);
+  scrollVelocity = clamp(scrollVelocity + impulse * 1.2, -3.2, 3.2);
+  wheelTravel += delta;
+  settleWheelGesture();
 }, { passive: false });
 
 window.addEventListener("touchstart", (event) => {
   touchY = event.touches[0]?.clientY ?? null;
+  touchTravel = 0;
 }, { passive: true });
 
 window.addEventListener("touchmove", (event) => {
@@ -145,13 +193,23 @@ window.addEventListener("touchmove", (event) => {
   const nextY = event.touches[0].clientY;
   const delta = touchY - nextY;
   touchY = nextY;
-  target = clamp(target + delta / 260, 0, scenes.length - 1);
+  touchTravel += delta;
+  target = clamp(target + delta / 360, 0, scenes.length - 1);
+  scrollVelocity = clamp(scrollVelocity + delta / Math.max(window.innerHeight, 1) * 2.4, -2.8, 2.8);
   event.preventDefault();
 }, { passive: false });
 
 window.addEventListener("touchend", () => {
   touchY = null;
-  target = Math.round(target);
+  if (Math.abs(touchTravel) > 34) {
+    target = touchTravel > 0
+      ? Math.ceil(target - 0.001)
+      : Math.floor(target + 0.001);
+  } else {
+    target = Math.round(target);
+  }
+  target = clamp(target, 0, scenes.length - 1);
+  touchTravel = 0;
 }, { passive: true });
 
 window.addEventListener("keydown", (event) => {

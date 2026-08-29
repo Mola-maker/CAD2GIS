@@ -33,25 +33,57 @@
         <p class="hero-overline">不是把图“搬过去”</p>
         <h1 id="hero-title">让 CAD 证据<br>流向 GIS</h1>
       </div>
-      <svg class="route-ribbon" viewBox="0 0 1200 520" role="img" aria-label="从 CAD 曲线演化为 GIS 路网的抽象轨迹">
+      <svg class="flow-word" viewBox="0 0 1440 560" role="img" aria-labelledby="flow-word-title flow-word-description">
+        <title id="flow-word-title">CAD 流向 GIS 的立体管线字形</title>
+        <desc id="flow-word-description">一条连续、柔软的蓝色工程管线组成 CAD 与 GIS 字样，中间由荧光绿色箭头连接。</desc>
         <defs>
-          <linearGradient id="ribbon-gradient" x1="0" x2="1">
-            <stop offset="0" stop-color="#1d54f5"/>
-            <stop offset="0.48" stop-color="#8d9cff"/>
-            <stop offset="1" stop-color="#eef0ff"/>
+          <linearGradient id="tube-gradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#eef1ff"/>
+            <stop offset="0.18" stop-color="#9da8ff"/>
+            <stop offset="0.52" stop-color="#2f54e8"/>
+            <stop offset="0.82" stop-color="#152c9d"/>
+            <stop offset="1" stop-color="#7185ff"/>
           </linearGradient>
-          <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="10" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          <linearGradient id="tube-highlight" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity=".92"/>
+            <stop offset=".42" stop-color="#bec6ff" stop-opacity=".72"/>
+            <stop offset="1" stop-color="#7080ff" stop-opacity=".12"/>
+          </linearGradient>
+          <filter id="tube-glow" x="-30%" y="-35%" width="170%" height="180%">
+            <feGaussianBlur stdDeviation="13" result="blur"/>
+            <feColorMatrix in="blur" values="0.1 0 0 0 0.05 0 0.2 0 0 0.12 0 0 1 0 0.9 0 0 0 0.72 0" result="blueGlow"/>
+            <feMerge><feMergeNode in="blueGlow"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
-        <path class="ribbon-shadow" d="M35 365 C180 60 330 80 405 305 S610 520 660 205 S925 30 1040 250 S1120 405 1170 290"/>
-        <path class="ribbon-main" d="M35 365 C180 60 330 80 405 305 S610 520 660 205 S925 30 1040 250 S1120 405 1170 290"/>
-        <g class="route-nodes">
-          <circle cx="35" cy="365" r="9"/><circle cx="405" cy="305" r="9"/>
-          <circle cx="660" cy="205" r="9"/><circle cx="1040" cy="250" r="9"/>
-          <circle cx="1170" cy="290" r="9"/>
+        <g class="tube-shadow" aria-hidden="true">
+          <path pathLength="1" d="M264 142 C196 66 76 106 66 270 C56 430 187 484 276 380"/>
+          <path pathLength="1" d="M284 414 C330 315 364 207 414 104 C438 211 468 321 504 414 M342 304 C385 291 432 294 471 310"/>
+          <path pathLength="1" d="M542 106 C543 205 540 318 538 414 C724 441 758 123 542 106"/>
+          <path pathLength="1" d="M1104 156 C1027 72 916 107 900 266 C884 423 1022 478 1110 368 C1121 336 1119 306 1118 283 L1023 283"/>
+          <path pathLength="1" d="M1160 122 C1161 222 1158 320 1156 416"/>
+          <path pathLength="1" d="M1366 150 C1303 82 1208 117 1211 207 C1214 277 1301 276 1335 325 C1372 378 1336 451 1255 426"/>
         </g>
+        <g class="tube-main" aria-hidden="true">
+          <path pathLength="1" d="M264 142 C196 66 76 106 66 270 C56 430 187 484 276 380"/>
+          <path pathLength="1" d="M284 414 C330 315 364 207 414 104 C438 211 468 321 504 414 M342 304 C385 291 432 294 471 310"/>
+          <path pathLength="1" d="M542 106 C543 205 540 318 538 414 C724 441 758 123 542 106"/>
+          <path pathLength="1" d="M1104 156 C1027 72 916 107 900 266 C884 423 1022 478 1110 368 C1121 336 1119 306 1118 283 L1023 283"/>
+          <path pathLength="1" d="M1160 122 C1161 222 1158 320 1156 416"/>
+          <path pathLength="1" d="M1366 150 C1303 82 1208 117 1211 207 C1214 277 1301 276 1335 325 C1372 378 1336 451 1255 426"/>
+        </g>
+        <g class="tube-sheen" aria-hidden="true">
+          <path pathLength="1" d="M264 142 C196 66 76 106 66 270 C56 430 187 484 276 380"/>
+          <path pathLength="1" d="M284 414 C330 315 364 207 414 104 C438 211 468 321 504 414 M342 304 C385 291 432 294 471 310"/>
+          <path pathLength="1" d="M542 106 C543 205 540 318 538 414 C724 441 758 123 542 106"/>
+          <path pathLength="1" d="M1104 156 C1027 72 916 107 900 266 C884 423 1022 478 1110 368 C1121 336 1119 306 1118 283 L1023 283"/>
+          <path pathLength="1" d="M1160 122 C1161 222 1158 320 1156 416"/>
+          <path pathLength="1" d="M1366 150 C1303 82 1208 117 1211 207 C1214 277 1301 276 1335 325 C1372 378 1336 451 1255 426"/>
+        </g>
+        <g class="flow-arrow" aria-hidden="true">
+          <path pathLength="1" d="M760 280 H844"/>
+          <path pathLength="1" d="M816 241 858 280 816 319"/>
+        </g>
+        <text class="flow-word-label" x="717" y="376" text-anchor="middle">SOURCE → EVIDENCE</text>
       </svg>
       <div class="hero-note">DWG → SOURCE → EVIDENCE → DELIVERY</div>
     </section>
