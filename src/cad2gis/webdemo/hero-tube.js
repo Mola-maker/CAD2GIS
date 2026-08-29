@@ -55,22 +55,25 @@ const letterCurves = [
   new MultiBezierCurve([
     cubic([410, 206], [347, 143], [286, 210], [286, 323]),
     cubic([286, 323], [286, 428], [388, 442], [425, 330]),
-    cubic([425, 330], [443, 277], [450, 222], [463, 160]),
-    cubic([463, 160], [459, 245], [458, 339], [493, 414]),
   ], 0.28),
+  new MultiBezierCurve([
+    cubic([463, 160], [459, 245], [458, 339], [493, 414]),
+  ], 0.34),
   new MultiBezierCurve([
     cubic([618, 209], [555, 144], [494, 213], [495, 325]),
     cubic([495, 325], [497, 427], [598, 440], [631, 329]),
-    cubic([631, 329], [654, 251], [653, 153], [650, 74]),
-    cubic([650, 74], [650, 232], [663, 351], [693, 414]),
   ], 0.42),
+  new MultiBezierCurve([
+    cubic([650, 74], [650, 232], [663, 351], [693, 414]),
+  ], 0.5),
   new MultiBezierCurve([
     cubic([990, 209], [923, 145], [860, 211], [860, 324]),
     cubic([860, 324], [859, 427], [960, 442], [1000, 328]),
-    cubic([1000, 328], [1016, 282], [1028, 222], [1037, 165]),
+  ], 0.58),
+  new MultiBezierCurve([
     cubic([1037, 165], [1026, 314], [1014, 444], [956, 505]),
     cubic([956, 505], [918, 546], [864, 523], [868, 475]),
-  ], 0.58),
+  ], 0.66),
   new MultiBezierCurve([
     cubic([1101, 208], [1098, 275], [1092, 362], [1110, 414]),
   ], 0.74),
@@ -150,8 +153,6 @@ const start = () => {
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.06;
-
   const scene = new THREE.Scene();
   scene.environment = makeEnvironment();
   const camera = new THREE.OrthographicCamera(-8, 8, 3.4, -3.4, 0.1, 100);
@@ -163,16 +164,46 @@ const start = () => {
   word.position.y = -0.03;
   scene.add(word);
 
+  const themePalettes = {
+    blueprint: {
+      tube: new THREE.Color("#38b9ff"),
+      emissive: new THREE.Color("#00345f"),
+      sheen: new THREE.Color("#ddf5ff"),
+      arrow: new THREE.Color("#c7ff2f"),
+      arrowEmissive: new THREE.Color("#5d8f00"),
+      particle: new THREE.Color("#63c8ff"),
+      edgeLight: new THREE.Color("#6bc9ff"),
+      frontLight: new THREE.Color("#d8f3ff"),
+      exposure: 1.02,
+    },
+    light: {
+      tube: new THREE.Color("#087fc9"),
+      emissive: new THREE.Color("#001e3b"),
+      sheen: new THREE.Color("#cceeff"),
+      arrow: new THREE.Color("#78ba00"),
+      arrowEmissive: new THREE.Color("#315800"),
+      particle: new THREE.Color("#1688cf"),
+      edgeLight: new THREE.Color("#248bd5"),
+      frontLight: new THREE.Color("#a8dcf5"),
+      exposure: 1.1,
+    },
+  };
+  const getThemePalette = () => document.body.classList.contains("light-mode")
+    ? themePalettes.light
+    : themePalettes.blueprint;
+  let themeTarget = getThemePalette();
+  renderer.toneMappingExposure = themeTarget.exposure;
+
   const tubeMaterial = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color("#1426a4"),
-    emissive: new THREE.Color("#03092f"),
+    color: themeTarget.tube,
+    emissive: themeTarget.emissive,
     emissiveIntensity: 0.14,
     metalness: 0.1,
     roughness: 0.13,
     clearcoat: 1,
     clearcoatRoughness: 0.075,
     sheen: 0.26,
-    sheenColor: new THREE.Color("#aeb9ff"),
+    sheenColor: themeTarget.sheen,
     sheenRoughness: 0.22,
     iridescence: 0.14,
     iridescenceIOR: 1.36,
@@ -183,8 +214,8 @@ const start = () => {
   });
 
   const arrowMaterial = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color("#b8ff1f"),
-    emissive: new THREE.Color("#65a300"),
+    color: themeTarget.arrow,
+    emissive: themeTarget.arrowEmissive,
     emissiveIntensity: 0.45,
     metalness: 0.02,
     roughness: 0.2,
@@ -212,8 +243,6 @@ const start = () => {
   const particleCount = 170;
   const particlePositions = new Float32Array(particleCount * 3);
   const particleColors = new Float32Array(particleCount * 3);
-  const particleBlue = new THREE.Color("#5268ee");
-  const particleWhite = new THREE.Color("#cbd2ff");
   for (let index = 0; index < particleCount; index += 1) {
     const spread = random() ** 1.75;
     const point = toWorld([
@@ -223,15 +252,16 @@ const start = () => {
     particlePositions[index * 3] = point.x;
     particlePositions[index * 3 + 1] = point.y;
     particlePositions[index * 3 + 2] = point.z;
-    const color = particleBlue.clone().lerp(particleWhite, random() * 0.72);
-    particleColors[index * 3] = color.r;
-    particleColors[index * 3 + 1] = color.g;
-    particleColors[index * 3 + 2] = color.b;
+    const brightness = 0.5 + random() * 0.5;
+    particleColors[index * 3] = brightness;
+    particleColors[index * 3 + 1] = brightness;
+    particleColors[index * 3 + 2] = brightness;
   }
   const particleGeometry = new THREE.BufferGeometry();
   particleGeometry.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
   particleGeometry.setAttribute("color", new THREE.BufferAttribute(particleColors, 3));
   const particleMaterial = new THREE.PointsMaterial({
+    color: themeTarget.particle,
     size: 0.035,
     sizeAttenuation: true,
     transparent: true,
@@ -244,14 +274,14 @@ const start = () => {
   particles.position.z = -0.08;
   word.add(particles);
 
-  scene.add(new THREE.HemisphereLight(0xe5e8ff, 0x030833, 1.75));
+  scene.add(new THREE.HemisphereLight(0xe5f6ff, 0x030833, 1.75));
   const keyLight = new THREE.DirectionalLight(0xf7f8ff, 4.15);
   keyLight.position.set(-7, 8, 12);
   scene.add(keyLight);
-  const edgeLight = new THREE.DirectionalLight(0x6d7fff, 2.6);
+  const edgeLight = new THREE.DirectionalLight(themeTarget.edgeLight, 2.6);
   edgeLight.position.set(8, -2, 9);
   scene.add(edgeLight);
-  const frontLight = new THREE.PointLight(0xcbd2ff, 38, 24, 1.7);
+  const frontLight = new THREE.PointLight(themeTarget.frontLight, 38, 24, 1.7);
   frontLight.position.set(-3, 3.5, 8);
   scene.add(frontLight);
   const accentLight = new THREE.PointLight(0x9dff1b, 16, 9, 2);
@@ -286,6 +316,20 @@ const start = () => {
     const active = heroScene?.classList.contains("is-active") && !document.hidden;
 
     if (active) {
+      const themeBlend = 1 - Math.exp(-delta * 7.5);
+      tubeMaterial.color.lerp(themeTarget.tube, themeBlend);
+      tubeMaterial.emissive.lerp(themeTarget.emissive, themeBlend);
+      tubeMaterial.sheenColor.lerp(themeTarget.sheen, themeBlend);
+      arrowMaterial.color.lerp(themeTarget.arrow, themeBlend);
+      arrowMaterial.emissive.lerp(themeTarget.arrowEmissive, themeBlend);
+      particleMaterial.color.lerp(themeTarget.particle, themeBlend);
+      edgeLight.color.lerp(themeTarget.edgeLight, themeBlend);
+      frontLight.color.lerp(themeTarget.frontLight, themeBlend);
+      renderer.toneMappingExposure = THREE.MathUtils.lerp(
+        renderer.toneMappingExposure,
+        themeTarget.exposure,
+        themeBlend,
+      );
       if (!reducedMotion.matches) {
         const blend = 1 - Math.exp(-delta * 5.2);
         pointer.lerp(pointerTarget, blend);
@@ -307,7 +351,11 @@ const start = () => {
   };
 
   const observer = new ResizeObserver(resize);
+  const themeObserver = new MutationObserver(() => {
+    themeTarget = getThemePalette();
+  });
   observer.observe(host);
+  themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
   window.addEventListener("pointermove", onPointerMove, { passive: true });
   canvas.addEventListener("webglcontextlost", (event) => {
     event.preventDefault();
@@ -317,6 +365,7 @@ const start = () => {
     disposed = true;
     window.cancelAnimationFrame(frameId);
     observer.disconnect();
+    themeObserver.disconnect();
     window.removeEventListener("pointermove", onPointerMove);
     renderer.dispose();
     scene.environment?.dispose();
