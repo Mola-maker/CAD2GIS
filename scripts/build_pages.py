@@ -13,6 +13,7 @@ DEMO_ROOT = WEB_ROOT / "original-demo"
 ASSETS = (
     "landing.css",
     "landing.js",
+    "hero-tube.js",
     "install.css",
     "install.js",
     "pointer.css",
