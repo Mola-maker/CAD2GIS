@@ -7,6 +7,16 @@
   --line: oklch(72% 0.08 260 / 0.24);
   --accent: oklch(90% 0.2 120);
   --accent-blue: oklch(67% 0.2 258);
+  --tube-1: oklch(91% .08 224);
+  --tube-2: oklch(79% .14 230);
+  --tube-3: oklch(70% .18 239);
+  --tube-4: oklch(49% .2 251);
+  --tube-5: oklch(72% .16 235);
+  --tube-rim: oklch(38% .18 252);
+  --tube-shadow: oklch(10% .1 258 / .66);
+  --tube-sheen: oklch(94% .045 220 / .48);
+  --tube-glint: oklch(98% .02 215 / .88);
+  --tube-arrow: oklch(90% .2 120);
   --font-display: Bahnschrift, "DIN Alternate", "Noto Sans SC", sans-serif;
   --font-body: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
   --font-mono: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
@@ -222,6 +232,17 @@ button:focus-visible, a:focus-visible {
 .flow-word-fallback { opacity: 1; transition: opacity 260ms var(--ease-out-expo); }
 .flow-word.is-webgl-ready .hero-tube-canvas { opacity: 1; }
 .flow-word.is-webgl-ready .flow-word-fallback { opacity: 0; }
+#tube-gradient stop,
+#tube-surface stop { transition: stop-color 300ms var(--ease-out-expo); }
+#tube-gradient stop:nth-child(1) { stop-color: var(--tube-1); }
+#tube-gradient stop:nth-child(2) { stop-color: var(--tube-2); }
+#tube-gradient stop:nth-child(3) { stop-color: var(--tube-3); }
+#tube-gradient stop:nth-child(4) { stop-color: var(--tube-4); }
+#tube-gradient stop:nth-child(5) { stop-color: var(--tube-5); }
+#tube-surface stop:nth-child(1) { stop-color: var(--tube-1); }
+#tube-surface stop:nth-child(2) { stop-color: var(--tube-2); }
+#tube-surface stop:nth-child(3) { stop-color: var(--tube-4); }
+#tube-surface stop:nth-child(4) { stop-color: var(--tube-rim); }
 .tube-lettering use,
 .flow-arrow path {
   fill: none;
@@ -231,18 +252,18 @@ button:focus-visible, a:focus-visible {
 .tube-lettering {
   opacity: 1;
 }
-.tube-shadow use { stroke: oklch(6% .09 264 / .62); stroke-width: 112; transform: translateY(22px); }
-.tube-rim use { stroke: oklch(13% .16 270); stroke-width: 104; }
+.tube-shadow use { stroke: var(--tube-shadow); stroke-width: 112; transform: translateY(22px); }
+.tube-rim use { stroke: var(--tube-rim); stroke-width: 104; }
 .tube-main use { stroke: url(#tube-gradient); stroke-width: 94; }
 .tube-surface { transform: translate(-4px, -7px); }
 .tube-surface use { stroke: url(#tube-surface); stroke-width: 72; opacity: .56; }
 .tube-sheen { transform: translate(-17px, -21px); }
-.tube-sheen use { stroke: oklch(91% .07 268 / .34); stroke-width: 15; }
+.tube-sheen use { stroke: var(--tube-sheen); stroke-width: 15; }
 .tube-glint { transform: translate(-22px, -27px); }
-.tube-glint use { stroke: oklch(98% .025 260 / .82); stroke-width: 4; }
+.tube-glint use { stroke: var(--tube-glint); stroke-width: 4; }
 .tube-dot {
   fill: url(#tube-cap);
-  stroke: oklch(15% .16 268);
+  stroke: var(--tube-rim);
   stroke-width: 5;
   transform-box: fill-box;
   transform-origin: center;
@@ -254,7 +275,7 @@ button:focus-visible, a:focus-visible {
 }
 .flow-arrow path { opacity: 1; }
 .flow-arrow-rim { stroke: oklch(11% .08 264 / .72); stroke-width: 25; }
-.flow-arrow-main { stroke: var(--accent); stroke-width: 13; }
+.flow-arrow-main { stroke: var(--tube-arrow); stroke-width: 13; }
 .flow-word-label {
   fill: var(--ink-soft);
   font: 650 16px var(--font-mono);
@@ -385,6 +406,16 @@ button:focus-visible, a:focus-visible {
   --ink-soft: oklch(48% .03 260);
   --line: oklch(28% .02 260 / .16);
   --accent: oklch(78% .22 120);
+  --tube-1: oklch(84% .09 224);
+  --tube-2: oklch(70% .14 232);
+  --tube-3: oklch(59% .17 240);
+  --tube-4: oklch(43% .17 248);
+  --tube-5: oklch(63% .15 235);
+  --tube-rim: oklch(35% .15 250);
+  --tube-shadow: oklch(36% .12 248 / .25);
+  --tube-sheen: oklch(96% .025 220 / .64);
+  --tube-glint: oklch(99% .012 215 / .92);
+  --tube-arrow: oklch(70% .2 123);
 }
 @keyframes orbit { to { transform: rotate(1turn); } }
 @keyframes tube-draw { to { stroke-dashoffset: 0; } }
