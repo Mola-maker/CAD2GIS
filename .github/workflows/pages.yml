@@ -16,6 +16,7 @@ on:
       - src/cad2gis/webdemo/install.js
       - src/cad2gis/webdemo/pointer.css
       - src/cad2gis/webdemo/pointer.js
+      - src/cad2gis/webdemo/workspace-shell.css
       - src/cad2gis/webdemo/original-demo/**
   workflow_dispatch:
 
