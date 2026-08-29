@@ -77,7 +77,7 @@ const format = new ol.format.GeoJSON();
 const localLayers = new Map();
 const previewLayers = new Map();
 const layerCollections = new Map();
-const localExtent = ol.extent.createEmpty();
+let localExtent = ol.extent.createEmpty();
 const gcpLocalSource = new ol.source.Vector();
 const gcpMapSource = new ol.source.Vector();
 let controls = [];
@@ -129,7 +129,7 @@ const featureStyle = (feature, resolution) => {
     text: label && showLabels ? new ol.style.Text({
       text: label,
       offsetY: -12,
-      font: "11px Microsoft YaHei, sans-serif",
+      font: "500 11px 'Noto Sans SC', sans-serif",
       fill: new ol.style.Fill({ color: "#162126" }),
       stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
     }) : undefined,
@@ -149,7 +149,7 @@ const gcpStyle = (feature, resolution) => {
     text: showLabel ? new ol.style.Text({
       text: String(feature.get("label") || ""),
       offsetY: -14,
-      font: "11px Microsoft YaHei, sans-serif",
+      font: "600 11px 'Noto Sans SC', sans-serif",
       fill: new ol.style.Fill({ color: "#172328" }),
       stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
     }) : undefined,
@@ -227,6 +227,8 @@ const refreshPreview = () => {
   for (const layer of previewLayers.values()) worldMap.removeLayer(layer);
   previewLayers.clear();
   const nominalPreview = !similarity && runSummary?.demo?.nominal_map_preview;
+  const nominalTransform = runSummary?.demo?.nominal_transform
+    || { a: 1, b: 0, tx: 0, ty: 0 };
   if (!similarity && !nominalPreview) {
     $("#fit-model").textContent = "至少需要 2 个训练点进行预览";
     $("#fit-rmse").textContent = "—";
@@ -241,7 +243,12 @@ const refreshPreview = () => {
         for (let i = 0; i < input.length; i += stride) {
           const [x, y] = similarity
             ? similarity.apply([input[i], input[i + 1]])
-            : [input[i], input[i + 1]];
+            : [
+              nominalTransform.a * input[i] - nominalTransform.b * input[i + 1]
+                + nominalTransform.tx,
+              nominalTransform.b * input[i] + nominalTransform.a * input[i + 1]
+                + nominalTransform.ty,
+            ];
           target[i] = x;
           target[i + 1] = y;
           for (let j = 2; j < stride; j += 1) target[i + j] = input[i + j];
@@ -259,7 +266,9 @@ const refreshPreview = () => {
   }
   $("#fit-model").textContent = similarity
     ? `相似变换 · 比例 ${similarity.scale.toFixed(6)} · 旋转 ${(similarity.rotation * 180 / Math.PI).toFixed(3)}°`
-    : "名义 EPSG:3857 预览（未证明绝对精度）";
+    : runSummary?.demo?.map_anchor
+      ? `地图锚点预览 · ${runSummary.demo.map_anchor.place_name || "位置已知"}（仍需 GCP）`
+      : "名义 EPSG:3857 预览（未证明绝对精度）";
   $("#fit-rmse").textContent = similarity
     ? `${similarity.rmse.toFixed(3)} m（Web Mercator 预览）`
     : "—（请使用控制点验证）";
@@ -486,6 +495,71 @@ const loadLayers = async () => {
   terminalEvent("ok", `已加载 ${visibleCount} 个非空图层，共 ${layers.length} 个图层定义`);
 };
 
+const clearProjectState = () => {
+  for (const layer of localLayers.values()) localMap.removeLayer(layer);
+  for (const layer of previewLayers.values()) worldMap.removeLayer(layer);
+  localLayers.clear();
+  previewLayers.clear();
+  layerCollections.clear();
+  localExtent = ol.extent.createEmpty();
+  gcpLocalSource.clear();
+  gcpMapSource.clear();
+  controls = [];
+  pendingCad = null;
+  pendingCadEvidence = null;
+  similarity = null;
+  runSummary = null;
+  lastTargetCoordinate = "";
+  $("#layer-list").innerHTML = "";
+  $("#gcp-list").innerHTML = "";
+  $("#feature-properties").textContent = "在任一地图点击对象。";
+  $("#cad-coordinate").textContent = "—";
+  $("#map-coordinate").textContent = "—";
+  $("#target-coordinate").textContent = "—";
+  $("#copy-coordinate").disabled = true;
+  $("#export-gcp").disabled = true;
+};
+
+const renderProjectMeta = (project) => {
+  if (!project) return;
+  $("#demo-project-location").textContent = project.location;
+  $("#demo-project-description").textContent = project.description;
+  $("#demo-project-source-count").textContent = Number(project.source_entity_count).toLocaleString("en-US");
+  $("#demo-project-delivery-count").textContent = Number(project.delivery_feature_count).toLocaleString("en-US");
+  $("#demo-project-map-reference").textContent = project.map_reference;
+  $("#demo-project-sha").textContent = `${project.source_sha256.slice(0, 12)}…`;
+};
+
+const setupProjectSelector = async () => {
+  const selector = $("#demo-project-select");
+  if (!selector || !window.CAD2GIS_DEMO?.active) return;
+  const catalog = await window.CAD2GIS_DEMO.catalog();
+  selector.innerHTML = catalog.projects.map((project) => (
+    `<option value="${project.id}">${project.display_name}</option>`
+  )).join("");
+  selector.value = window.CAD2GIS_DEMO.activeProjectId;
+  const initialProject = catalog.projects.find((project) => project.id === selector.value)
+    || catalog.projects.find((project) => project.id === catalog.default_project);
+  renderProjectMeta(initialProject);
+  selector.addEventListener("change", async () => {
+    selector.disabled = true;
+    $("#demo-project-loading").hidden = false;
+    try {
+      const project = await window.CAD2GIS_DEMO.selectProject(selector.value);
+      clearProjectState();
+      renderProjectMeta(project);
+      await boot();
+      toast(`已切换到 ${project.display_name}`);
+    } catch (error) {
+      toast(error.message, true);
+      terminalEvent("error", `项目切换失败：${error.message}`);
+    } finally {
+      selector.disabled = false;
+      $("#demo-project-loading").hidden = true;
+    }
+  });
+};
+
 const renderRun = (run) => {
   runSummary = run;
   $("#run-status").textContent = run.run_status || "UNKNOWN";
@@ -493,6 +567,9 @@ const renderRun = (run) => {
   const sourceName = sourcePath.split(/[\\/]/).pop() || "未命名 CAD 项目";
   $("#project-name").textContent = sourceName;
   $("#project-source").textContent = sourcePath || "未提供源路径";
+  $("#map-reference-note").textContent = run.demo?.map_anchor
+    ? `${run.demo.map_anchor.display_name || run.demo.map_anchor.place_name} · ${run.demo.map_anchor.precision}`
+    : "DWG 声明坐标域 · 尚未用测量 GCP 验证";
   document.querySelector('[data-stage="source"]')?.classList.add("is-complete");
   document.querySelector('[data-stage="validation"]')?.classList.toggle(
     "is-complete", ["VERIFIED", "CONDITIONAL"].includes(run.run_status),
@@ -690,4 +767,13 @@ const boot = async () => {
   }
 };
 
-boot();
+const initialize = async () => {
+  try {
+    await setupProjectSelector();
+  } catch (error) {
+    terminalEvent("warn", `演示项目目录不可用：${error.message}`);
+  }
+  await boot();
+};
+
+initialize();

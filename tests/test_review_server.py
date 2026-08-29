@@ -347,7 +347,8 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
 
     demo = client.get("/assets/demo-fixture.js")
     assert demo.status_code == 200
-    assert "HUTABOHU_DERIVED_FIXTURE" in demo.text
+    assert "CAD2GIS_DERIVED_FIXTURE" in demo.text
+    assert "selectProject" in demo.text
     assert "window.CAD2GIS_DEMO" in demo.text
 
     stylesheet = client.get("/assets/styles.css")

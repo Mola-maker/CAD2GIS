@@ -7,7 +7,9 @@
   <title>CAD2GIS — 可验证的 GIS 交付</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
   <link rel="preload" href="./assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./assets/styles.css?v=plugin-guide-20260829">
+  <link rel="preload" href="./assets/noto-sans-sc-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/smiley-sans-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./assets/styles.css?v=font-system-20260829">
 </head>
 <body>
   <section id="hero-page" class="hero-page" aria-labelledby="hero-title">
@@ -276,7 +278,7 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
 
     <section class="hero-final hero-section-width" aria-labelledby="final-title">
       <img class="hero-stickers" src="./assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
-      <div class="hero-final-copy"><p class="hero-overline"><span>09</span> OPEN THE RUN</p><h3 id="final-title">把一张图，<br>变成一条可追溯的链。</h3><p>这是 Hutabohu 的真实派生演示。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">进入派生演示 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
+      <div class="hero-final-copy"><p class="hero-overline"><span>09</span> OPEN THE RUN</p><h3 id="final-title">把四张图，<br>变成四条可追溯的链。</h3><p>工作台现已加载 Hutabohu、Lamteh 主图、Lamteh SF 与 Kletek 四份真实派生运行。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">选择转换案例 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
       <div class="hero-final-footer"><span>CAD2GIS / v4 EVIDENCE-FIRST PIPELINE</span><span>EPSG:3857 NOMINAL DOMAIN · ABSOLUTE ACCURACY NOT VERIFIED</span></div>
     </section>
   </section>
@@ -300,7 +302,22 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
   <main class="workspace">
     <aside class="panel navigation-panel">
       <section class="project-card">
-        <span class="section-kicker">当前工作流</span>
+        <div class="project-picker-heading"><span class="section-kicker">真实转换案例</span><span id="demo-project-loading" class="project-loading" hidden>LOADING</span></div>
+        <label class="project-picker-label" for="demo-project-select">选择图纸与地图预览</label>
+        <select id="demo-project-select" class="project-picker" aria-label="选择真实转换案例">
+          <option value="hutabohu">Hutabohu / Gorontalo</option>
+        </select>
+        <span id="demo-project-location" class="project-location">Gorontalo, Indonesia</span>
+        <p id="demo-project-description" class="project-description">完整 FTTH 派生运行，包含 8 个交付图层与独立 DIMENSION 长度证据。</p>
+        <div class="project-proof-grid" aria-label="项目派生数据摘要">
+          <span><small>SOURCE</small><strong id="demo-project-source-count">9,896</strong></span>
+          <span><small>DELIVERY</small><strong id="demo-project-delivery-count">1,150</strong></span>
+        </div>
+        <dl class="project-proof-list">
+          <div><dt>地图参考</dt><dd id="demo-project-map-reference">DWG declared EPSG:3857</dd></div>
+          <div><dt>源哈希</dt><dd><code id="demo-project-sha">557e01413c39…</code></dd></div>
+        </dl>
+        <span class="section-kicker project-current-kicker">当前工作流</span>
         <strong id="project-name">未加载运行</strong>
         <span id="project-source" class="muted truncate">等待 run manifest…</span>
       </section>
@@ -374,6 +391,7 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
       <div class="map-toolbar">
         <div class="mode-switch"><span class="mode-label">DUAL VIEW</span><strong>源几何 ↔ 地理预览</strong></div>
         <div class="map-actions">
+          <span id="map-reference-note" class="map-reference-note">等待地图参考…</span>
           <span class="legend-dot train"></span><span>训练点</span>
           <span class="legend-dot check"></span><span>检查点</span>
           <button id="open-visual" class="ghost">CAD 视觉证据</button>
@@ -445,8 +463,8 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
-  <script src="./assets/demo-fixture.js?v=hutabohu-20260826-layers"></script>
-  <script type="module" src="./assets/hero-motion.js?v=plugin-guide-20260829"></script>
-  <script type="module" src="./assets/app.js?v=hutabohu-20260826-layers"></script>
+  <script src="./assets/demo-fixture.js?v=multi-demo-20260829"></script>
+  <script type="module" src="./assets/hero-motion.js?v=font-system-20260829"></script>
+  <script type="module" src="./assets/app.js?v=multi-demo-20260829"></script>
 </body>
 </html>
