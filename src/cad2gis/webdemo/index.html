@@ -7,7 +7,7 @@
   <title>CAD2GIS — 可验证的 GIS 交付</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
   <link rel="preload" href="./assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./assets/styles.css?v=terminal-replay-20260827">
+  <link rel="stylesheet" href="./assets/styles.css?v=plugin-guide-20260829">
 </head>
 <body>
   <section id="hero-page" class="hero-page" aria-labelledby="hero-title">
@@ -17,6 +17,7 @@
       <nav class="hero-nav-links" aria-label="Landing page navigation">
         <a href="#product-infinite">PRODUCT INFINITE</a>
         <a href="#validation-tunnel">VALIDATION</a>
+        <a href="#plugin-guide">PLUGIN GUIDE</a>
         <a href="#process-terminal">RUN REPLAY</a>
       </nav>
       <div class="hero-nav-status"><span class="hero-live-dot"></span><span>HUTABOHU / RUN 03</span><b>CONDITIONAL</b></div>
@@ -28,7 +29,7 @@
         <h2 id="hero-title">把不可信的<br><em>DWG</em>，变成<br><strong>可验证的 GIS 交付。</strong></h2>
         <p class="hero-lede">CAD2GIS 从不可变源事实出发，分别验证几何、拓扑、长度和坐标精度，再生成可追溯、可重放的 GeoPackage 交付。</p>
         <div class="hero-actions"><a class="hero-button hero-button-primary" href="#process-terminal">播放真实转换过程 <span>↗</span></a><a class="hero-button hero-button-secondary" href="#product-infinite">查看证据链 <span>↓</span></a></div>
-        <p class="hero-guardrail">AI 负责理解与提案，不改写坐标。</p>
+        <p class="hero-guardrail">AI 负责理解与提案，不改写坐标。<a href="#plugin-guide">安装 CAD2GIS Agent <span>→</span></a></p>
       </div>
       <div class="hero-visual" data-parallax="0.12">
         <div class="hero-visual-meta"><span>DERIVED RUN / HUTABOHU</span><span>01—05</span></div>
@@ -75,10 +76,144 @@
       <div class="story-grid"><article><span>READ</span><h4>先看源事实</h4><p>源坐标、曲线指纹和标签 provenance 保持不可变，审查从事实开始。</p></article><article><span>MAP</span><h4>再提语义</h4><p>AI 可以提案，但每个语义结果都必须回到来源证据和 registry。</p></article><article><span>TEST</span><h4>分开做验证</h4><p>独立的验证轨道让“形状像”与“位置对”不再互相冒充。</p></article><article><span>DELIVER</span><h4>最后交付</h4><p>交付物、清单与证据图一起生成，下一次运行可以重放。</p></article></div>
     </section>
 
+    <section id="plugin-guide" class="plugin-guide hero-section-width" aria-labelledby="plugin-guide-title" data-plugin-guide>
+      <div class="plugin-guide-heading">
+        <div>
+          <p class="hero-overline"><span>07</span> INSTALL THE AGENT</p>
+          <h3 id="plugin-guide-title">五步，把证据链<br><em>装进你的智能体。</em></h3>
+        </div>
+        <div class="plugin-guide-intro">
+          <p>CAD2GIS Agent 是 canonical Python 流水线的薄接入层：插件注册一个技能与一个 MCP 服务，读取、转换、验证和交付仍由同一套本地运行时完成。</p>
+          <div class="plugin-guide-badges" aria-label="安装要求"><span>PYTHON 3.11–3.12</span><span>UV / CONDA</span><span>LOCAL DWG READER</span></div>
+        </div>
+      </div>
+
+      <div class="plugin-architecture" aria-label="插件架构">
+        <span><b>01</b> AGENT SKILL</span><i aria-hidden="true">→</i><span><b>02</b> MCP SERVICE</span><i aria-hidden="true">→</i><span><b>03</b> CANONICAL RUNTIME</span><i aria-hidden="true">→</i><span><b>04</b> REVIEWED GPKG</span>
+      </div>
+
+      <div class="plugin-install-shell">
+        <ol class="plugin-step-nav" aria-label="插件安装步骤">
+          <li><button type="button" class="is-active" data-plugin-step="runtime" aria-controls="plugin-step-runtime" aria-current="step"><span>01</span><b>安装运行时</b><small>runtime + doctor</small></button></li>
+          <li><button type="button" data-plugin-step="roots" aria-controls="plugin-step-roots"><span>02</span><b>授权项目目录</b><small>fail-closed roots</small></button></li>
+          <li><button type="button" data-plugin-step="client" aria-controls="plugin-step-client"><span>03</span><b>连接智能体</b><small>Codex + MCP clients</small></button></li>
+          <li><button type="button" data-plugin-step="verify" aria-controls="plugin-step-verify"><span>04</span><b>验证连接</b><small>capabilities first</small></button></li>
+          <li><button type="button" data-plugin-step="first-run" aria-controls="plugin-step-first-run"><span>05</span><b>发起第一次转换</b><small>inspect → audit</small></button></li>
+        </ol>
+
+        <div class="plugin-step-panels">
+          <article id="plugin-step-runtime" class="plugin-step-panel is-active" data-plugin-panel="runtime">
+            <span class="plugin-step-kicker">STEP 01 / RUNTIME</span>
+            <h4>先安装真正执行转换的运行时。</h4>
+            <p>推荐用 <code>uv tool</code> 把 CLI 与 MCP 入口安装成隔离工具。插件本身不会下载 Python 包，也不会偷偷选择另一个解释器。</p>
+            <div class="plugin-code-block">
+              <div><span>WINDOWS / macOS / LINUX</span><button type="button" data-copy-target="plugin-runtime-command">复制命令</button></div>
+              <pre><code id="plugin-runtime-command">uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+cad2gis doctor --deep --strict --json</code></pre>
+            </div>
+            <div class="plugin-check-row"><span><i>✓</i> <code>cad2gis</code> 可执行</span><span><i>✓</i> <code>cad2gis-agent-mcp</code> 在 PATH</span><span><i>✓</i> doctor 报告 reader 状态</span></div>
+            <aside class="plugin-callout"><b>DWG reader 不是可选项。</b><span>AutoCAD Core Console 仅限 Windows；macOS/Linux 需要项目支持的 LibreDWG/ODA reader。</span></aside>
+          </article>
+
+          <article id="plugin-step-roots" class="plugin-step-panel" data-plugin-panel="roots">
+            <span class="plugin-step-kicker">STEP 02 / PROJECT ACCESS</span>
+            <h4>只授权需要转换的目录。</h4>
+            <p>MCP 服务默认失败关闭。路径不在 <code>CAD2GIS_PROJECT_ROOTS</code> 内时会停止，不会静默扩大文件访问范围。</p>
+            <div class="plugin-code-grid">
+              <div class="plugin-code-block">
+                <div><span>WINDOWS POWERSHELL</span><button type="button" data-copy-target="plugin-roots-windows">复制</button></div>
+                <pre><code id="plugin-roots-windows">$env:CAD2GIS_PROJECT_ROOTS = "E:\projects;D:\survey-data"
+$env:CAD2GIS_READER_BACKEND = "autocad"</code></pre>
+              </div>
+              <div class="plugin-code-block">
+                <div><span>macOS / LINUX</span><button type="button" data-copy-target="plugin-roots-posix">复制</button></div>
+                <pre><code id="plugin-roots-posix">export CAD2GIS_PROJECT_ROOTS="$HOME/projects:/srv/survey-data"
+command -v cad2gis-agent-mcp</code></pre>
+              </div>
+            </div>
+            <aside class="plugin-callout"><b>分隔符随系统变化。</b><span>Windows 使用分号 <code>;</code>，POSIX 使用冒号 <code>:</code>。插件缓存目录永远不会自动成为项目根目录。</span></aside>
+          </article>
+
+          <article id="plugin-step-client" class="plugin-step-panel" data-plugin-panel="client">
+            <span class="plugin-step-kicker">STEP 03 / CLIENT</span>
+            <h4>选择你的智能体客户端。</h4>
+            <p>所有 stdio 客户端都调用同一个 <code>cad2gis-agent-mcp</code> 入口。安装或修改配置后，请重启客户端并开启一个新任务。</p>
+            <div class="plugin-client-tabs" role="tablist" aria-label="选择客户端">
+              <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="plugin-client-codex" data-plugin-client="codex">Codex</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-claude" data-plugin-client="claude">Claude Code</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-editors" data-plugin-client="editors">Cursor / VS Code</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-http" data-plugin-client="http">Local HTTP</button>
+            </div>
+            <div class="plugin-client-panels">
+              <section id="plugin-client-codex" class="plugin-client-panel is-active" role="tabpanel" data-plugin-client-panel="codex">
+                <div class="plugin-code-block"><div><span>CODEX MARKETPLACE</span><button type="button" data-copy-target="plugin-client-codex-code">复制命令</button></div><pre><code id="plugin-client-codex-code">codex plugin marketplace add Mola-maker/CAD2GIS --ref main
+codex plugin add cad2gis-agent@cad2gis</code></pre></div>
+                <p>Marketplace 名称由仓库声明为 <code>cad2gis</code>。第二条命令安装 <code>cad2gis-agent</code> 的技能与 MCP 注册。</p>
+              </section>
+              <section id="plugin-client-claude" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="claude">
+                <div class="plugin-code-block"><div><span>CLAUDE CODE MARKETPLACE</span><button type="button" data-copy-target="plugin-client-claude-code">复制命令</button></div><pre><code id="plugin-client-claude-code">claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
+                <p>Claude marketplace 名称是 <code>cad2gis-tools</code>；运行时与项目根目录要求和 Codex 完全相同。</p>
+              </section>
+              <section id="plugin-client-editors" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="editors">
+                <div class="plugin-code-block"><div><span>CURSOR / MCP JSON</span><button type="button" data-copy-target="plugin-client-editors-code">复制配置</button></div><pre><code id="plugin-client-editors-code">{
+  "mcpServers": {
+    "cad2gis": {
+      "command": "cad2gis-agent-mcp",
+      "args": ["--transport", "stdio"],
+      "env": {"CAD2GIS_PROJECT_ROOTS": "&lt;ABSOLUTE_PROJECT_ROOT&gt;"}
+    }
+  }
+}</code></pre></div>
+                <p>VS Code/GitHub Copilot 使用相同入口，但顶层键为 <code>servers</code>，并增加 <code>"type": "stdio"</code>。仓库 <a href="https://github.com/Mola-maker/CAD2GIS/tree/main/plugins/cad2gis-agent/clients" target="_blank" rel="noreferrer">clients 目录</a> 提供可直接复制的模板。</p>
+              </section>
+              <section id="plugin-client-http" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="http">
+                <div class="plugin-code-block"><div><span>STREAMABLE HTTP / LOOPBACK ONLY</span><button type="button" data-copy-target="plugin-client-http-code">复制命令</button></div><pre><code id="plugin-client-http-code">python -m cad2gis.agent_mcp --transport streamable-http --host 127.0.0.1 --port 8768</code></pre></div>
+                <p>客户端连接 <code>http://127.0.0.1:8768/mcp</code>。不要直接暴露到公网；远程部署必须经过带身份认证的 TLS 反向代理。</p>
+              </section>
+            </div>
+          </article>
+
+          <article id="plugin-step-verify" class="plugin-step-panel" data-plugin-panel="verify">
+            <span class="plugin-step-kicker">STEP 04 / HANDSHAKE</span>
+            <h4>新建任务，先验证能力边界。</h4>
+            <p>第一次消息不要直接要求“转换”。先让智能体调用 <code>get_capabilities</code>，确认入口、授权根目录、reader 与 prompt contract 都已就绪。</p>
+            <div class="plugin-code-block plugin-prompt-block">
+              <div><span>FIRST HANDSHAKE PROMPT</span><button type="button" data-copy-target="plugin-verify-prompt">复制提示词</button></div>
+              <pre><code id="plugin-verify-prompt">请先调用 CAD2GIS 的 get_capabilities，列出已授权项目根目录、DWG reader 可用状态和 prompt_contract.version。如果 cad2gis-agent-mcp 不可用、路径未授权或 reader 缺失，请停止并给出修复步骤，不要假装已经转换。</code></pre>
+            </div>
+            <div class="plugin-verify-grid"><span><b>01</b> MCP server connected</span><span><b>02</b> project root listed</span><span><b>03</b> reader capability known</span><span><b>04</b> prompt contract present</span></div>
+          </article>
+
+          <article id="plugin-step-first-run" class="plugin-step-panel" data-plugin-panel="first-run">
+            <span class="plugin-step-kicker">STEP 05 / FIRST RUN</span>
+            <h4>从源事实开始，而不是从“导出”开始。</h4>
+            <p>每张新图都建立自己的 source-bound profile。让智能体按确定顺序检查、onboard、转换并审计，不复用另一张 DWG 的 mapping 或数量门禁。</p>
+            <div class="plugin-code-block plugin-prompt-block">
+              <div><span>RECOMMENDED FIRST TASK</span><button type="button" data-copy-target="plugin-first-prompt">复制提示词</button></div>
+              <pre><code id="plugin-first-prompt">使用 CAD2GIS 检查并转换 "&lt;ABSOLUTE_PATH_TO_DWG&gt;"。先调用 get_capabilities 和 inspect_source；为这张图建立独立的 source-bound onboarding；分别报告源几何、拓扑、长度和坐标精度；保留 unresolved；转换后调用 inspect_run 与 audit_run，只有 audit_status=PASS 才把交付物列为可交付。</code></pre>
+            </div>
+            <div class="plugin-run-sequence" aria-label="推荐工具调用顺序"><span>get_capabilities</span><i>→</i><span>inspect_source</span><i>→</i><span>bootstrap_project</span><i>→</i><span>AI onboarding</span><i>→</i><span>validate_project</span><i>→</i><span>run_conversion</span><i>→</i><span>audit_run</span></div>
+            <aside class="plugin-callout"><b>需要 GCP 时</b><span>调用 <code>prepare_review_workspace</code> 打开本地审查页。校准会创建新 run，不修改原始 GeoPackage；OSM 重合也不等于绝对精度已验证。</span></aside>
+          </article>
+          <p class="plugin-guide-status" data-plugin-guide-status aria-live="polite">当前显示：步骤 1，安装运行时。</p>
+        </div>
+      </div>
+
+      <div class="plugin-troubleshooting" aria-labelledby="plugin-troubleshooting-title">
+        <div><span class="plugin-step-kicker">FAILURE MAP</span><h4 id="plugin-troubleshooting-title">安装后看不到工具？先查这四处。</h4></div>
+        <article><b>PLUGIN VISIBLE / MCP OFFLINE</b><p><code>cad2gis-agent-mcp</code> 不在客户端继承的 PATH；用同一用户环境安装运行时，然后重启客户端。</p></article>
+        <article><b>PATH OUTSIDE ROOTS</b><p>把 DWG 所在父目录加入 <code>CAD2GIS_PROJECT_ROOTS</code>，不要把整个磁盘或插件缓存目录加入授权。</p></article>
+        <article><b>READER UNAVAILABLE</b><p>运行 <code>cad2gis doctor --deep --strict --json</code>，按系统配置 AutoCAD、LibreDWG 或 ODA reader。</p></article>
+        <article><b>CONDITIONAL RESULT</b><p>这不是插件断线。它表示至少一条独立证据轨道仍需复核，例如没有测量 GCP 或仍有 unresolved 对象。</p></article>
+      </div>
+      <div class="plugin-guide-footer"><span>1 SKILL · 1 MCP · 1 CANONICAL PIPELINE</span><strong>真实转换在本地执行；GitHub Pages 不接收 DWG。</strong><a href="https://github.com/Mola-maker/CAD2GIS/tree/main/plugins/cad2gis-agent" target="_blank" rel="noreferrer">阅读插件源码 ↗</a></div>
+    </section>
+
     <section id="process-terminal" class="process-terminal hero-section-width" aria-labelledby="process-terminal-title">
       <div class="process-terminal-heading">
         <div>
-          <p class="hero-overline"><span>07</span> REPLAY THE RUN</p>
+          <p class="hero-overline"><span>08</span> REPLAY THE RUN</p>
           <h3 id="process-terminal-title">把工作页，<br><em>播放成一条终端记录。</em></h3>
         </div>
         <div class="process-terminal-intro">
@@ -141,7 +276,7 @@
 
     <section class="hero-final hero-section-width" aria-labelledby="final-title">
       <img class="hero-stickers" src="./assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
-      <div class="hero-final-copy"><p class="hero-overline"><span>08</span> OPEN THE RUN</p><h3 id="final-title">把一张图，<br>变成一条可追溯的链。</h3><p>这是 Hutabohu 的真实派生演示。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">进入派生演示 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
+      <div class="hero-final-copy"><p class="hero-overline"><span>09</span> OPEN THE RUN</p><h3 id="final-title">把一张图，<br>变成一条可追溯的链。</h3><p>这是 Hutabohu 的真实派生演示。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">进入派生演示 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
       <div class="hero-final-footer"><span>CAD2GIS / v4 EVIDENCE-FIRST PIPELINE</span><span>EPSG:3857 NOMINAL DOMAIN · ABSOLUTE ACCURACY NOT VERIFIED</span></div>
     </section>
   </section>
@@ -311,7 +446,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
   <script src="./assets/demo-fixture.js?v=hutabohu-20260826-layers"></script>
-  <script type="module" src="./assets/hero-motion.js?v=terminal-replay-20260827"></script>
+  <script type="module" src="./assets/hero-motion.js?v=plugin-guide-20260829"></script>
   <script type="module" src="./assets/app.js?v=hutabohu-20260826-layers"></script>
 </body>
 </html>
