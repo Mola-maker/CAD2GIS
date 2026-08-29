@@ -1,0 +1,106 @@
+:root {
+  --cad-pointer-blue: oklch(58% .24 266);
+  --cad-pointer-edge: oklch(84% .11 263);
+  --cad-pointer-shadow: oklch(24% .14 270 / .48);
+  --cad-pointer-frame: currentColor;
+}
+
+.cad-pointer,
+.cad-pointer-ghost,
+.cad-pointer-frame,
+.cad-pointer-hud {
+  position: fixed;
+  z-index: 140;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.cad-pointer {
+  width: 3.25rem;
+  color: var(--cad-pointer-blue);
+  filter: drop-shadow(.55rem .7rem .8rem var(--cad-pointer-shadow));
+  transform-origin: 18% 12%;
+  transition: opacity 120ms linear, filter 220ms cubic-bezier(.16, 1, .3, 1);
+}
+
+.cad-pointer svg { display: block; width: 100%; height: auto; overflow: visible; }
+.cad-pointer .pointer-shadow { fill: var(--cad-pointer-shadow); }
+.cad-pointer .pointer-face { fill: currentColor; stroke: var(--cad-pointer-edge); stroke-width: 3; stroke-linejoin: round; }
+.cad-pointer .pointer-shine { fill: none; stroke: oklch(96% .04 265 / .72); stroke-width: 2; stroke-linecap: round; }
+
+.cad-pointer-ghost {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 1px solid color-mix(in oklch, var(--cad-pointer-edge), transparent 18%);
+  transform-origin: center;
+  mix-blend-mode: difference;
+}
+
+.cad-pointer-ghost::before,
+.cad-pointer-ghost::after {
+  content: "";
+  position: absolute;
+  background: color-mix(in oklch, var(--cad-pointer-edge), transparent 18%);
+}
+
+.cad-pointer-ghost::before { top: 50%; left: -.28rem; width: calc(100% + .56rem); height: 1px; }
+.cad-pointer-ghost::after { top: -.28rem; left: 50%; width: 1px; height: calc(100% + .56rem); }
+
+.cad-pointer-frame {
+  border: 1px dashed color-mix(in oklch, var(--cad-pointer-frame), transparent 28%);
+  outline: 1px solid color-mix(in oklch, var(--cad-pointer-frame), transparent 82%);
+  outline-offset: 3px;
+  transition: opacity 120ms linear;
+}
+
+.cad-pointer.is-visible,
+.cad-pointer-ghost.is-visible { opacity: 1; }
+.cad-pointer-frame.is-visible { opacity: .82; }
+
+.cad-pointer.is-interactive {
+  filter: drop-shadow(.35rem .45rem .45rem var(--cad-pointer-shadow));
+}
+
+.cad-pointer.is-pressing { filter: drop-shadow(.18rem .24rem .2rem var(--cad-pointer-shadow)); }
+.cad-pointer-ghost.is-interactive { border-style: dashed; }
+
+.cad-pointer-hud {
+  z-index: 139;
+  right: clamp(1rem, 2.2vw, 2rem);
+  bottom: clamp(1rem, 2.2vw, 2rem);
+  top: auto;
+  left: auto;
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  padding: .35rem .45rem;
+  color: inherit;
+  background: color-mix(in oklch, Canvas, transparent 90%);
+  font: 650 .62rem/1.1 ui-monospace, "Cascadia Code", monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .68;
+}
+
+.cad-pointer-hud::before {
+  content: "";
+  width: .38rem;
+  height: .38rem;
+  background: var(--cad-pointer-blue);
+  box-shadow: .45rem 0 0 color-mix(in oklch, var(--cad-pointer-blue), transparent 55%);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cad-pointer,
+  .cad-pointer-ghost,
+  .cad-pointer-frame,
+  .cad-pointer-hud { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cad-pointer,
+  .cad-pointer-ghost,
+  .cad-pointer-frame { display: none !important; }
+}

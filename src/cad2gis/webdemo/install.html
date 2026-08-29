@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f5ed">
+  <title>安装 CAD2GIS Agent</title>
+  <link rel="stylesheet" href="/assets/install.css">
+  <link rel="stylesheet" href="/assets/pointer.css">
+</head>
+<body>
+  <a class="skip-link" href="#install-main">跳到安装步骤</a>
+  <div class="install-grid" aria-hidden="true"></div>
+  <header class="install-header">
+    <a class="install-wordmark" href="/">CAD2GIS<span>.AGENT</span></a>
+    <nav aria-label="安装页导航">
+      <a href="/">首页</a>
+      <a href="/workspace">工作台</a>
+      <span>INSTALL[01]</span>
+    </nav>
+  </header>
+
+  <main id="install-main">
+    <section class="install-intro" aria-labelledby="install-title">
+      <p class="chapter">INSTALLATION / WINDOWS</p>
+      <h1 id="install-title">我们一步一步来，<br>先把环境装稳。</h1>
+      <p class="intro-copy">安装这类 GIS 工具，最容易出问题的不是某一条命令，而是环境没有对齐。下面五步按顺序做，每一步都先确认结果，再继续往下。</p>
+      <div class="lesson-note">
+        <span>老师提醒</span>
+        <p>右侧黑窗口是过程演示，不会在你的电脑上执行命令。真正安装时，请逐条复制到自己的 PowerShell。</p>
+      </div>
+    </section>
+
+    <section class="terminal-stage" aria-label="安装过程终端演示">
+      <div class="terminal-window">
+        <header class="terminal-bar">
+          <div class="terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span>PowerShell — CAD2GIS setup</span>
+          <button id="replay-terminal" type="button">重新演示</button>
+        </header>
+        <div class="terminal-body">
+          <div id="terminal-output" class="terminal-output" aria-live="polite"></div>
+          <div class="terminal-prompt"><span>PS E:\CAD2GIS&gt;</span><i class="terminal-cursor"></i></div>
+        </div>
+        <footer class="terminal-metrics">
+          <span><b id="metric-stage">PREPARE</b> STAGE</span>
+          <span><b id="metric-throughput">0.0</b> MB/S</span>
+          <span><b id="metric-entities">0</b> ENT/S</span>
+          <span><b id="metric-health">0/8</b> CHECKS</span>
+        </footer>
+      </div>
+      <div class="throughput-track" aria-hidden="true"><i id="throughput-fill"></i></div>
+      <p class="simulation-caption">LIVE PROCESS SIMULATION / 数据仅用于解释安装阶段</p>
+    </section>
+
+    <section class="install-steps" aria-labelledby="steps-title">
+      <header>
+        <p class="chapter">THE FIVE STEPS</p>
+        <h2 id="steps-title">先确认，再继续</h2>
+      </header>
+      <ol>
+        <li>
+          <div class="step-heading"><span>01</span><h3>准备 Conda 环境</h3></div>
+          <p>先进入项目目录，再创建专用环境。这样 GDAL、PROJ 和 Python 依赖不会和你电脑里的其他项目混在一起。</p>
+          <div class="command-row"><code>conda env create -f env/environment.yml</code><button type="button" data-copy="conda env create -f env/environment.yml">复制</button></div>
+          <div class="command-row"><code>conda activate cad2gis</code><button type="button" data-copy="conda activate cad2gis">复制</button></div>
+          <small>看到命令行左侧出现 <b>(cad2gis)</b>，这一关就通过了。</small>
+        </li>
+        <li>
+          <div class="step-heading"><span>02</span><h3>安装插件与审查组件</h3></div>
+          <p>接下来安装 CAD2GIS 本体、MCP 接入、Web 审查界面和测试依赖。第一次构建需要一点时间，先让它完整跑完。</p>
+          <div class="command-row"><code>pip install -e ".[mcp,review,test]"</code><button type="button" data-copy="pip install -e &quot;.[mcp,review,test]&quot;">复制</button></div>
+          <small>最后出现 <b>Successfully installed cad2gis</b> 即可，不必担心中间正常的依赖下载信息。</small>
+        </li>
+        <li>
+          <div class="step-heading"><span>03</span><h3>在 Windows 选择 DWG Reader</h3></div>
+          <p>如果电脑已经安装 AutoCAD，就让 CAD2GIS 使用 Core Console 读取 DWG。这个设置只影响当前 PowerShell 窗口。</p>
+          <div class="command-row"><code>$env:CAD2GIS_READER_BACKEND = "autocad"</code><button type="button" data-copy="$env:CAD2GIS_READER_BACKEND = &quot;autocad&quot;">复制</button></div>
+          <small>没有 AutoCAD 时也可以使用兼容的 LibreDWG reader；稍后的 doctor 会告诉你当前哪一种可用。</small>
+        </li>
+        <li>
+          <div class="step-heading"><span>04</span><h3>限制插件可访问的目录</h3></div>
+          <p>把插件的文件权限收在项目根目录里。请把示例路径换成你实际存放 CAD 项目的位置。</p>
+          <div class="command-row"><code>$env:CAD2GIS_PROJECT_ROOTS = "E:\branch_CAD2GIS"</code><button type="button" data-copy="$env:CAD2GIS_PROJECT_ROOTS = &quot;E:\branch_CAD2GIS&quot;">复制</button></div>
+          <small>这是安全边界，不是可省略的“高级设置”。路径之外的文件默认不会被 MCP 工具读取。</small>
+        </li>
+        <li>
+          <div class="step-heading"><span>05</span><h3>让 doctor 做最后检查</h3></div>
+          <p>安装完成后不要急着拿正式图纸测试。先让 doctor 检查 reader、GDAL、PROJ、MCP 和审查组件是否都能正常工作。</p>
+          <div class="command-row"><code>cad2gis doctor --deep --strict --json</code><button type="button" data-copy="cad2gis doctor --deep --strict --json">复制</button></div>
+          <small>所有必需检查通过后，再开始第一张 DWG；如果有失败项，输出里会直接指出缺什么。</small>
+        </li>
+      </ol>
+    </section>
+
+    <section class="first-run" aria-labelledby="first-run-title">
+      <p class="chapter">YOUR FIRST RUN</p>
+      <h2 id="first-run-title">装好以后，先做一次体检式转换</h2>
+      <p>选一张有代表性、但不是唯一原件的 DWG。先检查，再为这张图建立 source-bound 项目配置；确认验证通过后，才生成新的 run 目录。</p>
+      <div class="first-run-command">
+        <pre><code>cad2gis inspect "&lt;SOURCE.dwg&gt;" --json
+cad2gis bootstrap "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --json
+cad2gis validate --project "&lt;PROJECT_DIR&gt;" --json
+cad2gis convert "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --run-dir "&lt;NEW_RUN_DIR&gt;" --json</code></pre>
+        <button type="button" data-copy="cad2gis inspect &quot;&lt;SOURCE.dwg&gt;&quot; --json&#10;cad2gis bootstrap &quot;&lt;SOURCE.dwg&gt;&quot; --project &quot;&lt;PROJECT_DIR&gt;&quot; --json&#10;cad2gis validate --project &quot;&lt;PROJECT_DIR&gt;&quot; --json&#10;cad2gis convert &quot;&lt;SOURCE.dwg&gt;&quot; --project &quot;&lt;PROJECT_DIR&gt;&quot; --run-dir &quot;&lt;NEW_RUN_DIR&gt;&quot; --json">复制整组命令</button>
+      </div>
+      <div class="next-actions">
+        <a class="primary-action" href="/workspace">打开审查工作台</a>
+        <a href="/">回到产品介绍</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="install-footer"><span>CAD2GIS / INSTALL GUIDE</span><span>READ → CHECK → CONTINUE</span></footer>
+  <div id="copy-toast" class="copy-toast" role="status" aria-live="polite">命令已复制</div>
+  <script type="module" src="/assets/install.js"></script>
+  <script type="module" src="/assets/pointer.js"></script>
+</body>
+</html>
