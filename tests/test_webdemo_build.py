@@ -31,6 +31,8 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             "assets/hero-stickers.svg",
             "assets/hero-tunnel.svg",
             "assets/hero-motion.js",
+            "assets/noto-sans-sc-subset.woff2",
+            "assets/smiley-sans-subset.woff2",
             "assets/styles.css",
         ])
         assert result["files"] == sorted([
@@ -38,19 +40,34 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             ".nojekyll",
             "assets/app.js",
             "assets/cad2gis-hero-display.woff2",
+            "assets/demo-catalog.json",
             "assets/demo-data.json",
+            "assets/demo-data-kletek.json",
+            "assets/demo-data-lamteh-main.json",
+            "assets/demo-data-lamteh-sf.json",
             "assets/demo-fixture.js",
+            "assets/font-licenses/OFL-IBMPlexMono.txt",
+            "assets/font-licenses/OFL-NotoSansSC.txt",
+            "assets/font-licenses/OFL-SmileySans.txt",
+            "assets/font-licenses/OFL-SpaceGrotesk.txt",
             "assets/hero-evidence-graph.svg",
             "assets/hero-geometry.json",
             "assets/hero-grid.svg",
             "assets/hero-motion.js",
             "assets/hero-stickers.svg",
             "assets/hero-tunnel.svg",
+            "assets/ibm-plex-mono-regular-subset.woff2",
+            "assets/ibm-plex-mono-semibold-subset.woff2",
+            "assets/noto-sans-sc-subset.woff2",
+            "assets/smiley-sans-subset.woff2",
+            "assets/space-grotesk-subset.woff2",
             "assets/styles.css",
             "index.html",
         ])
         assert (destination / "assets" / "app.js").is_file()
+        assert (destination / "assets" / "demo-catalog.json").is_file()
         assert (destination / "assets" / "demo-data.json").is_file()
+        assert (destination / "assets" / "demo-data-kletek.json").is_file()
         assert not any(
             path.suffix.casefold() in builder.FORBIDDEN_SUFFIXES
             for path in destination.rglob("*")

@@ -3,26 +3,51 @@
     || new URLSearchParams(location.search).get("demo") === "1";
   if (!active) return;
 
-  const FIXTURE_KIND = "HUTABOHU_DERIVED_FIXTURE";
-  const PUBLICATION_BOUNDARY = "公开页面仅含 Hutabohu 真实转换的筛选派生证据，不包含任何 DWG/GPKG 原始文件";
-  const fixtureUrl = new URL(
-    "./demo-data.json?v=hutabohu-20260826-layers",
-    document.currentScript?.src || location.href,
-  );
+  const FIXTURE_KIND = "CAD2GIS_DERIVED_FIXTURE";
+  const PUBLICATION_BOUNDARY = "公开页面仅含真实转换的筛选派生证据，不包含任何 DWG/GPKG 原始文件";
+  const baseUrl = new URL(document.currentScript?.src || location.href);
+  const catalogUrl = new URL("./demo-catalog.json?v=multi-demo-20260829", baseUrl);
+  const requestedProject = new URLSearchParams(location.search).get("project");
+  const reviewByProject = new Map();
+  const revisionByProject = new Map();
+  let activeProjectId = requestedProject || "hutabohu";
+  let catalogPromise;
   let fixturePromise;
-  const loadFixture = async () => {
-    fixturePromise ||= fetch(fixtureUrl).then(async (response) => {
-      if (!response.ok) throw new Error(`无法加载 Hutabohu demo 数据：${response.status}`);
+
+  const clone = (value) => JSON.parse(JSON.stringify(value));
+  const loadCatalog = async () => {
+    catalogPromise ||= fetch(catalogUrl).then(async (response) => {
+      if (!response.ok) throw new Error(`无法加载演示项目目录：${response.status}`);
       return response.json();
     });
+    return catalogPromise;
+  };
+  const resolveProject = async (projectId = activeProjectId) => {
+    const catalog = await loadCatalog();
+    const selected = catalog.projects.find((project) => project.id === projectId)
+      || catalog.projects.find((project) => project.id === catalog.default_project);
+    if (!selected) throw new Error("演示项目目录为空");
+    activeProjectId = selected.id;
+    return selected;
+  };
+  const loadFixture = async () => {
+    if (!fixturePromise) {
+      fixturePromise = resolveProject().then(async (project) => {
+        const fixtureUrl = new URL(`./${project.fixture}?v=multi-demo-20260829`, baseUrl);
+        const response = await fetch(fixtureUrl);
+        if (!response.ok) throw new Error(`无法加载 ${project.display_name} 派生数据：${response.status}`);
+        return response.json();
+      });
+    }
     return fixturePromise;
   };
-  const review = new Map();
-  let revision = 0;
-  const clone = (value) => JSON.parse(JSON.stringify(value));
+  const activeReview = () => {
+    if (!reviewByProject.has(activeProjectId)) reviewByProject.set(activeProjectId, new Map());
+    return reviewByProject.get(activeProjectId);
+  };
 
   const registration = () => {
-    const controls = [...review.values()]
+    const controls = [...activeReview().values()]
       .filter((item) => item.properties?._kind === "cad_map_gcp")
       .map((item) => {
         const [lon, lat] = item.geometry.coordinates;
@@ -75,19 +100,20 @@
       return clone(layers[name] || { type: "FeatureCollection", features: [] });
     }
     if (url === "/api/review/features" && method === "GET") {
-      return clone({ type: "FeatureCollection", features: [...review.values()] });
+      return clone({ type: "FeatureCollection", features: [...activeReview().values()] });
     }
     if (url === "/api/review/features" && method === "POST") {
       const payload = JSON.parse(options.body || "{}");
       const saved = clone(payload.feature);
-      revision += 1;
+      const revision = (revisionByProject.get(activeProjectId) || 0) + 1;
+      revisionByProject.set(activeProjectId, revision);
       saved.properties = { ...saved.properties, _review_revision: revision };
-      review.set(String(saved.id), saved);
+      activeReview().set(String(saved.id), saved);
       return clone(saved);
     }
     const deleteMatch = url.match(/^\/api\/review\/features\/([^?]+)/);
     if (deleteMatch && method === "DELETE") {
-      review.delete(decodeURIComponent(deleteMatch[1]));
+      activeReview().delete(decodeURIComponent(deleteMatch[1]));
       return { deleted: true };
     }
     if (url === "/api/registration") return clone(registration());
@@ -107,10 +133,23 @@
     throw new Error(`静态演示未实现 API：${method} ${url}`);
   };
 
+  const selectProject = async (projectId) => {
+    const project = await resolveProject(projectId);
+    activeProjectId = project.id;
+    fixturePromise = null;
+    const nextUrl = new URL(location.href);
+    nextUrl.searchParams.set("project", project.id);
+    history.replaceState({}, "", nextUrl);
+    return clone(project);
+  };
+
   window.CAD2GIS_DEMO = {
     active: true,
     fixtureKind: FIXTURE_KIND,
     publicationBoundary: PUBLICATION_BOUNDARY,
+    get activeProjectId() { return activeProjectId; },
+    catalog: async () => clone(await loadCatalog()),
+    selectProject,
     request,
   };
 }());

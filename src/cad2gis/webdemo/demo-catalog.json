@@ -1,0 +1,59 @@
+{
+  "schema_version": "cad2gis.webdemo_catalog.v1",
+  "default_project": "hutabohu",
+  "publication_boundary": "公开页面仅含真实转换的筛选派生证据，不包含任何 DWG/GPKG 原始文件",
+  "projects": [
+    {
+      "id": "hutabohu",
+      "display_name": "Hutabohu / Gorontalo",
+      "short_name": "HUTABOHU",
+      "location": "Gorontalo, Indonesia",
+      "description": "完整 FTTH 派生运行，包含 8 个交付图层与独立 DIMENSION 长度证据。",
+      "fixture": "demo-data.json",
+      "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
+      "source_entity_count": 9896,
+      "delivery_feature_count": 1150,
+      "map_reference": "DWG declared EPSG:3857",
+      "map_precision": "nominal_crs"
+    },
+    {
+      "id": "lamteh-main",
+      "display_name": "Lamteh Dayah / Main",
+      "short_name": "LAMTEH MAIN",
+      "location": "Aceh Besar, Indonesia",
+      "description": "大范围主图转换，使用 OSM 地名锚点校核已落位的 EPSG:3857 交付预览。",
+      "fixture": "demo-data-lamteh-main.json",
+      "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78",
+      "source_entity_count": 63483,
+      "delivery_feature_count": 1000,
+      "map_reference": "Lamteh Dayah, Aceh Besar",
+      "map_precision": "coarse_bbox_centre"
+    },
+    {
+      "id": "lamteh-sf",
+      "display_name": "Lamteh Dayah / SF",
+      "short_name": "LAMTEH SF",
+      "location": "Aceh Besar, Indonesia",
+      "description": "SF 布局派生运行，保留空图层并展示较小交付集的真实转换结果。",
+      "fixture": "demo-data-lamteh-sf.json",
+      "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+      "source_entity_count": 59369,
+      "delivery_feature_count": 56,
+      "map_reference": "Lamteh Dayah, Aceh Besar",
+      "map_precision": "coarse_bbox_centre"
+    },
+    {
+      "id": "kletek",
+      "display_name": "Kletek RW 05 / Sidoarjo",
+      "short_name": "KLETEK",
+      "location": "Sidoarjo, Indonesia",
+      "description": "紧凑型社区网络，适合对照 CAD 几何与已落位的真实地图交付预览。",
+      "fixture": "demo-data-kletek.json",
+      "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
+      "source_entity_count": 1538,
+      "delivery_feature_count": 263,
+      "map_reference": "Kletek, Sidoarjo",
+      "map_precision": "coarse_bbox_centre"
+    }
+  ]
+}

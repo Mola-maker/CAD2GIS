@@ -14,6 +14,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - "tests/test_webdemo_build.py"
+      - "tests/test_webdemo_multidemo.py"
       - "tests/test_review_server.py"
   workflow_dispatch:
 
@@ -57,7 +58,7 @@ jobs:
         run: |
           node --check src/cad2gis/webdemo/app.js
           node --check src/cad2gis/webdemo/demo-fixture.js
-          python -m pytest tests/test_webdemo_build.py tests/test_review_server.py -q
+          python -m pytest tests/test_webdemo_build.py tests/test_webdemo_multidemo.py tests/test_review_server.py -q
         shell: bash -el {0}
 
       - name: Build data-free public demo
