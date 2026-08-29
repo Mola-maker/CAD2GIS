@@ -8,6 +8,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 WEB_ROOT = PROJECT_ROOT / "src" / "cad2gis" / "webdemo"
+DEMO_ROOT = WEB_ROOT / "original-demo"
 
 ASSETS = (
     "landing.css",
@@ -18,6 +19,23 @@ ASSETS = (
     "pointer.js",
 )
 
+DEMO_REQUIRED = (
+    "index.html",
+    "assets/app.js",
+    "assets/styles.css",
+    "assets/demo-fixture.js",
+    "assets/demo-catalog.json",
+)
+
+FORBIDDEN_DEMO_SUFFIXES = {
+    ".dwg",
+    ".dxf",
+    ".gpkg",
+    ".qgz",
+    ".sqlite",
+    ".sqlite3",
+}
+
 
 def _rewrite_landing(source: str) -> str:
     return (
@@ -25,11 +43,10 @@ def _rewrite_landing(source: str) -> str:
         .replace('href="/assets/', 'href="./assets/')
         .replace('src="/assets/', 'src="./assets/')
         .replace('href="/install"', 'href="./install.html"')
-        .replace('href="/workspace"', 'href="./install.html#first-run-title"')
+        .replace('href="/workspace"', 'href="./demo/"')
         .replace('href="/"', 'href="./"')
-        .replace('>工作台</a>', '>本地工作台</a>')
-        .replace('进入双地图审查工作台', '安装后打开双地图审查工作台')
-        .replace('打开工作台', '本地启动工作台')
+        .replace('>工作台</a>', '>演示台</a>')
+        .replace('打开工作台', '打开演示台')
     )
 
 
@@ -38,14 +55,30 @@ def _rewrite_install(source: str) -> str:
         source
         .replace('href="/assets/', 'href="./assets/')
         .replace('src="/assets/', 'src="./assets/')
-        .replace('href="/workspace"', 'href="#first-run-title"')
+        .replace('href="/workspace"', 'href="./demo/"')
         .replace('href="/"', 'href="./"')
-        .replace('>工作台</a>', '>本地工作台</a>')
-        .replace('打开审查工作台', '查看本地启动方法')
+        .replace('>工作台</a>', '>演示台</a>')
+        .replace('打开审查工作台', '打开图纸定位演示台')
     )
 
 
+def _validate_demo() -> None:
+    missing = [name for name in DEMO_REQUIRED if not (DEMO_ROOT / name).is_file()]
+    if missing:
+        raise ValueError("Original WebDemo is incomplete: " + ", ".join(missing))
+    forbidden = sorted(
+        path.relative_to(DEMO_ROOT).as_posix()
+        for path in DEMO_ROOT.rglob("*")
+        if path.is_file() and path.suffix.casefold() in FORBIDDEN_DEMO_SUFFIXES
+    )
+    if forbidden:
+        raise ValueError(
+            "Refusing to publish CAD/GIS source data: " + ", ".join(forbidden)
+        )
+
+
 def build(output: Path) -> None:
+    _validate_demo()
     output = output.resolve()
     if output == PROJECT_ROOT or PROJECT_ROOT not in output.parents:
         raise ValueError("Pages output must be a child directory of the project root")
@@ -65,13 +98,15 @@ def build(output: Path) -> None:
     (output / "install.html").write_text(
         _rewrite_install(install), encoding="utf-8",
     )
+    shutil.copytree(DEMO_ROOT, output / "demo")
     (output / ".nojekyll").write_text("", encoding="utf-8")
     (output / "build-manifest.json").write_text(
         json.dumps({
             "site": "CAD2GIS Agent",
-            "pages": ["index.html", "install.html"],
+            "pages": ["index.html", "install.html", "demo/index.html"],
             "mode": "static-github-pages",
-            "workspace": "local-only",
+            "demo": "data-free-original-workspace",
+            "contains_source_binaries": False,
         }, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
