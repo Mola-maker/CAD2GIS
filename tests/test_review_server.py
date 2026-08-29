@@ -212,6 +212,11 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     assert "170 / 179 spans" in page
     assert "max |error| 0.493 m" in page
     assert "1,150 delivery features" in page
+    assert 'id="plugin-guide"' in page
+    assert 'data-plugin-guide' in page
+    assert page.count('data-plugin-step=') == 5
+    assert "codex plugin marketplace add Mola-maker/CAD2GIS --ref main" in page
+    assert "cad2gis plugin marketplace" not in page
     response = client.post("/api/review/features", json={
         "feature": _feature(),
         "expected_revision": 0,

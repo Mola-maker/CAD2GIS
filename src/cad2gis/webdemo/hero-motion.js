@@ -120,6 +120,111 @@ const observeMotion = () => {
   }));
 };
 
+const setupPluginGuide = () => {
+  const guide = document.querySelector("[data-plugin-guide]");
+  if (!guide) return;
+  const stepButtons = [...guide.querySelectorAll("[data-plugin-step]")];
+  const stepPanels = [...guide.querySelectorAll("[data-plugin-panel]")];
+  const clientButtons = [...guide.querySelectorAll("[data-plugin-client]")];
+  const clientPanels = [...guide.querySelectorAll("[data-plugin-client-panel]")];
+  const copyButtons = [...guide.querySelectorAll("[data-copy-target]")];
+  const status = guide.querySelector("[data-plugin-guide-status]");
+  if (!stepButtons.length || !stepPanels.length || !status) return;
+
+  guide.classList.add("is-enhanced");
+
+  const activateStep = (name, announce = true) => {
+    const activeButton = stepButtons.find((button) => button.dataset.pluginStep === name);
+    const activePanel = stepPanels.find((panel) => panel.dataset.pluginPanel === name);
+    if (!activeButton || !activePanel) return;
+    stepButtons.forEach((button) => {
+      const active = button === activeButton;
+      button.classList.toggle("is-active", active);
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    stepPanels.forEach((panel) => {
+      const active = panel === activePanel;
+      panel.classList.toggle("is-active", active);
+      panel.hidden = !active;
+    });
+    if (announce) {
+      const stepNumber = stepButtons.indexOf(activeButton) + 1;
+      const label = activeButton.querySelector("b")?.textContent || name;
+      status.textContent = `当前显示：步骤 ${stepNumber}，${label}。`;
+    }
+  };
+
+  const activateClient = (name, focus = false) => {
+    const activeButton = clientButtons.find((button) => button.dataset.pluginClient === name);
+    const activePanel = clientPanels.find((panel) => panel.dataset.pluginClientPanel === name);
+    if (!activeButton || !activePanel) return;
+    clientButtons.forEach((button) => {
+      const active = button === activeButton;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
+    clientPanels.forEach((panel) => {
+      const active = panel === activePanel;
+      panel.classList.toggle("is-active", active);
+      panel.hidden = !active;
+    });
+    if (focus) activeButton.focus();
+  };
+
+  const copyCode = async (button) => {
+    const target = document.getElementById(button.dataset.copyTarget || "");
+    const value = target?.textContent?.trim();
+    if (!target || !value) return;
+    const originalLabel = button.textContent;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        document.execCommand("copy");
+        selection?.removeAllRanges();
+      }
+      button.textContent = "已复制";
+      status.textContent = "命令已复制到剪贴板。";
+    } catch {
+      button.textContent = "请手动复制";
+      status.textContent = "浏览器未允许剪贴板访问，请选中代码手动复制。";
+    }
+    window.setTimeout(() => {
+      button.textContent = originalLabel;
+    }, 1600);
+  };
+
+  stepButtons.forEach((button) => {
+    button.addEventListener("click", () => activateStep(button.dataset.pluginStep || ""));
+  });
+  clientButtons.forEach((button, buttonIndex) => {
+    button.addEventListener("click", () => activateClient(button.dataset.pluginClient || ""));
+    button.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      let nextIndex = buttonIndex;
+      if (event.key === "ArrowLeft") nextIndex = (buttonIndex - 1 + clientButtons.length) % clientButtons.length;
+      if (event.key === "ArrowRight") nextIndex = (buttonIndex + 1) % clientButtons.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = clientButtons.length - 1;
+      activateClient(clientButtons[nextIndex].dataset.pluginClient || "", true);
+    });
+  });
+  copyButtons.forEach((button) => {
+    button.addEventListener("click", () => copyCode(button));
+  });
+
+  activateStep("runtime", false);
+  activateClient("codex");
+};
+
 const setupProcessTerminal = () => {
   const terminal = document.querySelector("[data-process-terminal]");
   if (!terminal) return;
@@ -287,4 +392,5 @@ setHeroScroll();
 attachParallax();
 attachSmoothAnchors();
 observeMotion();
+setupPluginGuide();
 setupProcessTerminal();
