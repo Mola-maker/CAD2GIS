@@ -1,45 +1,347 @@
-.workspace-subpage { overflow: hidden; }
+.workspace-subpage {
+  --font-display: Bahnschrift, "DIN Alternate", "Smiley Sans", "Noto Sans SC", sans-serif;
+  --font-body: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+  --font-code: "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+  --blueprint: oklch(24% .16 264);
+  --blueprint-deep: oklch(17% .12 264);
+  --blueprint-raised: oklch(29% .145 264);
+  --blueprint-soft: oklch(34% .12 262);
+  --paper: oklch(96% .018 92);
+  --paper-blue: oklch(92% .035 250);
+  --ink-on-blue: oklch(96% .018 255);
+  --ink-soft-blue: oklch(81% .045 260);
+  --acid: oklch(90% .2 120);
+  --electric: oklch(67% .2 258);
+  --grid-line: oklch(72% .08 260 / .22);
+  --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
+  --ink: var(--ink-on-blue);
+  --ink-strong: var(--ink-on-blue);
+  --muted: var(--ink-soft-blue);
+  --line: var(--grid-line);
+  --line-strong: oklch(78% .07 260 / .38);
+  --surface-0: var(--blueprint);
+  --surface-1: var(--blueprint-deep);
+  --surface-2: var(--blueprint-raised);
+  --surface-3: var(--blueprint-soft);
+  --map-paper: var(--paper-blue);
+  --accent: var(--acid);
+  --accent-strong: oklch(82% .19 120);
+  --accent-soft: oklch(90% .2 120 / .15);
+  --orange: oklch(78% .17 64);
+  --violet: oklch(72% .14 305);
+  --danger: oklch(70% .18 28);
+  --warning: oklch(84% .16 83);
+  --shadow: none;
+  overflow: hidden;
+  color-scheme: dark;
+  background: var(--blueprint-deep);
+}
 
-.workspace-subpage .topbar { gap: clamp(.75rem, 2vw, 2rem); }
+.workspace-subpage::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, transparent calc(5vw - 1px), var(--grid-line) 5vw, transparent calc(5vw + 1px)),
+    linear-gradient(to right, transparent calc(35vw - 1px), var(--grid-line) 35vw, transparent calc(35vw + 1px)),
+    linear-gradient(to right, transparent calc(65vw - 1px), var(--grid-line) 65vw, transparent calc(65vw + 1px)),
+    linear-gradient(to right, transparent calc(95vw - 1px), var(--grid-line) 95vw, transparent calc(95vw + 1px)),
+    linear-gradient(to bottom, transparent calc(50vh - 1px), var(--grid-line) 50vh, transparent calc(50vh + 1px));
+}
 
-.workspace-subpage .brand-lockup {
-  color: inherit;
-  text-decoration: none;
+.workspace-subpage #console-app {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  color: var(--ink-on-blue);
+  background: transparent;
+  animation: console-in 620ms var(--ease-out-expo) both;
+}
+
+@keyframes console-in {
+  from { opacity: 0; transform: translate3d(0, 1rem, 0); }
+}
+
+.workspace-subpage .topbar {
+  height: 5.25rem;
+  gap: clamp(.75rem, 2vw, 2rem);
+  border-color: var(--grid-line);
+  padding: .75rem clamp(1rem, 2.5vw, 2.5rem);
+  color: var(--ink-on-blue);
+  background: var(--blueprint);
+  box-shadow: none;
+}
+
+.workspace-subpage .brand-lockup { color: inherit; text-decoration: none; }
+
+.workspace-subpage .brand-mark {
+  width: 2.65rem;
+  height: 2.65rem;
+  border-color: var(--acid);
+  border-radius: 0;
+  color: var(--blueprint-deep);
+  background: var(--acid);
+  font-family: var(--font-code);
+}
+
+.workspace-subpage .topbar h1 {
+  margin-top: .2rem;
+  color: var(--ink-on-blue);
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.6vw, 1.5rem);
+  font-weight: 780;
+  letter-spacing: -.045em;
+}
+
+.workspace-subpage .eyebrow,
+.workspace-subpage .section-kicker {
+  color: var(--acid);
+  font-family: var(--font-code);
+  letter-spacing: .1em;
 }
 
 .workspace-product-nav {
   display: flex;
-  gap: .25rem;
+  gap: clamp(.5rem, 2vw, 1.75rem);
   align-items: center;
   margin-left: auto;
-  font: 700 .62rem/1 ui-monospace, "Cascadia Code", monospace;
+  font: 700 .68rem/1 var(--font-code);
   letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 .workspace-product-nav a {
   position: relative;
-  border: 1px solid transparent;
-  padding: .65rem .75rem;
-  color: var(--muted);
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  padding: 0;
+  color: var(--ink-on-blue);
   text-decoration: none;
-  transition: color 160ms cubic-bezier(.16, 1, .3, 1), border-color 160ms cubic-bezier(.16, 1, .3, 1);
 }
 
-.workspace-product-nav a:hover,
-.workspace-product-nav a:focus-visible {
+.workspace-product-nav a::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: .45rem;
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 220ms var(--ease-out-expo);
+}
+
+.workspace-product-nav a:hover::after,
+.workspace-product-nav a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+
+.workspace-product-nav a:focus-visible { outline: 2px solid var(--acid); outline-offset: 4px; }
+
+.workspace-subpage .run-state { color: var(--ink-soft-blue); font-family: var(--font-code); font-size: .68rem; }
+.workspace-subpage .status-dot.online { background: var(--acid); box-shadow: 0 0 0 4px oklch(90% .2 120 / .12); }
+
+.workspace-subpage .badge,
+.workspace-subpage .step-chip,
+.workspace-subpage .mode-label {
+  border-color: var(--acid);
+  border-radius: 0;
+  color: var(--blueprint-deep);
+  background: var(--acid);
+}
+
+.workspace-subpage .workspace {
+  height: calc(100% - 5.25rem);
+  grid-template-columns: minmax(17rem, 21vw) minmax(38rem, 1fr) minmax(18rem, 23vw);
+  border-top: 0;
+}
+
+.workspace-subpage .panel {
+  padding: 1rem;
+  color: var(--ink-on-blue);
+  background: color-mix(in oklch, var(--blueprint-deep), var(--blueprint) 24%);
+  scrollbar-color: var(--electric) transparent;
+}
+
+.workspace-subpage .navigation-panel,
+.workspace-subpage .inspector-panel { border-color: var(--grid-line); }
+
+.workspace-subpage .panel h2,
+.workspace-subpage .tab-panel h2 {
+  color: var(--ink-on-blue);
+  font-family: var(--font-display);
+  font-size: .92rem;
+  letter-spacing: -.025em;
+}
+
+.workspace-subpage .muted,
+.workspace-subpage .steps,
+.workspace-subpage .field-label,
+.workspace-subpage .coordinate-inputs label,
+.workspace-subpage .guardrail-list,
+.workspace-subpage .terminal-empty { color: var(--ink-soft-blue); }
+
+.workspace-subpage button,
+.workspace-subpage input,
+.workspace-subpage select,
+.workspace-subpage textarea,
+.workspace-subpage pre,
+.workspace-subpage .project-card,
+.workspace-subpage .project-proof-grid > span,
+.workspace-subpage .gcp-list > div,
+.workspace-subpage .metric-card,
+.workspace-subpage .layer-row,
+.workspace-subpage .terminal-log,
+.workspace-subpage dialog,
+.workspace-subpage .visual-grid article { border-radius: 0; }
+
+.workspace-subpage button,
+.workspace-subpage input,
+.workspace-subpage select,
+.workspace-subpage textarea {
   border-color: var(--line-strong);
-  color: var(--accent);
+  color: var(--ink-on-blue);
+  background: var(--blueprint-raised);
 }
 
-.workspace-product-nav a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.workspace-subpage input::placeholder { color: oklch(78% .04 260); }
+.workspace-subpage button:hover:not(:disabled) { border-color: var(--acid); }
+.workspace-subpage button:focus-visible,
+.workspace-subpage input:focus-visible,
+.workspace-subpage select:focus-visible { outline-color: var(--acid); outline-offset: 3px; }
+
+.workspace-subpage button.primary { border-color: var(--acid); color: var(--blueprint-deep); background: var(--acid); }
+.workspace-subpage button.secondary { border-color: var(--electric); color: var(--ink-on-blue); background: var(--blueprint-soft); }
+.workspace-subpage button.ghost { color: var(--ink-on-blue); background: transparent; }
+
+.workspace-subpage .project-card {
+  gap: .55rem;
+  border-color: var(--grid-line);
+  padding: 1rem 0;
+  background: transparent;
+  box-shadow: none;
 }
 
+.workspace-subpage .project-card strong { color: var(--ink-on-blue); }
+.workspace-subpage .project-location,
+.workspace-subpage .project-proof-grid strong { color: var(--acid); }
+.workspace-subpage .project-description,
+.workspace-subpage .project-picker-label,
+.workspace-subpage .project-proof-list dt { color: var(--ink-soft-blue); }
+.workspace-subpage .project-proof-list dd { color: var(--ink-on-blue); }
+.workspace-subpage .project-proof-grid > span { border-color: var(--grid-line); background: var(--blueprint-raised); }
+
+.workspace-subpage .workflow-nav { border-block: 1px solid var(--grid-line); padding-block: .75rem; }
+.workspace-subpage .workflow-nav::before { background: var(--grid-line); }
+.workspace-subpage .workflow-step { border-radius: 0; color: var(--ink-on-blue); }
+.workspace-subpage .workflow-step small { color: var(--ink-soft-blue); }
+.workspace-subpage .workflow-step > span:first-child {
+  border-color: var(--line-strong);
+  border-radius: 0;
+  color: var(--ink-soft-blue);
+  background: var(--blueprint-deep);
+}
+.workspace-subpage .workflow-step.is-active { border-color: var(--acid); background: var(--accent-soft); }
+.workspace-subpage .workflow-step.is-active > span:first-child { border-color: var(--acid); color: var(--blueprint-deep); background: var(--acid); }
+.workspace-subpage .workflow-step.is-complete > span:first-child { border-color: var(--acid); color: var(--acid); }
+
+.workspace-subpage .layer-row { transition: color 160ms var(--ease-out-expo), background 160ms var(--ease-out-expo); }
+.workspace-subpage .layer-row:hover { color: var(--blueprint-deep); background: var(--acid); }
+.workspace-subpage .layer-row:hover small { color: var(--blueprint-deep); }
+.workspace-subpage .layer-row input { accent-color: var(--acid); }
+.workspace-subpage .layer-row small,
+.workspace-subpage .gcp-list span,
+.workspace-subpage .metric-card span { color: var(--ink-soft-blue); }
+.workspace-subpage .gcp-list > div,
+.workspace-subpage .metric-card { border-color: var(--grid-line); color: var(--ink-on-blue); background: var(--blueprint-raised); }
+.workspace-subpage .warning { color: var(--warning); }
+
+.workspace-subpage .map-workspace {
+  grid-template-rows: 3rem minmax(0, 1fr);
+  border-inline: 1px solid var(--grid-line);
+  background: var(--blueprint-deep);
+}
+.workspace-subpage .map-toolbar { border-color: var(--grid-line); color: var(--ink-on-blue); background: var(--blueprint); }
+.workspace-subpage .map-actions { color: var(--ink-soft-blue); }
+.workspace-subpage .map-reference-note { color: var(--acid); }
+.workspace-subpage .map-grid { gap: 1px; background: var(--electric); }
+.workspace-subpage .map-pane { background: var(--paper-blue); }
+.workspace-subpage .map-pane header {
+  border-color: var(--grid-line);
+  color: var(--ink-on-blue);
+  background: var(--blueprint-deep);
+  font-family: var(--font-code);
+  letter-spacing: .025em;
+}
+.workspace-subpage .map-pane header b { color: var(--acid); }
+.workspace-subpage .map-pane header code { color: var(--ink-soft-blue); }
+.workspace-subpage .map { background: var(--paper-blue); }
+.workspace-subpage .ol-control button { border-radius: 0; color: var(--blueprint-deep); background: var(--paper); }
+
+.workspace-subpage .tab-list { border-color: var(--grid-line); background: var(--blueprint-deep); backdrop-filter: none; }
+.workspace-subpage .tab-button { color: var(--ink-soft-blue); }
+.workspace-subpage .tab-button.is-active { border-color: var(--acid); color: var(--blueprint-deep); background: var(--acid); }
+.workspace-subpage .diagnosis { border: 1px solid var(--acid); color: var(--ink-on-blue); background: var(--accent-soft); }
+.workspace-subpage dt { color: var(--ink-soft-blue); }
+.workspace-subpage dd { color: var(--ink-on-blue); }
+
+.workspace-subpage pre,
+.workspace-subpage .terminal-log {
+  border-color: var(--line-strong);
+  color: oklch(92% .02 120);
+  background: oklch(14% .025 254);
+  font-family: var(--font-code);
+}
+.workspace-subpage .terminal-line time { color: oklch(70% .04 255); }
+.workspace-subpage .terminal-line b { color: var(--acid); }
+.workspace-subpage .terminal-line span { color: oklch(92% .02 255); }
+.workspace-subpage .prompt-list button { color: var(--ink-on-blue); background: var(--blueprint-raised); }
+
+.workspace-subpage .toast {
+  border-color: var(--acid);
+  border-radius: 0;
+  color: var(--ink-on-blue);
+  background: var(--blueprint-deep);
+  box-shadow: 1rem 1rem 0 oklch(10% .1 264 / .38);
+}
+.workspace-subpage dialog {
+  border-color: var(--line-strong);
+  color: var(--ink-on-blue);
+  background: var(--blueprint-deep);
+  box-shadow: 1rem 1rem 0 oklch(10% .1 264 / .42);
+}
+.workspace-subpage dialog::backdrop { background: oklch(10% .08 264 / .76); backdrop-filter: none; }
+.workspace-subpage .dialog-head button { color: var(--ink-on-blue); }
+.workspace-subpage .visual-grid article { border-color: var(--grid-line); background: var(--blueprint-raised); }
+.workspace-subpage .visual-grid footer { color: var(--ink-soft-blue); }
+
+@media (max-width: 1180px) {
+  .workspace-subpage .workspace { grid-template-columns: 16rem minmax(35rem, 1fr) 18rem; }
+}
+@media (max-width: 1000px) {
+  .workspace-subpage .workspace { grid-template-columns: 15.5rem minmax(0, 1fr); }
+  .workspace-subpage .inspector-panel { background: var(--blueprint-deep); box-shadow: -1rem 0 0 oklch(10% .1 264 / .38); }
+}
 @media (max-width: 760px) {
   .workspace-subpage { overflow: auto; }
+  .workspace-subpage #console-app { height: auto; }
+  .workspace-subpage .topbar { min-height: 7.25rem; flex-wrap: wrap; padding: .75rem 1rem; }
+  .workspace-subpage .brand-mark { width: 2.25rem; height: 2.25rem; }
+  .workspace-subpage .eyebrow { display: none; }
   .workspace-product-nav { order: 3; width: 100%; margin-left: 0; }
-  .workspace-subpage .topbar { flex-wrap: wrap; }
   .workspace-subpage .run-state { margin-left: auto; }
+  .workspace-subpage .workspace { height: auto; }
+  .workspace-subpage .panel { padding: 1.1rem; }
+  .workspace-subpage .map-workspace { height: 62rem; border-inline: 0; }
+}
+@media (pointer: coarse) {
+  .workspace-subpage button,
+  .workspace-subpage select,
+  .workspace-subpage input { min-height: 2.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-subpage #console-app { animation: none; }
 }
