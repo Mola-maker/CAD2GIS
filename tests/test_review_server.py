@@ -105,7 +105,17 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     )
 
     assert client.get("/api/health").json()["status"] == "ok"
-    assert "配准、坐标传送与叠加审查" in client.get("/").text
+    landing = client.get("/").text
+    install = client.get("/install").text
+    workspace_page = client.get("/workspace").text
+    assert "让 CAD 证据" in landing
+    assert "我们一步一步来" in install
+    assert "配准、坐标传送与叠加审查" in workspace_page
+    assert all("/assets/pointer.js" in page for page in (
+        landing, install, workspace_page,
+    ))
+    assert client.get("/assets/pointer.js").status_code == 200
+    assert client.get("/assets/pointer.css").status_code == 200
     response = client.post("/api/review/features", json={
         "feature": _feature(),
         "expected_revision": 0,
@@ -187,6 +197,7 @@ def test_review_app_transfers_coordinates_and_exports_active_profile(
 
 
 def test_mcp_prepares_separate_review_workspace(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("CAD2GIS_PROJECT_ROOTS", raising=False)
     monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
     run_dir = tmp_path / "run"
     run_dir.mkdir()
@@ -197,6 +208,8 @@ def test_mcp_prepares_separate_review_workspace(tmp_path, monkeypatch) -> None:
     result = prepare_review_workspace(str(run_dir), port=9876)
 
     assert result["immutable_delivery"] is True
-    assert result["url"] == "http://127.0.0.1:9876"
+    assert result["url"] == "http://127.0.0.1:9876/workspace"
+    assert result["landing_url"] == "http://127.0.0.1:9876/"
+    assert result["install_url"] == "http://127.0.0.1:9876/install"
     assert "cad2gis review" in result["launch_command"]
     assert (tmp_path / "run.review" / "review.sqlite3").is_file()

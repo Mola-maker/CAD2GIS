@@ -34,6 +34,7 @@ ACCORECONSOLE_TIMEOUT_PER_MIB = 45.0
 MAX_ACCORECONSOLE_TIMEOUT = 900.0
 ACCORECONSOLE_ENV = "CAD2GIS_ACCORECONSOLE"
 ACCORECONSOLE_TIMEOUT_ENV = "CAD2GIS_ACCORECONSOLE_TIMEOUT"
+AUTOCAD_PROFILE_ENV = "CAD2GIS_AUTOCAD_PROFILE"
 COM_FALLBACK_ENV = "CAD2GIS_ALLOW_COM_FALLBACK"
 BULK_POLICY_STRICT = "strict"
 BULK_POLICY_SKIP_MALFORMED = "skip_malformed_rows"
@@ -299,6 +300,55 @@ def _configured_accoreconsole_path(accoreconsole=None, *, environ=None):
     return path.resolve(), source
 
 
+def _configured_autocad_profile(*, environ=None):
+    """Resolve an optional AutoCAD profile name or exported ARG file.
+
+    Core Console uses the profile of the Windows account that launches it.
+    Codex desktop processes may run under an isolated local account, so an
+    exported ARG file is the portable way to provide the real AutoCAD runtime
+    configuration without copying or editing registry keys.
+    """
+
+    environ = os.environ if environ is None else environ
+    raw = environ.get(AUTOCAD_PROFILE_ENV)
+    if raw is None:
+        return None, "not_configured"
+    value = str(raw).strip()
+    if not value:
+        raise ValueError(f"{AUTOCAD_PROFILE_ENV} cannot be empty")
+    if any(character in value for character in ("\x00", "\r", "\n")):
+        raise ValueError(f"{AUTOCAD_PROFILE_ENV} contains a control character")
+    candidate = Path(value).expanduser()
+    looks_like_path = (
+        candidate.suffix.casefold() == ".arg"
+        or candidate.parent != Path(".")
+        or candidate.is_absolute()
+    )
+    if not looks_like_path:
+        return value, "environment_name"
+    if candidate.suffix.casefold() != ".arg":
+        raise ValueError(f"{AUTOCAD_PROFILE_ENV} file must end in .arg")
+    if not candidate.is_file():
+        raise RuntimeError(f"AutoCAD profile file does not exist: {candidate}")
+    return str(candidate.resolve()), "environment_arg"
+
+
+def _core_console_command(accoreconsole, dwg_path, script_path, *, profile=None):
+    command = [str(accoreconsole)]
+    if profile:
+        command.extend(("/p", str(profile)))
+    command.extend(
+        (
+            "/readonly",
+            "/i",
+            str(Path(dwg_path).resolve()),
+            "/s",
+            str(Path(script_path).resolve()),
+        )
+    )
+    return command
+
+
 def preflight_autocad_reader(
     *, accoreconsole=None, timeout=None, compatibility_policy=BULK_POLICY_STRICT,
     environ=None,
@@ -318,6 +368,7 @@ def preflight_autocad_reader(
             "version": None,
         },
         "timeout": {"ok": False, "seconds": None, "source": None},
+        "profile": {"ok": True, "value": None, "source": "not_configured"},
         "bulk_compatibility_policy": None,
         "com_fallback_enabled": _com_fallback_enabled(environ=environ),
         "errors": [],
@@ -337,6 +388,18 @@ def preflight_autocad_reader(
         seconds, source = _resolve_accoreconsole_timeout(timeout, environ=environ)
         result["timeout"].update(ok=True, seconds=seconds, source=source)
     except (TypeError, ValueError) as exc:
+        result["errors"].append(str(exc))
+
+    try:
+        profile, profile_source = _configured_autocad_profile(environ=environ)
+        result["profile"].update(value=profile, source=profile_source)
+        if profile is None:
+            result["warnings"].append(
+                "No portable AutoCAD profile is configured; Core Console will use "
+                "the launching Windows account's current profile"
+            )
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        result["profile"].update(ok=False)
         result["errors"].append(str(exc))
 
     try:
@@ -1895,6 +1958,13 @@ def _extract_records_with_core_console(
         "skipped_rows": 0,
         "skipped_row_errors": [],
     }
+    profile, profile_source = _configured_autocad_profile()
+    diagnostics.update(
+        {
+            "autocad_profile": profile,
+            "autocad_profile_source": profile_source,
+        }
+    )
     with tempfile.TemporaryDirectory(prefix="cad2gis-autocad-db-") as temp_name:
         workspace = Path(temp_name)
         lisp_path = workspace / "extract.lsp"
@@ -1910,10 +1980,12 @@ def _extract_records_with_core_console(
             "_.QUIT\n",
             encoding="utf-8",
         )
-        command = [
-            str(accoreconsole), "/readonly", "/i", str(Path(dwg_path).resolve()),
-            "/s", str(script_path),
-        ]
+        command = _core_console_command(
+            accoreconsole,
+            dwg_path,
+            script_path,
+            profile=profile,
+        )
         try:
             process_result = _run_until_bulk_export_complete(
                 command,
@@ -3074,6 +3146,27 @@ def extract_com_entity(
     return record
 
 
+def _reclassify(record, new_role, rule, reason):
+    """Rewrite ``record["cad_role"]`` and record per-entity provenance.
+
+    Provenance is written only when the role actually changes, and
+    ``cad_role_original`` keeps the first (pre-reclassification) value.
+    Both the flat record keys and ``record["raw_properties"]`` (when
+    present) are updated so downstream consumers see the same values.
+    """
+    old_role = record.get("cad_role")
+    record["cad_role"] = new_role
+    if old_role == new_role:
+        return
+    original = record.setdefault("cad_role_original", old_role)
+    reclassification = {"rule": rule, "reason": reason, "from": old_role, "to": new_role}
+    record["role_reclassification"] = reclassification
+    raw_properties = record.get("raw_properties")
+    if isinstance(raw_properties, dict):
+        raw_properties.setdefault("cad_role_original", original)
+        raw_properties["role_reclassification"] = reclassification
+
+
 def partition_plan_roles(records):
     """Mark legend/summary/title/frame zones inside a model or plan sheet."""
     points = [point for record in records for point in record.get("points", ())]
@@ -3097,17 +3190,34 @@ def partition_plan_roles(records):
         span_x = max(xs) - min(xs) if xs else 0.0
         span_y = max(ys) - min(ys) if ys else 0.0
         if _TITLE_BLOCK_NAME.search(record.get("block_name", "")):
-            record["cad_role"] = "title_block"
+            _reclassify(
+                record, "title_block", "plan_roles_title_block_name",
+                "block name matches the title-block pattern",
+            )
         elif record.get("closed") and span_x >= 0.85 * width and span_y >= 0.85 * height:
-            record["cad_role"] = "frame"
+            _reclassify(
+                record, "frame", "plan_roles_frame_span",
+                "closed entity spans the full sheet extent",
+            )
         elif legend_x is not None and x >= legend_x - 0.10 * width:
-            record["cad_role"] = "style_legend" if y >= legend_floor else "title_block"
+            _reclassify(
+                record,
+                "style_legend" if y >= legend_floor else "title_block",
+                "plan_roles_legend_region",
+                "entity lies in the legend region right of the legend anchor",
+            )
         elif _SUMMARY_TEXT.search(text) or (
             summary_anchors and x <= min_x + 0.36 * width and y <= min_y + 0.25 * height
         ):
-            record["cad_role"] = "design_summary"
+            _reclassify(
+                record, "design_summary", "plan_roles_design_summary",
+                "entity matches the design-summary text or region",
+            )
         elif _TITLE_TEXT.search(text) or (title_anchors and y <= min_y + 0.12 * height):
-            record["cad_role"] = "title_block"
+            _reclassify(
+                record, "title_block", "plan_roles_title_region",
+                "entity matches the title text or the bottom title band",
+            )
     return records
 
 
@@ -3130,7 +3240,10 @@ def partition_model_legend(records):
         return records
     for record in records:
         if record.get("centroid", (float("-inf"), 0.0))[0] > cutoff and record.get("cad_role") == "model":
-            record["cad_role"] = "style_legend"
+            _reclassify(
+                record, "style_legend", "model_legend_gap",
+                "entity lies beyond the legend-cluster x-gap cutoff",
+            )
     return records
 
 
@@ -3535,6 +3648,7 @@ def _collect_records(database, assign_fc=None, reader_backend_status="com_direct
 
 def _open_autocad_database(dwg_path):
     import pythoncom
+    import pywintypes
     import win32com.client
 
     pythoncom.CoInitialize()
@@ -3545,14 +3659,14 @@ def _open_autocad_database(dwg_path):
     last_error = None
     for progid in AUTOCAD_PROGIDS:
         try:
-            application = win32com.client.GetActiveObject(progid)
+            application = win32com.client.GetActiveObject(pywintypes.IID(progid))
             break
         except Exception:
             continue
     if application is None:
         for progid in AUTOCAD_PROGIDS:
             try:
-                application = win32com.client.DispatchEx(progid)
+                application = win32com.client.DispatchEx(pywintypes.IID(progid))
                 created_application = True
                 break
             except Exception as exc:
@@ -3561,10 +3675,11 @@ def _open_autocad_database(dwg_path):
         pythoncom.CoUninitialize()
         raise RuntimeError(f"AutoCAD COM server is unavailable: {last_error}")
     try:
-        try:
-            application.Visible = False
-        except Exception:
-            pass
+        if created_application:
+            try:
+                application.Visible = False
+            except Exception:
+                pass
         target = str(Path(dwg_path).resolve()).casefold()
         documents = _safe_get(application, "Documents")
         try:

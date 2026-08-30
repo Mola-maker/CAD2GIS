@@ -377,14 +377,38 @@ def _registry_attributes(entity, feature_class, registry):
     return attributes, provenance
 
 
-def _registry_display_label(feature_class, attributes, registry):
+_TECHNICAL_ID_PROVENANCE = "DWG_DERIVED:stable-handle-id"
+
+
+def _registry_display_label(
+    feature_class,
+    attributes,
+    field_provenance,
+    registry,
+):
+    """Resolve a public label without exposing an internal stable identity.
+
+    Every mapped feature receives a deterministic ``CODE`` so it can be
+    addressed even when the drawing contains no business label.  That value is
+    an internal identity, not source text.  A reviewed display rule must not
+    turn the generated fallback into customer-visible content.
+    """
+
     rule = getattr(registry, "display_label_rules", {}).get(feature_class)
     if not rule:
         return "", "UNAVAILABLE"
     if rule["kind"] == "attribute-field":
-        value = attributes.get(str(rule["field"]))
+        field = str(rule["field"])
+        if field_provenance.get(field) == _TECHNICAL_ID_PROVENANCE:
+            return "", "UNAVAILABLE"
+        value = attributes.get(field)
     elif rule["kind"] == "attribute-format":
         required = [str(field) for field in rule.get("required_fields", ())]
+        if any(
+            field_provenance.get(field) == _TECHNICAL_ID_PROVENANCE
+            for field in required
+        ):
+            return "", "UNAVAILABLE"
         value = (
             str(rule["template"]).format_map(attributes)
             if all(field in attributes for field in required)
@@ -451,6 +475,15 @@ def classify_entities(
             and route_pattern is not None
             and route_pattern.search(entity.layer)
         ):
+            if entity.closed:
+                # Ring routes cannot enter the open-route delivery contract;
+                # keep them as explicit abstentions instead of failing the
+                # whole conversion (closed boundary loops on route layers are
+                # common in generic construction drawings).
+                coverage_records.append(_coverage_record(
+                    entity, "closed_route_outside_delivery_contract", "CABLE",
+                ))
+                continue
             feature_class, geometry_kind, geometry_role = "CABLE", "LineString", "SOURCE_ROUTE"
         elif dwg_type in _ROUTE_ENTITY_TYPES:
             coverage_records.append(_coverage_record(
@@ -488,7 +521,7 @@ def classify_entities(
                 "DWG_DIRECT:AutoCAD-curve-distance"
             )
         display_label, label_provenance = _registry_display_label(
-            feature_class, attributes, registry,
+            feature_class, attributes, provenance, registry,
         )
 
         features.append(Feature(

@@ -665,7 +665,7 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
     sling_entities = [
         entity for entity in entities
         if entity.cad_role == "model"
-        and entity.dwg_type in {"LWPOLYLINE", "POLYLINE"}
+        and entity.dwg_type in {"LINE", "LWPOLYLINE", "POLYLINE"}
         and entity.layer.upper() in registry.layers.get("sling_wire", ())
     ]
     sling_segments = _segment_index((

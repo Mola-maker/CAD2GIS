@@ -158,6 +158,42 @@ def test_explicit_backend_path_is_supported(
     }
 
 
+def test_project_backend_routes_semantic_operation_without_importing_reader(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    imported: list[str] = []
+
+    class _SemanticModule:
+        @staticmethod
+        def validate_semantics(**kwargs):
+            return kwargs
+
+    def fake_import(name: str):
+        imported.append(name)
+        if name.endswith("source_export") or name.endswith("project_profile"):
+            raise AssertionError("semantic validation imported an unrelated stack")
+        assert name == "cad2gis.cad2gis_v3.semantic_stage"
+        return _SemanticModule()
+
+    monkeypatch.setattr(runtime, "_prepare_backend_import", lambda: None)
+    monkeypatch.setattr(runtime.importlib, "import_module", fake_import)
+
+    result = runtime.call_project_backend(
+        "validate_semantics", semantic_gpkg=Path("semantic.gpkg")
+    )
+
+    assert result == {"semantic_gpkg": Path("semantic.gpkg")}
+    assert imported == ["cad2gis.cad2gis_v3.semantic_stage"]
+
+
+def test_project_backend_rejects_unknown_operation_before_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(runtime, "_prepare_backend_import", lambda: None)
+    with pytest.raises(runtime.BackendContractError, match="unsupported project"):
+        runtime.call_project_backend("invented_operation")
+
+
 def test_invalid_explicit_backend_path_does_not_fall_back_to_checkout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -130,6 +130,7 @@ def test_visual_bundle_is_deterministic_and_excludes_paper_space(tmp_path) -> No
 
 
 def test_mcp_visual_tools_list_regions_and_resolve_hit(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("CAD2GIS_PROJECT_ROOTS", raising=False)
     monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
     graph, entities, features = _fixture()
     bundle = build_visual_evidence_bundle(

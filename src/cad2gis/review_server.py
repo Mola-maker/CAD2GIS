@@ -1026,7 +1026,8 @@ def create_review_app(
     store_kind = "postgis" if resolved_postgis_dsn else "sqlite"
     hub = _WebSocketHub()
     web_root = Path(__file__).resolve().parent / "webdemo"
-    if not (web_root / "index.html").is_file():
+    required_pages = ("landing.html", "install.html", "index.html")
+    if any(not (web_root / name).is_file() for name in required_pages):
         raise ReviewServerError(f"Review web assets are missing: {web_root}")
 
     app = FastAPI(title="CAD2GIS Review", version="1")
@@ -1041,6 +1042,14 @@ def create_review_app(
 
     @app.get("/")
     async def index():
+        return FileResponse(web_root / "landing.html")
+
+    @app.get("/install")
+    async def install():
+        return FileResponse(web_root / "install.html")
+
+    @app.get("/workspace")
+    async def workspace_page():
         return FileResponse(web_root / "index.html")
 
     @app.get("/api/health")

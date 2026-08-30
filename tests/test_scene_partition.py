@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from cad2gis.cad2gis_v3.model import SourceEntity
+from cad2gis.cad2gis_v3.plan_domain import build_plan_domain
 from cad2gis.cad2gis_v3.scene_partition import detect_style_catalog_entities
 
 
@@ -91,3 +92,92 @@ def test_detects_aligned_diverse_symbol_catalog_but_keeps_repeated_assets() -> N
 
     assert excluded == frozenset(entity.entity_key for entity in catalog)
 
+
+
+def test_exempt_entities_are_removed_from_catalog_candidates() -> None:
+    samples = [
+        _entity(
+            f"sample-{index}",
+            kind="LWPOLYLINE",
+            layer=f"CABLE-{index}",
+            points=((10.0, index * 4.0), (30.0, index * 4.0)),
+            native_length=20.0,
+        )
+        for index in range(6)
+    ]
+
+    excluded, diagnostics = detect_style_catalog_entities(
+        samples,
+        exempt=lambda entity: entity.layer.startswith("CABLE"),
+    )
+
+    assert excluded == frozenset()
+    assert diagnostics["status"] == "NO_CATALOG_DETECTED"
+    assert diagnostics["exempted_entity_count"] == 6
+
+
+def test_exempt_entity_does_not_vote_in_catalog_signature() -> None:
+    samples = [
+        _entity(
+            f"sample-{index}",
+            kind="LWPOLYLINE",
+            layer=f"vendor-style-{index}",
+            points=((10.0, index * 4.0), (30.0, index * 4.0)),
+            native_length=20.0,
+        )
+        for index in range(6)
+    ]
+    route = _entity(
+        "route",
+        kind="LWPOLYLINE",
+        layer="CABLE ROUTE",
+        points=((10.0, 24.0), (30.0, 24.0)),
+        native_length=20.0,
+    )
+
+    excluded, diagnostics = detect_style_catalog_entities(
+        [*samples, route],
+        exempt=lambda entity: entity.layer == "CABLE ROUTE",
+    )
+
+    assert excluded == frozenset(entity.entity_key for entity in samples)
+    assert "route" not in excluded
+    assert diagnostics["exempted_entity_count"] == 1
+
+
+def test_default_call_adds_no_exemption_diagnostics_key() -> None:
+    route = _entity(
+        "route",
+        kind="LWPOLYLINE",
+        layer="vendor-style-2",
+        points=((100.0, 100.0), (180.0, 125.0)),
+        native_length=83.815273,
+    )
+
+    _, diagnostics = detect_style_catalog_entities([route])
+
+    assert "exempted_entity_count" not in diagnostics
+
+
+def test_plan_domain_keeps_unreviewed_catalog_candidates() -> None:
+    samples = [
+        _entity(
+            f"sample-{index}",
+            kind="LWPOLYLINE",
+            layer=f"vendor-style-{index}",
+            points=((10.0, index * 4.0), (30.0, index * 4.0)),
+            native_length=20.0,
+        )
+        for index in range(6)
+    ]
+
+    view = build_plan_domain(samples)
+
+    assert {entity.entity_key for entity in view.entities} == {
+        entity.entity_key for entity in samples
+    }
+    assert view.diagnostics["scene_partition"]["status"] == "CANDIDATES_ONLY"
+    assert (
+        view.diagnostics["scene_partition"]["automatic_exclusion_applied"]
+        is False
+    )

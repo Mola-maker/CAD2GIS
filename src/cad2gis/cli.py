@@ -53,6 +53,52 @@ def _parser() -> argparse.ArgumentParser:
     _add_json(inspect)
     inspect.set_defaults(handler=_inspect)
 
+    source_export = commands.add_parser(
+        "source", help="Export authoritative CAD facts and stop at source.gpkg."
+    )
+    _add_source(source_export)
+    source_export.add_argument("--run-dir", required=True, type=Path)
+    source_export.add_argument(
+        "--source-crs",
+        help="Optional authoritative CRS; omit to preserve unregistered CAD coordinates.",
+    )
+    source_export.add_argument("--force", action="store_true")
+    _add_json(source_export)
+    source_export.set_defaults(handler=_export_source)
+
+    semantic = commands.add_parser(
+        "semantic", help="Prepare, compile, and validate source-bound semantic layers."
+    )
+    semantic_commands = semantic.add_subparsers(
+        dest="semantic_command", metavar="SEMANTIC_COMMAND", required=True
+    )
+    semantic_prepare = semantic_commands.add_parser(
+        "prepare", help="Build source-bound semantic candidates."
+    )
+    semantic_prepare.add_argument("source_run", type=Path)
+    semantic_prepare.add_argument("--output-dir", type=Path)
+    semantic_prepare.add_argument("--force", action="store_true")
+    _add_json(semantic_prepare)
+    semantic_prepare.set_defaults(handler=_semantic_prepare)
+
+    semantic_compile = semantic_commands.add_parser(
+        "compile", help="Compile typed semantic decisions into semantic.gpkg."
+    )
+    semantic_compile.add_argument("source_run", type=Path)
+    semantic_compile.add_argument("--prepare-manifest", required=True, type=Path)
+    semantic_compile.add_argument("--decision-pack", required=True, type=Path)
+    semantic_compile.add_argument("--output", type=Path)
+    semantic_compile.add_argument("--force", action="store_true")
+    _add_json(semantic_compile)
+    semantic_compile.set_defaults(handler=_semantic_compile)
+
+    semantic_validate = semantic_commands.add_parser(
+        "validate", help="Validate semantic entity conservation and integrity."
+    )
+    semantic_validate.add_argument("semantic_gpkg", type=Path)
+    _add_json(semantic_validate)
+    semantic_validate.set_defaults(handler=_semantic_validate)
+
     bootstrap = commands.add_parser(
         "bootstrap", help="Create a draft project configuration for operator review."
     )
@@ -162,6 +208,93 @@ def _parser() -> argparse.ArgumentParser:
     review.add_argument("--qgis-project", default="")
     review.add_argument("--qgis-layers", default="")
     review.set_defaults(handler=_review)
+
+    qgis = commands.add_parser(
+        "qgis", help="Control a dedicated, typed QGIS desktop session."
+    )
+    qgis_commands = qgis.add_subparsers(
+        dest="qgis_command", metavar="QGIS_COMMAND", required=True
+    )
+    qgis_start = qgis_commands.add_parser(
+        "start", help="Launch a visible QGIS session with the loopback bridge."
+    )
+    qgis_start.add_argument("--session-dir", required=True, type=Path)
+    qgis_start.add_argument("--project", type=Path)
+    qgis_start.add_argument(
+        "--allow-root",
+        action="append",
+        dest="allowed_roots",
+        type=Path,
+        help="Repeat for every filesystem root QGIS may open or write.",
+    )
+    qgis_start.add_argument("--startup-timeout", type=float, default=45.0)
+    _add_json(qgis_start)
+    qgis_start.set_defaults(handler=_qgis_start)
+
+    qgis_status = qgis_commands.add_parser(
+        "status", help="Inspect project, layers, visibility, and canvas extent."
+    )
+    qgis_status.add_argument("session_file", type=Path)
+    _add_json(qgis_status)
+    qgis_status.set_defaults(handler=_qgis_status)
+
+    qgis_open = qgis_commands.add_parser(
+        "open-project", help="Open a .qgs or .qgz in the managed session."
+    )
+    qgis_open.add_argument("session_file", type=Path)
+    qgis_open.add_argument("project", type=Path)
+    _add_json(qgis_open)
+    qgis_open.set_defaults(handler=_qgis_open_project)
+
+    qgis_load = qgis_commands.add_parser(
+        "load-run", help="Load one CAD2GIS delivery GeoPackage and its QML styles."
+    )
+    qgis_load.add_argument("session_file", type=Path)
+    qgis_load.add_argument("run_dir", type=Path)
+    _add_json(qgis_load)
+    qgis_load.set_defaults(handler=_qgis_load_run)
+
+    qgis_dataset = qgis_commands.add_parser(
+        "load-dataset", help="Load one vector/raster dataset through QGIS providers."
+    )
+    qgis_dataset.add_argument("session_file", type=Path)
+    qgis_dataset.add_argument("dataset", type=Path)
+    qgis_dataset.add_argument("--styles-dir", type=Path)
+    _add_json(qgis_dataset)
+    qgis_dataset.set_defaults(handler=_qgis_load_dataset)
+
+    qgis_visibility = qgis_commands.add_parser(
+        "visibility", help="Show or hide one QGIS layer by unique name or ID."
+    )
+    qgis_visibility.add_argument("session_file", type=Path)
+    qgis_visibility.add_argument("layer")
+    qgis_visibility.add_argument("state", choices=("show", "hide"))
+    _add_json(qgis_visibility)
+    qgis_visibility.set_defaults(handler=_qgis_visibility)
+
+    qgis_zoom = qgis_commands.add_parser(
+        "zoom-full", help="Zoom the map canvas to all visible layers."
+    )
+    qgis_zoom.add_argument("session_file", type=Path)
+    _add_json(qgis_zoom)
+    qgis_zoom.set_defaults(handler=_qgis_zoom_full)
+
+    qgis_export = qgis_commands.add_parser(
+        "export-view", help="Render the current QGIS canvas to a PNG."
+    )
+    qgis_export.add_argument("session_file", type=Path)
+    qgis_export.add_argument("output", type=Path)
+    qgis_export.add_argument("--width", type=int, default=1600)
+    qgis_export.add_argument("--height", type=int, default=1000)
+    _add_json(qgis_export)
+    qgis_export.set_defaults(handler=_qgis_export_view)
+
+    qgis_stop = qgis_commands.add_parser(
+        "stop", help="Stop only the dedicated QGIS process for this descriptor."
+    )
+    qgis_stop.add_argument("session_file", type=Path)
+    _add_json(qgis_stop)
+    qgis_stop.set_defaults(handler=_qgis_stop)
 
     verify = commands.add_parser(
         "verify", help="Evaluate a versioned multi-CAD verification matrix."
@@ -275,6 +408,45 @@ def _inspect(args: argparse.Namespace) -> tuple[Any, int]:
 
     result = inspect_source(source=_source(args), project_dir=args.project_dir)
     return result, 0
+
+
+def _export_source(args: argparse.Namespace) -> tuple[Any, int]:
+    from .pipeline import export_source
+
+    result = export_source(
+        source=_source(args),
+        run_dir=args.run_dir,
+        source_crs=args.source_crs,
+        force=args.force,
+    )
+    return result, 0
+
+
+def _semantic_prepare(args: argparse.Namespace) -> tuple[Any, int]:
+    from .pipeline import prepare_semantics
+
+    return prepare_semantics(
+        source_run=args.source_run, output_dir=args.output_dir, force=args.force
+    ), 0
+
+
+def _semantic_compile(args: argparse.Namespace) -> tuple[Any, int]:
+    from .pipeline import compile_semantics
+
+    return compile_semantics(
+        source_run=args.source_run,
+        prepare_manifest=args.prepare_manifest,
+        decision_pack=args.decision_pack,
+        output=args.output,
+        force=args.force,
+    ), 0
+
+
+def _semantic_validate(args: argparse.Namespace) -> tuple[Any, int]:
+    from .pipeline import validate_semantics
+
+    result = validate_semantics(semantic_gpkg=args.semantic_gpkg)
+    return result, 0 if result.get("valid") else 2
 
 
 def _bootstrap(args: argparse.Namespace) -> tuple[Any, int]:
@@ -540,6 +712,80 @@ def _review(args: argparse.Namespace) -> tuple[Any, int]:
     return None, 0
 
 
+def _qgis_start(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import start_qgis_session
+
+    session_dir = args.session_dir.expanduser().resolve()
+    roots = [path.expanduser().resolve() for path in (args.allowed_roots or [])]
+    if not roots:
+        roots = [Path.cwd().resolve(), session_dir]
+        if args.project is not None:
+            roots.append(args.project.expanduser().resolve().parent)
+    return start_qgis_session(
+        session_dir,
+        allowed_roots=roots,
+        project_path=args.project,
+        startup_timeout=args.startup_timeout,
+    ), 0
+
+
+def _qgis_status(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import inspect_qgis_session
+
+    return inspect_qgis_session(args.session_file), 0
+
+
+def _qgis_open_project(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import open_qgis_project
+
+    return open_qgis_project(args.session_file, args.project), 0
+
+
+def _qgis_load_run(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import load_qgis_run
+
+    return load_qgis_run(args.session_file, args.run_dir), 0
+
+
+def _qgis_load_dataset(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import load_qgis_layers
+
+    return load_qgis_layers(
+        args.session_file, args.dataset, styles_dir=args.styles_dir
+    ), 0
+
+
+def _qgis_visibility(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import set_qgis_layer_visibility
+
+    return set_qgis_layer_visibility(
+        args.session_file, args.layer, args.state == "show"
+    ), 0
+
+
+def _qgis_zoom_full(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import zoom_qgis_full_extent
+
+    return zoom_qgis_full_extent(args.session_file), 0
+
+
+def _qgis_export_view(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import export_qgis_view
+
+    return export_qgis_view(
+        args.session_file,
+        args.output,
+        width=args.width,
+        height=args.height,
+    ), 0
+
+
+def _qgis_stop(args: argparse.Namespace) -> tuple[Any, int]:
+    from .qgis_session import stop_qgis_session
+
+    return stop_qgis_session(args.session_file), 0
+
+
 def _conversion_payload(result: Any) -> Any:
     if isinstance(result, Mapping):
         return result
@@ -574,7 +820,7 @@ def _conversion_payload(result: Any) -> Any:
 _COMMANDS = frozenset(
     {
         "doctor", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
-        "review", "verify",
+        "qgis", "review", "verify",
     }
 )
 

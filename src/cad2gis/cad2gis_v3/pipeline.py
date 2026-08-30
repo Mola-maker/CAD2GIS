@@ -17,6 +17,7 @@ from pathlib import Path
 
 from .calibration import GCPProfile, fit_profile
 from .accounting import account_entities, summarize_accounting
+from .cad_scene_graph import build_cad_scene_graph
 from .config import MappingRegistry, SourceProfile
 from .evidence import write_evidence
 from .evidence_graph import build_stage_evidence_graph
@@ -40,6 +41,7 @@ from .styles import write_styles
 from .topology import build_topology
 from .run_status import RunStatus, derive_run_status, publish_verified_alias
 from .source_gpkg import write_source_gpkg
+from .scene_visual import build_scene_visual_bundle
 from .visual_evidence import build_visual_evidence_bundle
 from .warehouse import (
     CABLE_SEGMENT_SCHEMA_VERSION,
@@ -208,7 +210,7 @@ def _validate_source_geometry(
         if source is None:
             failures.append(f"{cable.feature_key}: missing source entity")
             continue
-        if source.dwg_type not in {"LWPOLYLINE", "POLYLINE"}:
+        if source.dwg_type not in {"LINE", "LWPOLYLINE", "POLYLINE"}:
             failures.append(f"{cable.feature_key}: invalid source type {source.dwg_type}")
         if source.cad_role != "model" or not route_pattern.search(source.layer):
             failures.append(f"{cable.feature_key}: source is not a reviewed model route")
@@ -437,7 +439,13 @@ def _calibration_spatial_coverage(
     ]
     check = [transformer.point(control.cad_point) for control in active if control.role == "check"]
     result = evaluate_spatial_coverage(
-        drawing, train, check, spatial_coverage_policy,
+        drawing,
+        train,
+        check,
+        spatial_coverage_policy,
+        allow_unverified_exact_fit=(
+            profile.validation.allow_unverified_exact_fit
+        ),
     )
     result.update({
         "reviewed": profile.validation.spatial_distribution_reviewed,
@@ -952,6 +960,7 @@ def _derive_conversion_status(
     validation_summary: Mapping,
     georeference_diagnostics: Mapping,
     diagnostics: Mapping | None = None,
+    plan_domain_diagnostics: Mapping | None = None,
 ) -> RunStatus:
     diagnostics = {} if diagnostics is None else diagnostics
     serious_failures: list[str] = []
@@ -1001,7 +1010,17 @@ def _derive_conversion_status(
         isinstance(unit_contract, Mapping)
         and unit_contract.get("coordinate_mode") not in {None, "direct_crs"}
     ):
-        serious_failures.append("unit_crs_contract")
+        # A nominal local placeholder contract is healthy only when an
+        # independently validated GCP calibration was accepted for the run.
+        calibration = georeference_diagnostics.get("calibration")
+        nominal_gcp_accepted = (
+            unit_contract.get("coordinate_mode")
+            == "nominal_local_gcp_required"
+            and isinstance(calibration, Mapping)
+            and calibration.get("status") == "accepted"
+        )
+        if not nominal_gcp_accepted:
+            serious_failures.append("unit_crs_contract")
     for key, threshold in (
         ("roundtrip_max_source_m", 1e-6),
         ("engine_crosscheck_max_target_m", 1e-6),
@@ -1061,6 +1080,40 @@ def _derive_conversion_status(
         warning_count += _status_count(semantic_counts, "non_allowlisted")
     if style_coverage.get("status") == "WATCH":
         warning_count += _status_count(style_counts, "non_allowlisted")
+
+    if plan_domain_diagnostics is not None:
+        orphan_blocks = plan_domain_diagnostics.get("orphan_blocks") or ()
+        orphan_member_total = sum(
+            int(entry.get("member_count", 0))
+            for entry in orphan_blocks
+            if isinstance(entry, Mapping)
+        )
+        orphan_recovery = plan_domain_diagnostics.get("orphan_recovery")
+        recovered = (
+            orphan_recovery.get("recovered", ())
+            if isinstance(orphan_recovery, Mapping)
+            else ()
+        )
+        if orphan_member_total > 0 and not recovered:
+            warning_count += 1
+        route_exemption = plan_domain_diagnostics.get("route_layer_exemption")
+        if isinstance(route_exemption, Mapping) and int(
+            route_exemption.get("route_layer_excluded_count", 0)
+        ) > 0:
+            warning_count += 1
+
+    calibration = georeference_diagnostics.get("calibration")
+    if isinstance(calibration, Mapping):
+        calibration_coverage = calibration.get("spatial_coverage")
+        if (
+            calibration.get("status") == "accepted"
+            and isinstance(calibration_coverage, Mapping)
+            and calibration_coverage.get("allow_unverified_exact_fit") is True
+            and int(calibration_coverage.get("check_control_count") or 0) < 3
+        ):
+            # exact_fit_not_independently_verified: fewer than 3
+            # independent check controls; deliver but never VERIFIED.
+            warning_count += 1
 
     if _status_count(semantic_counts, "failed") or _status_count(
         style_counts, "failed"
@@ -1129,7 +1182,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
     registry = MappingRegistry.load(request.mapping_registry, source_hash)
     _validate_project_bindings(profile, registry)
 
-    from .units import build_unit_crs_contract
+    from .units import NOMINAL_LOCAL_DRAWING_UNITS, build_unit_crs_contract
 
     unit_contract = build_unit_crs_contract(
         dwg_insunits=profile.dwg_insunits,
@@ -1139,10 +1192,23 @@ def convert(request: ConversionRequest) -> ConversionResult:
         source_coordinate_scale_reviewed=profile.source_coordinate_scale_reviewed,
         local_registration_strategy=profile.local_registration_strategy,
         local_registration_reviewed=profile.local_registration_reviewed,
+        nominal_local=(
+            profile.drawing_units == NOMINAL_LOCAL_DRAWING_UNITS
+        ),
     )
     # DirectTransformer is the only implemented geometry transform at this
     # boundary.  Registration contracts must never masquerade as direct CRS.
-    if unit_contract.coordinate_mode != "direct_crs":
+    # A nominal local placeholder (no DWG CGEOCS) may only proceed when a
+    # reviewed GCP registration profile accompanies the conversion.
+    if unit_contract.coordinate_mode == "nominal_local_gcp_required":
+        if request.gcp_profile is None:
+            raise RuntimeError(
+                "Nominal local CRS placeholder (the DWG declared no usable "
+                "CGEOCS) is not absolute positioning; conversion requires a "
+                "reviewed GCP registration profile "
+                "(ConversionRequest.gcp_profile)"
+            )
+    elif unit_contract.coordinate_mode != "direct_crs":
         raise RuntimeError(
             "Conversion requires an implemented reviewed authoritative registration; "
             f"unit/CRS contract mode is {unit_contract.coordinate_mode!r}"
@@ -1187,8 +1253,33 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
     from .plan_domain import build_plan_domain
 
-    plan_domain = build_plan_domain(entities)
+    route_regex = getattr(registry, "positive_route_layer_regex", None)
+    route_layer_pattern = (
+        None
+        if not route_regex or route_regex == "(?!)"
+        else re.compile(route_regex)
+    )
+    plan_domain = build_plan_domain(
+        entities,
+        route_layer_pattern=route_layer_pattern,
+        plan_layouts=profile.plan_layouts,
+        include_orphan_blocks=(
+            "*" if profile.include_orphan_blocks == ("*",)
+            else profile.include_orphan_blocks or None
+        ),
+        excluded_legend_entity_keys=profile.excluded_legend_entity_keys,
+    )
     semantic_entities = list(plan_domain.entities)
+    cad_scene_graph = build_cad_scene_graph(
+        source_sha256=source_hash,
+        source_entities=entities,
+        plan_entities=semantic_entities,
+    )
+    scene_visual = build_scene_visual_bundle(
+        graph=cad_scene_graph,
+        entities=entities,
+        scene_candidates=plan_domain.diagnostics.get("scene_partition", {}),
+    )
     from .coordinate_domain import assess_coordinate_domain
 
     coordinate_domain = assess_coordinate_domain(
@@ -1259,7 +1350,23 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
     evidence_graph = visual_evidence.graph
     reasoning_diagnostics = {
-        "architecture": "content-addressed-evidence-graph",
+        "architecture": "source-bound-cad-scene-and-evidence-graphs",
+        "cad_scene_graph": {
+            "schema_version": "cad2gis.cad_scene_graph.v1",
+            "graph_sha256": cad_scene_graph.graph_sha256,
+            "node_count": len(cad_scene_graph.nodes),
+            "edge_count": len(cad_scene_graph.edges),
+            "diagnostics": cad_scene_graph.diagnostics,
+        },
+        "scene_visual": {
+            "schema_version": "cad2gis.scene_visual_bundle.v1",
+            "manifest_sha256": scene_visual.manifest_file.sha256,
+            "manifest_path": scene_visual.manifest_relative_path,
+            "layout_count": scene_visual.layout_count,
+            "region_count": scene_visual.region_count,
+            "render_conserved": scene_visual.render_conserved,
+            "authority": "secondary_visual_and_structural_evidence_only",
+        },
         "graph_schema_version": "cad2gis.evidence_graph.v1",
         "graph_sha256": evidence_graph.graph_sha256,
         "node_count": len(evidence_graph.nodes),
@@ -1470,6 +1577,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
     if (
         coordinate_domain.get("passed") is not True
         and calibration_diagnostics["status"] != "accepted"
+        and not (
+            profile.local_registration_strategy == "nominal_only_deferred_registration"
+            and profile.local_registration_reviewed
+        )
     ):
         raise RuntimeError(
             "Declared CRS coordinate-domain gate failed and no independently "
@@ -1535,6 +1646,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
     evidence_path = run_dir / f"{artifact_prefix}evidence.gpkg"
     delivery_path = run_dir / f"{artifact_prefix}delivery.gpkg"
     style_manifest_path = run_dir / "qgis" / "styles" / "style_manifest.json"
+    cad_scene_graph_path = run_dir / "reasoning" / "cad_scene_graph.json"
+    scene_visual_manifest_path = run_dir / scene_visual.manifest_relative_path
     evidence_graph_path = run_dir / "reasoning" / "evidence_graph.json"
     decision_execution_path = run_dir / "reasoning" / "decision_execution.json"
     derived_network_path = run_dir / "reasoning" / "derived_network.json"
@@ -1548,6 +1661,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
         staged_evidence_path = staged_run_dir / evidence_path.name
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
+        staged_cad_scene_graph_path = (
+            staged_run_dir / "reasoning" / "cad_scene_graph.json"
+        )
+        _write_manifest(staged_cad_scene_graph_path, cad_scene_graph.to_dict())
+        staged_scene_visual_manifest_path = scene_visual.write(staged_run_dir)
         staged_evidence_graph_path = staged_run_dir / "reasoning" / "evidence_graph.json"
         _write_manifest(staged_evidence_graph_path, evidence_graph.to_dict())
         staged_visual_manifest_path = visual_evidence.write(staged_run_dir)
@@ -1596,6 +1714,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
             calibration_audit=(calibration_audit or lineage_audit),
             target_srs=transformer.target,
             delivery_transformer=selected_transformer,
+            orphan_member_keys=frozenset(
+                plan_domain.diagnostics.get("orphan_member_entity_keys", ())
+            ),
         )
         counts = write_delivery(staged_delivery_path, features, selected_transformer)
         delivery_gate = _validate_declared_counts(
@@ -1640,6 +1761,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             validation_summary=validation_summary,
             georeference_diagnostics=diagnostics["georeference"],
             diagnostics=diagnostics,
+            plan_domain_diagnostics=plan_domain.diagnostics,
         )
         implementation = production_conversion_provenance()
         reader_runtime_inventory = {
@@ -1680,6 +1802,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "styles": {
                     "path": str(style_manifest_path),
                     "sha256": _sha256(staged_style_manifest_path),
+                },
+                "cad_scene_graph": {
+                    "path": str(cad_scene_graph_path),
+                    "sha256": _sha256(staged_cad_scene_graph_path),
+                },
+                "scene_visual": {
+                    "path": str(scene_visual_manifest_path),
+                    "sha256": _sha256(staged_scene_visual_manifest_path),
                 },
                 "evidence_graph": {
                     "path": str(evidence_graph_path),

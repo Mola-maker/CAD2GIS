@@ -85,10 +85,20 @@ const gcpStyle = (feature) => new ol.style.Style({
 const localProjection = new ol.proj.Projection({
   code: "CAD:LOCAL", units: "m", extent: [-1e12, -1e12, 1e12, 1e12],
 });
+// The projection extent is deliberately huge so any drawing fits, but the
+// default resolution ladder derives from it (zoom 28 ≈ 29 m/px), which makes
+// zooming into pole/FAT-level detail impossible.  Provide an explicit ladder
+// from township scale down to millimetre scale instead.
+const localResolutions = Array.from({ length: 42 }, (_, index) => 65536 / 2 ** index);
 const localMap = new ol.Map({
   target: "local-map",
   layers: [new ol.layer.Vector({ source: gcpLocalSource, style: gcpStyle, zIndex: 100 })],
-  view: new ol.View({ projection: localProjection, center: [0, 0], zoom: 2 }),
+  view: new ol.View({
+    projection: localProjection,
+    center: [0, 0],
+    resolutions: localResolutions,
+    zoom: 2,
+  }),
 });
 const worldMap = new ol.Map({
   target: "map",
@@ -469,6 +479,7 @@ const connectSocket = () => {
 };
 
 const boot = async () => {
+  document.body.classList.add("is-ready");
   try {
     const run = await fetchJSON("/api/run");
     renderRun(run);

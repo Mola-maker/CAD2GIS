@@ -326,7 +326,9 @@ def _entity_values(routed: _RoutedEntity) -> dict[str, Any]:
     }
 
 
-def _source_srs(source_crs: str):
+def _source_srs(source_crs: str | None):
+    if source_crs is None:
+        return None
     if not str(source_crs).strip():
         raise ValueError("source_crs must not be blank")
     osr.DontUseExceptions()
@@ -573,13 +575,13 @@ def _sha256_path(path: Path) -> str:
 
 
 def _logical_sha256(
-    source_crs: str,
+    source_crs: str | None,
     routed_entities: Sequence[_RoutedEntity],
     layer_counts: Mapping[str, int],
 ) -> str:
     payload = {
         "schema_version": SOURCE_GPKG_SCHEMA_VERSION,
-        "source_crs": str(source_crs),
+        "source_crs": source_crs,
         "layer_counts": dict(layer_counts),
         "entities": [_entity_values(routed) for routed in routed_entities],
     }
@@ -589,7 +591,7 @@ def _logical_sha256(
 def write_source_gpkg(
     path: str | Path,
     entities: Iterable[SourceEntity],
-    source_crs: str,
+    source_crs: str | None,
 ) -> SourceGeoPackageResult:
     """Atomically write a deterministic generic source GeoPackage."""
     destination = Path(path).resolve()

@@ -101,7 +101,10 @@ class DirectTransformer:
                 )
         if not isinstance(unit_contract, UnitCrsContract):
             raise TypeError("unit_contract must be a UnitCrsContract")
-        if not unit_contract.can_direct_transform:
+        if not (
+            unit_contract.can_direct_transform
+            or unit_contract.coordinate_mode == "nominal_local_gcp_required"
+        ):
             raise UnitCrsContractError(
                 "DirectTransformer cannot apply a local registration contract; "
                 "run the reviewed authoritative registration stage"

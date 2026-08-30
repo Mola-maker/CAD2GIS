@@ -16,7 +16,12 @@ _DEFAULT_READER = "libredwg"
 
 
 def extract_records(source_path: Path) -> DWGRecordInventory:
-    """Extract a complete inventory with the configured canonical reader."""
+    """Extract with LibreDWG by default or an explicitly selected fallback reader.
+
+    Reader switching is intentionally not automatic: a failed primary attempt must
+    remain observable before an operator or orchestrator selects AutoCAD for a
+    bounded fallback or parallel verification run.
+    """
 
     backend = os.environ.get(_READER_ENV, _DEFAULT_READER).strip().lower()
     if backend == "libredwg":

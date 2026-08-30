@@ -320,11 +320,20 @@ def _materialize_route(
             flags = parameters.get("flags") if isinstance(parameters, Mapping) else None
             if flags is None:
                 raise ValueError("legacy POLYLINE flags are required")
-            if int(flags) & 126:
-                raise ValueError(
-                    "fitted, spline, 3D, mesh, or polyface POLYLINE requires complete "
-                    "reader materialization (delivery_segments_wcs)"
-                )
+            problematic = int(flags) & 126  # bits 1-6: curve-fit, spline, 3D, mesh, polyface
+            if problematic:
+                # Only the 3D bit (8) is tolerable when the geometry is actually planar
+                if problematic == 8:
+                    if z_values and max(z_values) - min(z_values) > tolerance:
+                        raise ValueError(
+                            "non-planar 3D POLYLINE requires complete reader "
+                            "materialization (delivery_segments_wcs)"
+                        )
+                else:
+                    raise ValueError(
+                        "fitted, spline, mesh, or polyface POLYLINE requires complete "
+                        "reader materialization (delivery_segments_wcs)"
+                    )
         if primitive_type == "2DPOLYLINE":
             fit_type = parameters.get("polyline_type") if isinstance(parameters, Mapping) else None
             if fit_type is None:
@@ -342,8 +351,13 @@ def _materialize_route(
             raise ValueError(
                 "negative extrusion bulge orientation requires complete reader materialization"
             )
+        # The final vertex's bulge would only define a closing segment.  This
+        # route is open (closed routes are rejected above), so AutoCAD renders
+        # that value as inert dead data and so does faithful materialization:
+        # drop it instead of rejecting a renderable curve.  Genuine arcs are
+        # all in bulges[:-1] and are preserved unchanged below.
         if abs(bulges[-1]) > tolerance:
-            raise ValueError("open curve has a trailing bulge without a source segment")
+            bulges = bulges[:-1]
 
         built_segments = []
         for index, (start, end, bulge) in enumerate(zip(vertices, vertices[1:], bulges)):

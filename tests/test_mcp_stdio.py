@@ -12,6 +12,20 @@ import pytest
 mcp = pytest.importorskip("mcp")
 
 
+def test_capabilities_keep_libredwg_primary_and_qgis_downstream() -> None:
+    from cad2gis.agent_mcp import get_capabilities
+
+    adapters = get_capabilities()["local_software_adapters"]
+    cad_reader = adapters["cad_reader"]
+    qgis = adapters["qgis_desktop_session"]
+
+    assert cad_reader["primary_backend"] == "libredwg"
+    assert cad_reader["fallback_backend"] == "autocad_core_console"
+    assert cad_reader["silent_fallback"] is False
+    assert qgis["usage_scope"] == "post_conversion_review_styling_and_fine_tuning_only"
+    assert qgis["conversion_authority"] is False
+
+
 def test_plugin_launcher_does_not_pin_project_root_to_plugin_cache(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -58,19 +72,51 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
         "auto_onboard_and_convert",
         "bootstrap_project",
         "create_decision_pack",
+        "create_scene_interpretation_plan",
+        "create_semantic_decision_pack",
+        "compile_semantic_layers",
+        "decide_iteration_candidate",
+        "evaluate_iteration_candidate",
+        "export_source",
+        "export_iteration_learning",
+        "export_qgis_desktop_view",
+        "get_cad_scene_node",
+        "get_scene_visual_region_context",
         "get_capabilities",
         "get_evidence_node",
         "inspect_source",
         "inspect_run",
+        "inspect_iteration",
+        "inspect_qgis_desktop_session",
+        "inspect_semantic_coverage",
+        "list_cad_scene_nodes",
         "list_endpoint_join_candidates",
         "list_evidence_nodes",
+        "list_label_candidates",
+        "list_legend_catalog_candidates",
         "list_network_repair_candidates",
         "list_registered_operations",
+        "list_scene_visual_regions",
+        "list_semantic_candidates",
+        "list_semantic_batches",
         "list_visual_regions",
+        "load_qgis_conversion_run",
+        "load_qgis_dataset",
+        "open_qgis_desktop_project",
+        "summarize_semantic_batch",
         "prepare_review_workspace",
         "prepare_ai_onboarding",
+        "prepare_iteration_context",
+        "prepare_semantic_batches",
+        "record_iteration_feedback",
         "resolve_visual_hit",
         "run_conversion",
+        "set_qgis_desktop_layer_visibility",
+        "start_feedback_iteration",
+        "start_qgis_desktop_session",
+        "stop_qgis_desktop_session",
         "validate_decision_pack",
+        "validate_scene_interpretation_plan",
         "validate_project",
+        "zoom_qgis_desktop_full_extent",
     }

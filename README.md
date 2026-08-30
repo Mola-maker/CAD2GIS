@@ -13,8 +13,10 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 ```text
 DWG reader (AutoCAD / LibreDWG / source-bound records)
   -> 不可变实体清单与样式、标签、曲线事实
-  -> plan-domain 与 geometry-first 场景分区
-  -> source-bound AI onboarding（只选择源中已观察到的标识）
+  -> source-bound CAD Scene Graph（布局、块定义、实例、属性、样式、源/plan 视图）
+  -> 每个 Layout 的多尺度图像 + hit-map + 精确结构化上下文
+  -> hash-bound Scene Interpretation Plan（只排序候选、不自动删实体）
+  -> source-bound AI onboarding（只选择图中已存在的 graph ID 与标识）
   -> 确定性语义编译与精确 census gates
   -> 曲线、几何、拓扑、长度四类独立验证
   -> 名义 CRS 转换
@@ -43,11 +45,16 @@ pip install -e ".[mcp,review,test]"
 cad2gis doctor --deep --strict --json
 ```
 
-Windows 使用 AutoCAD reader：
+默认 reader 是 LibreDWG。仅在 LibreDWG 已返回可分类失败，或需要显式并行核验时，
+才为单次恢复/对比运行选择 Windows AutoCAD reader：
 
 ```powershell
 $env:CAD2GIS_READER_BACKEND = "autocad"
 ```
+
+不要把该变量固化为插件默认值；恢复完成后清除它，下一次运行仍从 LibreDWG 开始。
+QGIS 桌面控制只用于转换后的审阅、样式与微调，不参与 DWG 主读取或替代 canonical
+pipeline。
 
 ## 新图纸的推荐流程
 
@@ -102,7 +109,9 @@ rule/provenance。
 cad2gis review "<RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
 ```
 
-打开 `http://127.0.0.1:8765/`：
+打开 `http://127.0.0.1:8765/workspace` 进入双地图审查。首页位于
+`http://127.0.0.1:8765/`，独立安装教学页位于
+`http://127.0.0.1:8765/install`：
 
 1. 左图点击 CAD 实体，系统吸附到最近真实几何，拒绝空白区控制点；
 2. 右图点击对应位置，或输入 EPSG:4326 经度/纬度；
@@ -135,12 +144,17 @@ HTTP endpoint 为 `http://127.0.0.1:8768/mcp`。默认只允许本机 loopback�
 Claude Code、Cursor、VS Code/GitHub Copilot、Codex 和通用 HTTP 客户端模板位于
 [`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients)。服务暴露
 `get_capabilities`，智能体可先读取转换边界、transport 和精度声明，再调用
-inspection、onboarding、conversion、evidence、repair 与 review 工具。
+inspection、CAD Scene Graph、onboarding、conversion、evidence、repair 与 review
+工具。`list_cad_scene_nodes` / `get_cad_scene_node` 供宿主模型分页读取分类前
+事实；`list_scene_visual_regions` / `get_scene_visual_region_context` 将图像区域与
+实体、文字、块和样式对齐；`create_scene_interpretation_plan` 会把模型判断绑定到
+source/graph/visual 三个哈希。`list_evidence_nodes` / `get_evidence_node` 用于读取
+分类后的证据图。
 
 MCP 只能访问下列根目录中的文件：
 
 ```powershell
-$env:CAD2GIS_PROJECT_ROOTS = "E:\branch_CAD2GIS"
+$env:CAD2GIS_PROJECT_ROOTS = "E:\cad2gis-project"
 ```
 
 ## QGIS 交付
@@ -172,7 +186,7 @@ $env:CAD2GIS_PROJECT_ROOTS = "E:\branch_CAD2GIS"
 `CGEOCS` 明确绑定投影 CRS 时，其线性轴单位控制 WCS→米的尺度，避免把 UTM
 坐标错误缩小 1000 倍。
 
-外部 `E:\branch_CAD2GIS\APD_test` 仅是兼容性压力输入，不是训练集、规则模板或
+外部 `<WORKSPACE>\APD_test` 仅是兼容性压力输入，不是训练集、规则模板或
 准确率真值。没有 authoritative GCP 的结果必须保持 `CONDITIONAL` 或
 `not independently verified`。
 
