@@ -18,6 +18,11 @@ from pyproj.exceptions import CRSError
 
 
 UNIT_CRS_CONTRACT_SCHEMA_VERSION = "cad2gis.unit-crs-contract.v1"
+# Written into ``drawing.drawing_units`` by the onboarding local fallback
+# CRS candidate (no DWG CGEOCS).  It marks the profile CRS as a nominal
+# local placeholder: never absolute positioning until a reviewed GCP
+# registration profile is supplied at conversion time.
+NOMINAL_LOCAL_DRAWING_UNITS = "unknown_local"
 
 
 class UnitCrsContractError(ValueError):
@@ -230,6 +235,7 @@ def build_unit_crs_contract(
     source_coordinate_scale_reviewed=False,
     local_registration_strategy=None,
     local_registration_reviewed=False,
+    nominal_local=False,
 ) -> UnitCrsContract:
     """Build a unit/CRS contract, rejecting every implicit scale or CRS guess.
 
@@ -242,14 +248,53 @@ def build_unit_crs_contract(
     otherwise unusable source CRSs require an explicitly reviewed registration
     strategy; the returned registration contract is evidence for that separate
     stage and cannot be passed off as a direct CRS operation.
+
+    ``nominal_local=True`` is reserved for profiles carrying
+    ``NOMINAL_LOCAL_DRAWING_UNITS`` (onboarding local fallback, no DWG
+    CGEOCS).  It tolerates unitless/unsupported $INSUNITS behind an
+    explicit placeholder scale and returns a
+    ``nominal_local_gcp_required`` contract: numerically usable by the GCP
+    calibration stage, but never a direct CRS operation and never
+    conversion-allowed without a reviewed GCP registration profile.
     """
-    cad_unit = resolve_insunits(dwg_insunits)
+    if not isinstance(nominal_local, bool):
+        raise UnitCrsContractError("nominal_local must be boolean")
+    try:
+        cad_unit = resolve_insunits(dwg_insunits)
+    except UnitCrsContractError:
+        if not nominal_local:
+            raise
+        # Unitless or unsupported $INSUNITS on a drawing without CGEOCS:
+        # the coordinate unit is unknown local.  The nominal contract
+        # records a 1.0 placeholder unit; the true scale is absorbed by
+        # the reviewed GCP registration stage, never guessed here.
+        cad_unit = CadUnit(
+            (
+                dwg_insunits
+                if isinstance(dwg_insunits, int)
+                and not isinstance(dwg_insunits, bool)
+                else 0
+            ),
+            "unitless-nominal-local",
+            "",
+            1.0,
+        )
     if not isinstance(source_coordinate_scale_reviewed, bool):
         raise UnitCrsContractError("source_coordinate_scale_reviewed must be boolean")
     if not isinstance(local_registration_reviewed, bool):
         raise UnitCrsContractError("local_registration_reviewed must be boolean")
 
-    if source_coordinate_scale_to_m is None:
+    if nominal_local:
+        if source_coordinate_scale_to_m is None:
+            raise UnitCrsContractError(
+                "Nominal local contracts require an explicit "
+                "source_coordinate_scale_to_m placeholder"
+            )
+        scale_to_m = _finite_positive(
+            source_coordinate_scale_to_m, "source_coordinate_scale_to_m"
+        )
+        scale_origin = "ONBOARDING:nominal-local-placeholder-unreviewed-scale"
+    elif source_coordinate_scale_to_m is None:
         if cad_unit.metres_per_unit != 1.0:
             raise UnitCrsContractError(
                 "Non-metre CAD drawing units require explicit "
@@ -314,7 +359,10 @@ def build_unit_crs_contract(
             source_failure = exc
 
     if source is not None and source.is_projected:
-        if registration_strategy is not None:
+        if (
+            registration_strategy is not None
+            and registration_strategy != "nominal_only_deferred_registration"
+        ):
             raise UnitCrsContractError(
                 "local_registration_strategy is only valid when source_crs is "
                 "missing, geographic, or local/engineering"
@@ -335,7 +383,9 @@ def build_unit_crs_contract(
             source_coordinate_scale_reviewed=source_coordinate_scale_reviewed,
             source_coordinate_scale_origin=scale_origin,
             source_to_crs_axis_factor=source_to_axis,
-            coordinate_mode="direct_crs",
+            coordinate_mode=(
+                "nominal_local_gcp_required" if nominal_local else "direct_crs"
+            ),
             local_registration_strategy=None,
             local_registration_reviewed=False,
         )
@@ -394,6 +444,7 @@ def build_unit_crs_contract(
 __all__ = [
     "CadUnit",
     "CrsAxisUnit",
+    "NOMINAL_LOCAL_DRAWING_UNITS",
     "UnitCrsContract",
     "UnitCrsContractError",
     "UNIT_CRS_CONTRACT_SCHEMA_VERSION",

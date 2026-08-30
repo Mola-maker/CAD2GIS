@@ -36,7 +36,7 @@ from .project_profile import (
     validate_project,
 )
 from .semantics import classify_entities
-from .units import resolve_insunits
+from .units import NOMINAL_LOCAL_DRAWING_UNITS, resolve_insunits
 
 
 ONBOARDING_BUNDLE_SCHEMA = "cad2gis.ai_onboarding_bundle.v1"
@@ -77,18 +77,57 @@ def _read_project(root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str,
     return profile, registry, inventory
 
 
+def _local_fallback_crs_candidate(
+    cgeocs: str,
+    insunits: int | None,
+) -> dict[str, Any]:
+    """Nominal local placeholder for drawings without usable CRS metadata.
+
+    The placeholder is deliberately honest: the scale is an unreviewed 1.0
+    and the evidence marks the CRS as requiring GCP registration.  Selecting
+    it lets onboarding proceed; conversion stays fail-closed until a
+    reviewed GCP registration profile is supplied.
+    """
+
+    candidate = {
+        "candidate_id": (
+            "CAD-LOCAL:NO-CGEOCS:INSUNITS-"
+            + (str(insunits) if insunits is not None else "NA")
+        ),
+        "source_crs": "EPSG:3857",
+        "target_crs": "EPSG:3857",
+        "drawing_units": NOMINAL_LOCAL_DRAWING_UNITS,
+        "source_coordinate_scale_to_m": 1.0,
+        "source_coordinate_scale_reviewed": False,
+        "evidence": {
+            "dwg_cgecs": cgeocs,
+            "dwg_insunits": insunits,
+            "authority": "LOCAL_FALLBACK_NO_CGEOCS",
+            "absolute_accuracy": "requires_gcp_registration",
+            "nominal": True,
+        },
+    }
+    candidate["candidate_sha256"] = _canonical_sha256(candidate)
+    return candidate
+
+
 def _crs_candidates(profile: Mapping[str, Any]) -> list[dict[str, Any]]:
     drawing = profile.get("drawing")
     if not isinstance(drawing, Mapping):
         return []
     cgeocs = str(drawing.get("dwg_cgeocs") or "").strip()
     raw_insunits = drawing.get("dwg_insunits")
-    if not cgeocs or isinstance(raw_insunits, bool) or not isinstance(raw_insunits, int):
-        return []
-    crs_token = _CGEOCS_CRS.get(cgeocs.upper())
+    insunits = (
+        raw_insunits
+        if isinstance(raw_insunits, int) and not isinstance(raw_insunits, bool)
+        else None
+    )
+    crs_token = _CGEOCS_CRS.get(cgeocs.upper()) if cgeocs else None
     if crs_token is None:
+        return [_local_fallback_crs_candidate(cgeocs, insunits)]
+    if insunits is None:
         return []
-    unit = resolve_insunits(raw_insunits)
+    unit = resolve_insunits(insunits)
     crs = CRS.from_user_input(crs_token)
     if not crs.is_projected:
         return []
@@ -300,6 +339,73 @@ def _insert_census(instances: Any) -> dict[str, Any]:
     }
 
 
+def _scene_understanding_context(
+    root: Path,
+    inventory: Mapping[str, Any],
+) -> dict[str, Any]:
+    summary = inventory.get("scene_visual")
+    if not isinstance(summary, Mapping):
+        return {"status": "not_available"}
+    relative = Path(str(summary.get("relative_path", "")))
+    if relative.is_absolute() or ".." in relative.parts:
+        raise OnboardingError("Scene visual manifest path is not project-relative")
+    path = (root / relative).resolve()
+    if root != path and root not in path.parents:
+        raise OnboardingError("Scene visual manifest path escapes the project root")
+    manifest = _read_json(path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != summary.get("manifest_sha256"):
+        raise OnboardingError("Scene visual manifest digest is stale")
+    layouts = manifest.get("layouts")
+    regions = manifest.get("regions")
+    if not isinstance(layouts, list) or not isinstance(regions, list):
+        raise OnboardingError("Scene visual manifest is missing layouts or regions")
+    region_index = [
+        {
+            key: item.get(key)
+            for key in (
+                "region_id", "layout", "native_bounds", "pixel_width",
+                "pixel_height", "visible_entity_count", "render_path",
+                "render_sha256", "context_path", "context_sha256",
+            )
+        }
+        for item in regions if isinstance(item, Mapping)
+    ]
+    overview = [
+        item for item in region_index
+        if str(item.get("region_id", "")).endswith(":overview")
+    ]
+    dense_details = sorted(
+        (
+            item for item in region_index
+            if not str(item.get("region_id", "")).endswith(":overview")
+        ),
+        key=lambda item: (
+            -int(item.get("visible_entity_count") or 0),
+            str(item.get("region_id", "")),
+        ),
+    )
+    prompt_regions = (overview + dense_details)[:64]
+    return {
+        "status": "available",
+        "schema_version": manifest.get("schema_version"),
+        "manifest_sha256": digest,
+        "cad_scene_graph_sha256": manifest.get("cad_scene_graph_sha256"),
+        "layout_count": manifest.get("layout_count"),
+        "region_count": manifest.get("region_count"),
+        "render_conserved": manifest.get("render_conserved"),
+        "layouts": layouts,
+        "prompt_region_index": prompt_regions,
+        "prompt_region_index_is_complete": len(prompt_regions) == len(region_index),
+        "complete_region_index_sha256": _canonical_sha256(region_index),
+        "retrieval": {
+            "list_tool": "list_scene_visual_regions",
+            "context_tool": "get_scene_visual_region_context",
+        },
+        "authority": manifest.get("model_contract"),
+    }
+
+
 def prepare_onboarding_bundle(project_dir: str | Path) -> dict[str, Any]:
     """Build compact model context from one immutable source inventory."""
 
@@ -327,6 +433,9 @@ def prepare_onboarding_bundle(project_dir: str | Path) -> dict[str, Any]:
             sorted(blocks.items(), key=lambda item: item[0].casefold())
         ),
         "insert_instances": insert_census,
+        "cad_scene_graph": dict(inventory.get("cad_scene_graph", {})),
+        "scene_visual": dict(inventory.get("scene_visual", {})),
+        "scene_understanding": _scene_understanding_context(root, inventory),
         "text_samples_by_layer": _text_samples(
             inventory.get("annotation_carriers")
         ),
@@ -689,7 +798,28 @@ def compile_onboarding_proposal(
             require_reviewed=False,
         )
         entities, diagnostics = ingest(source_path, profile)
-        plan_domain = build_plan_domain(entities)
+        # Compile must derive expectations from the exact plan-domain view the
+        # conversion pipeline will build: same route-layer pattern from the
+        # reviewed registry and the same plan-domain declarations from the
+        # profile.  Otherwise the recorded feature census diverges from the
+        # conversion-time census (e.g. route-layer exemption rescues cables
+        # only on one side) and the exact-count gate fails at convert time.
+        route_regex = getattr(registry, "positive_route_layer_regex", None)
+        route_layer_pattern = (
+            None
+            if not route_regex or route_regex == "(?!)"
+            else re.compile(route_regex)
+        )
+        plan_domain = build_plan_domain(
+            entities,
+            route_layer_pattern=route_layer_pattern,
+            plan_layouts=profile.plan_layouts,
+            include_orphan_blocks=(
+                "*" if profile.include_orphan_blocks == ("*",)
+                else profile.include_orphan_blocks or None
+            ),
+            excluded_legend_entity_keys=profile.excluded_legend_entity_keys,
+        )
         features, _, _, semantic_diagnostics = classify_entities(
             list(plan_domain.entities),
             registry,
@@ -712,9 +842,19 @@ def compile_onboarding_proposal(
         _atomic_write_json(profile_path, profile_payload)
         validation = validate_project(project_dir=root)
         if validation.get("conversion_allowed") is not True:
-            raise OnboardingError(
-                f"Compiled onboarding pack failed admission: {validation}"
+            # The local fallback CRS candidate is a nominal placeholder:
+            # admission accepts a reviewed pack whose only remaining gate is
+            # the reviewed GCP registration profile at conversion time.
+            crs_evidence = validated["crs_candidate"].get("evidence") or {}
+            nominal_fallback_pending_gcp = (
+                isinstance(crs_evidence, Mapping)
+                and crs_evidence.get("authority") == "LOCAL_FALLBACK_NO_CGEOCS"
+                and validation.get("status") == "registration_required"
             )
+            if not nominal_fallback_pending_gcp:
+                raise OnboardingError(
+                    f"Compiled onboarding pack failed admission: {validation}"
+                )
     except Exception:
         # Admission is transactional. A failed model proposal or failed dry
         # run must not leave an apparently reviewed, runnable project pack.
@@ -759,9 +899,13 @@ def request_onboarding_proposal(
         )
     request = ReviewRequest(
         system_prompt=(
-            "You are the CAD2GIS onboarding planner. Select only identifiers "
-            "listed in the task-bound schema. Map telecom route layers, device "
-            "INSERT layers/blocks, home labels, span dimensions, and sling wire. "
+            "You are the CAD2GIS onboarding planner. First use the supplied "
+            "layout and scene-region structural index to separate plan content "
+            "from legend, title, schedule, overview, annotation, and unknown "
+            "content. Do not claim pixel-level visual evidence unless images "
+            "were actually supplied by the host. Select only identifiers listed "
+            "in the task-bound schema. Map route layers, device INSERT layers/"
+            "blocks, labels, dimensions, and other observed drawing-local roles. "
             "Select the supplied deterministic CRS candidate. Do not invent "
             "coordinates, lengths, CRS identifiers, GCPs, layers, blocks, or "
             "expected counts. Prefer abstention over a weak semantic mapping."

@@ -121,6 +121,28 @@ def test_source_gpkg_accounts_for_every_entity(tmp_path, sample_entities):
     assert result.entity_count == len(sample_entities)
 
 
+def test_source_gpkg_allows_explicitly_unregistered_cad_coordinates(
+    tmp_path, sample_entities
+):
+    output = tmp_path / "source.gpkg"
+    result = write_source_gpkg(output, sample_entities, None)
+    with sqlite3.connect(output) as connection:
+        srs_ids = {
+            row[0]
+            for row in connection.execute(
+                "SELECT DISTINCT srs_id FROM gpkg_geometry_columns"
+            )
+        }
+        assert len(srs_ids) == 1
+        srs_id = next(iter(srs_ids))
+        definition = connection.execute(
+            "SELECT definition FROM gpkg_spatial_ref_sys WHERE srs_id = ?",
+            (srs_id,),
+        ).fetchone()[0]
+        assert "Undefined SRS" in definition
+    assert result.entity_count == len(sample_entities)
+
+
 def test_source_gpkg_materializes_stable_layers_and_retains_facts(
     tmp_path, sample_entities
 ):

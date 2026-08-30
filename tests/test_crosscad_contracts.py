@@ -75,12 +75,13 @@ def _source_entity(
     layout: str = "Model",
     raw_properties: dict | None = None,
     style=None,
+    source_sha256: str = "a" * 64,
 ):
     points = tuple(tuple(point) for point in points)
     return model.SourceEntity.from_record(
         {
             "entity_key": key,
-            "source_sha256": "a" * 64,
+            "source_sha256": source_sha256,
             "source_file": "fixture.dwg",
             "handle": key,
             "layout": layout,
@@ -451,6 +452,76 @@ def test_line_and_bulge_route_preserve_source_segments_and_native_length():
     assert curves.delivery_points(feature)[-1] == (2.0 * chord, 0.0)
 
 
+def test_open_route_with_dead_trailing_bulge_materializes_without_losing_arcs():
+    curves = _canonical_module("cad2gis.cad2gis_v3.curve_geometry")
+    model = _canonical_module("cad2gis.cad2gis_v3.model")
+    chord = 10.0
+    bulge = 1.0  # semicircle: radius = chord / 2
+    radius = chord / 2.0
+    arc_length = math.pi * radius
+    facts = {
+        "schema_version": "cad2gis-curve-facts-v1",
+        "coordinate_system": "WCS",
+        "primitive_type": "LWPOLYLINE",
+        "vertices_wcs": [[0.0, 0.0, 0.0], [chord, 0.0, 0.0]],
+        # Trailing bulge on the last vertex of an OPEN polyline is inert dead
+        # data: AutoCAD defines no closing segment, so the value must be
+        # dropped, not fail the conversion.  The genuine arc lives in
+        # bulges[0] and must be preserved unchanged.
+        "bulges": [bulge, bulge],
+        "elevation": 0.0,
+        "normal": [0.0, 0.0, 1.0],
+        "extrusion": [0.0, 0.0, 1.0],
+        "closed": False,
+        "primitive_parameters": {},
+        "native_length": arc_length,
+        "native_length_source": "fixture:analytic-bulge-arc",
+    }
+    source = model.SourceEntity.from_record(
+        {
+            "entity_key": "trailing-bulge-route-source",
+            "source_sha256": "c" * 64,
+            "source_file": "fixture.dwg",
+            "handle": "TRAIL1",
+            "layout": "Model",
+            "layout_role": "model",
+            "cad_role": "model",
+            "layer": "FIBER_ROUTE",
+            "object_name": "ACDBLWPOLYLINE",
+            "dwg_type_name": "LWPOLYLINE",
+            "points": [(0.0, 0.0), (chord, 0.0)],
+            "centroid": (chord / 2.0, 0.0),
+            "closed": False,
+            "text": "",
+            "block_name": "",
+            "block_attributes": {},
+            "native_length": arc_length,
+            "curve_facts": facts,
+        }
+    )
+    feature = model.Feature(
+        feature_key="trailing-bulge-route",
+        feature_class="CABLE",
+        geometry_kind="LineString",
+        native_points=[(0.0, 0.0), (chord, 0.0)],
+        source_entity_key=source.entity_key,
+        source_handle=source.handle,
+        source_layer=source.layer,
+        geometry_role="SOURCE_ROUTE",
+        style=model.CadStyle(),
+    )
+    diagnostics = curves.materialize_cable_features([source], [feature], strict=True)
+    segments = curves.delivery_segments(feature)
+    assert diagnostics["arc_segments"] == 1
+    assert diagnostics["source_segments_total"] == 1
+    assert segments[0]["source_segment_kind"] == "bulge_arc"
+    assert len(segments[0]["delivery_native_points"]) > 2
+    assert segments[0]["source_native_length"] == pytest.approx(arc_length)
+    assert segments[0]["native_length_source"] == "analytic_bulge_arc"
+    assert curves.delivery_points(feature)[0] == (0.0, 0.0)
+    assert curves.delivery_points(feature)[-1] == (chord, 0.0)
+
+
 def test_insert_transform_uses_layout_block_base_and_rotation_without_moving_route():
     ports = _canonical_module("cad2gis.cad2gis_v3.ports")
     model = _canonical_module("cad2gis.cad2gis_v3.model")
@@ -585,7 +656,13 @@ def _run_fake_conversion(
     source_hash = _sha256_bytes(source.read_bytes())
     (tmp_path / "source_profile.json").write_text("{}", encoding="utf-8")
     (tmp_path / "mapping_registry.json").write_text("{}", encoding="utf-8")
-    entity = _source_entity(model, "source-line", kind="LINE", layer="FIBER")
+    entity = _source_entity(
+        model,
+        "source-line",
+        kind="LINE",
+        layer="FIBER",
+        source_sha256=source_hash,
+    )
 
     class FakeProfile:
         path = tmp_path / "source_profile.json"
@@ -598,6 +675,10 @@ def _run_fake_conversion(
         local_registration_strategy = None
         local_registration_reviewed = False
         inventory_sha256 = ""
+        include_orphan_blocks = ()
+        plan_layouts = ()
+        excluded_legend_entity_keys = ()
+        drawing_units = "metre"
         project_id = ""
         is_legacy = False
         spatial_coverage_policy = None
@@ -844,7 +925,7 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
     manifest = _json(run_dir / "run_manifest.json")
     expected_artifacts = {
         "source.gpkg", "delivery.gpkg", "evidence.gpkg", "style_manifest.json",
-        "evidence_graph.json", "manifest.json",
+        "cad_scene_graph.json", "evidence_graph.json", "manifest.json",
     }
     artifact_names = {
         Path(item["path"]).name for item in manifest["artifacts"].values()

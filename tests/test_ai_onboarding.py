@@ -105,6 +105,29 @@ def test_bundle_exposes_only_deterministic_metadata_crs_candidate(
     bundle = onboarding.prepare_onboarding_bundle(root)
 
     assert bundle["source"]["sha256"] == source_sha256
+    assert bundle["cad_scene_graph"]["schema_version"] == (
+        "cad2gis.cad_scene_graph.v1"
+    )
+    assert len(bundle["cad_scene_graph"]["graph_sha256"]) == 64
+    assert bundle["cad_scene_graph"]["authority"][
+        "ai_may_rank_existing_ids_only"
+    ] is True
+    scene_graph = json.loads(
+        (root / "review" / "cad_scene_graph.json").read_text(encoding="utf-8")
+    )
+    assert scene_graph["graph_sha256"] == bundle["cad_scene_graph"][
+        "graph_sha256"
+    ]
+    scene_visual_path = root / bundle["scene_visual"]["relative_path"]
+    scene_visual = json.loads(scene_visual_path.read_text(encoding="utf-8"))
+    assert scene_visual["cad_scene_graph_sha256"] == scene_graph["graph_sha256"]
+    assert scene_visual["render_conserved"] is True
+    assert bundle["scene_understanding"]["status"] == "available"
+    assert bundle["scene_understanding"]["layouts"]
+    assert bundle["scene_understanding"]["prompt_region_index"]
+    assert bundle["scene_understanding"]["retrieval"]["context_tool"] == (
+        "get_scene_visual_region_context"
+    )
     assert bundle["crs_candidates"] == [
         {
             "candidate_id": "CAD-METADATA:UTM84-49S:INSUNITS-6",
@@ -131,6 +154,15 @@ def test_bundle_exposes_only_deterministic_metadata_crs_candidate(
     assert bundle["deterministic_role_suggestions"]["route_layers"] == [
         "FO 48C CABLE"
     ]
+
+
+def test_project_validation_rejects_tampered_scene_visual(tmp_path: Path) -> None:
+    _, root, _ = _project(tmp_path)
+    visual_path = root / "reasoning" / "scene_visual" / "manifest.json"
+    visual_path.write_bytes(visual_path.read_bytes() + b"\n")
+
+    with pytest.raises(ValueError, match="Scene visual manifest digest is stale"):
+        validate_project(project_dir=root)
 
 
 def test_projected_crs_axis_controls_wcs_scale_not_insunits(
@@ -285,3 +317,193 @@ def test_insert_layer_mapping_classifies_anonymous_dynamic_block() -> None:
 
     assert [feature.feature_class for feature in features] == ["BOITE"]
     assert diagnostics["coverage"]["conversion_allowed"] is True
+
+
+def test_bundle_without_cgeocs_exposes_nominal_local_fallback_candidate(
+    tmp_path: Path,
+) -> None:
+    _, root, _ = _project(tmp_path, cgeocs="", insunits=0)
+
+    bundle = onboarding.prepare_onboarding_bundle(root)
+
+    assert len(bundle["crs_candidates"]) == 1
+    candidate = bundle["crs_candidates"][0]
+    assert candidate == {
+        "candidate_id": "CAD-LOCAL:NO-CGEOCS:INSUNITS-0",
+        "source_crs": "EPSG:3857",
+        "target_crs": "EPSG:3857",
+        "drawing_units": "unknown_local",
+        "source_coordinate_scale_to_m": 1.0,
+        "source_coordinate_scale_reviewed": False,
+        "evidence": {
+            "dwg_cgecs": "",
+            "dwg_insunits": 0,
+            "authority": "LOCAL_FALLBACK_NO_CGEOCS",
+            "absolute_accuracy": "requires_gcp_registration",
+            "nominal": True,
+        },
+        "candidate_sha256": candidate["candidate_sha256"],
+    }
+
+
+def test_bundle_with_unknown_cgeocs_also_falls_back(tmp_path: Path) -> None:
+    _, root, _ = _project(tmp_path, cgeocs="LOCAL-GRID-UNKNOWN", insunits=4)
+
+    candidate = onboarding.prepare_onboarding_bundle(root)["crs_candidates"][0]
+
+    assert candidate["candidate_id"] == "CAD-LOCAL:NO-CGEOCS:INSUNITS-4"
+    assert candidate["evidence"]["authority"] == "LOCAL_FALLBACK_NO_CGEOCS"
+    assert candidate["source_coordinate_scale_reviewed"] is False
+
+
+def test_local_fallback_proposal_compiles_and_parks_on_gcp_registration(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source, root, source_sha256 = _project(tmp_path, cgeocs="", insunits=0)
+    bundle = onboarding.prepare_onboarding_bundle(root)
+    route = SourceEntity.from_record(
+        _record(
+            source,
+            source_sha256,
+            entity_key="route",
+            dwg_type="LINE",
+            layer="FO 48C CABLE",
+            points=((100.0, 200.0), (110.0, 200.0)),
+        )
+    )
+    diagnostics = {
+        "census": {
+            "model_entities": 1,
+            "model_inserts": 0,
+            "model_dimensions": 0,
+        }
+    }
+    monkeypatch.setattr(
+        onboarding,
+        "ingest",
+        lambda *_args, **_kwargs: ([route], diagnostics),
+    )
+
+    result = onboarding.compile_onboarding_proposal(
+        source=source,
+        project_dir=root,
+        proposal=_proposal(bundle),
+        proposer={"provider": "test", "model": "fixture"},
+    )
+
+    assert result["status"] == "auto_accepted"
+    assert result["feature_counts"] == {"CABLE": 1}
+    validation = validate_project(project_dir=root)
+    assert validation["status"] == "registration_required"
+    assert validation["conversion_allowed"] is False
+    assert any("GCP" in action for action in validation["next_actions"])
+    profile = json.loads(
+        (root / "config" / "source_profile.json").read_text(encoding="utf-8")
+    )
+    assert profile["drawing"]["drawing_units"] == "unknown_local"
+    assert profile["drawing"]["source_coordinate_scale_to_m"] == 1.0
+    assert profile["drawing"]["source_coordinate_scale_reviewed"] is False
+    assert profile["crs"]["source_crs"] == "EPSG:3857"
+    assert profile["review"]["status"] == "auto_accepted"
+    assert profile["expectations"]["feature_counts"] == {"CABLE": 1}
+
+
+def test_nominal_local_contract_shape_and_direct_transformer() -> None:
+    from cad2gis.cad2gis_v3 import units
+    from cad2gis.cad2gis_v3.georef import DirectTransformer
+
+    with pytest.raises(units.UnitCrsContractError, match="dwg_insunits"):
+        units.build_unit_crs_contract(
+            0,
+            "EPSG:3857",
+            "EPSG:3857",
+            source_coordinate_scale_to_m=1.0,
+        )
+
+    contract = units.build_unit_crs_contract(
+        0,
+        "EPSG:3857",
+        "EPSG:3857",
+        source_coordinate_scale_to_m=1.0,
+        source_coordinate_scale_reviewed=False,
+        nominal_local=True,
+    )
+
+    assert contract.coordinate_mode == "nominal_local_gcp_required"
+    assert contract.can_direct_transform is False
+    assert contract.source_coordinate_scale_reviewed is False
+    assert contract.source_coordinate_scale_origin == (
+        "ONBOARDING:nominal-local-placeholder-unreviewed-scale"
+    )
+    assert contract.cad_unit.insunits == 0
+    assert contract.cad_unit.metres_per_unit == 1.0
+    assert contract.source_to_crs_axis_factor == pytest.approx(1.0)
+
+    transformer = DirectTransformer(
+        "EPSG:3857", "EPSG:3857", unit_contract=contract,
+    )
+    assert transformer.source_to_crs_axis_factor == pytest.approx(1.0)
+
+    from cad2gis.cad2gis_v3.calibration import (
+        _validate_transformer_unit_contract,
+    )
+
+    _validate_transformer_unit_contract(
+        transformer, "EPSG:3857", "EPSG:3857",
+    )
+
+
+def test_nominal_local_convert_without_gcp_fails_closed_pointing_to_gcp(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    from cad2gis.cad2gis_v3 import pipeline
+
+    source = tmp_path / "fixture.dwg"
+    source.write_bytes(b"nominal-local-convert-fixture")
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    (tmp_path / "source_profile.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "mapping_registry.json").write_text("{}", encoding="utf-8")
+
+    class FakeProfile:
+        source_sha256 = source_hash
+        dwg_insunits = 0
+        source_crs = "EPSG:3857"
+        target_crs = "EPSG:3857"
+        drawing_units = "unknown_local"
+        source_coordinate_scale_to_m = 1.0
+        source_coordinate_scale_reviewed = False
+        local_registration_strategy = None
+        local_registration_reviewed = False
+
+        def require_reviewed(self):
+            return None
+
+        def validate_source(self, path):
+            assert Path(path).resolve() == source.resolve()
+            return source_hash
+
+    monkeypatch.setattr(
+        pipeline.SourceProfile, "load", staticmethod(lambda _: FakeProfile())
+    )
+    monkeypatch.setattr(
+        pipeline.MappingRegistry,
+        "load",
+        staticmethod(lambda *_args: SimpleNamespace()),
+    )
+    monkeypatch.setattr(
+        pipeline, "_validate_project_bindings", lambda *_args: None,
+    )
+
+    with pytest.raises(RuntimeError, match="GCP"):
+        pipeline.convert(
+            pipeline.ConversionRequest(
+                source=source,
+                run_dir=tmp_path / "runs" / "fixture",
+                source_profile=tmp_path / "source_profile.json",
+                mapping_registry=tmp_path / "mapping_registry.json",
+            )
+        )

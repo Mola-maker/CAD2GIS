@@ -26,8 +26,10 @@ from .config import (
     MappingRegistry,
     SourceProfile,
 )
+from .cad_scene_graph import CadSceneGraph, build_cad_scene_graph
 from .model import SourceEntity
 from .plan_domain import PlanDomainError, build_plan_domain
+from .scene_visual import build_scene_visual_bundle
 
 
 INVENTORY_SCHEMA_VERSION = "cad2gis-source-inventory-v1"
@@ -320,15 +322,11 @@ def _plan_domain_summary(diagnostics: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def inspect_source(
+def _inspect_source_products(
     *,
     source: str | Path,
-    project_dir: str | Path | None = None,
     records: Iterable[Any] | None = None,
-) -> dict[str, Any]:
-    """Inspect one DWG without assigning GIS meaning or writing project files."""
-
-    del project_dir  # Accepted as a stable public-port argument; inspection is read-only.
+) -> tuple[dict[str, Any], CadSceneGraph, tuple[SourceEntity, ...]]:
     source_path = Path(source).expanduser().resolve()
     authoritative_records = _extract_records(source_path) if records is None else records
     reader_protocol = dict(
@@ -363,6 +361,7 @@ def inspect_source(
     except PlanDomainError as exc:
         inventory["plan_domain"] = _plan_domain_summary(exc.diagnostics)
         inventory["inspection_status"] = "FAIL"
+        plan_entities: tuple[SourceEntity, ...] = ()
     else:
         inventory["plan_domain"] = _plan_domain_summary(plan_domain.diagnostics)
         inventory["inspection_status"] = (
@@ -370,6 +369,20 @@ def inspect_source(
             if plan_domain.diagnostics.get("status") == "PASS"
             else "WATCH"
         )
+        plan_entities = plan_domain.entities
+    scene_graph = build_cad_scene_graph(
+        source_sha256=str(inventory["source"]["sha256"]),
+        source_entities=entities,
+        plan_entities=plan_entities,
+    )
+    inventory["cad_scene_graph"] = {
+        "schema_version": "cad2gis.cad_scene_graph.v1",
+        "graph_sha256": scene_graph.graph_sha256,
+        "node_count": len(scene_graph.nodes),
+        "edge_count": len(scene_graph.edges),
+        "relative_path": "review/cad_scene_graph.json",
+        "authority": scene_graph.diagnostics["authority"],
+    }
     inventory["onboarding"] = {
         "reviewed_project_pack_present": False,
         "conversion_allowed": False,
@@ -380,6 +393,19 @@ def inspect_source(
         "next_action": "bootstrap_source_bound_project_pack",
     }
     inventory["inventory_sha256"] = inventory_sha256(inventory)
+    return inventory, scene_graph, tuple(entities)
+
+
+def inspect_source(
+    *,
+    source: str | Path,
+    project_dir: str | Path | None = None,
+    records: Iterable[Any] | None = None,
+) -> dict[str, Any]:
+    """Inspect one DWG without assigning GIS meaning or writing project files."""
+
+    del project_dir  # Accepted as a stable public-port argument; inspection is read-only.
+    inventory, _, _ = _inspect_source_products(source=source, records=records)
     return inventory
 
 
@@ -494,12 +520,34 @@ def bootstrap_project(
     """Write a deterministic draft review pack; never mark it reviewed."""
 
     root = Path(project_dir).expanduser().resolve()
-    inventory = inspect_source(source=source, records=records)
+    inventory, scene_graph, entities = _inspect_source_products(
+        source=source,
+        records=records,
+    )
+    scene_visual = build_scene_visual_bundle(
+        graph=scene_graph,
+        entities=entities,
+        scene_candidates=(inventory.get("plan_domain") or {}).get(
+            "scene_partition", {}
+        ),
+    )
+    inventory["scene_visual"] = {
+        "schema_version": "cad2gis.scene_visual_bundle.v1",
+        "manifest_sha256": scene_visual.manifest_file.sha256,
+        "relative_path": scene_visual.manifest_relative_path,
+        "region_count": scene_visual.region_count,
+        "layout_count": scene_visual.layout_count,
+        "render_conserved": scene_visual.render_conserved,
+        "cad_scene_graph_sha256": scene_graph.graph_sha256,
+    }
+    inventory["inventory_sha256"] = inventory_sha256(inventory)
     paths = {
         "source_profile": root / "config" / "source_profile.json",
         "mapping_registry": root / "config" / "mapping_registry.json",
         "inventory": root / "review" / "source_inventory.json",
         "unsupported": root / "review" / "unsupported_inventory.json",
+        "cad_scene_graph": root / "review" / "cad_scene_graph.json",
+        "scene_visual_manifest": root / scene_visual.manifest_relative_path,
     }
     existing = [path for path in paths.values() if path.exists()]
     if existing and not force:
@@ -520,9 +568,15 @@ def bootstrap_project(
         "mapping_registry": _draft_registry(inventory),
         "inventory": inventory,
         "unsupported": unsupported,
+        "cad_scene_graph": scene_graph.to_dict(),
     }
     for name, path in paths.items():
+        if name == "scene_visual_manifest":
+            continue
         _atomic_write_json(path, payloads[name])
+    written_scene_visual_manifest = scene_visual.write(root)
+    if written_scene_visual_manifest != paths["scene_visual_manifest"]:
+        raise RuntimeError("Scene visual manifest path contract mismatch")
     return {
         "schema_version": "cad2gis-project-bootstrap-result-v1",
         "status": "draft",
@@ -608,7 +662,7 @@ def _reviewed_contract_state(
             f"{sorted(unconfigured_classes)}"
         )
 
-    from .units import build_unit_crs_contract
+    from .units import NOMINAL_LOCAL_DRAWING_UNITS, build_unit_crs_contract
 
     unit_crs_contract = build_unit_crs_contract(
         dwg_insunits=profile.dwg_insunits,
@@ -618,9 +672,23 @@ def _reviewed_contract_state(
         source_coordinate_scale_reviewed=profile.source_coordinate_scale_reviewed,
         local_registration_strategy=profile.local_registration_strategy,
         local_registration_reviewed=profile.local_registration_reviewed,
+        nominal_local=(
+            profile.drawing_units == NOMINAL_LOCAL_DRAWING_UNITS
+        ),
     )
     if unit_crs_contract.can_direct_transform:
         return "reviewed_ready", True, unit_crs_contract, []
+    if unit_crs_contract.coordinate_mode == "nominal_local_gcp_required":
+        return (
+            "registration_required",
+            False,
+            unit_crs_contract,
+            [
+                "Supply a reviewed GCP registration profile (gcp_profile) "
+                "at conversion; the nominal local CRS placeholder is not "
+                "absolute positioning.",
+            ],
+        )
     return (
         "registration_required",
         False,
@@ -726,6 +794,43 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
     if unsupported.get("source") != inventory.get("source"):
         raise ValueError("Unsupported inventory source binding is stale")
 
+    scene_graph_summary = inventory.get("cad_scene_graph")
+    scene_visual_summary = inventory.get("scene_visual")
+    if not isinstance(scene_graph_summary, Mapping):
+        raise ValueError("Source inventory is missing CAD Scene Graph binding")
+    if not isinstance(scene_visual_summary, Mapping):
+        raise ValueError("Source inventory is missing scene visual binding")
+
+    def managed_artifact(relative_value: Any, name: str) -> Path:
+        relative = Path(str(relative_value))
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError(f"{name} path must be project-relative")
+        artifact = (root / relative).resolve()
+        if root != artifact and root not in artifact.parents:
+            raise ValueError(f"{name} path escapes the project root")
+        if not artifact.is_file():
+            raise ValueError(f"Required {name} is missing: {artifact}")
+        return artifact
+
+    scene_graph_path = managed_artifact(
+        scene_graph_summary.get("relative_path"), "CAD Scene Graph"
+    )
+    scene_graph = CadSceneGraph.from_dict(_read_json(scene_graph_path))
+    if scene_graph.graph_sha256 != scene_graph_summary.get("graph_sha256"):
+        raise ValueError("CAD Scene Graph binding is stale")
+    scene_visual_path = managed_artifact(
+        scene_visual_summary.get("relative_path"), "scene visual manifest"
+    )
+    if _file_sha256(scene_visual_path) != scene_visual_summary.get("manifest_sha256"):
+        raise ValueError("Scene visual manifest digest is stale")
+    scene_visual = _read_json(scene_visual_path)
+    if scene_visual.get("source_sha256") != scene_graph.source_sha256:
+        raise ValueError("Scene visual source binding is stale")
+    if scene_visual.get("cad_scene_graph_sha256") != scene_graph.graph_sha256:
+        raise ValueError("Scene visual CAD Scene Graph binding is stale")
+    if scene_visual.get("render_conserved") is not True:
+        raise ValueError("Scene visual source-node conservation failed")
+
     source_binding = inventory.get("source", {})
     failures: list[str] = []
     if profile.source_sha256 != source_binding.get("sha256"):
@@ -738,8 +843,57 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
         failures.append("mapping registry inventory binding is stale")
     if profile.project_id != registry.project_id:
         failures.append("project profile and mapping registry project_id values differ")
+    if not profile.is_legacy and profile.plan_layouts:
+        inventory_layouts = {
+            str(name).casefold() for name in inventory.get("layouts", {})
+        }
+        missing_layouts = [
+            name
+            for name in profile.plan_layouts
+            if name.casefold() not in inventory_layouts
+        ]
+        if missing_layouts:
+            failures.append(
+                "plan_layouts declares layouts missing from the source "
+                f"inventory: {missing_layouts}"
+            )
     if failures:
         raise ValueError("Invalid project bindings: " + "; ".join(failures))
+
+    warnings: list[str] = []
+    plan_domain_summary = inventory.get("plan_domain")
+    if isinstance(plan_domain_summary, Mapping):
+        issue_codes = plan_domain_summary.get("issue_codes")
+        if isinstance(issue_codes, Mapping):
+            orphan_count = int(
+                issue_codes.get("orphan_block_definition", 0) or 0
+            )
+            if orphan_count:
+                warnings.append(
+                    f"{orphan_count} orphan block definition(s) hold entities "
+                    "unreachable from the selected root layouts; review "
+                    "plan_domain.include_orphan_blocks recovery."
+                )
+            undeclared_count = int(
+                issue_codes.get("undeclared_layout_entities", 0) or 0
+            )
+            if undeclared_count:
+                plan_layouts_summary = plan_domain_summary.get("plan_layouts")
+                undeclared_layouts = (
+                    plan_layouts_summary.get("undeclared", {})
+                    if isinstance(plan_layouts_summary, Mapping)
+                    else {}
+                )
+                undeclared_entities = (
+                    sum(int(count) for count in undeclared_layouts.values())
+                    if isinstance(undeclared_layouts, Mapping)
+                    else 0
+                )
+                warnings.append(
+                    "Paper-space layouts outside the plan_layouts declaration "
+                    f"hold {undeclared_entities} entities that never enter "
+                    "the plan domain."
+                )
 
     status, conversion_allowed, unit_crs_contract, next_actions = (
         _reviewed_contract_state(profile, registry)
@@ -763,6 +917,7 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
         "unsupported_record_count": int(
             inventory.get("counts", {}).get("unsupported_records", 0)
         ),
+        "warnings": warnings,
         "next_actions": next_actions,
     }
 

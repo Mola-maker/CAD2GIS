@@ -87,9 +87,15 @@ def _optional_positive_float(value: Any, name: str) -> float | None:
     return None if value is None else _positive_float(value, name)
 
 
-def _strict_keys(value: Mapping[str, Any], expected: set[str], context: str) -> None:
+def _strict_keys(
+    value: Mapping[str, Any],
+    expected: set[str],
+    context: str,
+    *,
+    optional: frozenset[str] = frozenset(),
+) -> None:
     missing = expected - set(value)
-    unknown = set(value) - expected
+    unknown = set(value) - expected - set(optional)
     if missing or unknown:
         raise ValueError(
             f"Invalid {context} keys; missing={sorted(missing)}, unknown={sorted(unknown)}"
@@ -177,7 +183,10 @@ def _validate_transformer_unit_contract(
 
     if not isinstance(contract, UnitCrsContract):
         raise TypeError("transformer.unit_contract must be a UnitCrsContract")
-    if not contract.can_direct_transform:
+    if not (
+        contract.can_direct_transform
+        or contract.coordinate_mode == "nominal_local_gcp_required"
+    ):
         raise ValueError(
             "Transformer unit_crs_contract is not a direct reviewed CRS contract"
         )
@@ -403,6 +412,10 @@ class ValidationSettings:
     affine_min_improvement_ratio: float | None
     spatial_distribution_reviewed: bool
     spatial_distribution_review_source: str
+    # Explicit product-owner allowance: an exactly determined fit (e.g. a
+    # two-control similarity) may be delivered while honestly downgraded;
+    # it must never be reported as independently verified.
+    allow_unverified_exact_fit: bool = False
 
     def __post_init__(self) -> None:
         for name, value in (
@@ -429,6 +442,8 @@ class ValidationSettings:
             raise ValueError("validation.spatial_distribution_reviewed must be boolean")
         if not isinstance(self.spatial_distribution_review_source, str):
             raise ValueError("validation.spatial_distribution_review_source must be a string")
+        if not isinstance(self.allow_unverified_exact_fit, bool):
+            raise ValueError("validation.allow_unverified_exact_fit must be boolean")
         if (
             self.spatial_distribution_reviewed
             and not self.spatial_distribution_review_source.strip()
@@ -450,7 +465,15 @@ class ValidationSettings:
             "spatial_distribution_reviewed",
             "spatial_distribution_review_source",
         }
-        _strict_keys(value, expected, "validation")
+        _strict_keys(
+            value,
+            expected,
+            "validation",
+            optional=frozenset({"allow_unverified_exact_fit"}),
+        )
+        allow_unverified_exact_fit = value.get("allow_unverified_exact_fit", False)
+        if not isinstance(allow_unverified_exact_fit, bool):
+            raise ValueError("validation.allow_unverified_exact_fit must be boolean")
         if isinstance(value["min_check_points"], bool):
             raise ValueError("validation.min_check_points must be a non-negative integer")
         minimum = int(value["min_check_points"])
@@ -476,6 +499,7 @@ class ValidationSettings:
             affine_min_improvement_ratio=ratio,
             spatial_distribution_reviewed=value["spatial_distribution_reviewed"],
             spatial_distribution_review_source=value["spatial_distribution_review_source"],
+            allow_unverified_exact_fit=allow_unverified_exact_fit,
         )
 
 
@@ -949,6 +973,7 @@ class ResidualMetrics:
     rmse_m: float | None
     p95_m: float | None
     max_m: float | None
+    unavailable_reason: str | None = None
 
     def __post_init__(self) -> None:
         if isinstance(self.count, bool) or not isinstance(self.count, int) or self.count < 0:
@@ -964,14 +989,22 @@ class ResidualMetrics:
             finite = _finite_float(value, f"residual {name}")
             if finite < 0.0:
                 raise ValueError(f"residual {name} must be non-negative")
+        if self.unavailable_reason is not None and not (
+            isinstance(self.unavailable_reason, str)
+            and self.unavailable_reason.strip()
+        ):
+            raise ValueError("residual metric unavailable_reason must be a string")
 
     def to_dict(self) -> dict[str, int | float | None]:
-        return {
+        result: dict[str, int | float | None] = {
             "count": self.count,
             "rmse_m": self.rmse_m,
             "p95_m": self.p95_m,
             "max_m": self.max_m,
         }
+        if self.unavailable_reason is not None:
+            result["unavailable_reason"] = self.unavailable_reason
+        return result
 
 
 @dataclass(frozen=True)
@@ -1469,6 +1502,11 @@ def _validation_failures(
         if observed is not None and not math.isfinite(observed):
             failures.append(f"{name} is not finite")
         elif threshold is not None and (observed is None or observed > threshold):
+            if observed is None and validation.allow_unverified_exact_fit:
+                # No independent check observations exist to gate; the
+                # allowance explicitly trades verification for delivery and
+                # the run status is downgraded downstream instead.
+                continue
             failures.append(f"{name} {observed!r} > allowed {threshold}")
     return tuple(failures)
 
@@ -1635,6 +1673,11 @@ def fit_calibration(
     check_residuals = tuple(item for item in residuals if item.role == "check")
     train_metrics = _metrics(train_residuals)
     check_metrics = _metrics(check_residuals)
+    if not check_residuals:
+        check_metrics = replace(
+            check_metrics,
+            unavailable_reason="no independent check controls observed",
+        )
     failures: tuple[str, ...] = ()
     if transform_limits is not None:
         failures += _transform_limit_failures(transform, transform_limits)

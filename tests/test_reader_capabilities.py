@@ -551,6 +551,53 @@ def test_autocad_completion_marker_is_strict(tmp_path: Path) -> None:
     assert autocad._read_bulk_completion_marker(marker) is None
 
 
+def test_autocad_profile_accepts_exported_arg_and_builds_profile_command(
+    tmp_path: Path,
+) -> None:
+    import cad2gis.reader.autocad as autocad
+
+    profile = tmp_path / "cad2gis.arg"
+    profile.write_text("profile", encoding="utf-8")
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"AC1032")
+    script = tmp_path / "extract.scr"
+    script.write_text("_.QUIT\n", encoding="utf-8")
+
+    value, origin = autocad._configured_autocad_profile(
+        environ={autocad.AUTOCAD_PROFILE_ENV: str(profile)}
+    )
+    command = autocad._core_console_command(
+        tmp_path / "accoreconsole.exe",
+        source,
+        script,
+        profile=value,
+    )
+
+    assert value == str(profile.resolve())
+    assert origin == "environment_arg"
+    assert command[1:3] == ["/p", str(profile.resolve())]
+    assert command[3:] == [
+        "/readonly",
+        "/i",
+        str(source.resolve()),
+        "/s",
+        str(script.resolve()),
+    ]
+
+
+def test_autocad_profile_rejects_missing_or_non_arg_path(tmp_path: Path) -> None:
+    import cad2gis.reader.autocad as autocad
+
+    with pytest.raises(RuntimeError, match="does not exist"):
+        autocad._configured_autocad_profile(
+            environ={autocad.AUTOCAD_PROFILE_ENV: str(tmp_path / "missing.arg")}
+        )
+    with pytest.raises(ValueError, match="must end in .arg"):
+        autocad._configured_autocad_profile(
+            environ={autocad.AUTOCAD_PROFILE_ENV: str(tmp_path / "profile.txt")}
+        )
+
+
 def test_autocad_export_completion_is_independent_from_process_exit(
     tmp_path: Path,
 ) -> None:

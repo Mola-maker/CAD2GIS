@@ -30,10 +30,15 @@ from typing import Any
 
 BACKEND_PATH_ENV = "CAD2GIS_BACKEND_PATH"
 BACKEND_PACKAGE = "cad2gis.cad2gis_v3"
-PROJECT_BACKEND_MODULES = (
-    "cad2gis.cad2gis_v3.project_profile",
-    "cad2gis.cad2gis_v3.profile_builder",
-)
+PROJECT_BACKEND_PORTS: dict[str, tuple[str, ...]] = {
+    "inspect_source": ("cad2gis.cad2gis_v3.project_profile",),
+    "bootstrap_project": ("cad2gis.cad2gis_v3.project_profile",),
+    "validate_project": ("cad2gis.cad2gis_v3.project_profile",),
+    "export_source": ("cad2gis.cad2gis_v3.source_export",),
+    "prepare_semantics": ("cad2gis.cad2gis_v3.semantic_stage",),
+    "compile_semantics": ("cad2gis.cad2gis_v3.semantic_stage",),
+    "validate_semantics": ("cad2gis.cad2gis_v3.semantic_stage",),
+}
 
 
 class BackendUnavailable(RuntimeError):
@@ -241,11 +246,23 @@ def call_conversion_backend(
 
 
 def call_project_backend(operation: str, /, **kwargs: Any) -> Any:
-    """Invoke a stable project-profile port on either supported backend module."""
+    """Invoke one explicit backend capability without importing unrelated stacks.
+
+    Reader, GIS and semantic-compiler dependencies have intentionally different
+    deployment footprints.  Routing by operation prevents a lightweight SQLite
+    semantic command from importing GDAL merely because another backend module
+    happens to be listed first.
+    """
 
     _prepare_backend_import()
+    module_names = PROJECT_BACKEND_PORTS.get(operation)
+    if module_names is None:
+        supported = ", ".join(sorted(PROJECT_BACKEND_PORTS))
+        raise BackendContractError(
+            f"unsupported project backend operation {operation!r}; supported: {supported}"
+        )
     discovered: list[str] = []
-    for module_name in PROJECT_BACKEND_MODULES:
+    for module_name in module_names:
         try:
             module = importlib.import_module(module_name)
         except ModuleNotFoundError as exc:
@@ -266,7 +283,7 @@ def call_project_backend(operation: str, /, **kwargs: Any) -> Any:
     if discovered:
         modules = ", ".join(discovered)
         raise BackendContractError(f"{modules} do not expose {operation}()")
-    expected = " or ".join(PROJECT_BACKEND_MODULES)
+    expected = " or ".join(module_names)
     raise BackendUnavailable(
         f"project-profile backend is not installed; expected {expected}"
     )

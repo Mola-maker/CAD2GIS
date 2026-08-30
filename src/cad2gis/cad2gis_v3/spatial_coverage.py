@@ -256,8 +256,18 @@ def evaluate_spatial_coverage(
     training_points: Sequence[Sequence[float]],
     check_points: Sequence[Sequence[float]],
     policy: SpatialCoveragePolicy,
+    *,
+    allow_unverified_exact_fit: bool = False,
 ) -> dict[str, Any]:
-    """Return stable metrics plus hard-gate failures for one control set."""
+    """Return stable metrics plus hard-gate failures for one control set.
+
+    With ``allow_unverified_exact_fit`` (an explicit GCP-profile allowance),
+    gates that are meaningless below three controls — control-count minimums
+    and the hull/baseline metrics that need three (two) points — degrade to
+    warnings so an exactly determined fit can be delivered.  Geometric red
+    flags (controls outside the drawing, extent/hull escape ratios) stay
+    blocking either way.
+    """
     drawing = _points(drawing_points, "drawing_points")
     training = _points(training_points, "training_points")
     checks = _points(check_points, "check_points")
@@ -352,12 +362,37 @@ def evaluate_spatial_coverage(
     training_y_ratio = _extent_ratio(drawing_bbox, training_bbox, "y")
 
     failures: list[str] = []
+    warnings: list[str] = []
+    if not isinstance(allow_unverified_exact_fit, bool):
+        raise TypeError("allow_unverified_exact_fit must be boolean")
+    training_count_gate = warnings if allow_unverified_exact_fit else failures
+    check_count_gate = warnings if allow_unverified_exact_fit else failures
+    training_hull_gate = (
+        warnings
+        if allow_unverified_exact_fit and len(training) < 3
+        else failures
+    )
+    check_hull_gate = (
+        warnings
+        if allow_unverified_exact_fit and len(checks) < 3
+        else failures
+    )
+    check_baseline_gate = (
+        warnings
+        if allow_unverified_exact_fit and len(checks) < 2
+        else failures
+    )
     if not drawing:
         failures.append("drawing has no vertices")
     if len(training) < 3:
-        failures.append("fewer than 3 active training controls")
+        training_count_gate.append("fewer than 3 active training controls")
     if len(checks) < 3:
-        failures.append("fewer than 3 independent active check controls")
+        check_count_gate.append("fewer than 3 independent active check controls")
+    if allow_unverified_exact_fit and len(checks) < 3:
+        warnings.append(
+            "exact_fit_not_independently_verified: "
+            "fewer than 3 independent check controls"
+        )
     _below(
         failures, "training_extent_coverage_x_ratio", training_x_ratio,
         policy.min_training_extent_x_ratio,
@@ -367,7 +402,7 @@ def evaluate_spatial_coverage(
         policy.min_training_extent_y_ratio,
     )
     _below(
-        failures, "training_hull_to_drawing_bbox_area_ratio", hull_ratio,
+        training_hull_gate, "training_hull_to_drawing_bbox_area_ratio", hull_ratio,
         policy.min_training_hull_area_ratio,
     )
     if outside_ratio is None:
@@ -411,7 +446,7 @@ def evaluate_spatial_coverage(
             f"{check_outside_drawing_count} > allowed 0"
         )
     _below(
-        failures, "check_baseline_to_drawing_diagonal_ratio", check_baseline_ratio,
+        check_baseline_gate, "check_baseline_to_drawing_diagonal_ratio", check_baseline_ratio,
         policy.min_check_baseline_to_drawing_diagonal_ratio,
     )
     if policy.min_check_hull_area_ratio is None:
@@ -421,7 +456,7 @@ def evaluate_spatial_coverage(
         )
     else:
         _below(
-            failures, "check_hull_to_drawing_bbox_area_ratio", check_hull_ratio,
+            check_hull_gate, "check_hull_to_drawing_bbox_area_ratio", check_hull_ratio,
             policy.min_check_hull_area_ratio,
         )
 
@@ -463,6 +498,8 @@ def evaluate_spatial_coverage(
         ),
         "passed": not failures,
         "failures": failures,
+        "warnings": warnings,
+        "allow_unverified_exact_fit": allow_unverified_exact_fit,
     }
 
 

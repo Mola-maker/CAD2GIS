@@ -23,6 +23,7 @@ from .runtime import (
 
 ACCORECONSOLE_ENV = "CAD2GIS_ACCORECONSOLE"
 ACCORECONSOLE_TIMEOUT_ENV = "CAD2GIS_ACCORECONSOLE_TIMEOUT"
+AUTOCAD_PROFILE_ENV = "CAD2GIS_AUTOCAD_PROFILE"
 _AUTOCAD_DIRECTORY = re.compile(r"(?i)^AutoCAD\s+(\d{4})$")
 
 
@@ -135,6 +136,49 @@ def _timeout_check() -> Check:
     )
 
 
+def _autocad_profile_check() -> Check:
+    raw = os.environ.get(AUTOCAD_PROFILE_ENV)
+    if raw is None:
+        return Check(
+            name="autocad_profile",
+            status="warning",
+            detail="using the launching Windows account's current AutoCAD profile",
+            required_for_conversion=False,
+            remediation=(
+                f"For isolated Codex accounts, export an AutoCAD .arg profile and set "
+                f"{AUTOCAD_PROFILE_ENV} to that file."
+            ),
+        )
+    value = raw.strip()
+    if not value:
+        return Check(
+            name="autocad_profile",
+            status="error",
+            detail=f"{AUTOCAD_PROFILE_ENV} is empty",
+            required_for_conversion=False,
+            remediation=f"Unset {AUTOCAD_PROFILE_ENV} or point it to an exported .arg file.",
+        )
+    candidate = Path(value).expanduser()
+    if candidate.suffix.casefold() == ".arg" or candidate.parent != Path("."):
+        if candidate.suffix.casefold() != ".arg" or not candidate.is_file():
+            return Check(
+                name="autocad_profile",
+                status="error",
+                detail=f"AutoCAD profile file is invalid or missing: {candidate}",
+                required_for_conversion=False,
+                remediation=f"Export a valid .arg profile and update {AUTOCAD_PROFILE_ENV}.",
+            )
+        detail = f"portable ARG profile: {candidate.resolve()}"
+    else:
+        detail = f"profile name: {value}"
+    return Check(
+        name="autocad_profile",
+        status="ok",
+        detail=detail,
+        required_for_conversion=False,
+    )
+
+
 def collect_checks(
     *, deep: bool = False, _contract: dict[str, Any] | None = None
 ) -> tuple[Check, ...]:
@@ -223,6 +267,33 @@ def collect_checks(
             )
         )
         checks.append(_timeout_check())
+        checks.append(_autocad_profile_check())
+        try:
+            from .qgis_session import discover_qgis_executable
+
+            qgis = discover_qgis_executable()
+        except Exception as exc:
+            checks.append(
+                Check(
+                    name="qgis_desktop",
+                    status="warning",
+                    detail=f"QGIS Desktop session adapter is unavailable: {exc}",
+                    required_for_conversion=False,
+                    remediation=(
+                        "Install QGIS Desktop or set CAD2GIS_QGIS_EXECUTABLE to "
+                        "qgis-bin.exe."
+                    ),
+                )
+            )
+        else:
+            checks.append(
+                Check(
+                    name="qgis_desktop",
+                    status="ok",
+                    detail=f"{qgis['path']} ({qgis['source']})",
+                    required_for_conversion=False,
+                )
+            )
     return tuple(checks)
 
 
@@ -234,6 +305,7 @@ def build_report(*, deep: bool = False) -> dict[str, Any]:
     )
     autocad = next((check for check in checks if check.name == "autocad"), None)
     timeout = next((check for check in checks if check.name == "autocad_timeout"), None)
+    qgis = next((check for check in checks if check.name == "qgis_desktop"), None)
     dwg_ready = base_ready and (
         autocad is None
         or (autocad.status == "ok" and (timeout is None or timeout.status == "ok"))
@@ -246,6 +318,7 @@ def build_report(*, deep: bool = False) -> dict[str, Any]:
             "cli": True,
             "configured_conversion": base_ready,
             "dwg_ingest": dwg_ready,
+            "qgis_desktop_session": qgis is not None and qgis.status == "ok",
         },
         "deep_import_check": deep,
         "backend_contract": contract,

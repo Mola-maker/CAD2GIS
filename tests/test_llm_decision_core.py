@@ -822,6 +822,7 @@ def test_conversion_snapshot_freezes_decision_pack_bytes(tmp_path) -> None:
 
 
 def test_mcp_services_page_evidence_and_create_bound_pack(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("CAD2GIS_PROJECT_ROOTS", raising=False)
     monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
     graph = _stage_graph()
     graph_path = tmp_path / "reasoning" / "evidence_graph.json"
@@ -866,6 +867,7 @@ def test_mcp_services_page_evidence_and_create_bound_pack(tmp_path, monkeypatch)
 
 
 def test_mcp_lists_source_derived_endpoint_candidates(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("CAD2GIS_PROJECT_ROOTS", raising=False)
     monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
     graph, _, features = _join_fixture()
     graph_path = tmp_path / "reasoning" / "evidence_graph.json"
@@ -889,6 +891,7 @@ def test_mcp_lists_source_derived_endpoint_candidates(tmp_path, monkeypatch) -> 
 
 
 def test_mcp_lists_network_repair_candidates(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("CAD2GIS_PROJECT_ROOTS", raising=False)
     monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
     graph, _, _, _, edge = _network_candidate_fixture(
         "crossing_candidate",

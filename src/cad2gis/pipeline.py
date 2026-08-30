@@ -303,6 +303,60 @@ def inspect_source(
     return runtime.call_project_backend("inspect_source", **kwargs)
 
 
+def export_source(
+    *,
+    source: str | Path,
+    run_dir: str | Path,
+    source_crs: str | None = None,
+    force: bool = False,
+) -> Any:
+    """Export authoritative source facts without semantic or map conversion."""
+
+    return runtime.call_project_backend(
+        "export_source",
+        source=_source_file(source),
+        run_dir=Path(run_dir).expanduser().resolve(),
+        source_crs=source_crs,
+        force=force,
+    )
+
+
+def prepare_semantics(
+    *, source_run: str | Path, output_dir: str | Path | None = None, force: bool = False
+) -> Any:
+    return runtime.call_project_backend(
+        "prepare_semantics",
+        source_run=Path(source_run).expanduser().resolve(),
+        output_dir=None if output_dir is None else Path(output_dir).expanduser().resolve(),
+        force=force,
+    )
+
+
+def compile_semantics(
+    *,
+    source_run: str | Path,
+    prepare_manifest: str | Path,
+    decision_pack: str | Path,
+    output: str | Path | None = None,
+    force: bool = False,
+) -> Any:
+    return runtime.call_project_backend(
+        "compile_semantics",
+        source_run=Path(source_run).expanduser().resolve(),
+        prepare_manifest=Path(prepare_manifest).expanduser().resolve(),
+        decision_pack=Path(decision_pack).expanduser().resolve(),
+        output=None if output is None else Path(output).expanduser().resolve(),
+        force=force,
+    )
+
+
+def validate_semantics(*, semantic_gpkg: str | Path) -> Any:
+    return runtime.call_project_backend(
+        "validate_semantics",
+        semantic_gpkg=Path(semantic_gpkg).expanduser().resolve(),
+    )
+
+
 def bootstrap_project(
     *, source: str | Path, project_dir: str | Path, force: bool = False
 ) -> Any:

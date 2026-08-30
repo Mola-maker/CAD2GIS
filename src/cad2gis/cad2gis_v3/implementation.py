@@ -17,7 +17,7 @@ from typing import Any
 
 IMPLEMENTATION_SCHEMA_VERSION = "cad2gis-implementation-provenance-v1"
 PRODUCTION_CONVERSION_SCOPE = "production-conversion"
-PRODUCTION_CONVERSION_SCOPE_VERSION = 4
+PRODUCTION_CONVERSION_SCOPE_VERSION = 5
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
 # Paths are relative to src/cad2gis.  Keep this list explicit: adding
@@ -26,10 +26,16 @@ CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 PRODUCTION_CONVERSION_FILES = (
     "apd_rules.py",
     "reader/autocad.py",
+    "reader/contracts.py",
+    "reader/libredwg.py",
+    "reader/records_adapter.py",
     "cad2gis_v3/__init__.py",
+    "cad2gis_v3/accounting.py",
     "cad2gis_v3/calibration.py",
+    "cad2gis_v3/cad_scene_graph.py",
     "cad2gis_v3/cli.py",
     "cad2gis_v3/config.py",
+    "cad2gis_v3/coordinate_domain.py",
     "cad2gis_v3/curve_geometry.py",
     "cad2gis_v3/decision_executor.py",
     "cad2gis_v3/decision_validation.py",
@@ -41,16 +47,24 @@ PRODUCTION_CONVERSION_FILES = (
     "cad2gis_v3/ingest.py",
     "cad2gis_v3/model.py",
     "cad2gis_v3/pipeline.py",
+    "cad2gis_v3/plan_domain.py",
     "cad2gis_v3/ports.py",
     "cad2gis_v3/project_profile.py",
     "cad2gis_v3/repair_decisions.py",
     "cad2gis_v3/runtime_provenance.py",
+    "cad2gis_v3/run_status.py",
+    "cad2gis_v3/scene_interpretation.py",
+    "cad2gis_v3/scene_partition.py",
+    "cad2gis_v3/scene_visual.py",
     "cad2gis_v3/schema_config.py",
     "cad2gis_v3/semantics.py",
     "cad2gis_v3/spatial_coverage.py",
+    "cad2gis_v3/source_dependencies.py",
+    "cad2gis_v3/source_gpkg.py",
     "cad2gis_v3/styles.py",
     "cad2gis_v3/topology.py",
     "cad2gis_v3/units.py",
+    "cad2gis_v3/visual_evidence.py",
     "cad2gis_v3/warehouse.py",
 )
 

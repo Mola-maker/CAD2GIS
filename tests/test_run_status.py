@@ -267,3 +267,60 @@ def test_alias_rejects_directory_destination(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="alias"):
         publish_verified_alias(alias_directory, RunStatus.VERIFIED, run_dir, "a" * 64)
+
+
+def _derive_with_plan_domain(plan_domain_diagnostics):
+    from cad2gis.cad2gis_v3.pipeline import _derive_conversion_status
+
+    return _derive_conversion_status(
+        entities=[object()],
+        ingest_diagnostics={},
+        semantic_diagnostics={},
+        style_coverage={},
+        unresolved=[],
+        terminal_accounting={},
+        validation_summary={},
+        georeference_diagnostics={},
+        plan_domain_diagnostics=plan_domain_diagnostics,
+    )
+
+
+def test_plan_domain_diagnostics_none_keeps_current_status() -> None:
+    assert _derive_with_plan_domain(None) is RunStatus.VERIFIED
+
+
+def test_unrecovered_orphan_blocks_yield_conditional() -> None:
+    diagnostics = {"orphan_blocks": [{"block_name": "A", "member_count": 5}]}
+
+    assert _derive_with_plan_domain(diagnostics) is RunStatus.CONDITIONAL
+
+
+def test_recovered_orphan_blocks_add_no_warning() -> None:
+    diagnostics = {
+        "orphan_blocks": [{"block_name": "A", "member_count": 5}],
+        "orphan_recovery": {"configured": ["A"], "recovered": ["A"], "skipped": []},
+    }
+
+    assert _derive_with_plan_domain(diagnostics) is RunStatus.VERIFIED
+
+
+def test_route_layer_exclusions_yield_conditional() -> None:
+    diagnostics = {
+        "route_layer_exemption": {
+            "exempted_count": 0,
+            "route_layer_excluded_count": 3,
+        }
+    }
+
+    assert _derive_with_plan_domain(diagnostics) is RunStatus.CONDITIONAL
+
+
+def test_zero_route_layer_exclusions_add_no_warning() -> None:
+    diagnostics = {
+        "route_layer_exemption": {
+            "exempted_count": 1,
+            "route_layer_excluded_count": 0,
+        }
+    }
+
+    assert _derive_with_plan_domain(diagnostics) is RunStatus.VERIFIED

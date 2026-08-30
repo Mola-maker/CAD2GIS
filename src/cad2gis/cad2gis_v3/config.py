@@ -473,6 +473,9 @@ class SourceProfile:
     project_id: str = ""
     source_size_bytes: int | None = None
     inventory_sha256: str = ""
+    include_orphan_blocks: tuple[str, ...] = ()
+    plan_layouts: tuple[str, ...] = ()
+    excluded_legend_entity_keys: tuple[str, ...] = ()
 
     @property
     def is_legacy(self) -> bool:
@@ -575,7 +578,9 @@ class SourceProfile:
             "schema_version", "project_id", "review", "source_binding",
             "drawing", "crs", "spatial_coverage_policy", "expectations",
         }
-        missing, unknown = expected - set(value), set(value) - expected
+        optional = {"plan_domain", "plan_layouts"}
+        missing = expected - set(value)
+        unknown = set(value) - expected - optional
         if missing or unknown:
             raise ValueError(
                 "Invalid project profile keys; "
@@ -698,6 +703,71 @@ class SourceProfile:
         expectations = ProjectExpectations.from_mapping(
             value["expectations"], allow_incomplete=not review.is_reviewed,
         )
+        raw_plan_layouts = value.get("plan_layouts")
+        plan_layouts: tuple[str, ...] = ()
+        if raw_plan_layouts is not None:
+            if not isinstance(raw_plan_layouts, list) or any(
+                not isinstance(item, str) or not item.strip()
+                for item in raw_plan_layouts
+            ):
+                raise ValueError(
+                    "plan_layouts must be an array of non-empty strings"
+                )
+            plan_layouts = tuple(
+                dict.fromkeys(item.strip() for item in raw_plan_layouts)
+            )
+        include_orphan_blocks: tuple[str, ...] = ()
+        excluded_legend_entity_keys: tuple[str, ...] = ()
+        raw_plan_domain = value.get("plan_domain")
+        if raw_plan_domain is not None:
+            plan_domain_keys = {"include_orphan_blocks"}
+            plan_domain_optional_keys = {"excluded_legend_entity_keys"}
+            actual = (
+                set(raw_plan_domain)
+                if isinstance(raw_plan_domain, dict)
+                else set()
+            )
+            if (
+                not isinstance(raw_plan_domain, dict)
+                or plan_domain_keys - actual
+                or actual - plan_domain_keys - plan_domain_optional_keys
+            ):
+                raise ValueError(
+                    "Invalid plan_domain keys; "
+                    f"missing={sorted(plan_domain_keys - actual)}, "
+                    f"unknown={sorted(actual - plan_domain_keys - plan_domain_optional_keys)}"
+                )
+            raw_legend_keys = raw_plan_domain.get(
+                "excluded_legend_entity_keys", [],
+            )
+            if (
+                not isinstance(raw_legend_keys, list)
+                or any(
+                    not isinstance(item, str) or not item.strip()
+                    for item in raw_legend_keys
+                )
+            ):
+                raise ValueError(
+                    "plan_domain.excluded_legend_entity_keys must be an "
+                    "array of non-empty strings"
+                )
+            excluded_legend_entity_keys = tuple(
+                dict.fromkeys(item.strip() for item in raw_legend_keys)
+            )
+            raw_blocks = raw_plan_domain["include_orphan_blocks"]
+            if raw_blocks == "*":
+                include_orphan_blocks = ("*",)
+            elif isinstance(raw_blocks, list) and all(
+                isinstance(item, str) and item.strip() for item in raw_blocks
+            ):
+                include_orphan_blocks = tuple(
+                    item.strip() for item in raw_blocks
+                )
+            else:
+                raise ValueError(
+                    "plan_domain.include_orphan_blocks must be \"*\" or an "
+                    "array of non-empty strings"
+                )
         return cls(
             path=resolved,
             schema_version=PROJECT_PROFILE_SCHEMA_VERSION,
@@ -718,6 +788,9 @@ class SourceProfile:
             project_id=project_id,
             source_size_bytes=source_size_bytes,
             inventory_sha256=inventory_sha256,
+            include_orphan_blocks=include_orphan_blocks,
+            plan_layouts=plan_layouts,
+            excluded_legend_entity_keys=excluded_legend_entity_keys,
         )
 
     def validate_source(self, source: str | Path) -> str:

@@ -6,13 +6,22 @@
   <title>CAD2GIS 配准与叠加审查</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
   <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/pointer.css">
 </head>
 <body>
+  <a class="skip-link" href="#workspace">跳到审查工作区</a>
   <header class="topbar">
-    <div>
-      <span class="eyebrow">CAD2GIS / REGISTRATION WORKSPACE</span>
-      <h1>配准、坐标传送与叠加审查</h1>
+    <div class="brand-block">
+      <a class="workspace-wordmark" href="/">CAD2GIS.AGENT</a>
+      <div>
+        <span class="eyebrow">REGISTRATION / REVIEW WORKSPACE</span>
+        <h1>配准、坐标传送与叠加审查</h1>
+      </div>
     </div>
+    <nav class="workspace-nav" aria-label="工作台导航">
+      <a href="/">首页</a>
+      <a href="/install">安装</a>
+    </nav>
     <div class="run-state">
       <span id="connection-dot" class="status-dot pending"></span>
       <span id="connection-label">正在连接</span>
@@ -20,20 +29,20 @@
     </div>
   </header>
 
-  <main class="workspace">
+  <main id="workspace" class="workspace">
     <aside class="panel">
       <section>
         <h2>交付图层</h2>
-        <p class="muted">左侧保持不可变 CAD 坐标；右侧显示相似变换预览，不直接改写 GeoPackage。</p>
+        <p class="muted">左侧保留不可变 CAD 坐标；右侧只显示相似变换预览，不直接改写 GeoPackage。</p>
         <div id="layer-list" class="layer-list"></div>
       </section>
 
       <section>
         <h2>控制点与坐标传送</h2>
         <ol class="steps">
-          <li>在左图点击真实缆线、道路拐点或设施，系统会吸附到最近几何。</li>
-          <li>在右图点击同一位置，或输入经纬度后点击“传送并保存”。</li>
-          <li>至少使用 4 个分布良好的训练点和 3 个独立检查点。</li>
+          <li>先在左图点击真实缆线、道路拐点或设施，系统会吸附到最近几何。</li>
+          <li>再到右图点同一位置；也可以输入经纬度后传送。</li>
+          <li>正式判断前，请准备 4 个训练点和 3 个独立检查点。</li>
         </ol>
         <label>控制点角色
           <select id="gcp-role">
@@ -105,5 +114,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
   <script type="module" src="/assets/app.js"></script>
+  <script type="module" src="/assets/pointer.js"></script>
 </body>
 </html>
