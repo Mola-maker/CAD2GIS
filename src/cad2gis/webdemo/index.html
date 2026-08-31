@@ -106,8 +106,8 @@
         <div class="plugin-step-panels">
           <article id="plugin-step-runtime" class="plugin-step-panel is-active" data-plugin-panel="runtime">
             <span class="plugin-step-kicker">STEP 01 / RUNTIME</span>
-            <h4>先安装真正执行转换的运行时。</h4>
-            <p>先按系统安装 <code>uv</code>，再把 CLI 与 MCP 入口安装成隔离工具。插件本身不下载 Python 包，也不会偷偷选择另一个解释器。</p>
+            <h4>先安装稳定的 MCP 控制面运行时。</h4>
+            <p>先按系统安装 <code>uv</code>，再从 <code>main.zip</code> 把 CLI 与 MCP 入口安装成隔离工具。<code>--force</code> 会修复仍指向已删除 worktree 的旧 editable 安装。</p>
             <div class="plugin-platform-tabs" role="tablist" aria-label="选择操作系统">
               <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="plugin-platform-windows" data-plugin-platform="windows">Windows</button>
               <button type="button" role="tab" aria-selected="false" aria-controls="plugin-platform-macos" data-plugin-platform="macos">macOS</button>
@@ -119,9 +119,10 @@
                 <div class="plugin-code-block">
                   <div><span>WINDOWS POWERSHELL</span><button type="button" data-copy-target="plugin-runtime-windows">复制整组</button></div>
                   <pre><code id="plugin-runtime-windows">winget install --id=astral-sh.uv -e
-uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 Get-Command cad2gis-agent-mcp
-cad2gis doctor --deep --strict --json</code></pre>
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json</code></pre>
                 </div>
                 <p>AutoCAD/Core Console 只在 Windows 原生环境作为显式备用或并行核验 reader。</p>
               </section>
@@ -129,9 +130,10 @@ cad2gis doctor --deep --strict --json</code></pre>
                 <div class="plugin-code-block">
                   <div><span>macOS / TERMINAL</span><button type="button" data-copy-target="plugin-runtime-macos">复制整组</button></div>
                   <pre><code id="plugin-runtime-macos">brew install uv
-uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 command -v cad2gis-agent-mcp
-cad2gis doctor --deep --strict --json</code></pre>
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json</code></pre>
                 </div>
                 <p>配置项目支持的 LibreDWG/ODA reader；AutoCAD/Core Console 不在 macOS 支持边界内。</p>
               </section>
@@ -140,9 +142,10 @@ cad2gis doctor --deep --strict --json</code></pre>
                   <div><span>LINUX / SHELL</span><button type="button" data-copy-target="plugin-runtime-linux">复制整组</button></div>
                   <pre><code id="plugin-runtime-linux">curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 command -v cad2gis-agent-mcp
-cad2gis doctor --deep --strict --json</code></pre>
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json</code></pre>
                 </div>
                 <p>配置项目支持的 LibreDWG/ODA reader；QGIS 审阅会话必须运行在同一个可见桌面环境。</p>
               </section>
@@ -151,15 +154,16 @@ cad2gis doctor --deep --strict --json</code></pre>
                   <div><span>WSL / LINUX RUNTIME</span><button type="button" data-copy-target="plugin-runtime-wsl">复制整组</button></div>
                   <pre><code id="plugin-runtime-wsl">curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 command -v cad2gis-agent-mcp
-cad2gis doctor --deep --strict --json</code></pre>
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json</code></pre>
                 </div>
                 <p>WSL 只按 Linux 运行时验证；不承诺通过 WSL 跨边界控制 Windows AutoCAD 或 Windows QGIS GUI。</p>
               </section>
             </div>
             <div class="plugin-check-row"><span><i>✓</i> <code>cad2gis</code> 可执行</span><span><i>✓</i> <code>cad2gis-agent-mcp</code> 在 PATH</span><span><i>✓</i> doctor 报告 reader 状态</span></div>
-            <aside class="plugin-callout"><b>DWG reader 不是可选项。</b><span>运行时安装成功不等于 reader 可用；必须以 <code>cad2gis doctor</code> 的分类结果为准。</span></aside>
+            <aside class="plugin-callout"><b>控制面可连接不等于可转换。</b><span>uv tool 不携带 GDAL/OGR 等 ABI 敏感库。生产转换必须在固定 Conda GIS 环境中通过 <code>cad2gis doctor --deep --strict --json</code>，并确认 <code>conversion_ready: true</code>。</span></aside>
           </article>
 
           <article id="plugin-step-roots" class="plugin-step-panel" data-plugin-panel="roots">

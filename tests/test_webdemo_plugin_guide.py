@@ -5,6 +5,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WEBDEMO = ROOT / "src" / "cad2gis" / "webdemo"
+RUNTIME_INSTALL = (
+    'uv tool install --python 3.12 --force "cad2gis[mcp,review] @ '
+    'https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'
+)
 
 MARKETPLACE_COMMANDS = (
     "codex plugin marketplace add Mola-maker/CAD2GIS --ref main",
@@ -17,7 +21,9 @@ CANONICAL_COMMANDS = (
     "winget install --id=astral-sh.uv -e",
     "brew install uv",
     "curl -LsSf https://astral.sh/uv/install.sh | sh",
-    'uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"',
+    RUNTIME_INSTALL,
+    "cad2gis-agent-mcp --help",
+    "cad2gis doctor --deep --json",
     "cad2gis doctor --deep --strict --json",
     "codex plugin add cad2gis-agent@cad2gis",
     "codex plugin list",
@@ -26,7 +32,6 @@ CANONICAL_COMMANDS = (
     "claude plugin list",
     "claude plugin update cad2gis-agent@cad2gis-tools",
     "claude plugin uninstall cad2gis-agent@cad2gis-tools",
-    "uv tool upgrade cad2gis",
     "uv tool uninstall cad2gis",
     "plugins/cad2gis-agent/clients/cursor.mcp.json",
     "plugins/cad2gis-agent/clients/vscode.mcp.json",
@@ -60,11 +65,30 @@ def test_install_page_lists_every_platform_client_and_lifecycle_block() -> None:
         'id="install-commands"',
         'id="verify-commands"',
         'id="update-commands"',
+        'id="repair-commands"',
         'id="uninstall-commands"',
     ):
         assert section_id in page
     assert "get_capabilities" in page
     assert "WSL → Windows GUI" in page
+    assert "CONNECTION_CLOSED" in page
+    assert "ModuleNotFoundError: No module named 'cad2gis'" in page
+    assert "editable" in page
+
+
+def test_runtime_install_is_self_healing_and_not_git_history_bound() -> None:
+    surfaces = (
+        (ROOT / "README.md").read_text(encoding="utf-8"),
+        (ROOT / "plugins" / "cad2gis-agent" / "README.md").read_text(encoding="utf-8"),
+        (WEBDEMO / "install.html").read_text(encoding="utf-8"),
+        (WEBDEMO / "index.html").read_text(encoding="utf-8"),
+        (WEBDEMO / "original-demo" / "index.html").read_text(encoding="utf-8"),
+    )
+
+    for value in surfaces:
+        assert RUNTIME_INSTALL in value
+        assert "git+https://github.com/Mola-maker/CAD2GIS.git" not in value
+        assert "uv tool upgrade cad2gis" not in value
 
 
 def test_install_page_terminal_and_copy_controls_are_accessible() -> None:

@@ -35,8 +35,10 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 插件是 canonical Python 流水线的薄接入层。没有安装 GIS runtime、DWG reader
 或没有授权项目根目录时，插件会失败关闭，而不会输出伪成功 GeoPackage。
 
-下面的命令不需要先克隆仓库。先按操作系统安装同一个
-`cad2gis-agent-mcp` 运行时，再按智能体客户端注册插件。
+下面的命令不需要先克隆仓库。先按操作系统安装同一个可移植
+`cad2gis-agent-mcp` 控制面运行时，再按智能体客户端注册插件。安装命令使用
+`main.zip` 而不是完整 Git 历史，并用 `--force` 主动替换旧版本；因此它也能修复
+指向已删除 worktree 的 editable 安装。
 
 ### 1. 安装本地运行时
 
@@ -44,18 +46,20 @@ Windows PowerShell：
 
 ```powershell
 winget install --id=astral-sh.uv -e
-uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 Get-Command cad2gis-agent-mcp
-cad2gis doctor --deep --strict --json
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json
 ```
 
 macOS：
 
 ```bash
 brew install uv
-uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 command -v cad2gis-agent-mcp
-cad2gis doctor --deep --strict --json
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json
 ```
 
 Linux：
@@ -63,14 +67,21 @@ Linux：
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 command -v cad2gis-agent-mcp
-cad2gis doctor --deep --strict --json
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json
 ```
 
 WSL 使用上面的 Linux 命令，但不把 WSL → Windows GUI 作为受支持的
 AutoCAD/QGIS 会话控制通道。需要操控 Windows AutoCAD 或 Windows QGIS
 桌面会话时，请在 Windows 原生 Codex/CLI 环境中安装运行时。
+
+`cad2gis-agent-mcp --help` 验证插件实际调用的 console script 可以导入并启动。
+`cad2gis doctor --deep --json` 则区分“控制面可连接”和“完整转换环境可用”：独立
+uv tool 不携带 GDAL/OGR 等 ABI 敏感 GIS 库，因此可以启动 MCP，但 doctor 可能
+报告 `limited`。需要 `conversion_ready: true` 时，按下方“开发者安装”创建固定的
+Conda GIS 环境，并从已激活该环境的终端启动智能体客户端。
 
 ### 2. 安装智能体客户端插件
 
@@ -128,19 +139,21 @@ Cursor/VS Code 下载模板后，必须将 `<ABSOLUTE_PROJECT_ROOT>` 替换为 D
 一个时，不需要执行另一个客户端的列表命令。
 
 ```shell
-cad2gis doctor --deep --strict --json
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json
 codex plugin list
 claude plugin list
 ```
 
 重启客户端并新建任务后，再让智能体调用 `get_capabilities`，确认 MCP 能力和
-`CAD2GIS_PROJECT_ROOTS` 授权目录均已加载。
+`CAD2GIS_PROJECT_ROOTS` 授权目录均已加载。完整 GIS 环境还应执行
+`cad2gis doctor --deep --strict --json` 并确认 `conversion_ready: true`。
 
 ### 4. 更新
 
 ```shell
-# 运行时
-uv tool upgrade cad2gis
+# 运行时：同一条命令同时负责首次安装、更新和修复悬空 editable 安装
+uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 
 # Codex
 codex plugin marketplace upgrade cad2gis
@@ -150,6 +163,11 @@ codex plugin add cad2gis-agent@cad2gis
 claude plugin marketplace update cad2gis-tools
 claude plugin update cad2gis-agent@cad2gis-tools
 ```
+
+若客户端显示 `CONNECTION_CLOSED`，且 `cad2gis` 或 `cad2gis-agent-mcp` 报
+`ModuleNotFoundError: No module named 'cad2gis'`，不要手工修改 uv 的 `.pth` 或
+插件缓存。直接重新执行上面的 `uv tool install ... --force`，再确认
+`cad2gis-agent-mcp --help` 成功，最后重启客户端并新建任务。
 
 Cursor 与 VS Code / Copilot 使用者请重新下载上面的 MCP 模板并保留自己的
 `<ABSOLUTE_PROJECT_ROOT>` 设置。

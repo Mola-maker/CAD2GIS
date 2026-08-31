@@ -22,6 +22,9 @@ def test_clean_runner_dependencies_are_explicit_and_lint_is_pinned() -> None:
     test_dependencies = project["project"]["optional-dependencies"]["test"]
     assert any(re.match(r"pyproj(?:[<>=!~].*)?$", item) for item in dependencies)
     assert "ruff==0.12.12" in test_dependencies
+    assert project["project"]["scripts"]["cad2gis-agent-mcp"] == (
+        "cad2gis.agent_mcp:main"
+    )
 
 
 def _json(path: Path) -> dict[str, object]:
@@ -116,7 +119,7 @@ def test_plugin_documents_cross_platform_runtime_bootstrap() -> None:
         "winget install --id=astral-sh.uv -e",
         "brew install uv",
         "curl -LsSf https://astral.sh/uv/install.sh | sh",
-        'uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"',
+        'uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"',
         "codex plugin marketplace add Mola-maker/CAD2GIS --ref main",
         "codex plugin add cad2gis-agent@cad2gis",
         "codex plugin remove cad2gis-agent@cad2gis",
@@ -132,7 +135,8 @@ def test_plugin_documents_cross_platform_runtime_bootstrap() -> None:
 
 @pytest.mark.parametrize("minor", [11, 12])
 def test_doctor_accepts_every_declared_python_minor(
-    minor: int, monkeypatch: pytest.MonkeyPatch,
+    minor: int,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
         doctor.sys,

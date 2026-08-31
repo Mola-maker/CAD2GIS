@@ -51,11 +51,20 @@ The recommended cross-platform runtime install is:
 uv tool install --python 3.12 --force ".[mcp,review]"
 ```
 
-From a machine without a checkout, install from the public repository with
-`uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"`.
+From a machine without a checkout, install from the public source archive with
+`uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"`.
+The archive avoids cloning the repository history, and `--force` replaces an
+older tool even when its editable source worktree no longer exists. Never use
+`--editable` for a long-lived client runtime.
 Confirm `cad2gis-agent-mcp` is on `PATH` before installing or enabling the
 plugin. Plugin registration intentionally does not download Python packages or
 silently select another interpreter.
+
+The portable uv tool is sufficient for MCP startup and fail-closed capability
+inspection. Full conversion also needs the ABI-sensitive GDAL/OGR and reader
+dependencies from `env/environment.yml`. Run `cad2gis doctor --deep --json` to
+distinguish these states; require `cad2gis doctor --deep --strict --json` and
+`conversion_ready: true` before converting production drawings.
 
 All stdio clients invoke the installed `cad2gis-agent-mcp` entry point. Local
 HTTP uses `http://127.0.0.1:8768/mcp`; expose it beyond loopback only through an
