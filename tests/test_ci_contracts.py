@@ -32,6 +32,15 @@ def test_pages_cd_builds_only_the_verified_site_directory() -> None:
         encoding="utf-8"
     )
     assert "python tools/build_webdemo.py --output _site" in workflow
+    assert "branches: [main]" in workflow
+    assert "feature/land-robustness" not in workflow
+    assert workflow.count("github.ref == 'refs/heads/main'") == 2
+    assert '- "README.md"' in workflow
+    assert '- ".agents/plugins/marketplace.json"' in workflow
+    assert '- ".claude-plugin/marketplace.json"' in workflow
+    assert '- "plugins/cad2gis-agent/**"' in workflow
+    assert '- "tests/test_plugin_contracts.py"' in workflow
+    assert '- "tests/test_webdemo_plugin_guide.py"' in workflow
     assert '- "pyproject.toml"' in workflow
     assert '- "env/environment.yml"' in workflow
     assert "mamba-org/setup-micromamba@v3" in workflow

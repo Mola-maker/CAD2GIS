@@ -112,6 +112,23 @@ def test_plugin_documents_cross_platform_runtime_bootstrap() -> None:
         assert "uv tool install --python 3.12" in value
         assert "cad2gis-agent-mcp" in value
 
+    for command in (
+        "winget install --id=astral-sh.uv -e",
+        "brew install uv",
+        "curl -LsSf https://astral.sh/uv/install.sh | sh",
+        'uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"',
+        "codex plugin marketplace add Mola-maker/CAD2GIS --ref main",
+        "codex plugin add cad2gis-agent@cad2gis",
+        "codex plugin remove cad2gis-agent@cad2gis",
+        "claude plugin marketplace add Mola-maker/CAD2GIS",
+        "claude plugin install cad2gis-agent@cad2gis-tools",
+        "plugins/cad2gis-agent/clients/cursor.mcp.json",
+        "plugins/cad2gis-agent/clients/vscode.mcp.json",
+    ):
+        assert command in root_readme
+    assert "WSL" in root_readme
+    assert "Windows GUI" in root_readme
+
 
 @pytest.mark.parametrize("minor", [11, 12])
 def test_doctor_accepts_every_declared_python_minor(

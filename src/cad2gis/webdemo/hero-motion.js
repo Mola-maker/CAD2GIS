@@ -125,6 +125,8 @@ const setupPluginGuide = () => {
   if (!guide) return;
   const stepButtons = [...guide.querySelectorAll("[data-plugin-step]")];
   const stepPanels = [...guide.querySelectorAll("[data-plugin-panel]")];
+  const platformButtons = [...guide.querySelectorAll("[data-plugin-platform]")];
+  const platformPanels = [...guide.querySelectorAll("[data-plugin-platform-panel]")];
   const clientButtons = [...guide.querySelectorAll("[data-plugin-client]")];
   const clientPanels = [...guide.querySelectorAll("[data-plugin-client-panel]")];
   const copyButtons = [...guide.querySelectorAll("[data-copy-target]")];
@@ -155,23 +157,54 @@ const setupPluginGuide = () => {
     }
   };
 
-  const activateClient = (name, focus = false) => {
-    const activeButton = clientButtons.find((button) => button.dataset.pluginClient === name);
-    const activePanel = clientPanels.find((panel) => panel.dataset.pluginClientPanel === name);
-    if (!activeButton || !activePanel) return;
-    clientButtons.forEach((button) => {
-      const active = button === activeButton;
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-selected", String(active));
-      button.tabIndex = active ? 0 : -1;
+  const bindTabGroup = ({ buttons, panels, buttonKey, panelKey }) => {
+    const activate = (name, focus = false) => {
+      const activeButton = buttons.find((button) => button.dataset[buttonKey] === name);
+      const activePanel = panels.find((panel) => panel.dataset[panelKey] === name);
+      if (!activeButton || !activePanel) return;
+      buttons.forEach((button) => {
+        const active = button === activeButton;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-selected", String(active));
+        button.tabIndex = active ? 0 : -1;
+      });
+      panels.forEach((panel) => {
+        const active = panel === activePanel;
+        panel.classList.toggle("is-active", active);
+        panel.hidden = !active;
+      });
+      if (focus) activeButton.focus();
+    };
+
+    buttons.forEach((button, buttonIndex) => {
+      button.addEventListener("click", () => activate(button.dataset[buttonKey] || ""));
+      button.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        let nextIndex = buttonIndex;
+        if (event.key === "ArrowLeft") nextIndex = (buttonIndex - 1 + buttons.length) % buttons.length;
+        if (event.key === "ArrowRight") nextIndex = (buttonIndex + 1) % buttons.length;
+        if (event.key === "Home") nextIndex = 0;
+        if (event.key === "End") nextIndex = buttons.length - 1;
+        activate(buttons[nextIndex].dataset[buttonKey] || "", true);
+      });
     });
-    clientPanels.forEach((panel) => {
-      const active = panel === activePanel;
-      panel.classList.toggle("is-active", active);
-      panel.hidden = !active;
-    });
-    if (focus) activeButton.focus();
+
+    return activate;
   };
+
+  const activatePlatform = bindTabGroup({
+    buttons: platformButtons,
+    panels: platformPanels,
+    buttonKey: "pluginPlatform",
+    panelKey: "pluginPlatformPanel",
+  });
+  const activateClient = bindTabGroup({
+    buttons: clientButtons,
+    panels: clientPanels,
+    buttonKey: "pluginClient",
+    panelKey: "pluginClientPanel",
+  });
 
   const copyCode = async (button) => {
     const target = document.getElementById(button.dataset.copyTarget || "");
@@ -204,24 +237,12 @@ const setupPluginGuide = () => {
   stepButtons.forEach((button) => {
     button.addEventListener("click", () => activateStep(button.dataset.pluginStep || ""));
   });
-  clientButtons.forEach((button, buttonIndex) => {
-    button.addEventListener("click", () => activateClient(button.dataset.pluginClient || ""));
-    button.addEventListener("keydown", (event) => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-      event.preventDefault();
-      let nextIndex = buttonIndex;
-      if (event.key === "ArrowLeft") nextIndex = (buttonIndex - 1 + clientButtons.length) % clientButtons.length;
-      if (event.key === "ArrowRight") nextIndex = (buttonIndex + 1) % clientButtons.length;
-      if (event.key === "Home") nextIndex = 0;
-      if (event.key === "End") nextIndex = clientButtons.length - 1;
-      activateClient(clientButtons[nextIndex].dataset.pluginClient || "", true);
-    });
-  });
   copyButtons.forEach((button) => {
     button.addEventListener("click", () => copyCode(button));
   });
 
   activateStep("runtime", false);
+  activatePlatform("windows");
   activateClient("codex");
 };
 

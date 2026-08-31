@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/pages.yml"
+      - "README.md"
+      - ".agents/plugins/marketplace.json"
+      - ".claude-plugin/marketplace.json"
+      - "plugins/cad2gis-agent/**"
       - "pyproject.toml"
       - "env/environment.yml"
       - "src/cad2gis/webdemo/**"
@@ -16,6 +20,9 @@ on:
       - "tests/test_webdemo_build.py"
       - "tests/test_webdemo_multidemo.py"
       - "tests/test_review_server.py"
+      - "tests/test_ci_contracts.py"
+      - "tests/test_plugin_contracts.py"
+      - "tests/test_webdemo_plugin_guide.py"
   workflow_dispatch:
 
 permissions:
@@ -27,6 +34,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,7 +66,8 @@ jobs:
         run: |
           node --check src/cad2gis/webdemo/app.js
           node --check src/cad2gis/webdemo/demo-fixture.js
-          python -m pytest tests/test_webdemo_build.py tests/test_webdemo_multidemo.py tests/test_review_server.py -q
+          node --check src/cad2gis/webdemo/hero-motion.js
+          python -m pytest tests/test_ci_contracts.py tests/test_plugin_contracts.py tests/test_webdemo_plugin_guide.py tests/test_webdemo_build.py tests/test_webdemo_multidemo.py tests/test_review_server.py -q
         shell: bash -el {0}
 
       - name: Build data-free public demo
@@ -72,7 +81,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.event.repository.private == false
+    if: github.ref == 'refs/heads/main' && github.event.repository.private == false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -35,28 +35,109 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 插件是 canonical Python 流水线的薄接入层。没有安装 GIS runtime、DWG reader
 或没有授权项目根目录时，插件会失败关闭，而不会输出伪成功 GeoPackage。
 
-克隆仓库并安装 Python runtime 后，可按客户端注册：
+下面的命令不需要先克隆仓库。先按操作系统安装同一个
+`cad2gis-agent-mcp` 运行时，再按智能体客户端注册插件。
+
+### 1. 安装本地运行时
+
+Windows PowerShell：
 
 ```powershell
-# 先把 canonical CLI/MCP 安装成隔离工具（Windows/macOS/Linux 相同）
-uv tool install --python 3.12 --force ".[mcp,review]"
-
-# Codex：把仓库 marketplace 加入一次，然后安装插件
-codex plugin marketplace add "<CAD2GIS_REPOSITORY_ROOT>"
-codex plugin add cad2gis-agent@cad2gis
-
-# Claude Code：从 GitHub marketplace 安装
-claude plugin marketplace add Mola-maker/CAD2GIS
-claude plugin install cad2gis-agent@cad2gis-tools
+winget install --id=astral-sh.uv -e
+uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+Get-Command cad2gis-agent-mcp
+cad2gis doctor --deep --strict --json
 ```
 
-若不保留源码 checkout，也可在仓库公开后直接安装：
-`uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"`。
-`Get-Command cad2gis-agent-mcp`（Windows）或 `command -v cad2gis-agent-mcp`
-（macOS/Linux）必须能找到入口；否则 agent 只能看到插件清单，无法启动 MCP。
+macOS：
 
-Cursor 与 VS Code/Copilot 使用
-[`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients) 中对应模板。
+```bash
+brew install uv
+uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+command -v cad2gis-agent-mcp
+cad2gis doctor --deep --strict --json
+```
+
+Linux：
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+command -v cad2gis-agent-mcp
+cad2gis doctor --deep --strict --json
+```
+
+WSL 使用上面的 Linux 命令，但不把 WSL → Windows GUI 作为受支持的
+AutoCAD/QGIS 会话控制通道。需要操控 Windows AutoCAD 或 Windows QGIS
+桌面会话时，请在 Windows 原生 Codex/CLI 环境中安装运行时。
+
+### 2. 连接智能体客户端
+
+Codex（Windows/macOS/Linux 命令相同）：
+
+```shell
+codex plugin marketplace add Mola-maker/CAD2GIS --ref main
+codex plugin add cad2gis-agent@cad2gis
+codex plugin list
+```
+
+Claude Code（Windows/macOS/Linux 命令相同）：
+
+```shell
+claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools
+claude plugin list
+```
+
+Cursor：
+
+```powershell
+# Windows PowerShell
+New-Item -ItemType Directory -Force .cursor | Out-Null
+Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/cursor.mcp.json" -OutFile ".cursor/mcp.json"
+```
+
+```bash
+# macOS / Linux
+mkdir -p .cursor
+curl -fsSL "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/cursor.mcp.json" -o .cursor/mcp.json
+```
+
+VS Code / GitHub Copilot agent mode：
+
+```powershell
+# Windows PowerShell
+New-Item -ItemType Directory -Force .vscode | Out-Null
+Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/vscode.mcp.json" -OutFile ".vscode/mcp.json"
+```
+
+```bash
+# macOS / Linux
+mkdir -p .vscode
+curl -fsSL "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/vscode.mcp.json" -o .vscode/mcp.json
+```
+
+Cursor/VS Code 下载模板后，必须将 `<ABSOLUTE_PROJECT_ROOT>` 替换为 DWG
+项目的绝对路径，然后重启客户端。完整模板见
+[`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients)。
+
+### 3. 更新或移除插件
+
+```shell
+# Codex
+codex plugin marketplace upgrade cad2gis
+codex plugin add cad2gis-agent@cad2gis
+codex plugin remove cad2gis-agent@cad2gis
+
+# Claude Code
+claude plugin marketplace update cad2gis-tools
+claude plugin update cad2gis-agent@cad2gis-tools
+claude plugin uninstall cad2gis-agent@cad2gis-tools
+```
+
+安装、更新或修改 MCP 配置后，请重启客户端并新建任务，使 skills 和
+tools 从新会话边界加载。
 
 ## 架构
 
@@ -84,7 +165,7 @@ AI 是控制平面的规划器，不是坐标或几何生成器。它可以完�
 - [LLM_AGENT_ARCHITECTURE.md](docs/LLM_AGENT_ARCHITECTURE.md)
 - [ROBUSTNESS_VALIDATION.md](docs/ROBUSTNESS_VALIDATION.md)
 
-## 安装
+## 开发者安装
 
 ```powershell
 conda env create -f env/environment.yml
