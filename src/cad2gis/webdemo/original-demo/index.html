@@ -106,15 +106,16 @@
         <div class="plugin-step-panels">
           <article id="plugin-step-runtime" class="plugin-step-panel is-active" data-plugin-panel="runtime">
             <span class="plugin-step-kicker">STEP 01 / RUNTIME</span>
-            <h4>先安装真正执行转换的运行时。</h4>
-            <p>推荐用 <code>uv tool</code> 把 CLI 与 MCP 入口安装成隔离工具。插件本身不会下载 Python 包，也不会偷偷选择另一个解释器。</p>
+            <h4>先安装稳定的 MCP 控制面运行时。</h4>
+            <p>推荐从 <code>main.zip</code> 安装 CLI 与 MCP 入口；<code>--force</code> 会替换仍指向已删除 worktree 的旧 editable 安装。</p>
             <div class="plugin-code-block">
               <div><span>WINDOWS / macOS / LINUX</span><button type="button" data-copy-target="plugin-runtime-command">复制命令</button></div>
-              <pre><code id="plugin-runtime-command">uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
-cad2gis doctor --deep --strict --json</code></pre>
+              <pre><code id="plugin-runtime-command">uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --json</code></pre>
             </div>
             <div class="plugin-check-row"><span><i>✓</i> <code>cad2gis</code> 可执行</span><span><i>✓</i> <code>cad2gis-agent-mcp</code> 在 PATH</span><span><i>✓</i> doctor 报告 reader 状态</span></div>
-            <aside class="plugin-callout"><b>DWG reader 不是可选项。</b><span>AutoCAD Core Console 仅限 Windows；macOS/Linux 需要项目支持的 LibreDWG/ODA reader。</span></aside>
+            <aside class="plugin-callout"><b>控制面可连接不等于可转换。</b><span>生产转换仍需固定 Conda GIS 环境中的 GDAL/OGR 与 reader，并通过 <code>cad2gis doctor --deep --strict --json</code>。</span></aside>
           </article>
 
           <article id="plugin-step-roots" class="plugin-step-panel" data-plugin-panel="roots">
