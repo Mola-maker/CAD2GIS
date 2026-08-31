@@ -107,14 +107,59 @@
           <article id="plugin-step-runtime" class="plugin-step-panel is-active" data-plugin-panel="runtime">
             <span class="plugin-step-kicker">STEP 01 / RUNTIME</span>
             <h4>先安装真正执行转换的运行时。</h4>
-            <p>推荐用 <code>uv tool</code> 把 CLI 与 MCP 入口安装成隔离工具。插件本身不会下载 Python 包，也不会偷偷选择另一个解释器。</p>
-            <div class="plugin-code-block">
-              <div><span>WINDOWS / macOS / LINUX</span><button type="button" data-copy-target="plugin-runtime-command">复制命令</button></div>
-              <pre><code id="plugin-runtime-command">uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+            <p>先按系统安装 <code>uv</code>，再把 CLI 与 MCP 入口安装成隔离工具。插件本身不下载 Python 包，也不会偷偷选择另一个解释器。</p>
+            <div class="plugin-platform-tabs" role="tablist" aria-label="选择操作系统">
+              <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="plugin-platform-windows" data-plugin-platform="windows">Windows</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-platform-macos" data-plugin-platform="macos">macOS</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-platform-linux" data-plugin-platform="linux">Linux</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-platform-wsl" data-plugin-platform="wsl">WSL</button>
+            </div>
+            <div class="plugin-platform-panels">
+              <section id="plugin-platform-windows" class="plugin-platform-panel is-active" role="tabpanel" data-plugin-platform-panel="windows">
+                <div class="plugin-code-block">
+                  <div><span>WINDOWS POWERSHELL</span><button type="button" data-copy-target="plugin-runtime-windows">复制整组</button></div>
+                  <pre><code id="plugin-runtime-windows">winget install --id=astral-sh.uv -e
+uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+Get-Command cad2gis-agent-mcp
 cad2gis doctor --deep --strict --json</code></pre>
+                </div>
+                <p>AutoCAD/Core Console 只在 Windows 原生环境作为显式备用或并行核验 reader。</p>
+              </section>
+              <section id="plugin-platform-macos" class="plugin-platform-panel" role="tabpanel" data-plugin-platform-panel="macos">
+                <div class="plugin-code-block">
+                  <div><span>macOS / TERMINAL</span><button type="button" data-copy-target="plugin-runtime-macos">复制整组</button></div>
+                  <pre><code id="plugin-runtime-macos">brew install uv
+uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+command -v cad2gis-agent-mcp
+cad2gis doctor --deep --strict --json</code></pre>
+                </div>
+                <p>配置项目支持的 LibreDWG/ODA reader；AutoCAD/Core Console 不在 macOS 支持边界内。</p>
+              </section>
+              <section id="plugin-platform-linux" class="plugin-platform-panel" role="tabpanel" data-plugin-platform-panel="linux">
+                <div class="plugin-code-block">
+                  <div><span>LINUX / SHELL</span><button type="button" data-copy-target="plugin-runtime-linux">复制整组</button></div>
+                  <pre><code id="plugin-runtime-linux">curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+command -v cad2gis-agent-mcp
+cad2gis doctor --deep --strict --json</code></pre>
+                </div>
+                <p>配置项目支持的 LibreDWG/ODA reader；QGIS 审阅会话必须运行在同一个可见桌面环境。</p>
+              </section>
+              <section id="plugin-platform-wsl" class="plugin-platform-panel" role="tabpanel" data-plugin-platform-panel="wsl">
+                <div class="plugin-code-block">
+                  <div><span>WSL / LINUX RUNTIME</span><button type="button" data-copy-target="plugin-runtime-wsl">复制整组</button></div>
+                  <pre><code id="plugin-runtime-wsl">curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+command -v cad2gis-agent-mcp
+cad2gis doctor --deep --strict --json</code></pre>
+                </div>
+                <p>WSL 只按 Linux 运行时验证；不承诺通过 WSL 跨边界控制 Windows AutoCAD 或 Windows QGIS GUI。</p>
+              </section>
             </div>
             <div class="plugin-check-row"><span><i>✓</i> <code>cad2gis</code> 可执行</span><span><i>✓</i> <code>cad2gis-agent-mcp</code> 在 PATH</span><span><i>✓</i> doctor 报告 reader 状态</span></div>
-            <aside class="plugin-callout"><b>DWG reader 不是可选项。</b><span>AutoCAD Core Console 仅限 Windows；macOS/Linux 需要项目支持的 LibreDWG/ODA reader。</span></aside>
+            <aside class="plugin-callout"><b>DWG reader 不是可选项。</b><span>运行时安装成功不等于 reader 可用；必须以 <code>cad2gis doctor</code> 的分类结果为准。</span></aside>
           </article>
 
           <article id="plugin-step-roots" class="plugin-step-panel" data-plugin-panel="roots">
@@ -143,37 +188,57 @@ command -v cad2gis-agent-mcp</code></pre>
             <div class="plugin-client-tabs" role="tablist" aria-label="选择客户端">
               <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="plugin-client-codex" data-plugin-client="codex">Codex</button>
               <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-claude" data-plugin-client="claude">Claude Code</button>
-              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-editors" data-plugin-client="editors">Cursor / VS Code</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-cursor" data-plugin-client="cursor">Cursor</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-vscode" data-plugin-client="vscode">VS Code</button>
               <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-http" data-plugin-client="http">Local HTTP</button>
             </div>
             <div class="plugin-client-panels">
               <section id="plugin-client-codex" class="plugin-client-panel is-active" role="tabpanel" data-plugin-client-panel="codex">
-                <div class="plugin-code-block"><div><span>CODEX MARKETPLACE</span><button type="button" data-copy-target="plugin-client-codex-code">复制命令</button></div><pre><code id="plugin-client-codex-code">codex plugin marketplace add Mola-maker/CAD2GIS --ref main
-codex plugin add cad2gis-agent@cad2gis</code></pre></div>
-                <p>Marketplace 名称由仓库声明为 <code>cad2gis</code>。第二条命令安装 <code>cad2gis-agent</code> 的技能与 MCP 注册。</p>
+                <div class="plugin-code-block"><div><span>CODEX / ALL SYSTEMS</span><button type="button" data-copy-target="plugin-client-codex-code">复制命令</button></div><pre><code id="plugin-client-codex-code">codex plugin marketplace add Mola-maker/CAD2GIS --ref main
+codex plugin add cad2gis-agent@cad2gis
+codex plugin list</code></pre></div>
+                <p>Marketplace 名称由仓库声明为 <code>cad2gis</code>。该命令组在 Windows、macOS 和 Linux 中相同。</p>
               </section>
               <section id="plugin-client-claude" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="claude">
-                <div class="plugin-code-block"><div><span>CLAUDE CODE MARKETPLACE</span><button type="button" data-copy-target="plugin-client-claude-code">复制命令</button></div><pre><code id="plugin-client-claude-code">claude plugin marketplace add Mola-maker/CAD2GIS
-claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
-                <p>Claude marketplace 名称是 <code>cad2gis-tools</code>；运行时与项目根目录要求和 Codex 完全相同。</p>
+                <div class="plugin-code-block"><div><span>CLAUDE CODE / ALL SYSTEMS</span><button type="button" data-copy-target="plugin-client-claude-code">复制命令</button></div><pre><code id="plugin-client-claude-code">claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools
+claude plugin list</code></pre></div>
+                <p>Claude marketplace 名称是 <code>cad2gis-tools</code>；运行时与项目根目录要求和 Codex 相同。</p>
               </section>
-              <section id="plugin-client-editors" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="editors">
-                <div class="plugin-code-block"><div><span>CURSOR / MCP JSON</span><button type="button" data-copy-target="plugin-client-editors-code">复制配置</button></div><pre><code id="plugin-client-editors-code">{
-  "mcpServers": {
-    "cad2gis": {
-      "command": "cad2gis-agent-mcp",
-      "args": ["--transport", "stdio"],
-      "env": {"CAD2GIS_PROJECT_ROOTS": "&lt;ABSOLUTE_PROJECT_ROOT&gt;"}
-    }
-  }
-}</code></pre></div>
-                <p>VS Code/GitHub Copilot 使用相同入口，但顶层键为 <code>servers</code>，并增加 <code>"type": "stdio"</code>。仓库 <a href="https://github.com/Mola-maker/CAD2GIS/tree/main/plugins/cad2gis-agent/clients" target="_blank" rel="noreferrer">clients 目录</a> 提供可直接复制的模板。</p>
+              <section id="plugin-client-cursor" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="cursor">
+                <div class="plugin-code-grid">
+                  <div class="plugin-code-block"><div><span>CURSOR / WINDOWS</span><button type="button" data-copy-target="plugin-client-cursor-windows">复制命令</button></div><pre><code id="plugin-client-cursor-windows">New-Item -ItemType Directory -Force .cursor | Out-Null
+Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/cursor.mcp.json" -OutFile ".cursor/mcp.json"</code></pre></div>
+                  <div class="plugin-code-block"><div><span>CURSOR / macOS + LINUX</span><button type="button" data-copy-target="plugin-client-cursor-posix">复制命令</button></div><pre><code id="plugin-client-cursor-posix">mkdir -p .cursor
+curl -fsSL "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/cursor.mcp.json" -o .cursor/mcp.json</code></pre></div>
+                </div>
+                <p>将模板中的 <code>&lt;ABSOLUTE_PROJECT_ROOT&gt;</code> 替换为 DWG 项目绝对路径，再重启 Cursor。</p>
+              </section>
+              <section id="plugin-client-vscode" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="vscode">
+                <div class="plugin-code-grid">
+                  <div class="plugin-code-block"><div><span>VS CODE / WINDOWS</span><button type="button" data-copy-target="plugin-client-vscode-windows">复制命令</button></div><pre><code id="plugin-client-vscode-windows">New-Item -ItemType Directory -Force .vscode | Out-Null
+Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/vscode.mcp.json" -OutFile ".vscode/mcp.json"</code></pre></div>
+                  <div class="plugin-code-block"><div><span>VS CODE / macOS + LINUX</span><button type="button" data-copy-target="plugin-client-vscode-posix">复制命令</button></div><pre><code id="plugin-client-vscode-posix">mkdir -p .vscode
+curl -fsSL "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/vscode.mcp.json" -o .vscode/mcp.json</code></pre></div>
+                </div>
+                <p>将模板中的 <code>&lt;ABSOLUTE_PROJECT_ROOT&gt;</code> 替换为 DWG 项目绝对路径，再重启 VS Code / GitHub Copilot agent mode。</p>
               </section>
               <section id="plugin-client-http" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="http">
                 <div class="plugin-code-block"><div><span>STREAMABLE HTTP / LOOPBACK ONLY</span><button type="button" data-copy-target="plugin-client-http-code">复制命令</button></div><pre><code id="plugin-client-http-code">python -m cad2gis.agent_mcp --transport streamable-http --host 127.0.0.1 --port 8768</code></pre></div>
                 <p>客户端连接 <code>http://127.0.0.1:8768/mcp</code>。不要直接暴露到公网；远程部署必须经过带身份认证的 TLS 反向代理。</p>
               </section>
             </div>
+            <details class="plugin-maintenance">
+              <summary>更新或移除已安装插件</summary>
+              <div class="plugin-code-grid">
+                <div class="plugin-code-block"><div><span>CODEX</span><button type="button" data-copy-target="plugin-maintenance-codex">复制命令</button></div><pre><code id="plugin-maintenance-codex">codex plugin marketplace upgrade cad2gis
+codex plugin add cad2gis-agent@cad2gis
+codex plugin remove cad2gis-agent@cad2gis</code></pre></div>
+                <div class="plugin-code-block"><div><span>CLAUDE CODE</span><button type="button" data-copy-target="plugin-maintenance-claude">复制命令</button></div><pre><code id="plugin-maintenance-claude">claude plugin marketplace update cad2gis-tools
+claude plugin update cad2gis-agent@cad2gis-tools
+claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
+              </div>
+            </details>
           </article>
 
           <article id="plugin-step-verify" class="plugin-step-panel" data-plugin-panel="verify">
