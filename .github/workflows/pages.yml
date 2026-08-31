@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/land-robustness
     paths:
       - .github/workflows/pages.yml
       - scripts/build_pages.py
