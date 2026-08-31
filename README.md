@@ -72,7 +72,7 @@ WSL 使用上面的 Linux 命令，但不把 WSL → Windows GUI 作为受支持
 AutoCAD/QGIS 会话控制通道。需要操控 Windows AutoCAD 或 Windows QGIS
 桌面会话时，请在 Windows 原生 Codex/CLI 环境中安装运行时。
 
-### 2. 连接智能体客户端
+### 2. 安装智能体客户端插件
 
 Codex（Windows/macOS/Linux 命令相同）：
 
@@ -122,21 +122,52 @@ Cursor/VS Code 下载模板后，必须将 `<ABSOLUTE_PROJECT_ROOT>` 替换为 D
 项目的绝对路径，然后重启客户端。完整模板见
 [`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients)。
 
-### 3. 更新或移除插件
+### 3. 验证安装
+
+先验证本地运行时，再验证正在使用的客户端。只使用 Codex 或 Claude Code 其中
+一个时，不需要执行另一个客户端的列表命令。
 
 ```shell
+cad2gis doctor --deep --strict --json
+codex plugin list
+claude plugin list
+```
+
+重启客户端并新建任务后，再让智能体调用 `get_capabilities`，确认 MCP 能力和
+`CAD2GIS_PROJECT_ROOTS` 授权目录均已加载。
+
+### 4. 更新
+
+```shell
+# 运行时
+uv tool upgrade cad2gis
+
 # Codex
 codex plugin marketplace upgrade cad2gis
 codex plugin add cad2gis-agent@cad2gis
-codex plugin remove cad2gis-agent@cad2gis
 
 # Claude Code
 claude plugin marketplace update cad2gis-tools
 claude plugin update cad2gis-agent@cad2gis-tools
-claude plugin uninstall cad2gis-agent@cad2gis-tools
 ```
 
-安装、更新或修改 MCP 配置后，请重启客户端并新建任务，使 skills 和
+Cursor 与 VS Code / Copilot 使用者请重新下载上面的 MCP 模板并保留自己的
+`<ABSOLUTE_PROJECT_ROOT>` 设置。
+
+### 5. 卸载
+
+```shell
+# Codex
+codex plugin remove cad2gis-agent@cad2gis
+
+# Claude Code
+claude plugin uninstall cad2gis-agent@cad2gis-tools
+
+# 本地运行时
+uv tool uninstall cad2gis
+```
+
+安装、验证、更新、卸载或修改 MCP 配置后，请重启客户端并新建任务，使 skills 和
 tools 从新会话边界加载。
 
 ## 架构

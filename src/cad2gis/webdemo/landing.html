@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071b67">
+  <title>CAD2GIS — 让 CAD 证据流向 GIS</title>
+  <link rel="stylesheet" href="/assets/landing.css?v=optical-flow-20260830">
+  <link rel="stylesheet" href="/assets/pointer.css">
+</head>
+<body class="landing-page">
+  <a class="skip-link" href="#story">跳到主要内容</a>
+  <canvas id="flow-canvas" aria-hidden="true"></canvas>
+  <div class="blueprint-grid" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="wordmark" href="/" aria-label="CAD2GIS 首页">CAD2GIS<span>.AGENT</span></a>
+    <nav aria-label="主导航">
+      <button class="nav-button" type="button" data-scene-jump="2">流程</button>
+      <a href="/install">安装</a>
+      <a href="/workspace">工作台</a>
+      <button id="theme-toggle" class="nav-button" type="button" aria-label="切换明暗主题">主题[A]</button>
+    </nav>
+  </header>
+
+  <main id="story" class="story" aria-label="CAD2GIS 产品介绍">
+    <section class="scene hero-scene is-active" data-scene="0" aria-labelledby="hero-title">
+      <div class="scene-kicker">
+        <span>CAD / GIS</span>
+        <p>Thinking in evidence.<br>Converting with care.</p>
+      </div>
+      <div class="hero-copy">
+        <p class="hero-overline">不是把图“搬过去”</p>
+        <h1 id="hero-title">让 CAD 证据<br>流向 GIS</h1>
+      </div>
+      <div class="flow-word" role="img" aria-label="一条有真实体积和反光的蓝色管线组成 cad 与 gis 字样，中间由荧光绿色箭头连接">
+      <canvas id="hero-tube-canvas" class="hero-tube-canvas" aria-hidden="true"></canvas>
+      <svg class="flow-word-fallback" viewBox="0 0 1440 560" aria-hidden="true" focusable="false">
+        <title id="flow-word-title">CAD 流向 GIS 的立体管线字形</title>
+        <desc id="flow-word-description">一条连续、柔软的蓝色工程管线以手写形态组成 cad 与 gis 字样，中间由荧光绿色箭头连接。</desc>
+        <defs>
+          <path id="tube-wordline" pathLength="1" d="M267 178 C217 95 92 107 70 276 C49 446 190 490 286 380 M410 206 C347 143 286 210 286 323 C286 428 388 442 425 330 C443 277 450 222 463 160 C459 245 458 339 493 414 M618 209 C555 144 494 213 495 325 C497 427 598 440 631 329 C654 251 653 153 650 74 C650 232 663 351 693 414 M990 209 C923 145 860 211 860 324 C859 427 960 442 1000 328 C1016 282 1028 222 1037 165 C1026 314 1014 444 956 505 C918 546 864 523 868 475 M1101 208 C1092 289 1092 362 1110 414 M1300 206 C1257 150 1169 173 1171 248 C1174 318 1280 294 1280 361 C1280 431 1187 455 1149 401"/>
+          <linearGradient id="tube-gradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7182ff"/>
+            <stop offset=".24" stop-color="#3f50dd"/>
+            <stop offset=".52" stop-color="#192a9b"/>
+            <stop offset=".76" stop-color="#101d79"/>
+            <stop offset="1" stop-color="#5369f1"/>
+          </linearGradient>
+          <linearGradient id="tube-surface" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#dce1ff" stop-opacity=".84"/>
+            <stop offset=".28" stop-color="#8f9dff" stop-opacity=".46"/>
+            <stop offset=".72" stop-color="#2637b1" stop-opacity=".12"/>
+            <stop offset="1" stop-color="#0b155f" stop-opacity=".38"/>
+          </linearGradient>
+          <radialGradient id="tube-cap" cx="32%" cy="24%" r="78%">
+            <stop offset="0" stop-color="#edf0ff"/>
+            <stop offset=".22" stop-color="#8090ff"/>
+            <stop offset=".68" stop-color="#2538bb"/>
+            <stop offset="1" stop-color="#0d1768"/>
+          </radialGradient>
+        </defs>
+        <g class="tube-lettering" aria-hidden="true">
+          <g class="tube-shadow"><use href="#tube-wordline"/></g>
+          <g class="tube-rim"><use href="#tube-wordline"/></g>
+          <g class="tube-main"><use href="#tube-wordline"/></g>
+          <g class="tube-surface"><use href="#tube-wordline"/></g>
+          <g class="tube-sheen"><use href="#tube-wordline"/></g>
+          <g class="tube-glint"><use href="#tube-wordline"/></g>
+          <circle class="tube-dot tube-dot-i" cx="1104" cy="119" r="30"/>
+        </g>
+        <g class="flow-arrow" aria-hidden="true">
+          <path class="flow-arrow-rim" d="M720 284 H824 M789 235 840 284 789 333"/>
+          <path class="flow-arrow-main" d="M720 284 H824 M789 235 840 284 789 333"/>
+        </g>
+        <text class="flow-word-label" x="784" y="390" text-anchor="middle">SOURCE → EVIDENCE</text>
+      </svg>
+      </div>
+      <div class="hero-note">DWG → SOURCE → EVIDENCE → DELIVERY</div>
+    </section>
+
+    <section class="scene teaching-scene" data-scene="1" aria-labelledby="teaching-title">
+      <div class="evidence-visual" aria-hidden="true">
+        <svg viewBox="0 0 560 560">
+          <path d="M68 432 172 352 241 393 354 205 490 118"/>
+          <path d="M82 462 184 386 258 420 375 239 506 154"/>
+          <g><circle cx="68" cy="432" r="9"/><circle cx="172" cy="352" r="9"/><circle cx="241" cy="393" r="9"/><circle cx="354" cy="205" r="9"/><circle cx="490" cy="118" r="9"/></g>
+        </svg>
+        <span class="evidence-label label-source">SOURCE / 184,220 ENTITIES</span>
+        <span class="evidence-label label-check">HASH BOUND / VERIFIED</span>
+      </div>
+      <div class="teaching-copy">
+        <span class="section-index">01 / 先理解</span>
+        <h2 id="teaching-title">先看清这张图，<br>再谈怎么转换。</h2>
+        <p>CAD2GIS 会先保留实体、图层、块、曲线和文字这些源事实。AI 负责解释，确定性流水线负责坐标、长度与验证——两者各做自己擅长的事。</p>
+        <p class="quiet-copy">这样即使第一次分类不够理想，也能回到证据上继续改，而不是推倒重来。</p>
+      </div>
+    </section>
+
+    <section class="scene pipeline-scene" data-scene="2" aria-labelledby="pipeline-title">
+      <header class="section-heading">
+        <span class="section-index">02 / 可追溯流程</span>
+        <h2 id="pipeline-title">每一步，都有证据落点</h2>
+      </header>
+      <ol class="pipeline-rail">
+        <li style="--i:0"><span class="stage-no">01</span><strong>读图</strong><p>清点实体、图层、块和原始曲线。</p><small>INSPECT_SOURCE</small></li>
+        <li style="--i:1"><span class="stage-no">02</span><strong>理解</strong><p>把语言判断绑定到真实 graph ID。</p><small>SCENE_GRAPH</small></li>
+        <li style="--i:2"><span class="stage-no">03</span><strong>转换</strong><p>由确定性代码还原几何并生成交付层。</p><small>CANONICAL_RUN</small></li>
+        <li style="--i:3"><span class="stage-no">04</span><strong>验证</strong><p>分别检查几何、拓扑、长度和坐标精度。</p><small>QUALITY_GATES</small></li>
+      </ol>
+      <a class="text-link" href="/workspace">进入双地图审查工作台 <span>↗</span></a>
+    </section>
+
+    <section class="scene iteration-scene" data-scene="3" aria-labelledby="iteration-title">
+      <div class="iteration-copy">
+        <span class="section-index">03 / 证据驱动迭代</span>
+        <h2 id="iteration-title">第一次不完美，<br>不是终点。</h2>
+        <p>你可以指出“哪一段不对”，也可以提供标注截图。系统会把语言与视觉证据绑定到当前 run，只生成一个最小变化的新候选。</p>
+        <a class="text-link" href="/install">从安装开始 <span>↗</span></a>
+      </div>
+      <div class="iteration-loop" aria-label="反馈迭代流程">
+        <div class="loop-orbit" aria-hidden="true"></div>
+        <div class="loop-core"><strong>RUN 02</strong><span>CANDIDATE</span></div>
+        <span class="loop-node node-observe">观察<br><small>VISUAL</small></span>
+        <span class="loop-node node-explain">说明<br><small>LANGUAGE</small></span>
+        <span class="loop-node node-evaluate">验证<br><small>GATES</small></span>
+        <span class="loop-node node-decide">确认<br><small>HUMAN</small></span>
+      </div>
+    </section>
+
+    <section class="scene finale-scene" data-scene="4" aria-labelledby="finale-title">
+      <p class="finale-kicker">BUILD WITH EVIDENCE</p>
+      <h2 id="finale-title">让每一次转换<br>都更接近真相</h2>
+      <div class="finale-actions">
+        <a class="primary-link" href="/install">查看安装步骤</a>
+        <a class="secondary-link" href="/workspace">打开工作台</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status-bar">
+    <span>LOCAL / EVIDENCE-FIRST</span>
+    <span id="scene-coordinate" data-pointer-coordinates>0001 X 0000 Y</span>
+    <span id="scene-status">SCENE 01 / 05</span>
+  </footer>
+
+  <aside class="scene-progress" aria-label="页面进度">
+    <button class="is-active" type="button" data-scene-jump="0" aria-label="第 1 屏"></button>
+    <button type="button" data-scene-jump="1" aria-label="第 2 屏"></button>
+    <button type="button" data-scene-jump="2" aria-label="第 3 屏"></button>
+    <button type="button" data-scene-jump="3" aria-label="第 4 屏"></button>
+    <button type="button" data-scene-jump="4" aria-label="第 5 屏"></button>
+  </aside>
+
+  <script type="module" src="/assets/landing.js"></script>
+  <script type="module" src="/assets/hero-tube.js?v=optical-flow-20260830"></script>
+  <script type="module" src="/assets/pointer.js"></script>
+</body>
+</html>
