@@ -31,7 +31,7 @@ def test_pages_cd_builds_only_the_verified_site_directory() -> None:
     workflow = (ROOT / ".github" / "workflows" / "pages.yml").read_text(
         encoding="utf-8"
     )
-    assert "python tools/build_webdemo.py --output _site" in workflow
+    assert "python scripts/build_pages.py --output _site" in workflow
     assert "branches: [main]" in workflow
     assert "feature/land-robustness" not in workflow
     assert workflow.count("github.ref == 'refs/heads/main'") == 2
@@ -41,11 +41,9 @@ def test_pages_cd_builds_only_the_verified_site_directory() -> None:
     assert '- "plugins/cad2gis-agent/**"' in workflow
     assert '- "tests/test_plugin_contracts.py"' in workflow
     assert '- "tests/test_webdemo_plugin_guide.py"' in workflow
-    assert '- "pyproject.toml"' in workflow
-    assert '- "env/environment.yml"' in workflow
-    assert "mamba-org/setup-micromamba@v3" in workflow
-    assert "environment-file: env/environment.yml" in workflow
-    assert "shell: bash -el {0}" in workflow
+    assert '- "scripts/build_pages.py"' in workflow
+    assert "tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py" in workflow
+    assert "node --check src/cad2gis/webdemo/install.js" in workflow
     assert "path: _site" in workflow
     assert "path: src/cad2gis/webdemo" not in workflow
     assert "actions/upload-pages-artifact@v5" in workflow

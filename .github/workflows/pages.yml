@@ -1,4 +1,4 @@
-name: Deploy ULTRA Web Demo
+name: Deploy CAD2GIS Pages
 
 on:
   push:
@@ -9,27 +9,19 @@ on:
       - ".agents/plugins/marketplace.json"
       - ".claude-plugin/marketplace.json"
       - "plugins/cad2gis-agent/**"
-      - "pyproject.toml"
-      - "env/environment.yml"
       - "src/cad2gis/webdemo/**"
-      - "tools/build_webdemo.py"
-      - "tools/build_hero_assets.mjs"
-      - "tools/build_hero_font.py"
-      - "package.json"
-      - "package-lock.json"
-      - "tests/test_webdemo_build.py"
-      - "tests/test_webdemo_multidemo.py"
-      - "tests/test_review_server.py"
+      - "scripts/build_pages.py"
       - "tests/test_ci_contracts.py"
       - "tests/test_plugin_contracts.py"
       - "tests/test_webdemo_plugin_guide.py"
+      - "tests/test_pages_publication_gate.py"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: pages
+  group: pages-main
   cancel-in-progress: true
 
 jobs:
@@ -39,42 +31,30 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out repository
+      - name: Check out main
         uses: actions/checkout@v7
 
-      - name: Set up native GIS runtime
-        uses: mamba-org/setup-micromamba@v3
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
-          environment-file: env/environment.yml
-          cache-environment: true
-          cache-downloads: true
-          init-shell: bash
+          python-version: "3.12"
 
-      - name: Install WebDemo test runtime
-        run: python -m pip install -e ".[mcp,review,test]"
-        shell: bash -el {0}
+      - name: Install contract test runtime
+        run: python -m pip install pytest
 
-      - name: Install WebDemo design runtime
-        run: npm ci
-        shell: bash
-
-      - name: Generate repo-native SVG geometry
-        run: npm run build:hero && micromamba run -n cad2gis python tools/build_hero_font.py
-        shell: bash
-
-      - name: Verify browser scripts and contracts
+      - name: Verify install matrix and browser scripts
         run: |
-          node --check src/cad2gis/webdemo/app.js
-          node --check src/cad2gis/webdemo/demo-fixture.js
-          node --check src/cad2gis/webdemo/hero-motion.js
-          python -m pytest tests/test_ci_contracts.py tests/test_plugin_contracts.py tests/test_webdemo_plugin_guide.py tests/test_webdemo_build.py tests/test_webdemo_multidemo.py tests/test_review_server.py -q
-        shell: bash -el {0}
+          node --check src/cad2gis/webdemo/landing.js
+          node --check src/cad2gis/webdemo/hero-tube.js
+          node --check src/cad2gis/webdemo/install.js
+          node --check src/cad2gis/webdemo/pointer.js
+          node --check src/cad2gis/webdemo/original-demo/assets/app.js
+          python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py -q
 
-      - name: Build data-free public demo
-        run: python tools/build_webdemo.py --output _site
-        shell: bash -el {0}
+      - name: Build data-free Pages artifact
+        run: python scripts/build_pages.py --output _site
 
-      - name: Upload static demo
+      - name: Upload verified site
         uses: actions/upload-pages-artifact@v5
         with:
           path: _site

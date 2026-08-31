@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none">
+  <defs><pattern id="minor" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M80 0H0V80" stroke="#173f43" stroke-opacity=".10"/></pattern><pattern id="major" width="320" height="320" patternUnits="userSpaceOnUse"><rect width="320" height="320" fill="url(#minor)"/><path d="M320 0H0V320" stroke="#14676a" stroke-opacity=".16"/><circle cx="0" cy="0" r="2.5" fill="#14676a" fill-opacity=".30"/></pattern></defs>
+  <rect width="1600" height="900" fill="url(#major)"/><g stroke="#14676a" stroke-opacity=".25"><path d="M800 0V900M0 450H1600"/><path d="M28 0V900M0 28H1600" stroke-dasharray="2 12"/></g><g fill="#173f43" fill-opacity=".44"><circle cx="28" cy="28" r="4"/><circle cx="1572" cy="28" r="4"/><circle cx="28" cy="872" r="4"/><circle cx="1572" cy="872" r="4"/></g>
+</svg>

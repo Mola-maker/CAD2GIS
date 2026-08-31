@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8f7">
+  <title>CAD2GIS — 可验证的 GIS 交付</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
+  <link rel="preload" href="./assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/noto-sans-sc-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/smiley-sans-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./assets/styles.css?v=font-system-20260829">
+</head>
+<body>
+  <section id="hero-page" class="hero-page" aria-labelledby="hero-title">
+    <div class="hero-grid-layer" aria-hidden="true"></div>
+    <header class="hero-nav">
+      <a class="hero-brand" href="#hero-page" aria-label="CAD2GIS 首页"><span class="hero-brand-mark">C2G</span><span>CAD2GIS <i>/</i> EVIDENCE FIRST</span></a>
+      <nav class="hero-nav-links" aria-label="Landing page navigation">
+        <a href="#product-infinite">PRODUCT INFINITE</a>
+        <a href="#validation-tunnel">VALIDATION</a>
+        <a href="#plugin-guide">PLUGIN GUIDE</a>
+        <a href="#process-terminal">RUN REPLAY</a>
+      </nav>
+      <div class="hero-nav-status"><span class="hero-live-dot"></span><span>HUTABOHU / RUN 03</span><b>CONDITIONAL</b></div>
+    </header>
+
+    <div class="hero-viewport">
+      <div class="hero-copy">
+        <p class="hero-overline"><span>01</span> SOURCE FACTS → GIS DELIVERY</p>
+        <h2 id="hero-title">把不可信的<br><em>DWG</em>，变成<br><strong>可验证的 GIS 交付。</strong></h2>
+        <p class="hero-lede">CAD2GIS 从不可变源事实出发，分别验证几何、拓扑、长度和坐标精度，再生成可追溯、可重放的 GeoPackage 交付。</p>
+        <div class="hero-actions"><a class="hero-button hero-button-primary" href="#process-terminal">播放真实转换过程 <span>↗</span></a><a class="hero-button hero-button-secondary" href="#product-infinite">查看证据链 <span>↓</span></a></div>
+        <p class="hero-guardrail">AI 负责理解与提案，不改写坐标。<a href="#plugin-guide">安装 CAD2GIS Agent <span>→</span></a></p>
+      </div>
+      <div class="hero-visual" data-parallax="0.12">
+        <div class="hero-visual-meta"><span>DERIVED RUN / HUTABOHU</span><span>01—05</span></div>
+        <img src="./assets/hero-evidence-graph.svg" alt="从源事实到 GIS 交付的证据链示意图">
+        <div class="hero-visual-readout"><span>GRAPH STATUS</span><strong>14,702 <small>nodes</small></strong><span>20,074 relationships / replayable</span></div>
+      </div>
+    </div>
+
+    <div class="hero-intro hero-section-width">
+      <p class="hero-overline"><span>02</span> WHY THIS EXISTS</p>
+      <div class="hero-intro-grid"><h3>几何会说真话。<br><span>坐标需要证据。</span></h3><p>一张 CAD 图可以有漂亮的线，也可以有正确的长度，但这并不自动证明它已经处于正确的地理位置。CAD2GIS 把这些声明拆开，让每一次理解、配准和交付都留下可审查的痕迹。</p></div>
+      <div class="hero-intro-note"><span>HUTABOHU REAL DERIVED RUN</span><strong>CONDITIONAL</strong><span>PUBLIC DERIVATIVE ONLY / NO RAW DWG</span></div>
+    </div>
+
+    <section id="product-infinite" class="product-infinite hero-section-width" aria-labelledby="product-infinite-title">
+      <div class="product-heading"><p class="hero-overline"><span>03</span> CRAFT INFINITE PRODUCT</p><h3 id="product-infinite-title">证据不是最后一页报告。<br><span>它是产品的连续表面。</span></h3><p>从第一条源曲线到最后一个交付图层，五个阶段都可以独立阅读、独立校验、独立重放。</p></div>
+      <div class="stage-rail" aria-label="CAD2GIS 五阶段证据链">
+        <div class="stage-rail-line" aria-hidden="true"></div>
+        <article class="stage-card-hero is-active" data-stage-card="source" tabindex="0"><span class="stage-index">01</span><h4>Source facts</h4><p>源实体、样式、标签、SHA-256 与原生曲线事实。</p><span class="stage-data">9,896 ENTITIES</span></article>
+        <article class="stage-card-hero" data-stage-card="semantic" tabindex="0"><span class="stage-index">02</span><h4>Semantic mapping</h4><p>来源绑定的分类，未解析对象不会被伪装成已知资产。</p><span class="stage-data">281 UNRESOLVED</span></article>
+        <article class="stage-card-hero" data-stage-card="registration" tabindex="0"><span class="stage-index">03</span><h4>Registration</h4><p>训练点、独立检查点、相似变换、残差与覆盖度。</p><span class="stage-data">GCP / RESIDUALS</span></article>
+        <article class="stage-card-hero" data-stage-card="validation" tabindex="0"><span class="stage-index">04</span><h4>Independent validation</h4><p>几何、拓扑、长度和坐标精度四条互相独立的检查轨道。</p><span class="stage-data">4 TRACKS</span></article>
+        <article class="stage-card-hero" data-stage-card="delivery" tabindex="0"><span class="stage-index">05</span><h4>GIS delivery</h4><p>GeoPackage、QML、manifest 和证据图，动作可回放。</p><span class="stage-data">1,150 FEATURES</span></article>
+      </div>
+    </section>
+
+    <section class="hero-metrics hero-section-width" aria-label="Hutabohu 真实派生运行指标">
+      <p class="hero-overline"><span>04</span> ONE RUN / MANY PROOFS</p>
+      <div class="metric-grid-hero">
+        <article><strong data-count="9896">0</strong><span>source entities</span><small>immutable inventory</small></article>
+        <article><strong data-count="1150">0</strong><span>delivery features</span><small>8 reviewed layers</small></article>
+        <article><strong data-count="14702">0</strong><span>evidence nodes</span><small>content-addressed graph</small></article>
+        <article><strong data-count="170">0</strong><span>DWG DIMENSION segments</span><small>of 179 cable segments</small></article>
+      </div>
+    </section>
+
+    <section id="validation-tunnel" class="validation-tunnel" aria-labelledby="tunnel-title">
+      <img class="tunnel-art" src="./assets/hero-tunnel.svg" alt="四条独立校验轨道的径向示意图">
+      <div class="tunnel-copy"><p class="hero-overline"><span>05</span> INDEPENDENT CLAIMS</p><h3 id="tunnel-title">几何正确，<br><em>不等于坐标准确。</em></h3><p>我们不会把一个绿色的总分当成全部答案。源几何、拓扑、长度和坐标精度各自拥有证据，各自拥有失败方式。</p><div class="validation-tracks"><span>01 / SOURCE GEOMETRY</span><span>02 / TOPOLOGY</span><span>03 / LENGTH</span><span>04 / COORDINATE ACCURACY</span></div></div>
+    </section>
+
+    <section class="hero-stories hero-section-width" aria-label="产品能力故事">
+      <div class="story-intro"><p class="hero-overline"><span>06</span> THE PRODUCT SURFACE</p><h3>让复杂的转换<br><span>变得可以被复核。</span></h3></div>
+      <div class="story-grid"><article><span>READ</span><h4>先看源事实</h4><p>源坐标、曲线指纹和标签 provenance 保持不可变，审查从事实开始。</p></article><article><span>MAP</span><h4>再提语义</h4><p>AI 可以提案，但每个语义结果都必须回到来源证据和 registry。</p></article><article><span>TEST</span><h4>分开做验证</h4><p>独立的验证轨道让“形状像”与“位置对”不再互相冒充。</p></article><article><span>DELIVER</span><h4>最后交付</h4><p>交付物、清单与证据图一起生成，下一次运行可以重放。</p></article></div>
+    </section>
+
+    <section id="plugin-guide" class="plugin-guide hero-section-width" aria-labelledby="plugin-guide-title" data-plugin-guide>
+      <div class="plugin-guide-heading">
+        <div>
+          <p class="hero-overline"><span>07</span> INSTALL THE AGENT</p>
+          <h3 id="plugin-guide-title">五步，把证据链<br><em>装进你的智能体。</em></h3>
+        </div>
+        <div class="plugin-guide-intro">
+          <p>CAD2GIS Agent 是 canonical Python 流水线的薄接入层：插件注册一个技能与一个 MCP 服务，读取、转换、验证和交付仍由同一套本地运行时完成。</p>
+          <div class="plugin-guide-badges" aria-label="安装要求"><span>PYTHON 3.11–3.12</span><span>UV / CONDA</span><span>LOCAL DWG READER</span></div>
+        </div>
+      </div>
+
+      <div class="plugin-architecture" aria-label="插件架构">
+        <span><b>01</b> AGENT SKILL</span><i aria-hidden="true">→</i><span><b>02</b> MCP SERVICE</span><i aria-hidden="true">→</i><span><b>03</b> CANONICAL RUNTIME</span><i aria-hidden="true">→</i><span><b>04</b> REVIEWED GPKG</span>
+      </div>
+
+      <div class="plugin-install-shell">
+        <ol class="plugin-step-nav" aria-label="插件安装步骤">
+          <li><button type="button" class="is-active" data-plugin-step="runtime" aria-controls="plugin-step-runtime" aria-current="step"><span>01</span><b>安装运行时</b><small>runtime + doctor</small></button></li>
+          <li><button type="button" data-plugin-step="roots" aria-controls="plugin-step-roots"><span>02</span><b>授权项目目录</b><small>fail-closed roots</small></button></li>
+          <li><button type="button" data-plugin-step="client" aria-controls="plugin-step-client"><span>03</span><b>连接智能体</b><small>Codex + MCP clients</small></button></li>
+          <li><button type="button" data-plugin-step="verify" aria-controls="plugin-step-verify"><span>04</span><b>验证连接</b><small>capabilities first</small></button></li>
+          <li><button type="button" data-plugin-step="first-run" aria-controls="plugin-step-first-run"><span>05</span><b>发起第一次转换</b><small>inspect → audit</small></button></li>
+        </ol>
+
+        <div class="plugin-step-panels">
+          <article id="plugin-step-runtime" class="plugin-step-panel is-active" data-plugin-panel="runtime">
+            <span class="plugin-step-kicker">STEP 01 / RUNTIME</span>
+            <h4>先安装真正执行转换的运行时。</h4>
+            <p>推荐用 <code>uv tool</code> 把 CLI 与 MCP 入口安装成隔离工具。插件本身不会下载 Python 包，也不会偷偷选择另一个解释器。</p>
+            <div class="plugin-code-block">
+              <div><span>WINDOWS / macOS / LINUX</span><button type="button" data-copy-target="plugin-runtime-command">复制命令</button></div>
+              <pre><code id="plugin-runtime-command">uv tool install --python 3.12 "cad2gis[mcp,review] @ git+https://github.com/Mola-maker/CAD2GIS.git"
+cad2gis doctor --deep --strict --json</code></pre>
+            </div>
+            <div class="plugin-check-row"><span><i>✓</i> <code>cad2gis</code> 可执行</span><span><i>✓</i> <code>cad2gis-agent-mcp</code> 在 PATH</span><span><i>✓</i> doctor 报告 reader 状态</span></div>
+            <aside class="plugin-callout"><b>DWG reader 不是可选项。</b><span>AutoCAD Core Console 仅限 Windows；macOS/Linux 需要项目支持的 LibreDWG/ODA reader。</span></aside>
+          </article>
+
+          <article id="plugin-step-roots" class="plugin-step-panel" data-plugin-panel="roots">
+            <span class="plugin-step-kicker">STEP 02 / PROJECT ACCESS</span>
+            <h4>只授权需要转换的目录。</h4>
+            <p>MCP 服务默认失败关闭。路径不在 <code>CAD2GIS_PROJECT_ROOTS</code> 内时会停止，不会静默扩大文件访问范围。</p>
+            <div class="plugin-code-grid">
+              <div class="plugin-code-block">
+                <div><span>WINDOWS POWERSHELL</span><button type="button" data-copy-target="plugin-roots-windows">复制</button></div>
+                <pre><code id="plugin-roots-windows">$env:CAD2GIS_PROJECT_ROOTS = "E:\projects;D:\survey-data"
+$env:CAD2GIS_READER_BACKEND = "autocad"</code></pre>
+              </div>
+              <div class="plugin-code-block">
+                <div><span>macOS / LINUX</span><button type="button" data-copy-target="plugin-roots-posix">复制</button></div>
+                <pre><code id="plugin-roots-posix">export CAD2GIS_PROJECT_ROOTS="$HOME/projects:/srv/survey-data"
+command -v cad2gis-agent-mcp</code></pre>
+              </div>
+            </div>
+            <aside class="plugin-callout"><b>分隔符随系统变化。</b><span>Windows 使用分号 <code>;</code>，POSIX 使用冒号 <code>:</code>。插件缓存目录永远不会自动成为项目根目录。</span></aside>
+          </article>
+
+          <article id="plugin-step-client" class="plugin-step-panel" data-plugin-panel="client">
+            <span class="plugin-step-kicker">STEP 03 / CLIENT</span>
+            <h4>选择你的智能体客户端。</h4>
+            <p>所有 stdio 客户端都调用同一个 <code>cad2gis-agent-mcp</code> 入口。安装或修改配置后，请重启客户端并开启一个新任务。</p>
+            <div class="plugin-client-tabs" role="tablist" aria-label="选择客户端">
+              <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="plugin-client-codex" data-plugin-client="codex">Codex</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-claude" data-plugin-client="claude">Claude Code</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-editors" data-plugin-client="editors">Cursor / VS Code</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="plugin-client-http" data-plugin-client="http">Local HTTP</button>
+            </div>
+            <div class="plugin-client-panels">
+              <section id="plugin-client-codex" class="plugin-client-panel is-active" role="tabpanel" data-plugin-client-panel="codex">
+                <div class="plugin-code-block"><div><span>CODEX MARKETPLACE</span><button type="button" data-copy-target="plugin-client-codex-code">复制命令</button></div><pre><code id="plugin-client-codex-code">codex plugin marketplace add Mola-maker/CAD2GIS --ref main
+codex plugin add cad2gis-agent@cad2gis</code></pre></div>
+                <p>Marketplace 名称由仓库声明为 <code>cad2gis</code>。第二条命令安装 <code>cad2gis-agent</code> 的技能与 MCP 注册。</p>
+              </section>
+              <section id="plugin-client-claude" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="claude">
+                <div class="plugin-code-block"><div><span>CLAUDE CODE MARKETPLACE</span><button type="button" data-copy-target="plugin-client-claude-code">复制命令</button></div><pre><code id="plugin-client-claude-code">claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
+                <p>Claude marketplace 名称是 <code>cad2gis-tools</code>；运行时与项目根目录要求和 Codex 完全相同。</p>
+              </section>
+              <section id="plugin-client-editors" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="editors">
+                <div class="plugin-code-block"><div><span>CURSOR / MCP JSON</span><button type="button" data-copy-target="plugin-client-editors-code">复制配置</button></div><pre><code id="plugin-client-editors-code">{
+  "mcpServers": {
+    "cad2gis": {
+      "command": "cad2gis-agent-mcp",
+      "args": ["--transport", "stdio"],
+      "env": {"CAD2GIS_PROJECT_ROOTS": "&lt;ABSOLUTE_PROJECT_ROOT&gt;"}
+    }
+  }
+}</code></pre></div>
+                <p>VS Code/GitHub Copilot 使用相同入口，但顶层键为 <code>servers</code>，并增加 <code>"type": "stdio"</code>。仓库 <a href="https://github.com/Mola-maker/CAD2GIS/tree/main/plugins/cad2gis-agent/clients" target="_blank" rel="noreferrer">clients 目录</a> 提供可直接复制的模板。</p>
+              </section>
+              <section id="plugin-client-http" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="http">
+                <div class="plugin-code-block"><div><span>STREAMABLE HTTP / LOOPBACK ONLY</span><button type="button" data-copy-target="plugin-client-http-code">复制命令</button></div><pre><code id="plugin-client-http-code">python -m cad2gis.agent_mcp --transport streamable-http --host 127.0.0.1 --port 8768</code></pre></div>
+                <p>客户端连接 <code>http://127.0.0.1:8768/mcp</code>。不要直接暴露到公网；远程部署必须经过带身份认证的 TLS 反向代理。</p>
+              </section>
+            </div>
+          </article>
+
+          <article id="plugin-step-verify" class="plugin-step-panel" data-plugin-panel="verify">
+            <span class="plugin-step-kicker">STEP 04 / HANDSHAKE</span>
+            <h4>新建任务，先验证能力边界。</h4>
+            <p>第一次消息不要直接要求“转换”。先让智能体调用 <code>get_capabilities</code>，确认入口、授权根目录、reader 与 prompt contract 都已就绪。</p>
+            <div class="plugin-code-block plugin-prompt-block">
+              <div><span>FIRST HANDSHAKE PROMPT</span><button type="button" data-copy-target="plugin-verify-prompt">复制提示词</button></div>
+              <pre><code id="plugin-verify-prompt">请先调用 CAD2GIS 的 get_capabilities，列出已授权项目根目录、DWG reader 可用状态和 prompt_contract.version。如果 cad2gis-agent-mcp 不可用、路径未授权或 reader 缺失，请停止并给出修复步骤，不要假装已经转换。</code></pre>
+            </div>
+            <div class="plugin-verify-grid"><span><b>01</b> MCP server connected</span><span><b>02</b> project root listed</span><span><b>03</b> reader capability known</span><span><b>04</b> prompt contract present</span></div>
+          </article>
+
+          <article id="plugin-step-first-run" class="plugin-step-panel" data-plugin-panel="first-run">
+            <span class="plugin-step-kicker">STEP 05 / FIRST RUN</span>
+            <h4>从源事实开始，而不是从“导出”开始。</h4>
+            <p>每张新图都建立自己的 source-bound profile。让智能体按确定顺序检查、onboard、转换并审计，不复用另一张 DWG 的 mapping 或数量门禁。</p>
+            <div class="plugin-code-block plugin-prompt-block">
+              <div><span>RECOMMENDED FIRST TASK</span><button type="button" data-copy-target="plugin-first-prompt">复制提示词</button></div>
+              <pre><code id="plugin-first-prompt">使用 CAD2GIS 检查并转换 "&lt;ABSOLUTE_PATH_TO_DWG&gt;"。先调用 get_capabilities 和 inspect_source；为这张图建立独立的 source-bound onboarding；分别报告源几何、拓扑、长度和坐标精度；保留 unresolved；转换后调用 inspect_run 与 audit_run，只有 audit_status=PASS 才把交付物列为可交付。</code></pre>
+            </div>
+            <div class="plugin-run-sequence" aria-label="推荐工具调用顺序"><span>get_capabilities</span><i>→</i><span>inspect_source</span><i>→</i><span>bootstrap_project</span><i>→</i><span>AI onboarding</span><i>→</i><span>validate_project</span><i>→</i><span>run_conversion</span><i>→</i><span>audit_run</span></div>
+            <aside class="plugin-callout"><b>需要 GCP 时</b><span>调用 <code>prepare_review_workspace</code> 打开本地审查页。校准会创建新 run，不修改原始 GeoPackage；OSM 重合也不等于绝对精度已验证。</span></aside>
+          </article>
+          <p class="plugin-guide-status" data-plugin-guide-status aria-live="polite">当前显示：步骤 1，安装运行时。</p>
+        </div>
+      </div>
+
+      <div class="plugin-troubleshooting" aria-labelledby="plugin-troubleshooting-title">
+        <div><span class="plugin-step-kicker">FAILURE MAP</span><h4 id="plugin-troubleshooting-title">安装后看不到工具？先查这四处。</h4></div>
+        <article><b>PLUGIN VISIBLE / MCP OFFLINE</b><p><code>cad2gis-agent-mcp</code> 不在客户端继承的 PATH；用同一用户环境安装运行时，然后重启客户端。</p></article>
+        <article><b>PATH OUTSIDE ROOTS</b><p>把 DWG 所在父目录加入 <code>CAD2GIS_PROJECT_ROOTS</code>，不要把整个磁盘或插件缓存目录加入授权。</p></article>
+        <article><b>READER UNAVAILABLE</b><p>运行 <code>cad2gis doctor --deep --strict --json</code>，按系统配置 AutoCAD、LibreDWG 或 ODA reader。</p></article>
+        <article><b>CONDITIONAL RESULT</b><p>这不是插件断线。它表示至少一条独立证据轨道仍需复核，例如没有测量 GCP 或仍有 unresolved 对象。</p></article>
+      </div>
+      <div class="plugin-guide-footer"><span>1 SKILL · 1 MCP · 1 CANONICAL PIPELINE</span><strong>真实转换在本地执行；GitHub Pages 不接收 DWG。</strong><a href="https://github.com/Mola-maker/CAD2GIS/tree/main/plugins/cad2gis-agent" target="_blank" rel="noreferrer">阅读插件源码 ↗</a></div>
+    </section>
+
+    <section id="process-terminal" class="process-terminal hero-section-width" aria-labelledby="process-terminal-title">
+      <div class="process-terminal-heading">
+        <div>
+          <p class="hero-overline"><span>08</span> REPLAY THE RUN</p>
+          <h3 id="process-terminal-title">把工作页，<br><em>播放成一条终端记录。</em></h3>
+        </div>
+        <div class="process-terminal-intro">
+          <p>按真实 Hutabohu 派生运行的证据顺序重放：读取、语义、配准、独立验证与交付。这里展示的是可审查记录，不是假装正在运行的后端。</p>
+          <div class="process-terminal-actions">
+            <button type="button" data-terminal-replay>从头重播 <span aria-hidden="true">↻</span></button>
+            <button type="button" data-terminal-pause disabled aria-pressed="false">暂停</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="process-terminal-shell" data-process-terminal data-state="idle" style="--terminal-progress: 0%">
+        <header class="process-terminal-bar">
+          <div class="process-terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="process-terminal-title"><span>cad2gis://hutabohu/run-03</span><small>DERIVED REPLAY · NOT LIVE EXECUTION</small></div>
+          <span class="process-terminal-state"><i aria-hidden="true"></i><b data-terminal-state>READY</b></span>
+        </header>
+
+        <div class="process-terminal-grid">
+          <div class="process-terminal-window">
+            <div class="process-terminal-command"><span aria-hidden="true">$</span><code>cad2gis convert hutabohu.dwg --crs EPSG:3857 --evidence-first</code></div>
+            <ol class="process-terminal-lines" data-terminal-lines aria-label="Hutabohu 转换回放记录">
+              <li data-terminal-line data-stage="boot" data-delay="180"><time>+00.0s</time><span class="process-terminal-tag">BOOT</span><span>pipeline schema cad2gis.run.v4 · evidence-first mode</span></li>
+              <li data-terminal-line data-stage="source" data-delay="260"><time>+00.2s</time><span class="process-terminal-tag">SRC</span><span>open “APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg”</span></li>
+              <li data-terminal-line data-stage="source" data-delay="320"><time>+00.5s</time><span class="process-terminal-tag ok">PASS</span><span>source SHA-256 <code>557e01413c39…</code> pinned</span></li>
+              <li data-terminal-line data-stage="source" data-delay="360"><time>+00.9s</time><span class="process-terminal-tag ok">READ</span><span>9,896 immutable source entities inventoried</span></li>
+              <li data-terminal-line data-stage="semantic" data-delay="420"><time>+01.4s</time><span class="process-terminal-tag warn">WARN</span><span>semantic registry left 281 entities unresolved for review</span></li>
+              <li data-terminal-line data-stage="registration" data-delay="320"><time>+01.8s</time><span class="process-terminal-tag">REG</span><span>declared coordinate domain EPSG:3857 · nominal direct model</span></li>
+              <li data-terminal-line data-stage="registration" data-delay="390"><time>+02.2s</time><span class="process-terminal-tag warn">WARN</span><span>no surveyed GCP supplied · absolute accuracy not verified</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="360"><time>+02.6s</time><span class="process-terminal-tag ok">PASS</span><span>source geometry 31 / 31 cable curves immutable</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="350"><time>+03.0s</time><span class="process-terminal-tag ok">PASS</span><span>topology check · 0 crossing connections</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="400"><time>+03.4s</time><span class="process-terminal-tag warn">WARN</span><span>route components 21 ≠ segment graph components 1</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="430"><time>+03.9s</time><span class="process-terminal-tag ok">PASS</span><span>DWG DIMENSION verified 170 / 179 spans · max |error| 0.493 m</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="380"><time>+04.4s</time><span class="process-terminal-tag">OUT</span><span>8 reviewed layers · 1,150 delivery features</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="360"><time>+04.8s</time><span class="process-terminal-tag ok">INDEX</span><span>evidence graph 14,702 nodes · 20,074 relationships</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="520"><time>+05.4s</time><span class="process-terminal-tag warn">DONE</span><span>delivery gate → <strong>CONDITIONAL</strong> · review required</span></li>
+            </ol>
+          </div>
+
+          <aside class="process-terminal-rail" aria-label="转换阶段">
+            <p>CURRENT STAGE</p>
+            <ol>
+              <li data-terminal-stage="source"><span>01</span><div><b>READ</b><small>source facts</small></div></li>
+              <li data-terminal-stage="semantic"><span>02</span><div><b>MAP</b><small>semantic registry</small></div></li>
+              <li data-terminal-stage="registration"><span>03</span><div><b>PLACE</b><small>coordinate claim</small></div></li>
+              <li data-terminal-stage="validation"><span>04</span><div><b>TEST</b><small>independent tracks</small></div></li>
+              <li data-terminal-stage="delivery"><span>05</span><div><b>SHIP</b><small>reviewed output</small></div></li>
+            </ol>
+            <div class="process-terminal-fact"><span>PUBLIC BOUNDARY</span><strong>DERIVATIVES ONLY</strong><small>NO RAW DWG / GPKG</small></div>
+          </aside>
+        </div>
+
+        <footer class="process-terminal-footer">
+          <div class="process-terminal-progress" aria-hidden="true"><i></i></div>
+          <p data-terminal-status aria-live="polite">滚动到这里后自动播放，也可以手动重播。</p>
+          <a href="#console-app">进入完整工作台 <span aria-hidden="true">↗</span></a>
+        </footer>
+      </div>
+    </section>
+
+    <section class="hero-final hero-section-width" aria-labelledby="final-title">
+      <img class="hero-stickers" src="./assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
+      <div class="hero-final-copy"><p class="hero-overline"><span>09</span> OPEN THE RUN</p><h3 id="final-title">把十张图，<br>变成十条可追溯的链。</h3><p>工作台现已加载 10 份来自 <code>run/delivery.gpkg</code> 的真实派生运行，覆盖 Gorontalo、Aceh、Sidoarjo、Pontianak、Manado、Semarang、Palu 与 Serang。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">选择转换案例 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
+      <div class="hero-final-footer"><span>CAD2GIS / v4 EVIDENCE-FIRST PIPELINE</span><span>EPSG:3857 NOMINAL DOMAIN · ABSOLUTE ACCURACY NOT VERIFIED</span></div>
+    </section>
+  </section>
+
+  <div id="console-app">
+  <header class="topbar">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">C2G</span>
+      <div>
+        <span class="eyebrow">CAD2GIS / SPATIAL DELIVERY CONSOLE</span>
+        <h1>图纸理解、配准与交付审查</h1>
+      </div>
+    </div>
+    <div class="run-state" aria-label="服务状态">
+      <span id="connection-dot" class="status-dot pending"></span>
+      <span id="connection-label">正在连接</span>
+      <span id="run-status" class="badge">—</span>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="panel navigation-panel">
+      <section class="project-card">
+        <div class="project-picker-heading"><span class="section-kicker">真实转换案例</span><span id="demo-project-loading" class="project-loading" hidden>LOADING</span></div>
+        <label class="project-picker-label" for="demo-project-select">选择图纸与地图预览</label>
+        <select id="demo-project-select" class="project-picker" aria-label="选择真实转换案例">
+          <option value="hutabohu">Hutabohu / Gorontalo</option>
+        </select>
+        <span id="demo-project-location" class="project-location">Gorontalo, Indonesia</span>
+        <p id="demo-project-description" class="project-description">完整 FTTH 派生运行，包含 8 个交付图层与独立 DIMENSION 长度证据；当前状态为 CONDITIONAL。</p>
+        <div class="project-proof-grid" aria-label="项目派生数据摘要">
+          <span><small>SOURCE</small><strong id="demo-project-source-count">9,896</strong></span>
+          <span><small>DELIVERY</small><strong id="demo-project-delivery-count">1,150</strong></span>
+        </div>
+        <dl class="project-proof-list">
+          <div><dt>地图参考</dt><dd id="demo-project-map-reference">DWG declared EPSG:3857</dd></div>
+          <div><dt>源哈希</dt><dd><code id="demo-project-sha">557e01413c39…</code></dd></div>
+        </dl>
+        <span class="section-kicker project-current-kicker">当前工作流</span>
+        <strong id="project-name">未加载运行</strong>
+        <span id="project-source" class="muted truncate">等待 run manifest…</span>
+      </section>
+
+      <nav class="workflow-nav" aria-label="转换目录">
+        <button class="workflow-step is-active" data-stage="source">
+          <span>01</span><span><strong>源事实</strong><small>实体、样式与标签</small></span>
+        </button>
+        <button class="workflow-step" data-stage="semantic">
+          <span>02</span><span><strong>语义映射</strong><small>证据约束的分类</small></span>
+        </button>
+        <button class="workflow-step" data-stage="registration">
+          <span>03</span><span><strong>空间配准</strong><small>GCP 与独立检查点</small></span>
+        </button>
+        <button class="workflow-step" data-stage="validation">
+          <span>04</span><span><strong>独立校验</strong><small>几何、拓扑、长度、坐标</small></span>
+        </button>
+        <button class="workflow-step" data-stage="delivery">
+          <span>05</span><span><strong>GIS 交付</strong><small>GeoPackage、QML、manifest</small></span>
+        </button>
+      </nav>
+
+      <section id="stage-source" class="stage-card">
+        <div class="section-heading">
+          <div><span class="section-kicker">Source layers</span><h2>交付图层</h2></div>
+          <button id="tool-fit" class="icon-button" title="缩放到全部数据" aria-label="缩放到全部数据">⌗</button>
+        </div>
+        <p class="muted">左图始终保留原始 CAD 坐标，图层开关同步作用于右侧预览。</p>
+        <div id="layer-list" class="layer-list"></div>
+      </section>
+
+      <section id="stage-registration" class="stage-card registration-card">
+        <div class="section-heading">
+          <div><span class="section-kicker">Registration</span><h2>控制点与坐标传送</h2></div>
+          <span class="step-chip">GCP</span>
+        </div>
+        <ol class="steps">
+          <li>在 CAD 图吸附真实设施、缆线或道路拐点。</li>
+          <li>在地图点同一位置，或输入经纬度后传送。</li>
+          <li>使用 4 个分布良好的训练点和 3 个独立检查点。</li>
+        </ol>
+        <label class="field-label">控制点角色
+          <select id="gcp-role">
+            <option value="train">训练点</option>
+            <option value="check">独立检查点</option>
+          </select>
+        </label>
+        <div class="coordinate-inputs">
+          <label>经度 <input id="target-lon" type="number" step="any" placeholder="112.700000"></label>
+          <label>纬度 <input id="target-lat" type="number" step="any" placeholder="-7.450000"></label>
+        </div>
+        <button id="send-coordinate" class="wide primary">传送坐标并保存</button>
+        <div class="button-row">
+          <button id="use-map-center" class="secondary">使用地图中心</button>
+          <button id="clear-pending" class="ghost">取消选择</button>
+        </div>
+        <div id="gcp-list" class="gcp-list"></div>
+        <div class="metric-card">
+          <span>模型</span><strong id="fit-model">尚未拟合</strong>
+          <span>训练 RMSE</span><strong id="fit-rmse">—</strong>
+          <span>控制点</span><strong id="fit-coverage">0 / 4 训练；0 / 3 检查</strong>
+          <span>目标坐标</span><strong id="target-coordinate">—</strong>
+        </div>
+        <button id="copy-coordinate" class="wide ghost" disabled>复制已传送的目标坐标</button>
+        <button id="export-gcp" class="wide primary" disabled>生成配置与转换命令</button>
+        <p class="warning">OSM 只能提供相对地图参考；绝对精度必须使用测量或权威控制点证明。</p>
+      </section>
+    </aside>
+
+    <section class="map-workspace" aria-label="CAD 与地图叠加工作区">
+      <div class="map-toolbar">
+        <div class="mode-switch"><span class="mode-label">DUAL VIEW</span><strong>源几何 ↔ 地理预览</strong></div>
+        <div class="map-actions">
+          <span id="map-reference-note" class="map-reference-note">等待地图参考…</span>
+          <span class="legend-dot train"></span><span>训练点</span>
+          <span class="legend-dot check"></span><span>检查点</span>
+          <button id="open-visual" class="ghost">CAD 视觉证据</button>
+        </div>
+      </div>
+      <section class="map-grid">
+        <article class="map-pane">
+          <header><span><b>CAD</b> 原始坐标</span><code id="cad-coordinate">—</code></header>
+          <div id="local-map" class="map"></div>
+        </article>
+        <article class="map-pane">
+          <header><span><b>GIS</b> 真实地图与配准预览</span><code id="map-coordinate">—</code></header>
+          <div id="map" class="map"></div>
+        </article>
+        <div id="toast" class="toast" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <aside class="panel inspector-panel">
+      <div class="tab-list" role="tablist" aria-label="审查工具">
+        <button class="tab-button is-active" role="tab" aria-selected="true" data-tab="evidence">证据</button>
+        <button class="tab-button" role="tab" aria-selected="false" data-tab="console">控制台</button>
+        <button class="tab-button" role="tab" aria-selected="false" data-tab="agent">AI 协作</button>
+      </div>
+
+      <div id="tab-evidence" class="tab-panel is-active" role="tabpanel">
+        <section><span class="section-kicker">Architecture diagnosis</span><h2>架构诊断</h2>
+          <p class="muted">源几何、拓扑、长度和坐标精度分别验证。AI 解释和选择证据，不替代数值拟合。</p>
+          <div id="diagnosis" class="diagnosis">等待运行清单…</div>
+        </section>
+        <section><span class="section-kicker">Run evidence</span><h2>运行证据</h2><dl id="run-summary"></dl></section>
+        <section><span class="section-kicker">Selection</span><h2>选中对象</h2><pre id="feature-properties">在任一地图点击对象。</pre></section>
+      </div>
+
+      <div id="tab-console" class="tab-panel" role="tabpanel" hidden>
+        <section><span class="section-kicker">Live terminal</span><h2>流水线控制台</h2>
+          <p class="muted">这里记录本次审查的有效动作，不输出地图移动等无关噪声。</p>
+          <div id="terminal-log" class="terminal-log" role="log" aria-live="polite"></div>
+        </section>
+        <section class="command-section">
+          <div class="section-heading"><div><span class="section-kicker">Next command</span><h2>重新转换</h2></div>
+            <button id="copy-command" class="icon-button" disabled title="复制命令" aria-label="复制转换命令">复制</button>
+          </div>
+          <pre id="conversion-command">等待足够的控制点。</pre>
+          <p class="warning" id="preview-source-note">当前画布始终预览配准前的原始 run；执行命令后会生成新的 delivery.gpkg。</p>
+        </section>
+      </div>
+
+      <div id="tab-agent" class="tab-panel" role="tabpanel" hidden>
+        <section><span class="section-kicker">Agent workspace</span><h2>与 AI 一起审查</h2>
+          <p class="muted">把结构化证据交给任意 MCP 智能体。模型可以解释、筛选和提出注册操作，不能发明几何或坐标。</p>
+          <div class="prompt-list">
+            <button data-copy-prompt="检查当前 run，并分别解释源几何、拓扑、长度和坐标精度状态。">解释当前运行</button>
+            <button data-copy-prompt="列出当前证据图中的未解决实体，只提出已注册且可验证的修复。">审查未解决实体</button>
+            <button data-copy-prompt="检查 GCP 的空间分布和独立检查点残差，不要把 OSM 重合声明为绝对精度。">检查配准精度</button>
+          </div>
+        </section>
+        <section><span class="section-kicker">Guardrails</span><h2>自动化边界</h2>
+          <ul class="guardrail-list"><li>只引用已经观察到的实体与证据 ID</li><li>源坐标、曲线和原生长度不可由模型改写</li><li>每次修正生成新 run，可追溯且可回滚</li></ul>
+        </section>
+      </div>
+    </aside>
+  </main>
+  </div>
+
+  <dialog id="visual-dialog">
+    <div class="dialog-head"><div><span class="section-kicker">Multi-scale evidence</span><h2>CAD 多尺度视觉证据</h2></div><button id="close-visual" aria-label="关闭">×</button></div>
+    <div id="visual-grid" class="visual-grid"></div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
+  <script src="./assets/demo-fixture.js?v=multi-demo-20260829"></script>
+  <script type="module" src="./assets/hero-motion.js?v=font-system-20260829"></script>
+  <script type="module" src="./assets/app.js?v=multi-demo-20260829"></script>
+</body>
+</html>
