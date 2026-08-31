@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import subprocess
+import tarfile
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -26,6 +28,7 @@ def test_runtime_install_is_checksum_pinned_and_cache_scoped(
 ) -> None:
     bundle = _zip_bytes({"dwg2dxf.exe": b"portable-reader", "libredwg.dll": b"dll"})
     monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setattr(native_runtime, "sys_platform", lambda: "win32")
     monkeypatch.delenv(native_runtime.LIBREDWG_CLI_ENV, raising=False)
     monkeypatch.setattr(native_runtime.shutil, "which", lambda _name: None)
     monkeypatch.setattr(
@@ -43,7 +46,9 @@ def test_runtime_install_is_checksum_pinned_and_cache_scoped(
 
     executable = Path(result["libredwg"]["executable"])
     assert result["install_status"] == "installed"
-    assert executable == tmp_path / "cache" / "runtime" / "libredwg-0.14" / "dwg2dxf.exe"
+    assert (
+        executable == tmp_path / "cache" / "runtime" / "libredwg-0.14" / "dwg2dxf.exe"
+    )
     assert executable.read_bytes() == b"portable-reader"
     assert (executable.parent / "cad2gis-runtime.json").is_file()
 
@@ -56,6 +61,63 @@ def test_runtime_archive_rejects_path_traversal(tmp_path: Path) -> None:
         native_runtime._safe_extract(archive, tmp_path / "runtime")
 
     assert not (tmp_path / "outside.txt").exists()
+
+
+def test_posix_runtime_builds_pinned_source_into_user_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = io.BytesIO()
+    with tarfile.open(fileobj=payload, mode="w:gz") as archive:
+        configure = tarfile.TarInfo("libredwg-0.14/configure")
+        configure.mode = 0o755
+        configure.size = len(b"#!/bin/sh\n")
+        archive.addfile(configure, io.BytesIO(b"#!/bin/sh\n"))
+    bundle = payload.getvalue()
+    monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.delenv(native_runtime.LIBREDWG_CLI_ENV, raising=False)
+    monkeypatch.setattr(native_runtime, "sys_platform", lambda: "linux")
+    monkeypatch.setattr(
+        native_runtime.shutil,
+        "which",
+        lambda name: f"/usr/bin/{name}" if name in {"make", "cc"} else None,
+    )
+    monkeypatch.setattr(
+        native_runtime,
+        "LIBREDWG_SOURCE_SHA256",
+        hashlib.sha256(bundle).hexdigest(),
+    )
+    monkeypatch.setattr(
+        native_runtime.urllib.request,
+        "urlopen",
+        lambda _request, timeout: io.BytesIO(bundle),
+    )
+
+    def build(arguments: list[str], **_kwargs: object) -> SimpleNamespace:
+        if arguments[:2] == ["make", "install"]:
+            destination = native_runtime.managed_libredwg_dir()
+            staging = destination.with_name(
+                f"{destination.name}.staging-{native_runtime.os.getpid()}"
+            )
+            (staging / "bin").mkdir(parents=True, exist_ok=True)
+            (staging / "bin" / "dwg2dxf").write_bytes(b"portable-reader")
+        return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+    monkeypatch.setattr(native_runtime.subprocess, "run", build)
+
+    result = native_runtime.install_portable_runtime()
+
+    executable = Path(result["libredwg"]["executable"])
+    assert result["install_status"] == "installed"
+    assert (
+        executable
+        == tmp_path / "cache" / "runtime" / "libredwg-0.14" / "bin" / "dwg2dxf"
+    )
+    assert executable.read_bytes() == b"portable-reader"
+    receipt = executable.parents[1] / "cad2gis-runtime.json"
+    assert (
+        json.loads(receipt.read_text(encoding="utf-8"))["install_method"]
+        == "source-build"
+    )
 
 
 def test_default_resolver_uses_cli_without_selecting_autocad(
@@ -121,7 +183,9 @@ def test_libredwg_cli_adapter_preserves_model_census(
     assert records.diagnostics["inventory_complete"] is True
     assert records.diagnostics["skipped_rows"] == 0
     assert records.diagnostics["intermediate_persisted"] is False
-    metadata = next(record for record in records if record["dwg_type_name"] == "DOCUMENT_METADATA")
+    metadata = next(
+        record for record in records if record["dwg_type_name"] == "DOCUMENT_METADATA"
+    )
     assert "CGEOCS=" not in metadata["text"]
     assert metadata["raw_properties"]["metadata_evidence"] == "partial"
 

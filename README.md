@@ -56,8 +56,9 @@ cad2gis doctor --deep --json
 macOS：
 
 ```bash
-brew install uv libredwg
+brew install uv
 uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json
@@ -69,7 +70,7 @@ Linux：
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
-cad2gis runtime install  # 已有 Homebrew 时自动安装 LibreDWG；否则按提示使用系统包管理器
+cad2gis runtime install  # 无 Homebrew 时从校验过的官方源码构建到用户缓存
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json
@@ -82,8 +83,9 @@ AutoCAD/QGIS 会话控制通道。需要操控 Windows AutoCAD 或 Windows QGIS
 `cad2gis-agent-mcp --help` 验证插件实际调用的 console script 可以导入并启动。
 `cad2gis doctor --deep --json` 会同时检查 bundled GDAL/OGR、ezdxf 和 LibreDWG。
 `[agent]` extra 的平台 wheel 提供 GDAL/OGR；`cad2gis runtime install` 把官方
-LibreDWG CLI 安装到用户缓存（Windows）或通过 Homebrew 安装（macOS/Linux）。
-AutoCAD 与 Conda 都不是默认转换链路的前置条件。
+LibreDWG CLI 安装到用户缓存（Windows），在 macOS/Linux 上优先复用 Homebrew，
+否则从固定版本、固定 SHA-256 的官方源码进行无 root 构建。源码回退需要系统已有
+C 编译器和 `make`；AutoCAD 与 Conda 都不是默认转换链路的前置条件。
 
 ### 2. 安装智能体客户端插件
 
