@@ -29,6 +29,7 @@ def test_runtime_install_is_checksum_pinned_and_cache_scoped(
     bundle = _zip_bytes({"dwg2dxf.exe": b"portable-reader", "libredwg.dll": b"dll"})
     monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setattr(native_runtime, "sys_platform", lambda: "win32")
+    monkeypatch.setattr(native_runtime.platform, "machine", lambda: "x86_64")
     monkeypatch.delenv(native_runtime.LIBREDWG_CLI_ENV, raising=False)
     monkeypatch.setattr(native_runtime.shutil, "which", lambda _name: None)
     monkeypatch.setattr(
