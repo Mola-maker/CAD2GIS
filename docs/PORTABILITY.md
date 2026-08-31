@@ -1,37 +1,55 @@
 # CAD2GIS Portability
 
-## Reader Selection
+## Product runtime
 
-LibreDWG is the cross-platform default. AutoCAD Core Console is a maintained
-Windows adapter:
+The supported agent runtime is an ordinary Python 3.11/3.12 tool installation:
 
-```powershell
-$env:CAD2GIS_READER_BACKEND = "libredwg"  # default
-$env:CAD2GIS_READER_BACKEND = "autocad"   # Windows
+```shell
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
+cad2gis doctor --deep --strict --json
 ```
 
-Use `CAD2GIS_LIBREDWG_DLL` for an explicit LibreDWG library path or
-`CAD2GIS_LIBREDWG_PYTHON_PATH` for bindings outside the active interpreter's
-normal import paths. Use `CAD2GIS_ACCORECONSOLE` for an explicit Core Console executable. Run
-`cad2gis doctor --json` to inspect the selected runtime before conversion.
+The `agent` extra installs MCP/review dependencies, ezdxf, and a platform wheel
+that bundles GDAL/OGR. `cad2gis runtime install` installs the DWG reader without
+using a repository path:
 
-## Runtime
+- Windows x64: checksum-pinned official LibreDWG 0.14 release in the user cache;
+- macOS/Linux with Homebrew: the bottled `libredwg` formula;
+- other POSIX environments: install `dwg2dxf` with the system package manager
+  and leave it on `PATH`.
 
-The supported GIS dependency stack is pinned in `env/environment.yml`.
-System Python 3.14 is not the target GDAL/QGIS runtime.
+AutoCAD and Conda are not required. `env/environment.yml` remains an optional,
+reproducible native-development profile rather than the plugin runtime.
+
+## Reader selection
+
+The default `libredwg` selection tries the direct Python binding and then the
+official LibreDWG CLI adapter. It never falls through to AutoCAD silently.
 
 ```powershell
-conda env create -f env/environment.yml
-conda activate cad2gis
-pip install -e .
-cad2gis doctor --deep --strict
+$env:CAD2GIS_READER_BACKEND = "libredwg"      # default portable resolver
+$env:CAD2GIS_READER_BACKEND = "libredwg-cli"  # force CLI adapter
+$env:CAD2GIS_READER_BACKEND = "autocad"       # explicit Windows-only fallback
 ```
 
-## Portability Tests
+Use `CAD2GIS_LIBREDWG_CLI` for a non-standard `dwg2dxf` executable. The older
+`CAD2GIS_LIBREDWG_DLL` and `CAD2GIS_LIBREDWG_PYTHON_PATH` overrides remain for
+direct bindings. Use `CAD2GIS_ACCORECONSOLE` only for an explicitly selected
+AutoCAD adapter.
 
-All tests use the canonical suite:
+## Workspace roots
 
-```powershell
+Client templates do not contain a developer drive or checkout path. Claude Code
+uses `CLAUDE_PROJECT_DIR`; Cursor/VS Code use `${workspaceFolder}`; Codex starts
+the server in the current project. `CAD2GIS_PROJECT_ROOTS` is an optional
+path-separated override for intentionally shared data outside that workspace.
+The server remains fail-closed.
+
+## Portability tests
+
+```shell
+python -m pytest tests/test_portable_runtime.py -q
 python -m pytest tests/test_reader_capabilities.py -q
 python -m pytest tests/test_canonical_cli.py -q
 ```
@@ -39,7 +57,7 @@ python -m pytest tests/test_canonical_cli.py -q
 The real-DWG suite is external and capability-gated:
 
 ```powershell
-$env:CAD2GIS_TEST_DATASET_ROOT = "E:\branch_CAD2GIS\APD_test"
+$env:CAD2GIS_TEST_DATASET_ROOT = "D:\cad-test-data"
 python -m pytest tests/test_apd_test_compatibility.py -q
 ```
 

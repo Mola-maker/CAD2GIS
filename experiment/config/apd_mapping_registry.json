@@ -2,8 +2,8 @@
   "schema_version": "cad2gis-mapping-registry-v1",
   "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
   "block_families": {
-    "SITE": ["*U7"],
-    "BOITE": ["*U11"],
+    "SITE": ["*U7", "FDT Info"],
+    "BOITE": ["*U11", "*U12", "FAT Info"],
     "PTECH": ["*U13", "*U14", "*U15", "*U16", "*U17"]
   },
   "layers": {
@@ -192,7 +192,11 @@
         {"reason": "unmatched_route_layer", "dwg_type": "LWPOLYLINE"},
         {"reason": "missing_geometry_points", "dwg_type": "HATCH"},
         {"reason": "missing_geometry_points", "dwg_type": "LEADER"},
-        {"reason": "missing_geometry_points", "dwg_type": "OLE2FRAME"}
+        {"reason": "missing_geometry_points", "dwg_type": "OLE2FRAME"},
+        {"reason": "materialized_block_geometry_evidence_only"},
+        {"reason": "scene_partition_catalog_root"},
+        {"reason": "legend_core_sample"},
+        {"reason": "placeholder_annotation_block"}
       ]
     },
     "styles": {

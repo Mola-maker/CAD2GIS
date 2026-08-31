@@ -6,16 +6,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_cross_platform_ci_uses_native_gis_runtime() -> None:
+def test_cross_platform_ci_uses_portable_agent_runtime() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
     )
-    assert "mamba-org/setup-micromamba@v3" in workflow
-    assert "gdal=3.10.*" in workflow
-    assert "pyproj=3.7.*" in workflow
-    assert "init-shell: none" in workflow
+    assert "actions/setup-python@v6" in workflow
+    assert 'python -m pip install -e ".[agent,test]"' in workflow
+    assert "cad2gis runtime install" in workflow
+    assert "cad2gis doctor --deep --strict --json" in workflow
+    assert "micromamba" not in workflow
+    assert "conda" not in workflow.casefold()
     assert "shell: ${{ matrix.shell }}" not in workflow
-    assert workflow.count("micromamba run -n cad2gis-ci") == 8
     assert "python tools/build_hero_font.py" in workflow
     assert "node --check src/cad2gis/webdemo/hero-motion.js" in workflow
     for value in (

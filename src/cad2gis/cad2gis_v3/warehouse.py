@@ -19,14 +19,15 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from osgeo import ogr
-
+from ..native_runtime import ensure_osgeo_runtime
 from .schema_config import BOITE, CABLE, EMR, IMB, INFRASTRUCTURE_FC, PTECH, SITE, ZNRO, ZPM
-
 from .curve_geometry import delivery_points, delivery_segments
 from .georef import DirectTransformer
 from .gpkg_metadata import normalize_geopackage_metadata
 from .model import Feature
+
+ensure_osgeo_runtime()
+from osgeo import ogr  # noqa: E402
 
 LAYER_CONFIGS = {
     "BOITE": BOITE,

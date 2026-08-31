@@ -15,11 +15,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from osgeo import ogr, osr
-
+from ..native_runtime import ensure_osgeo_runtime
 from .accounting import EntityAccounting, account_entities
 from .gpkg_metadata import normalize_geopackage_metadata
 from .model import SourceEntity
+
+ensure_osgeo_runtime()
+from osgeo import ogr, osr  # noqa: E402
 
 SOURCE_GPKG_SCHEMA_VERSION = "cad2gis-source-gpkg-v1"
 

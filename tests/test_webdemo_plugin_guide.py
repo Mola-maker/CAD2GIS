@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WEBDEMO = ROOT / "src" / "cad2gis" / "webdemo"
 RUNTIME_INSTALL = (
-    'uv tool install --python 3.12 --force "cad2gis[mcp,review] @ '
+    'uv tool install --python 3.12 --force "cad2gis[agent] @ '
     'https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'
 )
 

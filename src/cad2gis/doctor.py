@@ -20,6 +20,7 @@ from .runtime import (
     backend_contract,
     load_backend_module,
 )
+from .native_runtime import ensure_osgeo_runtime, portable_runtime_status
 
 ACCORECONSOLE_ENV = "CAD2GIS_ACCORECONSOLE"
 ACCORECONSOLE_TIMEOUT_ENV = "CAD2GIS_ACCORECONSOLE_TIMEOUT"
@@ -36,6 +37,10 @@ class Check:
 
 
 def _module_check(name: str, label: str, *, deep: bool) -> Check:
+    provider = None
+    if name == "osgeo":
+        runtime = ensure_osgeo_runtime()
+        provider = runtime.get("provider")
     try:
         present = importlib.util.find_spec(name) is not None
     except (ImportError, AttributeError, ValueError):
@@ -45,10 +50,11 @@ def _module_check(name: str, label: str, *, deep: bool) -> Check:
             name=name,
             status="missing",
             detail=f"{label} is not installed",
-            remediation="Create/update the pinned Conda environment from env/environment.yml.",
+            remediation="Install the portable agent runtime with `pip install 'cad2gis[agent]'`.",
         )
     if not deep:
-        return Check(name=name, status="ok", detail=f"{label} is discoverable")
+        suffix = f" via {provider}" if provider and provider != "system" else ""
+        return Check(name=name, status="ok", detail=f"{label} is discoverable{suffix}")
     try:
         module = importlib.import_module(name)
     except (ImportError, OSError) as exc:
@@ -56,12 +62,14 @@ def _module_check(name: str, label: str, *, deep: bool) -> Check:
             name=name,
             status="error",
             detail=f"{label} cannot be imported: {exc}",
-            remediation="Repair the pinned Conda environment and native library search path.",
+            remediation="Reinstall the portable agent extra and rerun `cad2gis doctor --deep`.",
         )
     version = getattr(module, "__version__", None)
     detail = f"{label} imports successfully"
     if isinstance(version, str) and version:
         detail += f" ({version})"
+    if provider and provider != "system":
+        detail += f" via {provider}"
     return Check(name=name, status="ok", detail=detail)
 
 
@@ -154,7 +162,7 @@ def collect_checks(
             remediation=(
                 None
                 if supported_python
-                else "Use Python 3.11 or the pinned Python 3.12 Conda environment."
+                else "Use CPython 3.11 or 3.12."
             ),
         )
     ]
@@ -205,6 +213,52 @@ def collect_checks(
     ):
         checks.append(_module_check(module_name, label, deep=deep))
 
+    try:
+        from .reader.resolver import (
+            configured_reader,
+            reader_capabilities,
+            selected_reader_capability,
+        )
+
+        selected_name = configured_reader()
+        selected = selected_reader_capability()
+        checks.append(
+            Check(
+                name="reader",
+                status="ok" if selected.available else "missing",
+                detail=f"selected={selected_name}; {selected.detail}",
+                required_for_conversion=True,
+                remediation=None if selected.available else selected.remediation,
+            )
+        )
+        for name, capability in sorted(reader_capabilities().items()):
+            # The Windows block below reports the richer executable discovery and
+            # timeout details for this explicitly optional fallback.
+            if name == "autocad" and platform.system() == "Windows":
+                continue
+            checks.append(
+                Check(
+                    name=name,
+                    status="ok" if capability.available else "warning",
+                    detail=capability.detail,
+                    required_for_conversion=False,
+                    remediation=None if capability.available else capability.remediation,
+                )
+            )
+    except (ImportError, OSError, RuntimeError, ValueError) as exc:
+        checks.append(
+            Check(
+                name="reader",
+                status="error",
+                detail=f"reader selection failed: {exc}",
+                required_for_conversion=True,
+                remediation=(
+                    "Unset CAD2GIS_READER_BACKEND for portable LibreDWG selection, "
+                    "then run `cad2gis runtime install`."
+                ),
+            )
+        )
+
     if platform.system() == "Windows":
         executable, source = _discover_accoreconsole()
         checks.append(
@@ -220,7 +274,8 @@ def collect_checks(
                 remediation=(
                     None
                     if executable
-                    else f"Install AutoCAD or set {ACCORECONSOLE_ENV} to accoreconsole.exe."
+                    else "No action is required for the default LibreDWG reader. "
+                    f"If the explicit AutoCAD fallback is needed, set {ACCORECONSOLE_ENV}."
                 ),
             )
         )
@@ -234,12 +289,7 @@ def build_report(*, deep: bool = False) -> dict[str, Any]:
     base_ready = all(
         check.status == "ok" for check in checks if check.required_for_conversion
     )
-    autocad = next((check for check in checks if check.name == "autocad"), None)
-    timeout = next((check for check in checks if check.name == "autocad_timeout"), None)
-    dwg_ready = base_ready and (
-        autocad is None
-        or (autocad.status == "ok" and (timeout is None or timeout.status == "ok"))
-    )
+    dwg_ready = base_ready
     return {
         "schema_version": "cad2gis.doctor.v1",
         "status": "ready" if base_ready else "limited",
@@ -251,6 +301,7 @@ def build_report(*, deep: bool = False) -> dict[str, Any]:
         },
         "deep_import_check": deep,
         "backend_contract": contract,
+        "portable_runtime": portable_runtime_status(),
         "checks": [asdict(check) for check in checks],
     }
 

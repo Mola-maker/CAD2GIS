@@ -6,21 +6,24 @@ reader, mapping, topology, length, CRS, or GeoPackage logic.
 
 ## Install the runtime
 
-Use Python 3.11 or 3.12. The pinned production environment is recommended:
+Use Python 3.11 or 3.12. Install the self-contained agent runtime from any
+directory; do not use an editable worktree for a long-lived plugin process:
 
-```powershell
-conda env create -f env/environment.yml
-conda activate cad2gis
-python -m pip install -e ".[mcp,review]"
+```shell
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 cad2gis doctor --deep --strict --json
 ```
 
-On Linux/macOS, use a supported LibreDWG/ODA reader. AutoCAD Core Console is a
-Windows-only reader; this does not change the MCP protocol or delivery schema.
+The agent extra uses platform wheels for GDAL/OGR and ezdxf. The runtime command
+installs the checksum-pinned official LibreDWG release on Windows, or the
+Homebrew LibreDWG formula on macOS/Linux. AutoCAD and Conda are not required.
 
 ## Grant project access explicitly
 
-The MCP service is fail-closed. Set one or more allowed roots before launch:
+The MCP service is fail-closed. Claude Code uses `CLAUDE_PROJECT_DIR`, while
+Cursor and VS Code templates use `${workspaceFolder}`. Only set an override
+when files intentionally live outside the active workspace:
 
 ```powershell
 $env:CAD2GIS_PROJECT_ROOTS = "E:\projects;D:\survey-data"
@@ -37,7 +40,7 @@ POSIX). Plugin caches are never treated as project roots.
 
 The repository plugin works directly in Codex. For Claude Code, Cursor, VS
 Code/GitHub Copilot, or a generic MCP host, copy the matching file from
-[`clients`](clients) and replace `<ABSOLUTE_PROJECT_ROOT>`.
+[`clients`](clients). The templates contain no machine-specific path.
 
 Every stdio registration resolves the installed `cad2gis-agent-mcp` console
 entry point rather than a repository-relative Python file. This avoids drive,
@@ -48,11 +51,11 @@ by the host, then restart that host.
 The recommended cross-platform runtime install is:
 
 ```text
-uv tool install --python 3.12 --force ".[mcp,review]"
+uv tool install --python 3.12 --force ".[agent]"
 ```
 
 From a machine without a checkout, install from the public source archive with
-`uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"`.
+`uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"`.
 The archive avoids cloning the repository history, and `--force` replaces an
 older tool even when its editable source worktree no longer exists. Never use
 `--editable` for a long-lived client runtime.
@@ -60,11 +63,11 @@ Confirm `cad2gis-agent-mcp` is on `PATH` before installing or enabling the
 plugin. Plugin registration intentionally does not download Python packages or
 silently select another interpreter.
 
-The portable uv tool is sufficient for MCP startup and fail-closed capability
-inspection. Full conversion also needs the ABI-sensitive GDAL/OGR and reader
-dependencies from `env/environment.yml`. Run `cad2gis doctor --deep --json` to
-distinguish these states; require `cad2gis doctor --deep --strict --json` and
-`conversion_ready: true` before converting production drawings.
+Run `cad2gis runtime install` once after installation or from the MCP
+`install_runtime` tool. Run `cad2gis doctor --deep --json` to inspect the
+platform wheel and reader state; require `cad2gis doctor --deep --strict --json`
+and `conversion_ready: true` before converting production drawings. The Conda
+file in the source repository remains an optional native-development profile.
 
 All stdio clients invoke the installed `cad2gis-agent-mcp` entry point. Local
 HTTP uses `http://127.0.0.1:8768/mcp`; expose it beyond loopback only through an

@@ -46,6 +46,23 @@ def _parser() -> argparse.ArgumentParser:
     )
     doctor.set_defaults(handler=_doctor)
 
+    runtime_command = commands.add_parser(
+        "runtime", help="Inspect or install the portable native runtime."
+    )
+    runtime_commands = runtime_command.add_subparsers(
+        dest="runtime_command", metavar="RUNTIME_COMMAND", required=True
+    )
+    runtime_status = runtime_commands.add_parser(
+        "status", help="Report managed reader and GIS runtime availability."
+    )
+    _add_json(runtime_status)
+    runtime_status.set_defaults(handler=_runtime_status)
+    runtime_install = runtime_commands.add_parser(
+        "install", help="Install the checksum-pinned LibreDWG CLI runtime."
+    )
+    _add_json(runtime_install)
+    runtime_install.set_defaults(handler=_runtime_install)
+
     inspect = commands.add_parser(
         "inspect", help="Inventory a source and propose an unreviewed project profile."
     )
@@ -293,19 +310,34 @@ def _doctor(args: argparse.Namespace) -> tuple[Any, int]:
     return None, 2 if args.strict and not report["conversion_ready"] else 0
 
 
+def _runtime_status(args: argparse.Namespace) -> tuple[Any, int]:
+    from .native_runtime import portable_runtime_status
+
+    return portable_runtime_status(), 0
+
+
+def _runtime_install(args: argparse.Namespace) -> tuple[Any, int]:
+    from .native_runtime import install_portable_runtime
+
+    return install_portable_runtime(), 0
+
+
 def _inspect(args: argparse.Namespace) -> tuple[Any, int]:
     from .pipeline import inspect_source
 
     if args.layouts:
-        from .reader.libredwg import _read_entity_layout_map_json
-        from pathlib import Path
+        from .reader.resolver import extract_records
 
         source = _source(args)
-        import hashlib
-        dwg_bytes = Path(source).read_bytes()
-        sha = hashlib.sha256(dwg_bytes).hexdigest()
-        layout_map = _read_entity_layout_map_json(Path(source), sha)
-        unique = sorted(set(layout_map.values()))
+        records = extract_records(source)
+        unique = sorted(
+            {
+                str(record.get("layout"))
+                for record in records
+                if record.get("layout")
+                and record.get("layout_role") in {"model", "layout"}
+            }
+        )
         return {
             "source": str(source),
             "layouts": unique,
@@ -630,7 +662,7 @@ def _conversion_payload(result: Any) -> Any:
 
 _COMMANDS = frozenset(
     {
-        "doctor", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
+        "doctor", "runtime", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
         "review", "verify",
     }
 )

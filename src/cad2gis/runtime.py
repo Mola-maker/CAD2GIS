@@ -1,8 +1,8 @@
 """Lazy discovery and invocation of the architecture-v3 backend.
 
 The installable :mod:`cad2gis` package is deliberately a lightweight public
-API and CLI.  The conversion implementation is a separately deployable
-backend because its GDAL/AutoCAD runtime cannot be made a portable wheel.
+API and CLI.  Native GIS imports are activated lazily so the agent control
+plane can start before optional conversion components are ready.
 
 Supported backend deployments are explicit:
 
@@ -184,7 +184,7 @@ def _missing_dependency_error(
     dependency = exc.name or "an unknown dependency"
     return BackendUnavailable(
         f"cannot load {module_name}: missing runtime dependency {dependency!r}; "
-        "run `cad2gis doctor` and use env/environment.yml"
+        "run `cad2gis doctor`; install `cad2gis[agent]` for the portable runtime"
     )
 
 
@@ -192,6 +192,9 @@ def load_backend_module(module_name: str) -> ModuleType:
     """Import one backend module, translating dependency failures for the CLI."""
 
     _prepare_backend_import()
+    from .native_runtime import ensure_osgeo_runtime
+
+    ensure_osgeo_runtime()
     try:
         return importlib.import_module(module_name)
     except ModuleNotFoundError as exc:
@@ -244,6 +247,9 @@ def call_project_backend(operation: str, /, **kwargs: Any) -> Any:
     """Invoke a stable project-profile port on either supported backend module."""
 
     _prepare_backend_import()
+    from .native_runtime import ensure_osgeo_runtime
+
+    ensure_osgeo_runtime()
     discovered: list[str] = []
     for module_name in PROJECT_BACKEND_MODULES:
         try:

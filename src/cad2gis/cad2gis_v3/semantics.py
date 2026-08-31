@@ -2292,9 +2292,11 @@ def classify_entities(
             )
 
     retained: list[Feature] = []
+    legend_source_keys: set[str] = set()
     for feature in features:
         if feature.feature_key in legend_core_keys:
             source = entity_by_key.get(feature.source_entity_key)
+            legend_source_keys.add(feature.source_entity_key)
             coverage_records.append(_coverage_record(
                 source, "legend_core_sample", feature.feature_class,
             ))
@@ -2309,6 +2311,35 @@ def classify_entities(
     if len(retained) != len(features):
         features = retained
         feature_by_key = {feature.feature_key: feature for feature in features}
+        retained_feature_keys = set(feature_by_key)
+        for family, _, _, target_layer_pattern in compiled_families:
+            family_diagnostics = annotation_assignments_by_family.get(
+                family.family_id
+            )
+            if family_diagnostics is None:
+                continue
+            family_diagnostics["target_assets"] = sum(
+                target.feature_key in retained_feature_keys
+                and (
+                    bool(target_layer_pattern.fullmatch(target.source_layer.strip()))
+                    or target.feature_key in derived_target_keys
+                )
+                for target in by_class[family.target_class]
+            )
+    if legend_source_keys:
+        # A deterministic legend specimen is evidence-only and never reaches
+        # delivery.  Do not also report the same specimen as a deployed asset
+        # that lacks a reviewed label; that stale record makes a strict
+        # coverage gate fail for an object the classifier intentionally
+        # removed.
+        coverage_records = [
+            record
+            for record in coverage_records
+            if not (
+                record.get("reason") == "missing_reviewed_label"
+                and record.get("source_entity_key") in legend_source_keys
+            )
+        ]
     # INFRASTRUCTURE is the continuous single-colour total set of every CABLE
     # coloured line.  It repeats the immutable cable geometry with a legend
     # colour that is deliberately distinct from all cable-type colours.

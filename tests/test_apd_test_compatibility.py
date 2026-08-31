@@ -72,27 +72,13 @@ def _full_reader_enabled() -> bool:
 
 
 def _extract_records(source: Path):
-    backend = os.environ.get("CAD2GIS_READER_BACKEND", "libredwg").strip().casefold()
-    if backend == "autocad":
-        from cad2gis.reader.autocad import extract_dwg_records
+    from cad2gis.reader.contracts import ReaderUnavailableError
+    from cad2gis.reader.resolver import extract_records
 
-        return extract_dwg_records(source)
-    if backend == "libredwg":
-        from cad2gis.reader.libredwg import (
-            extract_dwg_records,
-            libredwg_capability,
-        )
-
-        capability = libredwg_capability()
-        if not capability.available:
-            pytest.skip(
-                f"LibreDWG unavailable: {capability.detail}; "
-                f"{capability.remediation}"
-            )
-        return extract_dwg_records(source)
-    raise AssertionError(
-        "CAD2GIS_READER_BACKEND must be libredwg or autocad for corpus tests"
-    )
+    try:
+        return extract_records(source)
+    except ReaderUnavailableError as exc:
+        pytest.skip(f"Configured DWG reader is unavailable: {exc}")
 
 
 def test_apd_test_manifest_is_governed_without_accuracy_claim() -> None:

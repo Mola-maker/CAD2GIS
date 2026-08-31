@@ -63,10 +63,12 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
         "auto_onboard_and_convert",
         "bootstrap_project",
         "create_decision_pack",
-        "get_capabilities",
-        "get_evidence_node",
-        "inspect_source",
-        "inspect_run",
+            "get_capabilities",
+            "get_evidence_node",
+            "get_runtime_status",
+            "inspect_source",
+            "inspect_run",
+            "install_runtime",
         "list_endpoint_join_candidates",
         "list_evidence_nodes",
         "list_network_repair_candidates",
@@ -79,3 +81,31 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
         "validate_decision_pack",
         "validate_project",
     }
+
+
+def test_mcp_runtime_status_completes_without_native_import_deadlock() -> None:
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    project_root = Path(__file__).resolve().parents[1]
+    environment = dict(os.environ)
+    environment["CAD2GIS_PROJECT_ROOT"] = str(project_root)
+    environment["PYTHONPATH"] = os.pathsep.join(
+        filter(None, (str(project_root / "src"), environment.get("PYTHONPATH", "")))
+    )
+
+    async def exercise() -> bool:
+        parameters = StdioServerParameters(
+            command=sys.executable,
+            args=["-m", "cad2gis.agent_mcp"],
+            env=environment,
+        )
+        async with stdio_client(parameters) as (reader, writer):
+            async with ClientSession(reader, writer) as session:
+                await session.initialize()
+                response = await asyncio.wait_for(
+                    session.call_tool("get_runtime_status", {}), timeout=20
+                )
+                return not bool(response.isError)
+
+    assert asyncio.run(exercise()) is True

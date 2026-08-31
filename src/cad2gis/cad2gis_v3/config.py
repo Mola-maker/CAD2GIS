@@ -294,7 +294,11 @@ def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
     source_geometry_values = {}
     if "source_route_curve_facts" in census:
         source_geometry_values["curve_facts_checked"] = census[
-            "source_route_curve_facts"
+            (
+                "semantic_route_curve_facts"
+                if "semantic_route_curve_facts" in census
+                else "source_route_curve_facts"
+            )
         ]
     topology_paths = {
         "source_route_components": "source_route_components",
@@ -304,6 +308,17 @@ def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
         "route_vertex_support.accepted": "route_vertices_exact_support",
         "route_vertex_support.candidate": "route_vertices_near_support_candidates",
         "route_vertex_support.unresolved": "route_vertices_unresolved",
+    }
+    topology_overrides = {
+        "source_route_components": "semantic_route_feature_components",
+        "source_route_graph.unique_nodes": "semantic_route_graph_nodes",
+        "source_route_graph.unique_edges": "semantic_route_graph_edges",
+        "source_route_graph.components": "semantic_route_graph_components",
+        "route_vertex_support.accepted": "semantic_route_vertices_exact_support",
+        "route_vertex_support.candidate": (
+            "semantic_route_vertices_near_support_candidates"
+        ),
+        "route_vertex_support.unresolved": "semantic_route_vertices_unresolved",
     }
     segment_paths = {
         "span_roles.cable_route_span": "cable_route_span_dimensions",
@@ -316,13 +331,33 @@ def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
         "unique_span_edges": "accepted_unique_span_edges",
         "unique_span_edges_all": "all_unique_span_edges",
     }
+    segment_overrides = {
+        "span_roles.cable_route_span": "semantic_cable_route_span_dimensions",
+        "route_segments_with_span_dimension": (
+            "semantic_route_segments_with_span_dimension"
+        ),
+        "route_segments_without_span_dimension": (
+            "semantic_route_segments_without_span_dimension"
+        ),
+        "source_route_native_lengths": "semantic_source_route_native_lengths",
+    }
     segment_values = {
-        diagnostic_path: census[census_key]
+        diagnostic_path: census[
+            segment_overrides.get(diagnostic_path, "")
+            if segment_overrides.get(diagnostic_path, "") in census
+            else census_key
+        ]
         for diagnostic_path, census_key in segment_paths.items()
         if census_key in census
+        and not (
+            diagnostic_path == "span_roles.sling_wire_span"
+            and "semantic_cable_route_span_dimensions" in census
+        )
     }
     if route_occurrences is not None:
-        segment_values["route_segment_occurrences"] = route_occurrences
+        segment_values["route_segment_occurrences"] = census.get(
+            "semantic_route_segment_occurrences", route_occurrences
+        )
     if "span_measurement_max_abs_error_m" not in census:
         segment_values["span_measurement_max_abs_error_m"] = {
             "operator": "le", "value": 1e-6,
@@ -341,14 +376,25 @@ def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
             "BOITE": census["plan_fat"],
             "SITE": census["plan_fdt"],
             "IMB": census["homepass_labels"],
-            "CABLE": census["positive_cable_routes"],
+            "CABLE": census.get(
+                "semantic_cable_features", census["positive_cable_routes"]
+            ),
+            **(
+                {"INFRASTRUCTURE": census["infrastructure_features"]}
+                if "infrastructure_features" in census
+                else {}
+            ),
         },
         annotation_families=_annotation_expectations(family_metrics),
         source_geometry_gates=_diagnostic_gates(
             source_geometry_values, "legacy.source_geometry_gates",
         ),
         topology_gates=_diagnostic_gates({
-            diagnostic_path: census[census_key]
+            diagnostic_path: census[
+                topology_overrides.get(diagnostic_path, "")
+                if topology_overrides.get(diagnostic_path, "") in census
+                else census_key
+            ]
             for diagnostic_path, census_key in topology_paths.items()
             if census_key in census
         }, "legacy.topology_gates"),
@@ -357,7 +403,11 @@ def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
         ),
         delivery_counts=(
             {} if route_occurrences is None
-            else {"CABLE_SEGMENT": route_occurrences}
+            else (
+                {"CABLE": census["semantic_route_segment_occurrences"]}
+                if "semantic_route_segment_occurrences" in census
+                else {"CABLE_SEGMENT": route_occurrences}
+            )
         ),
     )
 

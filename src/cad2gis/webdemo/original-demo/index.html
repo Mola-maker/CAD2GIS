@@ -110,12 +110,13 @@
             <p>推荐从 <code>main.zip</code> 安装 CLI 与 MCP 入口；<code>--force</code> 会替换仍指向已删除 worktree 的旧 editable 安装。</p>
             <div class="plugin-code-block">
               <div><span>WINDOWS / macOS / LINUX</span><button type="button" data-copy-target="plugin-runtime-command">复制命令</button></div>
-              <pre><code id="plugin-runtime-command">uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+              <pre><code id="plugin-runtime-command">uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json</code></pre>
             </div>
             <div class="plugin-check-row"><span><i>✓</i> <code>cad2gis</code> 可执行</span><span><i>✓</i> <code>cad2gis-agent-mcp</code> 在 PATH</span><span><i>✓</i> doctor 报告 reader 状态</span></div>
-            <aside class="plugin-callout"><b>控制面可连接不等于可转换。</b><span>生产转换仍需固定 Conda GIS 环境中的 GDAL/OGR 与 reader，并通过 <code>cad2gis doctor --deep --strict --json</code>。</span></aside>
+            <aside class="plugin-callout"><b>安装后验证完整运行时。</b><span><code>cad2gis[agent]</code> 提供平台 GDAL/OGR wheel，runtime installer 提供 LibreDWG CLI；AutoCAD 与 Conda 均非默认依赖。</span></aside>
           </article>
 
           <article id="plugin-step-roots" class="plugin-step-panel" data-plugin-panel="roots">
@@ -125,8 +126,8 @@ cad2gis doctor --deep --json</code></pre>
             <div class="plugin-code-grid">
               <div class="plugin-code-block">
                 <div><span>WINDOWS POWERSHELL</span><button type="button" data-copy-target="plugin-roots-windows">复制</button></div>
-                <pre><code id="plugin-roots-windows">$env:CAD2GIS_PROJECT_ROOTS = "E:\projects;D:\survey-data"
-$env:CAD2GIS_READER_BACKEND = "autocad"</code></pre>
+                <pre><code id="plugin-roots-windows"># 仅用于授权当前工作区之外的数据
+$env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"</code></pre>
               </div>
               <div class="plugin-code-block">
                 <div><span>macOS / LINUX</span><button type="button" data-copy-target="plugin-roots-posix">复制</button></div>
@@ -164,7 +165,7 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
     "cad2gis": {
       "command": "cad2gis-agent-mcp",
       "args": ["--transport", "stdio"],
-      "env": {"CAD2GIS_PROJECT_ROOTS": "&lt;ABSOLUTE_PROJECT_ROOT&gt;"}
+      "cwd": "${workspaceFolder}"
     }
   }
 }</code></pre></div>
@@ -207,7 +208,7 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
         <div><span class="plugin-step-kicker">FAILURE MAP</span><h4 id="plugin-troubleshooting-title">安装后看不到工具？先查这四处。</h4></div>
         <article><b>PLUGIN VISIBLE / MCP OFFLINE</b><p><code>cad2gis-agent-mcp</code> 不在客户端继承的 PATH；用同一用户环境安装运行时，然后重启客户端。</p></article>
         <article><b>PATH OUTSIDE ROOTS</b><p>把 DWG 所在父目录加入 <code>CAD2GIS_PROJECT_ROOTS</code>，不要把整个磁盘或插件缓存目录加入授权。</p></article>
-        <article><b>READER UNAVAILABLE</b><p>运行 <code>cad2gis doctor --deep --strict --json</code>，按系统配置 AutoCAD、LibreDWG 或 ODA reader。</p></article>
+        <article><b>READER UNAVAILABLE</b><p>先运行 <code>cad2gis runtime install</code>，再执行 <code>cad2gis doctor --deep --strict --json</code>；AutoCAD 只是显式可选回退。</p></article>
         <article><b>CONDITIONAL RESULT</b><p>这不是插件断线。它表示至少一条独立证据轨道仍需复核，例如没有测量 GCP 或仍有 unresolved 对象。</p></article>
       </div>
       <div class="plugin-guide-footer"><span>1 SKILL · 1 MCP · 1 CANONICAL PIPELINE</span><strong>真实转换在本地执行；GitHub Pages 不接收 DWG。</strong><a href="https://github.com/Mola-maker/CAD2GIS/tree/main/plugins/cad2gis-agent" target="_blank" rel="noreferrer">阅读插件源码 ↗</a></div>

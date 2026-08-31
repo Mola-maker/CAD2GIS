@@ -750,7 +750,6 @@ _OBJECT_NAMES = {
 _RAW_PROPERTIES_SCHEMA = "cad2gis-raw-properties-v1"
 _CURVE_FACTS_SCHEMA = "cad2gis-curve-facts-v1"
 
-_SYNTHETIC_METADATA_MARKER = "__CAD2GIS_SYNTHETIC_METADATA_EVIDENCE_7f3a9c__"
 
 # Control records (BLOCK/ENDBLK/SEQEND) stay in inventory but are not model-space
 # drawable entities — the AutoCAD canonical census (6,940) excludes them.
@@ -1816,23 +1815,19 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
             diagnostics["crash_count"] = crash_count
             _flush_cursor(diagnostics, cursor_path)
 
-    # Try to read header metadata evidence; fall back to synthetic on failure.
+    # Record only metadata exposed by the reader. Missing CRS evidence must stay
+    # missing rather than being replaced with a drawing-specific assumption.
     metadata_text = ""
     try:
         insunits = int(data.header_vars.INSUNITS)
         metadata_text = f"INSUNITS={insunits}"
     except Exception:
         pass
-    # CGEOCS is not exposed by LibreDWG in this DWG, so use the synthetic path.
-    if "CGEOCS=" not in metadata_text:
-        metadata_text += (
-            f";CGEOCS=WGS84.PseudoMercator;{_SYNTHETIC_METADATA_MARKER}"
-        )
-        diagnostics["metadata_evidence"] = "synthetic"
-    else:
-        diagnostics["metadata_evidence"] = "reader"
+    diagnostics["metadata_evidence"] = (
+        "reader" if "CGEOCS=" in metadata_text else "partial"
+    )
 
-    # Prepend a synthetic DOCUMENT_METADATA record.
+    # Prepend the normalized reader metadata record.
     metadata_record = {
         "entity_key": hashlib.sha256(
             f"{source_sha256}|DOCUMENT_METADATA|".encode("utf-8")

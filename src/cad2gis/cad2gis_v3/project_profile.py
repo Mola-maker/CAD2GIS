@@ -654,8 +654,6 @@ def _model_space_entities(
     project root, then filters to ``layout_role == "model"`` records.
     """
 
-    from importlib import import_module
-
     source_sha = inventory.get("source", {}).get("sha256", "")
     search_roots = [root, root.parent, root.parent.parent / "raw"]
     candidates = []
@@ -669,9 +667,9 @@ def _model_space_entities(
         )
     if not candidates:
         return []
-    reading = import_module("cad2gis.reader.libredwg")
-    reading._require_libredwg()
-    records = reading.extract_dwg_records(str(candidates[0]))
+    from cad2gis.reader.resolver import extract_records
+
+    records = extract_records(str(candidates[0]))
 
     class _LightEntity:
         __slots__ = ("points", "centroid")
