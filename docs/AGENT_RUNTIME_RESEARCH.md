@@ -17,7 +17,7 @@ Tavily result was used as evidence.
 | --- | --- | --- |
 | Portable DWG reader | [LibreDWG official repository](https://github.com/LibreDWG/libredwg) and its stable 0.14 release publish `dwg2dxf`; Windows x64 archive SHA-256 is pinned in code. | Convert DWG to transient DXF, then adapt it through ezdxf. |
 | Portable GDAL/OGR | [pyramids-gis installation metadata](https://pypi.org/project/pyramids-gis/) publishes bundled wheels for CPython 3.11/3.12 on Windows, macOS, and manylinux x64/ARM64. | Activate its bundled `osgeo` runtime; keep the established OGR pipeline. |
-| POSIX LibreDWG | [Homebrew's LibreDWG formula](https://formulae.brew.sh/formula/libredwg) publishes bottles for macOS and Linux x64/ARM64. | `runtime install` uses Homebrew where present; otherwise reports the exact system-package prerequisite. |
+| POSIX LibreDWG | [Homebrew's LibreDWG formula](https://formulae.brew.sh/formula/libredwg) publishes bottles for macOS and Linux x64/ARM64; the official 0.14 release also publishes a source archive with SHA-256 `cb6ee0b...18351`. | `runtime install` uses Homebrew where present, then performs a rootless build of the checksum-pinned official source into the user cache. |
 | Client project root | [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp) documents project-scoped configuration and `CLAUDE_PROJECT_DIR`. | Use client workspace variables/cwd; retain env roots only as an explicit override. |
 | Agent packaging skills | OpenAI's `cli-creator` and Anthropic's official `mcp-builder` / `mcp-integration` skills matched the CLI and MCP packaging work. | Installed for subsequent agent sessions; product code remains governed by repository tests. |
 
