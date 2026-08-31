@@ -48,6 +48,7 @@ demo/output/
 # robustness: test temp & build junk (cleaned at branch creation)
 .pytest-tmp-*
 build/
+dist/
 /_site/
 /.pytest-webdemo-build-*/
 ErrorReports/

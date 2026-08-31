@@ -44,7 +44,8 @@ def test_plugin_manifests_and_stdio_entrypoint_are_portable() -> None:
     assert server["command"] == "cad2gis-agent-mcp"
     assert server["args"] == ["--transport", "stdio"]
     assert "cwd" not in server
-    assert "CAD2GIS_PROJECT_ROOTS" in server["env_vars"]
+    assert "CAD2GIS_PROJECT_ROOTS" not in server["env_vars"]
+    assert "CAD2GIS_PROJECT_ROOT" not in server["env_vars"]
 
 
 def test_codex_and_claude_marketplaces_publish_the_same_plugin() -> None:
@@ -70,26 +71,27 @@ def test_codex_and_claude_marketplaces_publish_the_same_plugin() -> None:
 
 def test_mainstream_client_templates_share_the_canonical_entrypoint() -> None:
     clients = PLUGIN / "clients"
-    for name in (
-        "claude-code.mcp.json",
-        "cursor.mcp.json",
-    ):
-        server = _json(clients / name)["mcpServers"]["cad2gis"]
-        assert server["command"] == "cad2gis-agent-mcp"
-        assert server["args"] == ["--transport", "stdio"]
-        assert server["env"]["CAD2GIS_PROJECT_ROOTS"] == "<ABSOLUTE_PROJECT_ROOT>"
+    claude = _json(clients / "claude-code.mcp.json")["mcpServers"]["cad2gis"]
+    assert claude["command"] == "cad2gis-agent-mcp"
+    assert claude["args"] == ["--transport", "stdio"]
+    assert claude["env"]["CAD2GIS_PROJECT_ROOT"] == "${CLAUDE_PROJECT_DIR}"
+
+    cursor = _json(clients / "cursor.mcp.json")["mcpServers"]["cad2gis"]
+    assert cursor["command"] == "cad2gis-agent-mcp"
+    assert cursor["args"] == ["--transport", "stdio"]
+    assert cursor["cwd"] == "${workspaceFolder}"
 
     vscode = _json(clients / "vscode.mcp.json")["servers"]["cad2gis"]
     assert vscode["type"] == "stdio"
     assert vscode["command"] == "cad2gis-agent-mcp"
     assert vscode["args"] == ["--transport", "stdio"]
-    assert vscode["env"]["CAD2GIS_PROJECT_ROOTS"] == "<ABSOLUTE_PROJECT_ROOT>"
+    assert vscode["cwd"] == "${workspaceFolder}"
 
     codex = tomllib.loads((clients / "codex.config.toml").read_text(encoding="utf-8"))
     server = codex["mcp_servers"]["cad2gis"]
     assert server["command"] == "cad2gis-agent-mcp"
     assert server["args"] == ["--transport", "stdio"]
-    assert server["env"]["CAD2GIS_PROJECT_ROOTS"] == "<ABSOLUTE_PROJECT_ROOT>"
+    assert server["cwd"] == "."
 
     http = _json(clients / "streamable-http.json")["mcpServers"]["cad2gis"]
     assert http == {"type": "http", "url": "http://127.0.0.1:8768/mcp"}
@@ -119,7 +121,7 @@ def test_plugin_documents_cross_platform_runtime_bootstrap() -> None:
         "winget install --id=astral-sh.uv -e",
         "brew install uv",
         "curl -LsSf https://astral.sh/uv/install.sh | sh",
-        'uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"',
+        'uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"',
         "codex plugin marketplace add Mola-maker/CAD2GIS --ref main",
         "codex plugin add cad2gis-agent@cad2gis",
         "codex plugin remove cad2gis-agent@cad2gis",

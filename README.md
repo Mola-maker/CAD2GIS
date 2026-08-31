@@ -27,8 +27,8 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 1. 按下方“安装”创建固定运行环境并执行 `cad2gis doctor`；
 2. 安装 [`plugins/cad2gis-agent`](plugins/cad2gis-agent)，或把对应
    [`clients`](plugins/cad2gis-agent/clients) 模板加入现有智能体；
-3. 显式设置 `CAD2GIS_PROJECT_ROOTS`，然后让智能体先调用
-   `get_capabilities` 和 `inspect_source`；
+3. 在 DWG 项目目录中启动智能体，让它先调用 `get_capabilities`、
+   `get_runtime_status` 和 `inspect_source`；
 4. 转换后用 `cad2gis review` 打开 ToC 审查控制台，检查图层、标签、长度、
    拓扑和地图定位，再生成新的校准 run。
 
@@ -46,7 +46,8 @@ Windows PowerShell：
 
 ```powershell
 winget install --id=astral-sh.uv -e
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 Get-Command cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json
@@ -55,8 +56,8 @@ cad2gis doctor --deep --json
 macOS：
 
 ```bash
-brew install uv
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+brew install uv libredwg
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json
@@ -67,7 +68,8 @@ Linux：
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install  # 已有 Homebrew 时自动安装 LibreDWG；否则按提示使用系统包管理器
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json
@@ -78,10 +80,10 @@ AutoCAD/QGIS 会话控制通道。需要操控 Windows AutoCAD 或 Windows QGIS
 桌面会话时，请在 Windows 原生 Codex/CLI 环境中安装运行时。
 
 `cad2gis-agent-mcp --help` 验证插件实际调用的 console script 可以导入并启动。
-`cad2gis doctor --deep --json` 则区分“控制面可连接”和“完整转换环境可用”：独立
-uv tool 不携带 GDAL/OGR 等 ABI 敏感 GIS 库，因此可以启动 MCP，但 doctor 可能
-报告 `limited`。需要 `conversion_ready: true` 时，按下方“开发者安装”创建固定的
-Conda GIS 环境，并从已激活该环境的终端启动智能体客户端。
+`cad2gis doctor --deep --json` 会同时检查 bundled GDAL/OGR、ezdxf 和 LibreDWG。
+`[agent]` extra 的平台 wheel 提供 GDAL/OGR；`cad2gis runtime install` 把官方
+LibreDWG CLI 安装到用户缓存（Windows）或通过 Homebrew 安装（macOS/Linux）。
+AutoCAD 与 Conda 都不是默认转换链路的前置条件。
 
 ### 2. 安装智能体客户端插件
 
@@ -129,8 +131,8 @@ mkdir -p .vscode
 curl -fsSL "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/vscode.mcp.json" -o .vscode/mcp.json
 ```
 
-Cursor/VS Code 下载模板后，必须将 `<ABSOLUTE_PROJECT_ROOT>` 替换为 DWG
-项目的绝对路径，然后重启客户端。完整模板见
+Cursor/VS Code 模板通过 `${workspaceFolder}` 自动使用当前工作区，无需填写机器
+相关的绝对路径；下载后重启客户端。完整模板见
 [`plugins/cad2gis-agent/clients`](plugins/cad2gis-agent/clients)。
 
 ### 3. 验证安装
@@ -146,14 +148,15 @@ claude plugin list
 ```
 
 重启客户端并新建任务后，再让智能体调用 `get_capabilities`，确认 MCP 能力和
-`CAD2GIS_PROJECT_ROOTS` 授权目录均已加载。完整 GIS 环境还应执行
+当前工作区授权目录已加载。完整 GIS 环境还应执行
 `cad2gis doctor --deep --strict --json` 并确认 `conversion_ready: true`。
 
 ### 4. 更新
 
 ```shell
 # 运行时：同一条命令同时负责首次安装、更新和修复悬空 editable 安装
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 
 # Codex
 codex plugin marketplace upgrade cad2gis
@@ -169,8 +172,7 @@ claude plugin update cad2gis-agent@cad2gis-tools
 插件缓存。直接重新执行上面的 `uv tool install ... --force`，再确认
 `cad2gis-agent-mcp --help` 成功，最后重启客户端并新建任务。
 
-Cursor 与 VS Code / Copilot 使用者请重新下载上面的 MCP 模板并保留自己的
-`<ABSOLUTE_PROJECT_ROOT>` 设置。
+Cursor 与 VS Code / Copilot 使用者请重新下载上面的动态工作区 MCP 模板。
 
 ### 5. 卸载
 
@@ -217,15 +219,23 @@ AI 是控制平面的规划器，不是坐标或几何生成器。它可以完�
 ## 开发者安装
 
 ```powershell
+uv sync --extra agent --extra test
+uv run cad2gis runtime install
+uv run cad2gis doctor --deep --strict --json
+```
+
+需要复现传统原生 GIS 开发栈时，`env/environment.yml` 仍作为可选环境保留：
+
+```powershell
 conda env create -f env/environment.yml
 conda activate cad2gis
-pip install -e ".[mcp,review,test]"
+pip install -e ".[agent,test]"
 cad2gis doctor --deep --strict --json
 ```
 
 支持 Python 3.11–3.12。MCP、证据协议和 GeoPackage 交付结构跨 Windows、Linux、
-macOS 一致；AutoCAD/Core Console reader 仅限 Windows，其他系统需配置项目支持的
-LibreDWG/ODA reader。安装后还可直接使用 `cad2gis-agent-mcp` 启动 MCP 服务。
+macOS 一致；LibreDWG CLI 是默认 reader，AutoCAD/Core Console 仅是 Windows 上
+显式选择的可选回退。安装后可直接使用 `cad2gis-agent-mcp` 启动 MCP 服务。
 
 Windows 使用 AutoCAD reader：
 
@@ -339,10 +349,11 @@ inspection、onboarding、conversion、evidence、repair 与 review 工具。
 转换完成后调用 `audit_run`，可校验每个产物的 SHA-256、实际 GeoPackage 图层
 计数与 manifest census 是否一致，并单独报告源 DWG 是否仍可重放。
 
-MCP 只能访问下列根目录中的文件：
+MCP 只能访问客户端工作区或显式授权根目录中的文件。通常无需配置；只有需要授权
+工作区外的数据目录时才设置：
 
 ```powershell
-$env:CAD2GIS_PROJECT_ROOTS = "E:\branch_CAD2GIS"
+$env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"
 ```
 
 ## QGIS 交付

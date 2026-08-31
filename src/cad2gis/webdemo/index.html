@@ -119,7 +119,8 @@
                 <div class="plugin-code-block">
                   <div><span>WINDOWS POWERSHELL</span><button type="button" data-copy-target="plugin-runtime-windows">复制整组</button></div>
                   <pre><code id="plugin-runtime-windows">winget install --id=astral-sh.uv -e
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 Get-Command cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json</code></pre>
@@ -129,20 +130,21 @@ cad2gis doctor --deep --json</code></pre>
               <section id="plugin-platform-macos" class="plugin-platform-panel" role="tabpanel" data-plugin-platform-panel="macos">
                 <div class="plugin-code-block">
                   <div><span>macOS / TERMINAL</span><button type="button" data-copy-target="plugin-runtime-macos">复制整组</button></div>
-                  <pre><code id="plugin-runtime-macos">brew install uv
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+                  <pre><code id="plugin-runtime-macos">brew install uv libredwg
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json</code></pre>
                 </div>
-                <p>配置项目支持的 LibreDWG/ODA reader；AutoCAD/Core Console 不在 macOS 支持边界内。</p>
+                <p>Homebrew 安装官方 LibreDWG CLI；AutoCAD/Core Console 不在 macOS 支持边界内。</p>
               </section>
               <section id="plugin-platform-linux" class="plugin-platform-panel" role="tabpanel" data-plugin-platform-panel="linux">
                 <div class="plugin-code-block">
                   <div><span>LINUX / SHELL</span><button type="button" data-copy-target="plugin-runtime-linux">复制整组</button></div>
                   <pre><code id="plugin-runtime-linux">curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json</code></pre>
@@ -154,7 +156,8 @@ cad2gis doctor --deep --json</code></pre>
                   <div><span>WSL / LINUX RUNTIME</span><button type="button" data-copy-target="plugin-runtime-wsl">复制整组</button></div>
                   <pre><code id="plugin-runtime-wsl">curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
 cad2gis doctor --deep --json</code></pre>
@@ -163,7 +166,7 @@ cad2gis doctor --deep --json</code></pre>
               </section>
             </div>
             <div class="plugin-check-row"><span><i>✓</i> <code>cad2gis</code> 可执行</span><span><i>✓</i> <code>cad2gis-agent-mcp</code> 在 PATH</span><span><i>✓</i> doctor 报告 reader 状态</span></div>
-            <aside class="plugin-callout"><b>控制面可连接不等于可转换。</b><span>uv tool 不携带 GDAL/OGR 等 ABI 敏感库。生产转换必须在固定 Conda GIS 环境中通过 <code>cad2gis doctor --deep --strict --json</code>，并确认 <code>conversion_ready: true</code>。</span></aside>
+            <aside class="plugin-callout"><b>安装后验证完整运行时。</b><span><code>cad2gis[agent]</code> 提供平台 GDAL/OGR wheel，<code>cad2gis runtime install</code> 提供 LibreDWG CLI；AutoCAD 与 Conda 均非默认依赖。确认 doctor 的 <code>conversion_ready: true</code>。</span></aside>
           </article>
 
           <article id="plugin-step-roots" class="plugin-step-panel" data-plugin-panel="roots">
@@ -173,8 +176,8 @@ cad2gis doctor --deep --json</code></pre>
             <div class="plugin-code-grid">
               <div class="plugin-code-block">
                 <div><span>WINDOWS POWERSHELL</span><button type="button" data-copy-target="plugin-roots-windows">复制</button></div>
-                <pre><code id="plugin-roots-windows">$env:CAD2GIS_PROJECT_ROOTS = "E:\projects;D:\survey-data"
-$env:CAD2GIS_READER_BACKEND = "autocad"</code></pre>
+                <pre><code id="plugin-roots-windows"># 仅用于授权当前工作区之外的数据
+$env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"</code></pre>
               </div>
               <div class="plugin-code-block">
                 <div><span>macOS / LINUX</span><button type="button" data-copy-target="plugin-roots-posix">复制</button></div>
@@ -216,7 +219,7 @@ Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plu
                   <div class="plugin-code-block"><div><span>CURSOR / macOS + LINUX</span><button type="button" data-copy-target="plugin-client-cursor-posix">复制命令</button></div><pre><code id="plugin-client-cursor-posix">mkdir -p .cursor
 curl -fsSL "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/cursor.mcp.json" -o .cursor/mcp.json</code></pre></div>
                 </div>
-                <p>将模板中的 <code>&lt;ABSOLUTE_PROJECT_ROOT&gt;</code> 替换为 DWG 项目绝对路径，再重启 Cursor。</p>
+                <p>模板通过 <code>${workspaceFolder}</code> 自动使用当前 DWG 工作区，再重启 Cursor。</p>
               </section>
               <section id="plugin-client-vscode" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="vscode">
                 <div class="plugin-code-grid">
@@ -225,7 +228,7 @@ Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plu
                   <div class="plugin-code-block"><div><span>VS CODE / macOS + LINUX</span><button type="button" data-copy-target="plugin-client-vscode-posix">复制命令</button></div><pre><code id="plugin-client-vscode-posix">mkdir -p .vscode
 curl -fsSL "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/vscode.mcp.json" -o .vscode/mcp.json</code></pre></div>
                 </div>
-                <p>将模板中的 <code>&lt;ABSOLUTE_PROJECT_ROOT&gt;</code> 替换为 DWG 项目绝对路径，再重启 VS Code / GitHub Copilot agent mode。</p>
+                <p>模板通过 <code>${workspaceFolder}</code> 自动使用当前 DWG 工作区，再重启 VS Code / GitHub Copilot agent mode。</p>
               </section>
               <section id="plugin-client-http" class="plugin-client-panel" role="tabpanel" data-plugin-client-panel="http">
                 <div class="plugin-code-block"><div><span>STREAMABLE HTTP / LOOPBACK ONLY</span><button type="button" data-copy-target="plugin-client-http-code">复制命令</button></div><pre><code id="plugin-client-http-code">python -m cad2gis.agent_mcp --transport streamable-http --host 127.0.0.1 --port 8768</code></pre></div>
@@ -275,7 +278,7 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
         <div><span class="plugin-step-kicker">FAILURE MAP</span><h4 id="plugin-troubleshooting-title">安装后看不到工具？先查这四处。</h4></div>
         <article><b>PLUGIN VISIBLE / MCP OFFLINE</b><p><code>cad2gis-agent-mcp</code> 不在客户端继承的 PATH；用同一用户环境安装运行时，然后重启客户端。</p></article>
         <article><b>PATH OUTSIDE ROOTS</b><p>把 DWG 所在父目录加入 <code>CAD2GIS_PROJECT_ROOTS</code>，不要把整个磁盘或插件缓存目录加入授权。</p></article>
-        <article><b>READER UNAVAILABLE</b><p>运行 <code>cad2gis doctor --deep --strict --json</code>，按系统配置 AutoCAD、LibreDWG 或 ODA reader。</p></article>
+        <article><b>READER UNAVAILABLE</b><p>先运行 <code>cad2gis runtime install</code>，再执行 <code>cad2gis doctor --deep --strict --json</code>；AutoCAD 只是显式可选回退。</p></article>
         <article><b>CONDITIONAL RESULT</b><p>这不是插件断线。它表示至少一条独立证据轨道仍需复核，例如没有测量 GCP 或仍有 unresolved 对象。</p></article>
       </div>
       <div class="plugin-guide-footer"><span>1 SKILL · 1 MCP · 1 CANONICAL PIPELINE</span><strong>真实转换在本地执行；GitHub Pages 不接收 DWG。</strong><a href="https://github.com/Mola-maker/CAD2GIS/tree/main/plugins/cad2gis-agent" target="_blank" rel="noreferrer">阅读插件源码 ↗</a></div>

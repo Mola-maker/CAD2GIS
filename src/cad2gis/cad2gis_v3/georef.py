@@ -6,16 +6,19 @@ import hashlib
 import json
 import math
 
-from osgeo import osr
 import pyproj
 from pyproj import Geod, Transformer
 
 from ..apd_rules import set_traditional_axis_order
+from ..native_runtime import ensure_osgeo_runtime
 from .units import (
     UnitCrsContract,
     UnitCrsContractError,
     build_unit_crs_contract,
 )
+
+ensure_osgeo_runtime()
+from osgeo import osr  # noqa: E402
 
 
 def _qgis_rotation(transform_point, native_anchor, cad_radians):

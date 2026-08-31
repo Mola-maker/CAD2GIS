@@ -11,13 +11,17 @@ or CRS algorithms inside the host agent or plugin.
 
 ## Required opening sequence
 
-1. Call `get_capabilities` and report its configured filesystem roots.
-   Confirm `prompt_contract.version` before constructing any proposal.
-2. Call `inspect_source` for a new DWG, or `inspect_run` for an existing run.
-3. Keep source facts, semantic interpretation, geometry/topology/length checks,
+1. Call `get_capabilities`, report its configured filesystem roots, and confirm
+   `prompt_contract.version` before constructing any proposal.
+2. Read the returned `runtime`. If the selected LibreDWG reader is unavailable,
+   call `install_runtime`, then call `get_runtime_status` again. Do not require
+   AutoCAD or Conda and do not silently select the AutoCAD fallback.
+3. Call `inspect_source` for a new DWG, or `inspect_run` for an existing run.
+4. Keep source facts, semantic interpretation, geometry/topology/length checks,
    and coordinate accuracy as separate claims.
-4. If a requested path is outside the configured roots, stop and give the exact
-   `CAD2GIS_PROJECT_ROOTS` configuration needed. Do not broaden access silently.
+5. If a requested path is outside the configured roots, ask the user to open the
+   containing workspace or give the exact optional `CAD2GIS_PROJECT_ROOTS`
+   override. Do not broaden access silently.
 
 ## New drawing workflow
 

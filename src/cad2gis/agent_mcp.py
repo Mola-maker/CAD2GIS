@@ -58,6 +58,7 @@ def get_capabilities() -> dict[str, Any]:
             "controls are required to verify absolute positional accuracy"
         ),
         "filesystem_roots": [str(root) for root in _roots()],
+        "runtime": _runtime_status(),
         "workflow": [
             "inspect_source",
             "bootstrap_project",
@@ -98,6 +99,9 @@ def _roots() -> tuple[Path, ...]:
     for name in ("CAD2GIS_PROJECT_ROOTS", "CAD2GIS_PROJECT_ROOT"):
         raw = os.environ.get(name, "")
         values.extend(part for part in raw.split(os.pathsep) if part.strip())
+    claude_project = os.environ.get("CLAUDE_PROJECT_DIR", "").strip()
+    if claude_project:
+        values.append(claude_project)
     if not values:
         values.append(str(Path.cwd()))
     roots: list[Path] = []
@@ -106,6 +110,34 @@ def _roots() -> tuple[Path, ...]:
         if root not in roots:
             roots.append(root)
     return tuple(roots)
+
+
+def _runtime_status() -> dict[str, Any]:
+    from .native_runtime import portable_runtime_status
+    from .reader.resolver import configured_reader, reader_capabilities
+
+    return {
+        **portable_runtime_status(),
+        "selected_reader": configured_reader(),
+        "readers": {
+            name: capability.to_dict()
+            for name, capability in sorted(reader_capabilities().items())
+        },
+    }
+
+
+def get_runtime_status() -> dict[str, Any]:
+    """Report portable reader/GIS readiness without opening a drawing."""
+
+    return _runtime_status()
+
+
+def install_runtime() -> dict[str, Any]:
+    """Install the checksum-pinned official LibreDWG CLI in the user cache."""
+
+    from .native_runtime import install_portable_runtime
+
+    return install_portable_runtime()
 
 
 def _path(value: str | Path, *, must_exist: bool = True) -> Path:
@@ -152,6 +184,7 @@ def inspect_run(run_dir: str) -> dict[str, Any]:
 def audit_run(run_dir: str) -> dict[str, Any]:
     """Verify one immutable run's artifacts and delivered layer census."""
 
+    from .native_runtime import ensure_osgeo_runtime
     from .review_server import (
         GeoPackageProvider,
         ReviewServerError,
@@ -159,6 +192,8 @@ def audit_run(run_dir: str) -> dict[str, Any]:
         _sha256_file,
         _source_path,
     )
+
+    ensure_osgeo_runtime()
 
     directory = _path(run_dir)
     if not directory.is_dir():
@@ -703,6 +738,13 @@ def create_server(
 ):
     """Create the optional FastMCP server for stdio or Streamable HTTP."""
 
+    # Initialize an installed bundled GDAL runtime before FastMCP owns the
+    # event loop or dispatches sync tools to worker threads. Native GDAL/PROJ
+    # initialization during a live MCP request can deadlock on Windows.
+    from .native_runtime import ensure_osgeo_runtime
+
+    ensure_osgeo_runtime()
+
     try:
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:  # pragma: no cover - optional runtime dependency
@@ -723,7 +765,22 @@ def create_server(
         streamable_http_path="/mcp",
         stateless_http=bool(stateless_http),
     )
-    server.tool()(get_capabilities)
+
+    # Bundled GDAL activation must happen on the server event-loop thread.
+    # FastMCP runs ordinary synchronous tools in a worker thread; importing a
+    # native GIS stack there can deadlock on some Windows Python builds.
+    async def runtime_capabilities_tool() -> dict[str, Any]:
+        return get_capabilities()
+
+    async def runtime_status_tool() -> dict[str, Any]:
+        return get_runtime_status()
+
+    async def runtime_install_tool() -> dict[str, Any]:
+        return install_runtime()
+
+    server.tool(name="get_capabilities")(runtime_capabilities_tool)
+    server.tool(name="get_runtime_status")(runtime_status_tool)
+    server.tool(name="install_runtime")(runtime_install_tool)
     server.tool()(inspect_source)
     server.tool()(bootstrap_project)
     server.tool()(validate_project)
@@ -787,8 +844,10 @@ __all__ = [
     "create_server",
     "get_evidence_node",
     "get_capabilities",
+    "get_runtime_status",
     "inspect_run",
     "inspect_source",
+    "install_runtime",
     "list_evidence_nodes",
     "list_endpoint_join_candidates",
     "list_registered_operations",

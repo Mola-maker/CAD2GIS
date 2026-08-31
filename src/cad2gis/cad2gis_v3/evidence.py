@@ -13,10 +13,12 @@ import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from osgeo import ogr
-
+from ..native_runtime import ensure_osgeo_runtime
 from .gpkg_metadata import normalize_geopackage_metadata
 from .warehouse import LAYER_CONFIGS
+
+ensure_osgeo_runtime()
+from osgeo import ogr  # noqa: E402
 
 
 def _release_ogr_datasets(error: BaseException) -> tuple[str, ...]:

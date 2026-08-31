@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections import Counter
 from pathlib import Path
 from typing import Callable
@@ -11,23 +10,12 @@ from ..reader.contracts import DWGRecordInventory
 from .config import SourceProfile
 from .model import SourceEntity
 
-_READER_ENV = "CAD2GIS_READER_BACKEND"
-_DEFAULT_READER = "libredwg"
-
-
 def extract_records(source_path: Path) -> DWGRecordInventory:
     """Extract a complete inventory with the configured canonical reader."""
 
-    backend = os.environ.get(_READER_ENV, _DEFAULT_READER).strip().lower()
-    if backend == "libredwg":
-        from ..reader.libredwg import extract_dwg_records
-    elif backend == "autocad":
-        from ..reader.autocad import extract_dwg_records
-    else:
-        raise ValueError(
-            f"unknown reader backend {backend!r}; expected libredwg or autocad"
-        )
-    return extract_dwg_records(source_path)
+    from ..reader.resolver import extract_records as resolve_records
+
+    return resolve_records(source_path)
 
 
 _CANONICAL_EXTRACT_RECORDS = extract_records
@@ -59,7 +47,8 @@ def ingest(
     metadata = next((entity.text for entity in entities if entity.dwg_type == "DOCUMENT_METADATA"), "")
     if profile.dwg_cgeocs is not None:
         expected_cgeocs = f"CGEOCS={profile.dwg_cgeocs}"
-        if expected_cgeocs.casefold() not in metadata.casefold():
+        has_reader_cgeocs = "CGEOCS=" in metadata.upper()
+        if has_reader_cgeocs and expected_cgeocs.casefold() not in metadata.casefold():
             raise ValueError(
                 f"DWG CRS evidence mismatch: expected {expected_cgeocs}, got {metadata!r}"
             )
@@ -120,6 +109,9 @@ def ingest(
         "source_path": str(source_path),
         "source_sha256": source_hash,
         "dwg_metadata": metadata,
+        "dwg_cgeocs_reader_evidence": (
+            "available" if "CGEOCS=" in metadata.upper() else "unavailable"
+        ),
         "drawing_units": {"insunits": profile.dwg_insunits, "name": profile.drawing_units},
         "census": census,
         "layouts": dict(sorted(Counter(entity.layout for entity in entities).items())),

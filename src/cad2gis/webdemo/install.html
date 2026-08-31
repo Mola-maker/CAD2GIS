@@ -62,17 +62,19 @@
         <article>
           <span class="matrix-index">01A</span><h3>Windows PowerShell</h3>
           <div class="command-row"><code>winget install --id=astral-sh.uv -e</code><button type="button" data-copy="winget install --id=astral-sh.uv -e">复制</button></div>
-          <div class="command-row"><code>uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"</code><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'>复制</button></div>
+          <div class="command-row"><code>uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"</code><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'>复制</button></div>
+          <div class="command-row"><code>cad2gis runtime install</code><button type="button" data-copy="cad2gis runtime install">复制</button></div>
         </article>
         <article>
           <span class="matrix-index">01B</span><h3>macOS</h3>
-          <div class="command-row"><code>brew install uv</code><button type="button" data-copy="brew install uv">复制</button></div>
-          <div class="command-row"><code>uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"</code><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'>复制</button></div>
+          <div class="command-row"><code>brew install uv libredwg</code><button type="button" data-copy="brew install uv libredwg">复制</button></div>
+          <div class="command-row"><code>uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"</code><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'>复制</button></div>
         </article>
         <article>
           <span class="matrix-index">01C</span><h3>Linux</h3>
           <div class="command-row"><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code><button type="button" data-copy="curl -LsSf https://astral.sh/uv/install.sh | sh">复制</button></div>
-          <div class="command-row"><code>uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"</code><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'>复制</button></div>
+          <div class="command-row"><code>uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"</code><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"'>复制</button></div>
+          <div class="command-row"><code>cad2gis runtime install</code><button type="button" data-copy="cad2gis runtime install">复制</button></div>
         </article>
         <article class="wsl-card">
           <span class="matrix-index">LIMIT</span><h3>WSL 限制</h3>
@@ -80,7 +82,7 @@
         </article>
         <article class="wsl-card">
           <span class="matrix-index">GIS</span><h3>完整转换环境</h3>
-          <p>uv tool 用于稳定启动 MCP；它不携带 GDAL/OGR 等 ABI 敏感库。生产转换请使用仓库的 <code>env/environment.yml</code> 创建 Conda 环境，并从已激活该环境的终端启动客户端。只有 <code>cad2gis doctor --deep --strict --json</code> 返回 <code>conversion_ready: true</code> 才表示可转换。</p>
+          <p><code>cad2gis[agent]</code> 携带平台 GDAL/OGR wheel；再运行 <code>cad2gis runtime install</code> 安装 LibreDWG CLI。AutoCAD 与 Conda 都不是默认依赖。只有 <code>cad2gis doctor --deep --strict --json</code> 返回 <code>conversion_ready: true</code> 才表示可转换。</p>
         </article>
       </div>
     </section>
@@ -105,7 +107,7 @@ claude plugin list</code></pre><button type="button" data-copy="claude plugin ma
         </article>
         <article>
           <span class="matrix-index">CURSOR</span><h3>Cursor</h3>
-          <p>将模板保存为 <code>.cursor/mcp.json</code>，再把 <code>&lt;ABSOLUTE_PROJECT_ROOT&gt;</code> 替换为图纸项目绝对路径。</p>
+          <p>将模板保存为 <code>.cursor/mcp.json</code>；它通过 <code>${workspaceFolder}</code> 自动使用当前图纸工作区。</p>
           <small>Windows PowerShell</small>
           <div class="code-stack"><pre><code>New-Item -ItemType Directory -Force .cursor | Out-Null
 Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/cursor.mcp.json" -OutFile ".cursor/mcp.json"</code></pre><button type="button" data-copy='New-Item -ItemType Directory -Force .cursor | Out-Null&#10;Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plugins/cad2gis-agent/clients/cursor.mcp.json" -OutFile ".cursor/mcp.json"'>复制整组</button></div>
@@ -135,11 +137,11 @@ Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plu
 cad2gis doctor --deep --json
 codex plugin list
 claude plugin list</code></pre><button type="button" data-copy="cad2gis-agent-mcp --help&#10;cad2gis doctor --deep --json&#10;codex plugin list&#10;claude plugin list">复制整组</button></div><p><code>--help</code> 验证 console script 可导入；doctor 可能报告控制面可用但 GIS runtime 为 <code>limited</code>。新任务中再调用 <code>get_capabilities</code>。</p></div></article>
-        <article id="update-commands"><span>03</span><div><h3>更新</h3><div class="code-stack"><pre><code>uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+        <article id="update-commands"><span>03</span><div><h3>更新</h3><div class="code-stack"><pre><code>uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 codex plugin marketplace upgrade cad2gis
 codex plugin add cad2gis-agent@cad2gis
 claude plugin marketplace update cad2gis-tools
-claude plugin update cad2gis-agent@cad2gis-tools</code></pre><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[mcp,review] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"&#10;codex plugin marketplace upgrade cad2gis&#10;codex plugin add cad2gis-agent@cad2gis&#10;claude plugin marketplace update cad2gis-tools&#10;claude plugin update cad2gis-agent@cad2gis-tools'>复制整组</button></div></div></article>
+claude plugin update cad2gis-agent@cad2gis-tools</code></pre><button type="button" data-copy='uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"&#10;codex plugin marketplace upgrade cad2gis&#10;codex plugin add cad2gis-agent@cad2gis&#10;claude plugin marketplace update cad2gis-tools&#10;claude plugin update cad2gis-agent@cad2gis-tools'>复制整组</button></div></div></article>
         <article id="repair-commands"><span>04</span><div><h3>修复 CONNECTION_CLOSED</h3><p>若 CLI 报 <code>ModuleNotFoundError: No module named 'cad2gis'</code>，通常是 uv 的 editable 安装仍指向已删除 worktree。不要编辑插件缓存或 <code>.pth</code>；重新执行上面的强制归档安装，确认 <code>cad2gis-agent-mcp --help</code> 成功，再重启客户端并新建任务。</p></div><a href="#system-matrix">复制修复命令</a></article>
         <article id="uninstall-commands"><span>05</span><div><h3>卸载</h3><div class="code-stack"><pre><code>codex plugin remove cad2gis-agent@cad2gis
 claude plugin uninstall cad2gis-agent@cad2gis-tools
