@@ -16,8 +16,9 @@ using a repository path:
 
 - Windows x64: checksum-pinned official LibreDWG 0.14 release in the user cache;
 - macOS/Linux with Homebrew: the bottled `libredwg` formula;
-- other POSIX environments: install `dwg2dxf` with the system package manager
-  and leave it on `PATH`.
+- other POSIX environments: rootless build of the checksum-pinned official
+  LibreDWG 0.14 source release into the user cache (requires a C compiler and
+  `make`).
 
 AutoCAD and Conda are not required. `env/environment.yml` remains an optional,
 reproducible native-development profile rather than the plugin runtime.

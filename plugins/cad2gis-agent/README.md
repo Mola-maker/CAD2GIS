@@ -16,8 +16,10 @@ cad2gis doctor --deep --strict --json
 ```
 
 The agent extra uses platform wheels for GDAL/OGR and ezdxf. The runtime command
-installs the checksum-pinned official LibreDWG release on Windows, or the
-Homebrew LibreDWG formula on macOS/Linux. AutoCAD and Conda are not required.
+installs the checksum-pinned official LibreDWG release on Windows. On
+macOS/Linux it uses Homebrew when available, then falls back to a rootless build
+of the checksum-pinned official source release in the user cache. AutoCAD and
+Conda are not required.
 
 ## Grant project access explicitly
 
