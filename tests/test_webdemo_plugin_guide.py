@@ -74,6 +74,8 @@ def test_install_page_lists_every_platform_client_and_lifecycle_block() -> None:
     assert "CONNECTION_CLOSED" in page
     assert "ModuleNotFoundError: No module named 'cad2gis'" in page
     assert "editable" in page
+    assert "cad2gis review" in page
+    assert "os error 32" in page
 
 
 def test_runtime_install_is_self_healing_and_not_git_history_bound() -> None:

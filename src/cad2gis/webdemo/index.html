@@ -107,7 +107,7 @@
           <article id="plugin-step-runtime" class="plugin-step-panel is-active" data-plugin-panel="runtime">
             <span class="plugin-step-kicker">STEP 01 / RUNTIME</span>
             <h4>先安装稳定的 MCP 控制面运行时。</h4>
-            <p>先按系统安装 <code>uv</code>，再从 <code>main.zip</code> 把 CLI 与 MCP 入口安装成隔离工具。<code>--force</code> 会修复仍指向已删除 worktree 的旧 editable 安装。</p>
+            <p>先按系统安装 <code>uv</code>，再从 <code>main.zip</code> 把 CLI 与 MCP 入口安装成隔离工具。<code>--force</code> 会修复仍指向已删除 worktree 的旧 editable 安装。Windows 更新前先退出 CAD2GIS MCP 客户端并停止 <code>cad2gis review</code>，避免工具目录锁定导致 <code>os error 32</code>。</p>
             <div class="plugin-platform-tabs" role="tablist" aria-label="选择操作系统">
               <button type="button" class="is-active" role="tab" aria-selected="true" aria-controls="plugin-platform-windows" data-plugin-platform="windows">Windows</button>
               <button type="button" role="tab" aria-selected="false" aria-controls="plugin-platform-macos" data-plugin-platform="macos">macOS</button>

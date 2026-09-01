@@ -40,6 +40,10 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 `main.zip` 而不是完整 Git 历史，并用 `--force` 主动替换旧版本；因此它也能修复
 指向已删除 worktree 的 editable 安装。
 
+Windows 更新或修复前，先退出正在使用 CAD2GIS 的 MCP 客户端并停止
+`cad2gis review`。运行中的 Python 进程会锁住 uv 工具目录，使 `--force` 以
+`os error 32` 失败；安装完成后再重启客户端。
+
 ### 1. 安装本地运行时
 
 Windows PowerShell：
@@ -154,6 +158,8 @@ claude plugin list
 `cad2gis doctor --deep --strict --json` 并确认 `conversion_ready: true`。
 
 ### 4. 更新
+
+Windows 上先停止 CAD2GIS MCP/WebUI 进程，再替换运行时。
 
 ```shell
 # 运行时：同一条命令同时负责首次安装、更新和修复悬空 editable 安装

@@ -10,6 +10,10 @@ cad2gis runtime install
 cad2gis doctor --deep --strict --json
 ```
 
+On Windows, stop CAD2GIS MCP clients and any `cad2gis review` process before a
+forced reinstall. A running Python process locks the uv tool directory and can
+make replacement fail with `os error 32`; restart clients after installation.
+
 The `agent` extra installs MCP/review dependencies, ezdxf, and a platform wheel
 that bundles GDAL/OGR. `cad2gis runtime install` installs the DWG reader without
 using a repository path:

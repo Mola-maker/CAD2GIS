@@ -56,7 +56,7 @@
     <section class="install-matrix" id="system-matrix" aria-labelledby="system-title">
       <header class="matrix-heading">
         <p class="chapter">01 / SYSTEM</p>
-        <div><h2 id="system-title">按操作系统安装 MCP 运行时</h2><p>归档安装不拉取完整 Git 历史；<code>--force</code> 也会替换指向已删除 worktree 的旧 editable 安装。</p></div>
+        <div><h2 id="system-title">按操作系统安装 MCP 运行时</h2><p>归档安装不拉取完整 Git 历史；<code>--force</code> 也会替换指向已删除 worktree 的旧 editable 安装。Windows 更新或修复前，先退出正在使用 CAD2GIS 的 MCP 客户端并停止 <code>cad2gis review</code>；否则运行中的 Python 进程会锁住工具目录并触发 <code>os error 32</code>。</p></div>
       </header>
       <div class="platform-grid">
         <article>
@@ -137,7 +137,7 @@ Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plu
 cad2gis doctor --deep --json
 codex plugin list
 claude plugin list</code></pre><button type="button" data-copy="cad2gis-agent-mcp --help&#10;cad2gis doctor --deep --json&#10;codex plugin list&#10;claude plugin list">复制整组</button></div><p><code>--help</code> 验证 console script 可导入；doctor 可能报告控制面可用但 GIS runtime 为 <code>limited</code>。新任务中再调用 <code>get_capabilities</code>。</p></div></article>
-        <article id="update-commands"><span>03</span><div><h3>更新</h3><div class="code-stack"><pre><code>uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+        <article id="update-commands"><span>03</span><div><h3>更新</h3><p>Windows 上先停止 CAD2GIS MCP/WebUI 进程，再替换运行时，安装完成后重启客户端。</p><div class="code-stack"><pre><code>uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 codex plugin marketplace upgrade cad2gis
 codex plugin add cad2gis-agent@cad2gis
 claude plugin marketplace update cad2gis-tools
