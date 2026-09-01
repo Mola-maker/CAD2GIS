@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cad2gis"
-version = "0.1.1"
+version = "0.1.2"
 description = "Deterministic CAD-to-GIS orchestration and verification CLI"
 readme = { text = "CAD2GIS provides a lightweight canonical API and CLI. The pinned GIS runtime and separately deployed cad2gis_v3 backend are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
 requires-python = ">=3.11,<3.13"

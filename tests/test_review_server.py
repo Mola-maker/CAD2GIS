@@ -201,16 +201,16 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     assert "把不可信的" in page
     assert "DWG" in page
     assert 'id="hero-page"' in page
-    assert 'data-count="9896"' in page
+    assert 'data-count="9717"' in page
     assert "assets/hero-evidence-graph.svg" in page
     assert 'id="process-terminal"' in page
     assert 'data-process-terminal' in page
     assert page.count('data-terminal-line data-stage=') == 14
     assert "DERIVED REPLAY · NOT LIVE EXECUTION" in page
-    assert "9,896 immutable source entities" in page
+    assert "9,717 immutable source entities" in page
     assert "281 entities unresolved" in page
     assert "170 / 179 spans" in page
-    assert "max |error| 0.493 m" in page
+    assert "max |error| &lt; 0.001 m" in page
     assert "1,150 delivery features" in page
     assert 'id="plugin-guide"' in page
     assert 'data-plugin-guide' in page
@@ -357,3 +357,14 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
     assert "--accent: #006c67" in stylesheet.text
     assert "color-scheme: dark" not in stylesheet.text
     assert "prefers-reduced-motion" in stylesheet.text
+
+    for packaged_asset in (
+        "hero-evidence-graph.svg",
+        "noto-sans-sc-subset.woff2",
+    ):
+        response = client.get(f"/assets/{packaged_asset}")
+        assert response.status_code == 200
+        assert response.content
+
+    traversal = client.get("/assets/../pyproject.toml")
+    assert traversal.status_code == 404

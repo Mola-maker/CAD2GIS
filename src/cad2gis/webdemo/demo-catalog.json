@@ -11,7 +11,7 @@
       "description": "完整 FTTH 派生运行，包含 8 个交付图层与独立 DIMENSION 长度证据。",
       "fixture": "demo-data.json",
       "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
-      "source_entity_count": 9896,
+      "source_entity_count": 9717,
       "delivery_feature_count": 1150,
       "map_reference": "DWG declared EPSG:3857",
       "map_precision": "nominal_crs"

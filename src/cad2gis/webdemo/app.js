@@ -165,9 +165,7 @@ const localProjection = new ol.proj.Projection({
 const localMap = new ol.Map({
   target: "local-map",
   layers: [new ol.layer.Vector({ source: gcpLocalSource, style: gcpStyle, zIndex: 100 })],
-  controls: ol.control.defaults.defaults().extend([
-    new ol.control.ZoomToExtent({ extent: localProjection.getExtent() }),
-  ]),
+  controls: ol.control.defaults.defaults(),
   view: new ol.View({
     projection: localProjection, center: [0, 0], zoom: 2,
     maxZoom: 50, constrainResolution: false,
@@ -179,11 +177,9 @@ const worldMap = new ol.Map({
     new ol.layer.Tile({ source: new ol.source.OSM() }),
     new ol.layer.Vector({ source: gcpMapSource, style: gcpStyle, zIndex: 100 }),
   ],
-  controls: ol.control.defaults.defaults().extend([
-    new ol.control.ZoomToExtent({ extent: [12541000, -824000, 12547000, -818000] }),
-  ]),
+  controls: ol.control.defaults.defaults(),
   view: new ol.View({
-    center: ol.proj.fromLonLat([112.7, -7.45]), zoom: 5,
+    center: ol.proj.fromLonLat([0, 0]), zoom: 2,
     maxZoom: 50, constrainResolution: false,
   }),
 });

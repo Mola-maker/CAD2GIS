@@ -5,6 +5,8 @@ import math
 
 import pytest
 
+import cad2gis.agent_mcp as agent_mcp
+
 from cad2gis.agent_mcp import (
     MCPServiceError,
     create_decision_pack as mcp_create_decision_pack,
@@ -864,6 +866,26 @@ def test_mcp_services_page_evidence_and_create_bound_pack(tmp_path, monkeypatch)
 
     with pytest.raises(MCPServiceError, match="outside configured"):
         list_evidence_nodes(str(tmp_path.parent / "other" / "graph.json"))
+
+
+def test_evidence_graph_loader_uses_large_artifact_limit(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("CAD2GIS_PROJECT_ROOTS", raising=False)
+    monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
+    graph_path = tmp_path / "reasoning" / "evidence_graph.json"
+    graph_path.parent.mkdir()
+    graph_path.write_text("{}", encoding="utf-8")
+    graph = _stage_graph()
+    observed: dict[str, int] = {}
+
+    def fake_json_object(path, *, max_bytes=64 * 1024 * 1024):
+        observed["max_bytes"] = max_bytes
+        return graph.to_dict()
+
+    monkeypatch.setattr(agent_mcp, "_json_object", fake_json_object)
+    loaded = agent_mcp._load_graph(str(graph_path))
+
+    assert loaded.graph_sha256 == graph.graph_sha256
+    assert observed["max_bytes"] == 256 * 1024 * 1024
 
 
 def test_mcp_lists_source_derived_endpoint_candidates(tmp_path, monkeypatch) -> None:

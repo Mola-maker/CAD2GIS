@@ -13,7 +13,10 @@ import math
 from pathlib import Path
 from typing import Any
 
-from osgeo import ogr, osr
+from cad2gis.native_runtime import ensure_osgeo_runtime
+
+ensure_osgeo_runtime()
+from osgeo import ogr, osr  # noqa: E402 - runtime activation supplies bindings
 
 
 LAYER_NAMES = (

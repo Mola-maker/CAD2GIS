@@ -4,6 +4,7 @@ from cad2gis.cad2gis_v3.model import CadStyle, Feature, SourceEntity
 from cad2gis.cad2gis_v3.semantics import (
     _GENERATED_CODE_PROVENANCE,
     _annotation_target_eligible,
+    _append_label_provenance,
     _assign_family_annotations,
     _attributed_block_style,
     _device_number_attribute,
@@ -112,6 +113,16 @@ def test_device_number_attribute_reads_untagged_numeric_attrib() -> None:
         entity, "raw_properties", {"owned_attribute_texts": ["16", "- dB"]},
     )
     assert _device_number_attribute(entity) == "16"
+
+
+def test_label_provenance_replaces_unavailable_sentinel() -> None:
+    evidence = "DWG_DIRECT:block-attribute-text"
+    assert _append_label_provenance("UNAVAILABLE", evidence) == evidence
+    assert _append_label_provenance("", evidence) == evidence
+    assert (
+        _append_label_provenance("DWG_DIRECT:text", evidence)
+        == f"DWG_DIRECT:text|{evidence}"
+    )
 
 
 def test_pole_identifier_shape_accepts_reviewed_apd_shapes_only() -> None:

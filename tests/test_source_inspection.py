@@ -66,6 +66,35 @@ def test_source_inspection_is_profile_free_and_source_bound(
     )
 
 
+def test_source_inventory_census_matches_ingest_cad_roles(tmp_path: Path) -> None:
+    source = tmp_path / "mixed-model-layout.dwg"
+    source.write_bytes(b"mixed-model-layout")
+    source_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+    route = _record(source, source_sha256)
+    title_block = {
+        **_record(source, source_sha256),
+        "entity_key": "title:1",
+        "handle": "2",
+        "cad_role": "title_block",
+        "layout_role": "model",
+        "layer": "TITLE BLOCK",
+    }
+    inventory = _Inventory(
+        [route, title_block],
+        {
+            "inventory_complete": True,
+            "skipped_rows": 0,
+            "extraction_backend": "fixture",
+        },
+    )
+
+    result = inspect_source(source=source, records=inventory)
+
+    assert result["counts"]["records"] == 2
+    assert result["counts"]["model_entities"] == 1
+    assert result["cad_roles"] == {"model": 1, "title_block": 1}
+
+
 @pytest.mark.parametrize(
     "diagnostics",
     [

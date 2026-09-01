@@ -124,7 +124,10 @@ def _validate_label_provenance(features):
             continue
         provenance = feature.label_provenance
         normalized = "" if provenance is None else str(provenance).strip()
-        if not normalized or normalized.upper() == "UNAVAILABLE":
+        provenance_tokens = {
+            token.strip().upper() for token in normalized.split("|") if token.strip()
+        }
+        if not normalized or "UNAVAILABLE" in provenance_tokens:
             raise RuntimeError(
                 "Non-empty display_label lacks explicit label provenance: "
                 f"{feature.feature_class} ({feature.feature_key})"

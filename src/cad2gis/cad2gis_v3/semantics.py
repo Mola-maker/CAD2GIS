@@ -734,6 +734,14 @@ def _annotation_target_eligible(feature: Feature) -> bool:
     return code_provenance == _GENERATED_CODE_PROVENANCE
 
 
+def _append_label_provenance(existing: str | None, evidence: str) -> str:
+    """Append label evidence without retaining an unavailable sentinel."""
+    normalized = str(existing or "").strip()
+    if not normalized or normalized.upper() == "UNAVAILABLE":
+        return evidence
+    return f"{normalized}|{evidence}"
+
+
 def _minimum_cost_assignment(costs):
     """Rectangular Hungarian assignment; rows must not outnumber columns."""
     if not costs:
@@ -2287,8 +2295,9 @@ def classify_entities(
             feature.display_label = (
                 f"{text_label} · {device_number}" if text_label else str(device_number)
             )
-            feature.label_provenance = (
-                f"{feature.label_provenance}|DWG_DIRECT:block-attribute-text"
+            feature.label_provenance = _append_label_provenance(
+                feature.label_provenance,
+                "DWG_DIRECT:block-attribute-text",
             )
 
     retained: list[Feature] = []
