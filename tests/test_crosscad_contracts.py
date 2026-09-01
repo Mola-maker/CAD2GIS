@@ -74,12 +74,13 @@ def _source_entity(
     layout: str = "Model",
     raw_properties: dict | None = None,
     style=None,
+    source_sha256: str = "a" * 64,
 ):
     points = tuple(tuple(point) for point in points)
     return model.SourceEntity.from_record(
         {
             "entity_key": key,
-            "source_sha256": "a" * 64,
+            "source_sha256": source_sha256,
             "source_file": "fixture.dwg",
             "handle": key,
             "layout": layout,
@@ -645,6 +646,7 @@ def _run_fake_conversion(
         kind="LINE",
         layer="FIBER",
         points=((12_600_000.0, -800_000.0), (12_600_001.0, -800_000.0)),
+        source_sha256=source_hash,
     )
 
     class FakeProfile:
@@ -904,7 +906,8 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
     manifest = _json(run_dir / "run_manifest.json")
     expected_artifacts = {
         "source.gpkg", "delivery.gpkg", "evidence.gpkg", "style_manifest.json",
-        "evidence_graph.json", "manifest.json",
+        "evidence_graph.json", "evidence_index.sqlite3", "cad_scene_graph.json",
+        "manifest.json",
     }
     artifact_names = {
         Path(item["path"]).name for item in manifest["artifacts"].values()

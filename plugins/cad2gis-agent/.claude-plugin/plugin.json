@@ -1,6 +1,6 @@
 {
   "name": "cad2gis-agent",
-  "version": "0.1.2",
+  "version": "0.3.0",
   "description": "Evidence-first DWG to GIS conversion and review over MCP.",
   "author": {
     "name": "CAD2GIS contributors"

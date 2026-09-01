@@ -17,15 +17,18 @@ from pathlib import Path
 from typing import Any
 
 from .calibration import GCPProfile, fit_profile
+from .cad_scene_graph import build_cad_scene_graph
 from .accounting import account_entities, summarize_accounting
 from .config import MappingRegistry, SourceProfile
 from .evidence import write_evidence
 from .evidence_graph import build_stage_evidence_graph
+from .evidence_index import EVIDENCE_INDEX_FILENAME, write_evidence_index
 from .decision_executor import execute_decision_pack
 from .repair_decisions import load_decision_pack
 from .georef import (
     DeliveryTransformer,
     DirectTransformer,
+    GeoDataTransformer,
     enrich_delivery_metrics,
     feature_adjustment_records,
 )
@@ -1330,6 +1333,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
     # This review gate is before unit/CRS work, AutoCAD startup, or ingestion.
     # Validation never upgrades a draft.
     profile.require_reviewed()
+    # Keep the pipeline tolerant of legacy/custom SourceProfile-like objects
+    # created before the optional DWG GEODATA registration field existed.
+    geodata_registration = getattr(profile, "geodata_registration", None)
     source_hash = profile.validate_source(source)
     registry = MappingRegistry.load(request.mapping_registry, source_hash)
     _validate_project_bindings(profile, registry)
@@ -1394,6 +1400,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
 
     plan_domain = build_plan_domain(entities)
     semantic_entities = list(plan_domain.entities)
+    cad_scene_graph = build_cad_scene_graph(
+        source_sha256=source_hash,
+        source_entities=entities,
+        plan_entities=semantic_entities,
+    )
 
     # ── Spatial denoising (detectors + LLM supervisor) ──────────────────
     from .spatial_filter import apply_spatial_denoising
@@ -1458,12 +1469,31 @@ def convert(request: ConversionRequest) -> ConversionResult:
 
     from .coordinate_domain import assess_coordinate_domain
 
+    coordinate_domain_entities = _drawing_space_entities(semantic_entities)
+    if geodata_registration is not None:
+        from dataclasses import replace as _replace_domain_entity
+        from .geodata import local_to_crs_point
+
+        coordinate_domain_entities = [
+            _replace_domain_entity(
+                entity,
+                points=tuple(
+                    local_to_crs_point(point, geodata_registration)
+                    for point in entity.points
+                ),
+                centroid=local_to_crs_point(
+                    entity.centroid, geodata_registration,
+                ),
+                curve_fingerprint="",
+            )
+            for entity in coordinate_domain_entities
+        ]
     coordinate_domain = assess_coordinate_domain(
-        _drawing_space_entities(semantic_entities), profile.source_crs,
+        coordinate_domain_entities, profile.source_crs,
     )
     # ── OSM place-name anchor for local engineering coordinates ────────
     osm_anchor: dict[str, Any] | None = None
-    if request.gcp_profile is None:
+    if request.gcp_profile is None and geodata_registration is None:
         from .osm_anchor import derive_osm_anchor
 
         # A cached/reviewed anchor is explicit project configuration and wins
@@ -1629,6 +1659,13 @@ def convert(request: ConversionRequest) -> ConversionResult:
         "graph_sha256": evidence_graph.graph_sha256,
         "node_count": len(evidence_graph.nodes),
         "edge_count": len(evidence_graph.edges),
+        "cad_scene_graph": {
+            "schema_version": "cad2gis.cad_scene_graph.v1",
+            "graph_sha256": cad_scene_graph.graph_sha256,
+            "node_count": len(cad_scene_graph.nodes),
+            "edge_count": len(cad_scene_graph.edges),
+            "authority": cad_scene_graph.diagnostics["authority"],
+        },
         "visual_evidence": {
             "schema_version": "cad2gis.visual_evidence.v1",
             "region_count": visual_evidence.region_count,
@@ -1687,8 +1724,19 @@ def convert(request: ConversionRequest) -> ConversionResult:
     segment_gate = _evaluate_diagnostic_gates(
         "segments", profile.expectations.segment_gates, topology_diagnostics,
     )
-    transformer = DirectTransformer(
-        profile.source_crs, profile.target_crs, unit_contract=unit_contract,
+    transformer = (
+        DirectTransformer(
+            profile.source_crs,
+            profile.target_crs,
+            unit_contract=unit_contract,
+        )
+        if geodata_registration is None
+        else GeoDataTransformer(
+            profile.source_crs,
+            profile.target_crs,
+            geodata_registration=geodata_registration,
+            unit_contract=unit_contract,
+        )
     )
     all_points = [point for feature in features for point in feature.native_points]
     roundtrip_error = transformer.roundtrip_error(all_points)
@@ -1852,7 +1900,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
         # the lineage table without manufacturing a profile or controls.
         feature_displacements = feature_adjustment_records(
             features, transformer, selected_transformer,
-            lineage_model="nominal_direct",
+            lineage_model=getattr(transformer, "lineage_model", "nominal_direct"),
         )
         lineage_audit = _nominal_lineage_audit(
             transformer, source_hash, feature_displacements,
@@ -1914,8 +1962,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
         "georeference": {
             "source_crs": profile.source_crs,
             "target_crs": profile.target_crs,
-            "operation": "direct source-to-target; no EPSG:4326 intermediate geometry",
-            "unit_crs_contract": unit_contract.to_manifest_dict(),
+            "operation": (
+                "DWG GEODATA local-to-source registration followed by direct "
+                "source-to-target; no EPSG:4326 intermediate geometry"
+                if geodata_registration is not None
+                else "direct source-to-target; no EPSG:4326 intermediate geometry"
+            ),
+            "unit_crs_contract": getattr(
+                transformer,
+                "unit_crs_manifest",
+                unit_contract.to_manifest_dict(),
+            ),
             "spatial_coverage_policy": (
                 None if profile.spatial_coverage_policy is None
                 else profile.spatial_coverage_policy.to_dict()
@@ -1928,7 +1985,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "calibration": calibration_diagnostics,
             "lineage": {
                 "model": (
-                    "nominal_direct" if lineage_audit is not None
+                    getattr(transformer, "lineage_model", "nominal_direct")
+                    if lineage_audit is not None
                     else "identity_residual" if calibration_diagnostics["status"] == "disabled"
                     else calibration_diagnostics["result"].get("selected_model", "identity_residual")
                 ),
@@ -1959,6 +2017,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
     delivery_path = run_dir / f"{artifact_prefix}delivery.gpkg"
     style_manifest_path = run_dir / "qgis" / "styles" / "style_manifest.json"
     evidence_graph_path = run_dir / "reasoning" / "evidence_graph.json"
+    evidence_index_path = run_dir / "reasoning" / EVIDENCE_INDEX_FILENAME
+    cad_scene_graph_path = run_dir / "reasoning" / "cad_scene_graph.json"
     decision_execution_path = run_dir / "reasoning" / "decision_execution.json"
     derived_network_path = run_dir / "reasoning" / "derived_network.json"
     visual_manifest_path = run_dir / visual_evidence.manifest_relative_path
@@ -1973,6 +2033,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
         staged_evidence_graph_path = staged_run_dir / "reasoning" / "evidence_graph.json"
         _write_manifest(staged_evidence_graph_path, evidence_graph.to_dict())
+        staged_evidence_index_path = (
+            staged_run_dir / "reasoning" / EVIDENCE_INDEX_FILENAME
+        )
+        write_evidence_index(staged_evidence_index_path, evidence_graph)
+        staged_cad_scene_graph_path = (
+            staged_run_dir / "reasoning" / "cad_scene_graph.json"
+        )
+        _write_manifest(staged_cad_scene_graph_path, cad_scene_graph.to_dict())
         staged_visual_manifest_path = visual_evidence.write(staged_run_dir)
         staged_decision_execution_path = None
         staged_derived_network_path = None
@@ -2167,6 +2235,18 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "evidence_graph": {
                     "path": str(evidence_graph_path),
                     "sha256": _sha256(staged_evidence_graph_path),
+                },
+                "evidence_index": {
+                    "path": str(evidence_index_path),
+                    "sha256": _sha256(staged_evidence_index_path),
+                    "derived_from": "evidence_graph",
+                    "graph_sha256": evidence_graph.graph_sha256,
+                },
+                "cad_scene_graph": {
+                    "path": str(cad_scene_graph_path),
+                    "sha256": _sha256(staged_cad_scene_graph_path),
+                    "graph_sha256": cad_scene_graph.graph_sha256,
+                    "authority": "pre_semantic_source_structure",
                 },
                 "visual_evidence": {
                     "path": str(visual_manifest_path),

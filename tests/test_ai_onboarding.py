@@ -192,11 +192,26 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
             "model_dimensions": 0,
         }
     }
-    monkeypatch.setattr(
-        onboarding,
-        "ingest",
-        lambda *_args, **_kwargs: ([route], diagnostics),
-    )
+    live_review_states: list[tuple[str, str]] = []
+
+    def _staged_ingest(*_args, **_kwargs):
+        live_profile = json.loads(
+            (root / "config" / "source_profile.json").read_text(encoding="utf-8")
+        )
+        live_registry = json.loads(
+            (root / "config" / "mapping_registry.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        live_review_states.append(
+            (
+                str(live_profile["review"]["status"]),
+                str(live_registry["review"]["status"]),
+            )
+        )
+        return [route], diagnostics
+
+    monkeypatch.setattr(onboarding, "ingest", _staged_ingest)
     # Keep this unit test independent of an installed LibreDWG/AutoCAD
     # backend.  The canonical reader contract is covered separately; here we
     # are proving transactional proposal compilation and admission.
@@ -221,6 +236,11 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
     assert result_repair.get("family_validation", {}).get(
         "route_regex_check", {}
     ).get("status") == "extended"
+    assert result_repair["family_validation"]["max_repair_attempts"] == 0
+    assert result_repair["family_validation"]["provider_calls"] == 0
+    assert result_repair["family_validation"]["repair_strategy"] == (
+        "deterministic_source_samples_only"
+    )
 
     result = onboarding.compile_onboarding_proposal(
         source=source,
@@ -241,6 +261,8 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
     assert profile["review"] == registry["review"]
     assert profile["crs"]["source_crs"] == "EPSG:32749"
     assert profile["expectations"]["feature_counts"] == {"CABLE": 1, "INFRASTRUCTURE": 1}
+    assert live_review_states
+    assert set(live_review_states) == {("draft", "draft"), ("auto_accepted", "auto_accepted")}
 
 
 def test_compile_annotation_families_targets_insert_layers_not_label_layers() -> None:

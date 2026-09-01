@@ -104,3 +104,21 @@ def test_install_page_terminal_and_copy_controls_are_accessible() -> None:
     assert "navigator.clipboard.writeText" in motion
     assert "prefers-reduced-motion: reduce" in motion
     assert "@media (prefers-reduced-motion: reduce)" in styles
+
+
+def test_public_install_surfaces_describe_the_portable_runtime() -> None:
+    motion = (WEBDEMO / "install.js").read_text(encoding="utf-8")
+    landing_pages = (
+        (WEBDEMO / "index.html").read_text(encoding="utf-8"),
+        (WEBDEMO / "original-demo" / "index.html").read_text(encoding="utf-8"),
+    )
+
+    assert "CONDA REQUIRED" not in motion
+    assert "use Conda GIS runtime" not in motion
+    assert "Bundled GDAL / OGR conversion bindings PASS" in motion
+    assert "Managed LibreDWG CLI reader             PASS" in motion
+    assert "MCP + CONVERSION READY · 8/8" in motion
+    for page in landing_pages:
+        assert "UV / CONDA" not in page
+        assert "UV TOOL" in page
+        assert "MANAGED DWG READER" in page

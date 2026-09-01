@@ -19,6 +19,8 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
+from .geodata import normalize_geodata_registration
+
 from ..reader.contracts import DWGRecordInventory
 from .config import (
     MAPPING_REGISTRY_SCHEMA_VERSION,
@@ -26,6 +28,7 @@ from .config import (
     MappingRegistry,
     SourceProfile,
 )
+from .cad_scene_graph import CadSceneGraph, build_cad_scene_graph
 from .model import SourceEntity
 from .plan_domain import PlanDomainError, build_plan_domain
 
@@ -156,6 +159,29 @@ def build_source_inventory(
         if (_string(record, "dwg_type") or _string(record, "dwg_type_name")).upper()
         == "DOCUMENT_METADATA"
     )
+    geodata_registrations: list[dict[str, Any]] = []
+    for record in materialized:
+        entity_type = (
+            _string(record, "dwg_type")
+            or _string(record, "dwg_type_name")
+            or ""
+        ).upper()
+        if entity_type != "DOCUMENT_METADATA":
+            continue
+        raw_properties = _record_value(record, "raw_properties", {}) or {}
+        if not isinstance(raw_properties, Mapping):
+            continue
+        value = raw_properties.get("geodata_registration")
+        if value is None:
+            continue
+        geodata_registrations.append(normalize_geodata_registration(value))
+    unique_geodata = {
+        json.dumps(value, sort_keys=True, separators=(",", ":")): value
+        for value in geodata_registrations
+    }
+    if len(unique_geodata) > 1:
+        raise ValueError("Reader returned conflicting GEODATA registrations")
+    geodata_registration = next(iter(unique_geodata.values()), None)
     annotation_types = {
         "TEXT", "MTEXT", "ATTRIB", "ATTDEF", "MLEADER", "MULTILEADER",
         "TABLE", "TABLE_CELL",
@@ -281,6 +307,7 @@ def build_source_inventory(
             "records": metadata_texts,
             "dwg_cgeocs_values": _metadata_values(metadata_texts, "CGEOCS"),
             "dwg_insunits_values": _metadata_values(metadata_texts, "INSUNITS"),
+            "geodata_registration": geodata_registration,
         },
         "unsupported": {
             "by_reason": dict(sorted(reason_counts.items())),
@@ -304,6 +331,10 @@ def inventory_sha256(inventory: Mapping[str, Any]) -> str:
     payload.pop("plan_domain", None)
     payload.pop("inspection_status", None)
     payload.pop("onboarding", None)
+    # The scene graph is deterministically derived after the immutable reader
+    # census is built.  Excluding it keeps the project binding reproducible
+    # when conversion reconstructs the authoritative reader inventory.
+    payload.pop("cad_scene_graph", None)
     return _canonical_json_sha256(payload)
 
 
@@ -332,15 +363,13 @@ def _plan_domain_summary(diagnostics: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def inspect_source(
+def _inspect_source_products(
     *,
     source: str | Path,
-    project_dir: str | Path | None = None,
     records: Iterable[Any] | None = None,
-) -> dict[str, Any]:
-    """Inspect one DWG without assigning GIS meaning or writing project files."""
+) -> tuple[dict[str, Any], CadSceneGraph]:
+    """Return inventory plus a pre-semantic, source-bound structural graph."""
 
-    del project_dir  # Accepted as a stable public-port argument; inspection is read-only.
     source_path = Path(source).expanduser().resolve()
     authoritative_records = _extract_records(source_path) if records is None else records
     reader_protocol = dict(
@@ -375,6 +404,7 @@ def inspect_source(
     except PlanDomainError as exc:
         inventory["plan_domain"] = _plan_domain_summary(exc.diagnostics)
         inventory["inspection_status"] = "FAIL"
+        plan_entities: tuple[SourceEntity, ...] = ()
     else:
         inventory["plan_domain"] = _plan_domain_summary(plan_domain.diagnostics)
         inventory["inspection_status"] = (
@@ -382,6 +412,20 @@ def inspect_source(
             if plan_domain.diagnostics.get("status") == "PASS"
             else "WATCH"
         )
+        plan_entities = plan_domain.entities
+    scene_graph = build_cad_scene_graph(
+        source_sha256=str(inventory["source"]["sha256"]),
+        source_entities=entities,
+        plan_entities=plan_entities,
+    )
+    inventory["cad_scene_graph"] = {
+        "schema_version": "cad2gis.cad_scene_graph.v1",
+        "graph_sha256": scene_graph.graph_sha256,
+        "node_count": len(scene_graph.nodes),
+        "edge_count": len(scene_graph.edges),
+        "relative_path": "review/cad_scene_graph.json",
+        "authority": scene_graph.diagnostics["authority"],
+    }
     inventory["onboarding"] = {
         "reviewed_project_pack_present": False,
         "conversion_allowed": False,
@@ -392,6 +436,19 @@ def inspect_source(
         "next_action": "bootstrap_source_bound_project_pack",
     }
     inventory["inventory_sha256"] = inventory_sha256(inventory)
+    return inventory, scene_graph
+
+
+def inspect_source(
+    *,
+    source: str | Path,
+    project_dir: str | Path | None = None,
+    records: Iterable[Any] | None = None,
+) -> dict[str, Any]:
+    """Inspect one DWG without assigning GIS meaning or writing project files."""
+
+    del project_dir  # Accepted as a stable public-port argument; inspection is read-only.
+    inventory, _ = _inspect_source_products(source=source, records=records)
     return inventory
 
 
@@ -444,6 +501,7 @@ def _draft_profile(inventory: Mapping[str, Any]) -> dict[str, Any]:
             "target_crs": None,
             "local_registration_strategy": None,
             "local_registration_reviewed": False,
+            "geodata_registration": metadata.get("geodata_registration"),
         },
         "spatial_coverage_policy": None,
         "expectations": {
@@ -506,12 +564,13 @@ def bootstrap_project(
     """Write a deterministic draft review pack; never mark it reviewed."""
 
     root = Path(project_dir).expanduser().resolve()
-    inventory = inspect_source(source=source, records=records)
+    inventory, scene_graph = _inspect_source_products(source=source, records=records)
     paths = {
         "source_profile": root / "config" / "source_profile.json",
         "mapping_registry": root / "config" / "mapping_registry.json",
         "inventory": root / "review" / "source_inventory.json",
         "unsupported": root / "review" / "unsupported_inventory.json",
+        "cad_scene_graph": root / "review" / "cad_scene_graph.json",
     }
     existing = [path for path in paths.values() if path.exists()]
     if existing and not force:
@@ -532,6 +591,7 @@ def bootstrap_project(
         "mapping_registry": _draft_registry(inventory),
         "inventory": inventory,
         "unsupported": unsupported,
+        "cad_scene_graph": scene_graph.to_dict(),
     }
     for name, path in paths.items():
         _atomic_write_json(path, payloads[name])
@@ -826,6 +886,24 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
         from .coordinate_domain import assess_coordinate_domain
 
         entities = _model_space_entities(root, inventory)
+        if profile.geodata_registration is not None:
+            from .geodata import local_to_crs_point
+
+            class _RegisteredEntity:
+                __slots__ = ("centroid", "points")
+
+                def __init__(self, entity: Any):
+                    self.points = tuple(
+                        local_to_crs_point(
+                            point, profile.geodata_registration,
+                        )
+                        for point in entity.points
+                    )
+                    self.centroid = local_to_crs_point(
+                        entity.centroid, profile.geodata_registration,
+                    )
+
+            entities = [_RegisteredEntity(entity) for entity in entities]
         domain = assess_coordinate_domain(entities, profile.source_crs)
 
         # EPSG:3857 is global — any local coordinates pass the area-of-use

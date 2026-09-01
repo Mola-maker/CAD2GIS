@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from cad2gis.cad2gis_v3.project_profile import inspect_source
+from cad2gis.cad2gis_v3.project_profile import (
+    build_source_inventory,
+    inspect_source,
+)
 
 
 class _Inventory(list[dict]):
@@ -64,6 +67,13 @@ def test_source_inspection_is_profile_free_and_source_bound(
     assert result["onboarding"]["next_action"] == (
         "bootstrap_source_bound_project_pack"
     )
+
+    reconstructed = build_source_inventory(
+        source,
+        inventory,
+        reader_protocol=inventory.diagnostics,
+    )
+    assert result["inventory_sha256"] == reconstructed["inventory_sha256"]
 
 
 def test_source_inventory_census_matches_ingest_cad_roles(tmp_path: Path) -> None:

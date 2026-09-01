@@ -191,6 +191,65 @@ def test_libredwg_cli_adapter_preserves_model_census(
     assert metadata["raw_properties"]["metadata_evidence"] == "partial"
 
 
+def test_libredwg_cli_recovers_authoritative_geodata_lost_by_dxf(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ezdxf
+
+    from cad2gis.reader import libredwg_cli
+
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"test-dwg-with-geodata")
+    executable = tmp_path / "dwg2dxf.exe"
+    executable.write_bytes(b"stub")
+    (tmp_path / "dwgread.exe").write_bytes(b"stub")
+    monkeypatch.setenv(native_runtime.LIBREDWG_CLI_ENV, str(executable))
+
+    geodata = {
+        "OBJECTS": [{
+            "object": "GEODATA",
+            "design_pt": [0.0, 0.0, 0.0],
+            "ref_pt": [685710.25, 9185968.5, 0.0],
+            "unit_scale_horiz": 1.0,
+            "user_scale_factor": 1.0,
+            "north_dir": [0.0, 1.0],
+            "coord_system_def": (
+                '<ProjectedCoordinateSystem id="UTM84-49S">'
+                '<Alias id="32749" type="CoordinateSystem">'
+            ),
+        }],
+    }
+
+    def convert(arguments: list[str], **_kwargs: object) -> SimpleNamespace:
+        if "-O" in arguments:
+            return SimpleNamespace(
+                returncode=0,
+                stdout=json.dumps(geodata).encode("utf-8"),
+                stderr=b"",
+            )
+        output = Path(arguments[arguments.index("-o") + 1])
+        document = ezdxf.new("R2018")
+        document.header["$INSUNITS"] = 6
+        document.modelspace().add_line((0, 0), (3, 4))
+        document.saveas(output)
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", convert)
+
+    records = libredwg_cli.extract_dwg_records(source)
+    metadata = next(
+        record for record in records
+        if record["dwg_type_name"] == "DOCUMENT_METADATA"
+    )
+    registration = metadata["raw_properties"]["geodata_registration"]
+
+    assert metadata["text"] == "INSUNITS=6;CGEOCS=UTM84-49S"
+    assert metadata["raw_properties"]["metadata_evidence"] == "reader"
+    assert registration["target_crs"] == "EPSG:32749"
+    assert registration["reference_point"] == [685710.25, 9185968.5]
+    assert records.diagnostics["geodata"]["status"] == "available"
+
+
 def test_legacy_apd_profile_can_gate_current_semantic_cable_collections() -> None:
     from cad2gis.cad2gis_v3.config import SourceProfile
 

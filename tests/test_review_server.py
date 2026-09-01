@@ -42,6 +42,8 @@ def _run_fixture(tmp_path) -> tuple:
         "schema_version": "cad2gis-run-manifest-v4",
         "run_status": "CONDITIONAL",
         "modes": {"domain": "auto", "llm": "assist"},
+        "source_entity_count": 1538,
+        "delivery_counts": {"SITE": 1, "CABLE": 33},
         "source": {
             "path": "fixture.dwg",
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
@@ -196,6 +198,9 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     )
 
     assert client.get("/api/health").json()["status"] == "ok"
+    run_summary = client.get("/api/run").json()
+    assert run_summary["source_entity_count"] == 1538
+    assert run_summary["delivery_counts"] == {"SITE": 1, "CABLE": 33}
     page = client.get("/").text
     assert "图纸理解、配准与交付审查" in page
     assert "把不可信的" in page
@@ -346,6 +351,13 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
     assert script.status_code == 200
     assert "navigator.clipboard" in script.text
     assert "terminalEvent" in script.text
+    assert "/geojson`" in script.text
+    assert 'dataProjection: "EPSG:4326"' in script.text
+    assert 'featureProjection: "EPSG:3857"' in script.text
+    assert 'layer === "CABLE_SEGMENT" || layer === "CABLE"' in script.text
+    assert "run.source_entity_count" in script.text
+    assert "run.delivery_counts" in script.text
+    assert "declutter: true" in script.text
 
     demo = client.get("/assets/demo-fixture.js")
     assert demo.status_code == 200

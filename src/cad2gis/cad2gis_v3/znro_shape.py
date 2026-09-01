@@ -19,11 +19,8 @@ from __future__ import annotations
 import math
 from typing import Sequence
 
-import numpy as np
-from scipy.spatial import Delaunay, QhullError
-from scipy.spatial.distance import pdist, squareform
 from shapely.geometry import MultiPoint, Polygon
-from shapely.ops import unary_union
+from shapely.ops import triangulate, unary_union
 
 
 def _unique_points(polygons: Sequence[Sequence[Sequence[float]]]) -> list[tuple[float, float]]:
@@ -35,12 +32,11 @@ def _unique_points(polygons: Sequence[Sequence[Sequence[float]]]) -> list[tuple[
     return list(unique.values())
 
 
-def _prim_mst_max_edge(centroids: np.ndarray) -> float:
+def _prim_mst_max_edge(centroids: Sequence[Sequence[float]]) -> float:
     """Return the longest edge of the minimum spanning tree (Prim)."""
     count = len(centroids)
     if count <= 1:
         return 0.0
-    pairwise = squareform(pdist(centroids))
     visited = [False] * count
     visited[0] = True
     longest = 0.0
@@ -53,8 +49,9 @@ def _prim_mst_max_edge(centroids: np.ndarray) -> float:
             for parent in range(count):
                 if not visited[parent]:
                     continue
-                if pairwise[parent][node] < best:
-                    best = pairwise[parent][node]
+                distance = math.dist(centroids[parent], centroids[node])
+                if distance < best:
+                    best = distance
                     best_node = node
         if best_node < 0 or not math.isfinite(best):
             break
@@ -63,7 +60,7 @@ def _prim_mst_max_edge(centroids: np.ndarray) -> float:
     return longest
 
 
-def _triangle_circumradius(triangle: np.ndarray) -> float:
+def _triangle_circumradius(triangle: Sequence[Sequence[float]]) -> float:
     a, b, c = triangle
     denominator = 2.0 * (
         a[0] * (b[1] - c[1])
@@ -209,7 +206,7 @@ def alpha_shape_union(
     if len(points) < 4:
         return _convex_hull(points)
     source_polygons = [Polygon(polygon) for polygon in polygons]
-    centroids = np.array([polygon.centroid.coords[0] for polygon in source_polygons])
+    centroids = [polygon.centroid.coords[0] for polygon in source_polygons]
     bridge = _prim_mst_max_edge(centroids)
     if bridge <= 0.0:
         bridge = max(
@@ -219,25 +216,24 @@ def alpha_shape_union(
     if bridge <= 0.0:
         bridge = 1.0
 
-    points_array = np.array(points)
-    try:
-        triangulation = Delaunay(points_array)
-    except (QhullError, ValueError):
-        try:
-            triangulation = Delaunay(points_array, qhull_options="QJ")
-        except (QhullError, ValueError):
-            return _convex_hull(points)
+    triangles = triangulate(MultiPoint(points))
+    if not triangles:
+        return _convex_hull(points)
 
     multipliers = (0.5, 0.75, 1.0, 1.2, 1.5, 2.0, 4.0)
     for multiplier in multipliers:
         radius = bridge * 0.5 * multiplier * gap_fill_multiplier + 1e-9
         kept = [
-            simplex for simplex in triangulation.simplices
-            if _triangle_circumradius(points_array[simplex]) <= radius
+            triangle
+            for triangle in triangles
+            if _triangle_circumradius(
+                list(triangle.exterior.coords)[:3]
+            )
+            <= radius
         ]
         if not kept:
             continue
-        union = unary_union([Polygon(points_array[simplex]) for simplex in kept])
+        union = unary_union(kept)
         pieces = list(union.geoms) if hasattr(union, "geoms") else [union]
         polygons_only = [piece for piece in pieces if piece.geom_type == "Polygon"]
         if not polygons_only:

@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 import math
 import os
+import re
 import subprocess
 import tempfile
 from collections import Counter
@@ -23,10 +25,15 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from ..native_runtime import discover_libredwg_cli
+from ..cad2gis_v3.geodata import (
+    GEODATA_REGISTRATION_SCHEMA,
+    normalize_geodata_registration,
+)
 from .contracts import ReaderCapability, ReaderUnavailableError
 
 _RAW_PROPERTIES_SCHEMA = "cad2gis-raw-properties-v1"
 _CURVE_FACTS_SCHEMA = "cad2gis-curve-facts-v1"
+_MAX_GEODATA_JSON_BYTES = 256 * 1024 * 1024
 
 _OBJECT_NAMES = {
     "LINE": "ACDBLINE",
@@ -525,9 +532,110 @@ def _contexts(document: Any) -> Iterable[tuple[Any, str, str, str]]:
         yield block, f"BLOCKDEF:{block.name}", "block_definition", "block_definition"
 
 
-def _metadata_record(source: Path, source_sha256: str, document: Any) -> dict[str, Any]:
+def _geodata_reader(executable: Path) -> Path | None:
+    name = "dwgread.exe" if os.name == "nt" else "dwgread"
+    candidate = executable.with_name(name)
+    return candidate if candidate.is_file() else None
+
+
+def _read_geodata_registration(
+    executable: Path, source: Path,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    reader = _geodata_reader(executable)
+    diagnostics: dict[str, Any] = {
+        "status": "unavailable",
+        "reader": None if reader is None else str(reader),
+    }
+    if reader is None:
+        diagnostics["detail"] = "dwgread is not installed beside dwg2dxf"
+        return None, diagnostics
+    try:
+        process = subprocess.run(
+            [str(reader), "-O", "minJSON", str(source)],
+            capture_output=True,
+            timeout=600,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        diagnostics["detail"] = f"dwgread GEODATA probe failed ({type(exc).__name__})"
+        return None, diagnostics
+    diagnostics["exit_code"] = int(process.returncode)
+    diagnostics["stdout_bytes"] = len(process.stdout)
+    diagnostics["stderr_sha256"] = hashlib.sha256(process.stderr).hexdigest()
+    if process.returncode != 0:
+        diagnostics["detail"] = "dwgread GEODATA probe returned a non-zero exit code"
+        return None, diagnostics
+    if len(process.stdout) > _MAX_GEODATA_JSON_BYTES:
+        diagnostics["detail"] = "dwgread GEODATA JSON exceeds the safety limit"
+        return None, diagnostics
+    try:
+        payload = json.loads(process.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        diagnostics["detail"] = f"dwgread GEODATA JSON is invalid ({type(exc).__name__})"
+        return None, diagnostics
+    if not isinstance(payload, dict):
+        diagnostics["detail"] = "dwgread GEODATA JSON root is not an object"
+        return None, diagnostics
+    objects = payload.get("OBJECTS", payload.get("objects", ()))
+    if not isinstance(objects, list):
+        diagnostics["detail"] = "dwgread GEODATA JSON has no object inventory"
+        return None, diagnostics
+    values = [
+        item for item in objects
+        if isinstance(item, dict)
+        and str(item.get("object", item.get("dxfname", ""))).upper() == "GEODATA"
+    ]
+    if len(values) != 1:
+        diagnostics["detail"] = f"expected one GEODATA object, found {len(values)}"
+        return None, diagnostics
+    value = values[0]
+    definition = str(value.get("coord_system_def", ""))
+    coordinate_match = re.search(
+        r"<ProjectedCoordinateSystem\s+id=[\"']([^\"']+)[\"']",
+        definition,
+        flags=re.IGNORECASE,
+    )
+    epsg_match = re.search(
+        r"<Alias\s+id=[\"'](\d+)[\"']\s+type=[\"']CoordinateSystem[\"']",
+        definition,
+        flags=re.IGNORECASE,
+    )
+    if coordinate_match is None or epsg_match is None:
+        diagnostics["detail"] = "GEODATA coordinate-system definition has no EPSG alias"
+        return None, diagnostics
+    try:
+        registration = normalize_geodata_registration({
+            "schema_version": GEODATA_REGISTRATION_SCHEMA,
+            "coordinate_system_id": coordinate_match.group(1),
+            "target_crs": f"EPSG:{epsg_match.group(1)}",
+            "design_point": value.get("design_pt"),
+            "reference_point": value.get("ref_pt"),
+            "horizontal_unit_scale": value.get("unit_scale_horiz", 1.0),
+            "user_scale_factor": value.get("user_scale_factor", 1.0),
+            "north_direction": value.get("north_dir"),
+            "authority": "DWG_DIRECT:GEODATA",
+        })
+    except (TypeError, ValueError, OverflowError) as exc:
+        diagnostics["detail"] = f"GEODATA registration facts are invalid ({exc})"
+        return None, diagnostics
+    diagnostics["status"] = "available"
+    diagnostics["detail"] = "authoritative GEODATA registration extracted"
+    diagnostics["coordinate_system_id"] = registration["coordinate_system_id"]
+    diagnostics["target_crs"] = registration["target_crs"]
+    return registration, diagnostics
+
+
+def _metadata_record(
+    source: Path,
+    source_sha256: str,
+    document: Any,
+    *,
+    geodata_registration: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     insunits = int(document.header.get("$INSUNITS", 0) or 0)
     cgeocs = str(document.header.get("$CGEOCS", "") or "").strip()
+    if not cgeocs and geodata_registration is not None:
+        cgeocs = str(geodata_registration["coordinate_system_id"])
     metadata_text = f"INSUNITS={insunits}"
     if cgeocs:
         metadata_text += f";CGEOCS={cgeocs}"
@@ -543,6 +651,7 @@ def _metadata_record(source: Path, source_sha256: str, document: Any) -> dict[st
         "handle": "DOCUMENT_METADATA",
         "text": metadata_text,
         "metadata_evidence": "reader" if cgeocs else "partial",
+        "geodata_registration": geodata_registration,
         "unsupported_reasons": [],
         "unsupported_reason": "",
         "geometry_status": "unavailable",
@@ -627,7 +736,24 @@ def extract_dwg_records(
             )
         document = readfile(output)
 
-        records: list[dict[str, Any]] = [_metadata_record(source, source_sha256, document)]
+        dxf_cgeocs = str(document.header.get("$CGEOCS", "") or "").strip()
+        geodata_registration = None
+        geodata_diagnostics: dict[str, Any] = {
+            "status": "not_required",
+            "detail": "DXF header retained CGEOCS",
+        }
+        if not dxf_cgeocs:
+            geodata_registration, geodata_diagnostics = _read_geodata_registration(
+                Path(executable), source,
+            )
+        records: list[dict[str, Any]] = [
+            _metadata_record(
+                source,
+                source_sha256,
+                document,
+                geodata_registration=geodata_registration,
+            )
+        ]
         unsupported = Counter()
         entity_count = 0
         attribute_count = 0
@@ -672,6 +798,7 @@ def extract_dwg_records(
             "skipped_rows": 0,
             "inventory_complete": True,
             "metadata_evidence": records[0]["raw_properties"]["metadata_evidence"],
+            "geodata": geodata_diagnostics,
             "unsupported_reason_counts": dict(sorted(unsupported.items())),
             "source_entity_count": entity_count,
             "attribute_entity_count": attribute_count,

@@ -49,7 +49,9 @@ Client templates do not contain a developer drive or checkout path. Claude Code
 uses `CLAUDE_PROJECT_DIR`; Cursor/VS Code use `${workspaceFolder}`; Codex starts
 the server in the current project. `CAD2GIS_PROJECT_ROOTS` is an optional
 path-separated override for intentionally shared data outside that workspace.
-The server remains fail-closed.
+The plugin explicitly passes this override, `CAD2GIS_CACHE_DIR`, and reader
+selection overrides to its MCP process. The server remains fail-closed: only
+the current workspace and explicitly configured roots are accepted.
 
 ## Portability tests
 

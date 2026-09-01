@@ -77,6 +77,7 @@ const format = new ol.format.GeoJSON();
 const localLayers = new Map();
 const previewLayers = new Map();
 const layerCollections = new Map();
+const geographicCollections = new Map();
 let localExtent = ol.extent.createEmpty();
 const gcpLocalSource = new ol.source.Vector();
 const gcpMapSource = new ol.source.Vector();
@@ -95,7 +96,7 @@ const palette = {
 
 const displayLabel = (feature) => {
   const layer = String(feature.get("_layer") || "").toUpperCase();
-  if (layer === "CABLE_SEGMENT") {
+  if (layer === "CABLE_SEGMENT" || layer === "CABLE") {
     const value = Number(feature.get("source_native_length_m"));
     if (feature.get("measurement_native_m") != null) {
       return `${Number(feature.get("measurement_native_m")).toFixed(3)} m [DWG DIMENSION]`;
@@ -222,7 +223,9 @@ const refreshPreview = () => {
   similarity = fitSimilarity(controls);
   for (const layer of previewLayers.values()) worldMap.removeLayer(layer);
   previewLayers.clear();
-  const nominalPreview = !similarity && runSummary?.demo?.nominal_map_preview;
+  const nominalPreview = !similarity && (
+    geographicCollections.size > 0 || runSummary?.demo?.nominal_map_preview
+  );
   const nominalTransform = runSummary?.demo?.nominal_transform
     || { a: 1, b: 0, tx: 0, ty: 0 };
   if (!similarity && !nominalPreview) {
@@ -231,9 +234,16 @@ const refreshPreview = () => {
     return;
   }
   for (const [name, collection] of layerCollections) {
-    const features = format.readFeatures(collection);
+    const geographicCollection = !similarity ? geographicCollections.get(name) : null;
+    const features = geographicCollection
+      ? format.readFeatures(geographicCollection, {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+      })
+      : format.readFeatures(collection);
     for (const feature of features) {
       feature.set("_layer", name);
+      if (geographicCollection) continue;
       feature.getGeometry()?.applyTransform((input, output, stride) => {
         const target = output || input;
         for (let i = 0; i < input.length; i += stride) {
@@ -255,6 +265,7 @@ const refreshPreview = () => {
     const layer = new ol.layer.Vector({
       source: new ol.source.Vector({ features }),
       style: featureStyle,
+      declutter: true,
       zIndex: 10,
     });
     worldMap.addLayer(layer);
@@ -262,6 +273,8 @@ const refreshPreview = () => {
   }
   $("#fit-model").textContent = similarity
     ? `相似变换 · 比例 ${similarity.scale.toFixed(6)} · 旋转 ${(similarity.rotation * 180 / Math.PI).toFixed(3)}°`
+    : geographicCollections.size > 0
+      ? `名义 ${runSummary?.crs?.target_crs || "目标 CRS"} → EPSG:4326 预览（仍需独立 GCP 验证）`
     : runSummary?.demo?.map_anchor
       ? `地图锚点预览 · ${runSummary.demo.map_anchor.place_name || "位置已知"}（仍需 GCP）`
       : "名义 EPSG:3857 预览（未证明绝对精度）";
@@ -453,10 +466,16 @@ const loadLayer = async (descriptor) => {
   if (descriptor.feature_count === 0) return;
   const collection = await fetchJSON(`/api/layers/${encodeURIComponent(descriptor.name)}/local-geojson`);
   layerCollections.set(descriptor.name, collection);
+  if (!window.CAD2GIS_DEMO?.active) {
+    const geographic = await fetchJSON(`/api/layers/${encodeURIComponent(descriptor.name)}/geojson`);
+    geographicCollections.set(descriptor.name, geographic);
+  }
   const features = format.readFeatures(collection);
   features.forEach((feature) => feature.set("_layer", descriptor.name));
   const source = new ol.source.Vector({ features });
-  const layer = new ol.layer.Vector({ source, style: featureStyle, zIndex: 10 });
+  const layer = new ol.layer.Vector({
+    source, style: featureStyle, declutter: true, zIndex: 10,
+  });
   localMap.addLayer(layer);
   localLayers.set(descriptor.name, layer);
   if (!source.isEmpty()) ol.extent.extend(localExtent, source.getExtent());
@@ -497,6 +516,7 @@ const clearProjectState = () => {
   localLayers.clear();
   previewLayers.clear();
   layerCollections.clear();
+  geographicCollections.clear();
   localExtent = ol.extent.createEmpty();
   gcpLocalSource.clear();
   gcpMapSource.clear();
@@ -561,6 +581,20 @@ const renderRun = (run) => {
   $("#run-status").textContent = run.run_status || "UNKNOWN";
   const sourcePath = run.source?.path || "";
   const sourceName = sourcePath.split(/[\\/]/).pop() || "未命名 CAD 项目";
+  if (!window.CAD2GIS_DEMO?.active) {
+    const selector = $("#demo-project-select");
+    selector.innerHTML = `<option value="live">${sourceName}</option>`;
+    selector.value = "live";
+    selector.disabled = true;
+    const deliveryCount = Object.values(run.delivery_counts || {})
+      .reduce((sum, value) => sum + Number(value || 0), 0);
+    $("#demo-project-location").textContent = `${run.crs?.target_crs || "CRS 未声明"} · 本地实时运行`;
+    $("#demo-project-description").textContent = `${Object.keys(run.delivery_counts || {}).length} 个交付图层；源事实、坐标与审计工件均来自当前运行。`;
+    $("#demo-project-source-count").textContent = Number(run.source_entity_count || 0).toLocaleString("en-US");
+    $("#demo-project-delivery-count").textContent = deliveryCount.toLocaleString("en-US");
+    $("#demo-project-map-reference").textContent = `DWG declared ${run.crs?.target_crs || "CRS unavailable"}`;
+    $("#demo-project-sha").textContent = run.source?.sha256 ? `${run.source.sha256.slice(0, 12)}…` : "—";
+  }
   $("#project-name").textContent = sourceName;
   $("#project-source").textContent = sourcePath || "未提供源路径";
   $("#map-reference-note").textContent = run.demo?.map_anchor

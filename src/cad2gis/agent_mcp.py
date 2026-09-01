@@ -5,10 +5,30 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, cast
 
-from .cad2gis_v3.evidence_graph import EvidenceGraph
+from . import __version__
+from .contracts import (
+    AGENT_PROMPT_CONTRACT_VERSION,
+    MCP_TOOL_NAMES,
+    PLUGIN_CONTRACT_VERSION,
+    SKILL_CONTRACT_VERSION,
+    SKILL_CONTRACTS,
+    mcp_tool_contract,
+)
+from .cad2gis_v3.cad_scene_graph import CadSceneGraph
+from .cad2gis_v3.evidence_graph import EvidenceGraph, EvidenceNode
+from .cad2gis_v3.evidence_index import (
+    EvidenceIndexError,
+    get_indexed_evidence_node,
+    index_path_for_graph,
+    indexed_nodes_by_kind,
+    page_evidence_nodes,
+    validate_index_manifest_binding,
+)
 from .cad2gis_v3.geometry_repairs import (
     COLLINEAR_MERGE_POLICY_IDS,
     CURVE_MATERIALIZER_ID,
@@ -17,6 +37,9 @@ from .cad2gis_v3.geometry_repairs import (
     INTERSECTION_SPLIT_POLICY_IDS,
     endpoint_pair_candidates_from_graph,
 )
+from .cad2gis_v3.label_candidates import generate_label_candidates
+from .cad2gis_v3.model import CadStyle, Feature, SourceEntity
+from .cad2gis_v3.scene_partition import detect_legend_candidates
 from .cad2gis_v3.curve_geometry import MATERIALIZATION_POLICY_VERSION
 from .cad2gis_v3.repair_decisions import (
     OPERATION_REGISTRY,
@@ -31,7 +54,6 @@ class MCPServiceError(ValueError):
     """An MCP request escaped its configured project roots or schema."""
 
 
-AGENT_PROMPT_CONTRACT_VERSION = "cad2gis.agent_prompt.v2"
 MAX_EVIDENCE_GRAPH_BYTES = 256 * 1024 * 1024
 
 
@@ -40,6 +62,11 @@ def get_capabilities() -> dict[str, Any]:
 
     return {
         "schema_version": "cad2gis.mcp_capabilities.v1",
+        "package_version": __version__,
+        "plugin_version": PLUGIN_CONTRACT_VERSION,
+        "skill_contract_version": SKILL_CONTRACT_VERSION,
+        "skill_contracts": dict(SKILL_CONTRACTS),
+        "tool_contract": mcp_tool_contract(),
         "protocol": "Model Context Protocol",
         "transports": ["stdio", "streamable-http"],
         "http_endpoint": "/mcp",
@@ -115,14 +142,30 @@ def _roots() -> tuple[Path, ...]:
 
 def _runtime_status() -> dict[str, Any]:
     from .native_runtime import portable_runtime_status
-    from .reader.resolver import configured_reader, reader_capabilities
+    from .reader.resolver import (
+        configured_reader,
+        reader_capabilities,
+        selected_reader_capability,
+    )
 
+    portable = portable_runtime_status()
+    selected_reader = configured_reader()
+    capabilities = reader_capabilities()
+    reader_ready = selected_reader_capability().available
+    gdal = portable.get("gdal", {})
+    conversion_ready = bool(
+        isinstance(gdal, dict)
+        and gdal.get("available") is True
+        and reader_ready
+    )
     return {
-        **portable_runtime_status(),
-        "selected_reader": configured_reader(),
+        **portable,
+        "status": "ready" if conversion_ready else "limited",
+        "conversion_ready": conversion_ready,
+        "selected_reader": selected_reader,
         "readers": {
             name: capability.to_dict()
-            for name, capability in sorted(reader_capabilities().items())
+            for name, capability in sorted(capabilities.items())
         },
     }
 
@@ -367,12 +410,36 @@ def apply_ai_onboarding(
 
     from .pipeline import apply_ai_onboarding as apply_service
 
-    return apply_service(
+    result = apply_service(
         source=_path(source),
         project_dir=_path(project_dir),
         proposal=proposal,
         proposer=dict(proposer or {"provider": "host-agent"}),
     )
+    # Keep the MCP response small enough for host agents to reason over in one
+    # turn.  The complete immutable result, including per-entity coverage
+    # records, is persisted by the service for later audit.
+    summary = dict(result)
+    coverage = dict(summary.get("semantic_coverage") or {})
+    coverage_records = list(coverage.pop("records", ()) or ())
+    summary["semantic_coverage"] = coverage
+    plan_domain = dict(summary.get("plan_domain") or {})
+    plan_issues = list(plan_domain.pop("issues", ()) or ())
+    if plan_domain:
+        plan_domain["issue_count"] = len(plan_issues)
+        summary["plan_domain"] = plan_domain
+    result_artifact = (
+        Path(str(result["project_dir"]))
+        / "review"
+        / "ai_onboarding_result.json"
+    )
+    summary["detail_artifact"] = {
+        "path": str(result_artifact),
+        "semantic_coverage_record_count": len(coverage_records),
+        "plan_domain_issue_count": len(plan_issues),
+        "authority": "full_deterministic_onboarding_result",
+    }
+    return summary
 
 
 def auto_onboard_and_convert(
@@ -415,32 +482,142 @@ def auto_onboard_and_convert(
     }
 
 
-def _load_graph(graph_path: str) -> EvidenceGraph:
-    return EvidenceGraph.from_dict(
-        _json_object(_path(graph_path), max_bytes=MAX_EVIDENCE_GRAPH_BYTES)
+def start_feedback_iteration(
+    base_run_dir: str,
+    *,
+    session_dir: str = "",
+    max_iterations: int = 3,
+) -> dict[str, Any]:
+    """Start a bounded, auditable retry loop over one immutable conversion run."""
+
+    from .cad2gis_v3.iteration import start_feedback_iteration as start
+
+    return start(
+        _path(base_run_dir),
+        session_dir=None if not session_dir else _path(session_dir, must_exist=False),
+        max_iterations=max_iterations,
     )
 
 
-def list_evidence_nodes(
+def inspect_iteration(session_path: str) -> dict[str, Any]:
+    """Inspect iteration state, budget, pending decisions, and the next action."""
+
+    from .cad2gis_v3.iteration import inspect_iteration as inspect
+
+    return inspect(_path(session_path))
+
+
+def record_iteration_feedback(
+    session_path: str,
+    feedback_items: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Bind user language and visual evidence to the active source/run hashes."""
+
+    from .cad2gis_v3.iteration import record_iteration_feedback as record
+
+    normalized: list[dict[str, Any]] = []
+    for item in feedback_items:
+        value = dict(item)
+        visual_refs = []
+        for reference in value.get("visual_refs") or []:
+            visual = dict(reference)
+            if visual.get("kind") == "user_image" and visual.get("path"):
+                visual["path"] = str(_path(str(visual["path"])))
+            visual_refs.append(visual)
+        value["visual_refs"] = visual_refs
+        normalized.append(value)
+    return record(_path(session_path), normalized)
+
+
+def prepare_iteration_context(session_path: str) -> dict[str, Any]:
+    """Create the constrained evidence/routing pack for the next retry."""
+
+    from .cad2gis_v3.iteration import prepare_iteration_context as prepare
+
+    return prepare(_path(session_path))
+
+
+def evaluate_iteration_candidate(
+    session_path: str,
+    candidate_run_dir: str,
+    addressed_feedback_ids: list[str],
+    change_summary: str,
+    changed_artifacts: list[str] | None = None,
+) -> dict[str, Any]:
+    """Gate a new run against the active run without promoting it."""
+
+    from .cad2gis_v3.iteration import evaluate_iteration_candidate as evaluate
+
+    artifacts = [_path(item) for item in (changed_artifacts or [])]
+    return evaluate(
+        _path(session_path),
+        _path(candidate_run_dir),
+        addressed_feedback_ids=addressed_feedback_ids,
+        change_summary=change_summary,
+        changed_artifacts=artifacts,
+    )
+
+
+def decide_iteration_candidate(
+    session_path: str,
+    candidate_id: str,
+    verdict: str,
+    rationale: str,
+    user_confirmed: bool = False,
+) -> dict[str, Any]:
+    """Accept/reject/revise a gated candidate; accept needs user confirmation."""
+
+    from .cad2gis_v3.iteration import decide_iteration_candidate as decide
+
+    return decide(
+        _path(session_path),
+        candidate_id,
+        verdict=verdict,
+        rationale=rationale,
+        user_confirmed=user_confirmed,
+    )
+
+
+def export_iteration_learning(
+    session_path: str,
+    output_path: str,
+) -> dict[str, Any]:
+    """Export accepted lessons as source-bound onboarding suggestions."""
+
+    from .cad2gis_v3.iteration import export_iteration_learning as export
+
+    return export(
+        _path(session_path),
+        _path(output_path, must_exist=False),
+    )
+
+
+def _load_cad_scene_graph(graph_path: str) -> CadSceneGraph:
+    return CadSceneGraph.from_dict(_json_object(_path(graph_path)))
+
+
+def list_cad_scene_nodes(
     graph_path: str,
     *,
     kind: str = "",
     cursor: int = 0,
     limit: int = 50,
 ) -> dict[str, Any]:
-    """Page through source-bound evidence nodes without changing any facts."""
+    """Page through immutable pre-semantic CAD scene nodes."""
 
     if isinstance(cursor, bool) or not isinstance(cursor, int) or cursor < 0:
         raise MCPServiceError("cursor must be a non-negative integer")
     if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
         raise MCPServiceError("limit must be between 1 and 200")
-    graph = _load_graph(graph_path)
+    graph = _load_cad_scene_graph(graph_path)
     values = [node for node in graph.nodes if not kind or node.kind == kind]
     page = values[cursor:cursor + limit]
     next_cursor = cursor + len(page)
     return {
+        "schema_version": "cad2gis.cad_scene_nodes_page.v1",
         "graph_sha256": graph.graph_sha256,
         "source_sha256": graph.source_sha256,
+        "authority": graph.diagnostics.get("authority"),
         "total": len(values),
         "cursor": cursor,
         "next_cursor": next_cursor if next_cursor < len(values) else None,
@@ -456,9 +633,225 @@ def list_evidence_nodes(
     }
 
 
+def get_cad_scene_node(graph_path: str, node_id: str) -> dict[str, Any]:
+    """Read one exact pre-semantic node with its source-bound facts."""
+
+    graph = _load_cad_scene_graph(graph_path)
+    for node in graph.nodes:
+        if node.node_id == node_id:
+            return node.to_dict()
+    raise MCPServiceError(f"Unknown CAD scene node ID: {node_id}")
+
+
+def _stage_objects_from_nodes(
+    nodes: tuple[EvidenceNode, ...] | list[EvidenceNode],
+    *,
+    source_sha256: str,
+) -> tuple[list[Feature], list[SourceEntity]]:
+    """Rebuild candidate-generator inputs from immutable evidence facts."""
+
+    features: list[Feature] = []
+    entities: list[SourceEntity] = []
+    for node in nodes:
+        facts = node.facts
+        if node.kind == "source_entity":
+            style = facts.get("style")
+            entities.append(SourceEntity.from_record({
+                "entity_key": node.logical_id,
+                "source_sha256": source_sha256,
+                "handle": facts.get("handle", ""),
+                "layout": facts.get("layout", ""),
+                "layout_role": facts.get("layout_role", ""),
+                "cad_role": facts.get("cad_role", ""),
+                "layer": facts.get("layer", ""),
+                "object_name": facts.get("object_name", ""),
+                "dwg_type_name": facts.get("dwg_type", ""),
+                "points": facts.get("points", ()),
+                "centroid": facts.get("centroid", (0.0, 0.0)),
+                "closed": facts.get("closed", False),
+                "text": facts.get("text", ""),
+                "block_name": facts.get("block_name", ""),
+                "block_attributes": facts.get("block_attributes", {}),
+                "native_length": facts.get("native_length"),
+                **(style if isinstance(style, dict) else {}),
+            }))
+        elif node.kind == "feature":
+            features.append(Feature(
+                feature_key=node.logical_id,
+                feature_class=str(facts.get("feature_class", "")),
+                geometry_kind=str(facts.get("geometry_kind", "")),
+                native_points=[
+                    (float(point[0]), float(point[1]))
+                    for point in facts.get("native_points", ())
+                ],
+                source_entity_key=str(facts.get("source_entity_key", "")),
+                source_handle=str(facts.get("source_handle", "")),
+                source_layer=str(facts.get("source_layer", "")),
+                geometry_role=str(facts.get("geometry_role", "")),
+                style=CadStyle(),
+            ))
+    return features, entities
+
+
+def _stage_objects_from_graph(
+    graph: EvidenceGraph,
+) -> tuple[list[Feature], list[SourceEntity]]:
+    return _stage_objects_from_nodes(list(graph.nodes), source_sha256=graph.source_sha256)
+
+
+def list_label_candidates(graph_path: str) -> dict[str, Any]:
+    """List advisory, distance-ranked labels without changing source facts."""
+
+    index = _evidence_index(graph_path)
+    if index is not None:
+        try:
+            nodes = tuple(indexed_nodes_by_kind(index, "source_entity")) + tuple(
+                indexed_nodes_by_kind(index, "feature")
+            )
+            metadata = page_evidence_nodes(index, limit=1)
+        except EvidenceIndexError as exc:
+            raise MCPServiceError(str(exc)) from exc
+        features, entities = _stage_objects_from_nodes(
+            list(nodes), source_sha256=str(metadata["source_sha256"]),
+        )
+        result = generate_label_candidates(features, entities)
+        return {
+            **result,
+            "evidence_graph_sha256": metadata["graph_sha256"],
+            "query_backend": "sqlite-index",
+        }
+    graph = _load_graph(graph_path)
+    features, entities = _stage_objects_from_graph(graph)
+    result = generate_label_candidates(features, entities)
+    return {
+        **result,
+        "evidence_graph_sha256": graph.graph_sha256,
+        "query_backend": "canonical-json",
+    }
+
+
+def list_legend_catalog_candidates(
+    graph_path: str,
+    route_regex: str = "",
+) -> dict[str, Any]:
+    """List advisory legend/symbol-sample groups from source-bound facts."""
+
+    pattern = None
+    if str(route_regex).strip():
+        try:
+            pattern = re.compile(str(route_regex))
+        except re.error as exc:
+            raise MCPServiceError(f"Invalid route_regex: {exc}") from exc
+    index = _evidence_index(graph_path)
+    if index is not None:
+        try:
+            nodes = list(indexed_nodes_by_kind(index, "source_entity"))
+            metadata = page_evidence_nodes(index, limit=1)
+        except EvidenceIndexError as exc:
+            raise MCPServiceError(str(exc)) from exc
+        _, entities = _stage_objects_from_nodes(
+            nodes, source_sha256=str(metadata["source_sha256"]),
+        )
+        result = detect_legend_candidates(entities, route_pattern=pattern)
+        return {
+            **result,
+            "evidence_graph_sha256": metadata["graph_sha256"],
+            "query_backend": "sqlite-index",
+        }
+    graph = _load_graph(graph_path)
+    _, entities = _stage_objects_from_graph(graph)
+    result = detect_legend_candidates(entities, route_pattern=pattern)
+    return {
+        **result,
+        "evidence_graph_sha256": graph.graph_sha256,
+        "query_backend": "canonical-json",
+    }
+
+
+def _load_graph(graph_path: str) -> EvidenceGraph:
+    return EvidenceGraph.from_dict(
+        _json_object(_path(graph_path), max_bytes=MAX_EVIDENCE_GRAPH_BYTES)
+    )
+
+
+@lru_cache(maxsize=32)
+def _validate_index_once(path: str, size: int, mtime_ns: int) -> bool:
+    """Hash-bind one official index once per stable file identity."""
+
+    del size, mtime_ns
+    return validate_index_manifest_binding(Path(path))
+
+
+def _evidence_index(graph_path: str) -> Path | None:
+    graph = _path(graph_path)
+    index_path = index_path_for_graph(graph)
+    if not index_path.is_file():
+        return None
+    index = _path(index_path)
+    stat = index.stat()
+    try:
+        _validate_index_once(str(index), stat.st_size, stat.st_mtime_ns)
+    except EvidenceIndexError as exc:
+        raise MCPServiceError(str(exc)) from exc
+    return index
+
+
+def list_evidence_nodes(
+    graph_path: str,
+    *,
+    kind: str = "",
+    cursor: int = 0,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Page through source-bound evidence nodes without changing any facts."""
+
+    if isinstance(cursor, bool) or not isinstance(cursor, int) or cursor < 0:
+        raise MCPServiceError("cursor must be a non-negative integer")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
+        raise MCPServiceError("limit must be between 1 and 200")
+    index = _evidence_index(graph_path)
+    if index is not None:
+        try:
+            return page_evidence_nodes(
+                index, kind=kind, cursor=cursor, limit=limit,
+            )
+        except EvidenceIndexError as exc:
+            raise MCPServiceError(str(exc)) from exc
+    graph = _load_graph(graph_path)
+    values = [node for node in graph.nodes if not kind or node.kind == kind]
+    page = values[cursor:cursor + limit]
+    next_cursor = cursor + len(page)
+    return {
+        "graph_sha256": graph.graph_sha256,
+        "source_sha256": graph.source_sha256,
+        "total": len(values),
+        "cursor": cursor,
+        "next_cursor": next_cursor if next_cursor < len(values) else None,
+        "query_backend": "canonical-json",
+        "nodes": [
+            {
+                "node_id": node.node_id,
+                "logical_id": node.logical_id,
+                "kind": node.kind,
+                "facts_sha256": node.facts_sha256,
+            }
+            for node in page
+        ],
+    }
+
+
 def get_evidence_node(graph_path: str, node_id: str) -> dict[str, Any]:
     """Read one exact evidence node, including immutable reader facts."""
 
+    index = _evidence_index(graph_path)
+    if index is not None:
+        try:
+            node = get_indexed_evidence_node(index, node_id)
+        except EvidenceIndexError as exc:
+            raise MCPServiceError(str(exc)) from exc
+        if node is not None:
+            return node
+        raise MCPServiceError(f"Unknown evidence node ID: {node_id}")
     graph = _load_graph(graph_path)
     for node in graph.nodes:
         if node.node_id == node_id:
@@ -469,6 +862,28 @@ def get_evidence_node(graph_path: str, node_id: str) -> dict[str, Any]:
 def list_visual_regions(graph_path: str) -> dict[str, Any]:
     """List multi-scale render and hit-map artifacts bound to the graph."""
 
+    index = _evidence_index(graph_path)
+    if index is not None:
+        try:
+            indexed = tuple(indexed_nodes_by_kind(index, "render_region"))
+        except EvidenceIndexError as exc:
+            raise MCPServiceError(str(exc)) from exc
+        metadata = page_evidence_nodes(index, kind="render_region", limit=1)
+        regions = [
+            {
+                "node_id": node.node_id,
+                "logical_id": node.logical_id,
+                **node.facts,
+            }
+            for node in indexed
+        ]
+        return {
+            "schema_version": "cad2gis.visual_regions.v1",
+            "evidence_graph_sha256": metadata["graph_sha256"],
+            "authority": "secondary_visual_evidence_only",
+            "query_backend": "sqlite-index",
+            "regions": regions,
+        }
     graph = _load_graph(graph_path)
     regions = [
         {
@@ -482,6 +897,7 @@ def list_visual_regions(graph_path: str) -> dict[str, Any]:
         "schema_version": "cad2gis.visual_regions.v1",
         "evidence_graph_sha256": graph.graph_sha256,
         "authority": "secondary_visual_evidence_only",
+        "query_backend": "canonical-json",
         "regions": regions,
     }
 
@@ -787,28 +1203,49 @@ def create_server(
 
         return install_runtime()
 
-    server.tool(name="get_capabilities")(runtime_capabilities_tool)
-    server.tool(name="get_runtime_status")(runtime_status_tool)
-    server.tool(name="install_runtime")(runtime_install_tool)
-    server.tool()(inspect_source)
-    server.tool()(bootstrap_project)
-    server.tool()(validate_project)
-    server.tool()(prepare_ai_onboarding)
-    server.tool()(apply_ai_onboarding)
-    server.tool()(auto_onboard_and_convert)
-    server.tool()(inspect_run)
-    server.tool()(audit_run)
-    server.tool()(list_evidence_nodes)
-    server.tool()(get_evidence_node)
-    server.tool()(list_visual_regions)
-    server.tool()(resolve_visual_hit)
-    server.tool()(list_registered_operations)
-    server.tool()(list_endpoint_join_candidates)
-    server.tool()(list_network_repair_candidates)
-    server.tool()(validate_decision_pack)
-    server.tool()(create_decision_pack)
-    server.tool()(run_conversion)
-    server.tool()(prepare_review_workspace)
+    registrations = (
+        ("get_capabilities", runtime_capabilities_tool),
+        ("get_runtime_status", runtime_status_tool),
+        ("install_runtime", runtime_install_tool),
+        ("inspect_source", inspect_source),
+        ("bootstrap_project", bootstrap_project),
+        ("validate_project", validate_project),
+        ("prepare_ai_onboarding", prepare_ai_onboarding),
+        ("apply_ai_onboarding", apply_ai_onboarding),
+        ("auto_onboard_and_convert", auto_onboard_and_convert),
+        ("inspect_run", inspect_run),
+        ("audit_run", audit_run),
+        ("list_evidence_nodes", list_evidence_nodes),
+        ("get_evidence_node", get_evidence_node),
+        ("list_visual_regions", list_visual_regions),
+        ("resolve_visual_hit", resolve_visual_hit),
+        ("list_registered_operations", list_registered_operations),
+        ("list_endpoint_join_candidates", list_endpoint_join_candidates),
+        ("list_network_repair_candidates", list_network_repair_candidates),
+        ("validate_decision_pack", validate_decision_pack),
+        ("create_decision_pack", create_decision_pack),
+        ("decide_iteration_candidate", decide_iteration_candidate),
+        ("evaluate_iteration_candidate", evaluate_iteration_candidate),
+        ("export_iteration_learning", export_iteration_learning),
+        ("get_cad_scene_node", get_cad_scene_node),
+        ("inspect_iteration", inspect_iteration),
+        ("list_cad_scene_nodes", list_cad_scene_nodes),
+        ("list_label_candidates", list_label_candidates),
+        ("list_legend_catalog_candidates", list_legend_catalog_candidates),
+        ("prepare_iteration_context", prepare_iteration_context),
+        ("record_iteration_feedback", record_iteration_feedback),
+        ("run_conversion", run_conversion),
+        ("start_feedback_iteration", start_feedback_iteration),
+        ("prepare_review_workspace", prepare_review_workspace),
+    )
+    registered_names = tuple(sorted(name for name, _ in registrations))
+    if registered_names != MCP_TOOL_NAMES:
+        raise RuntimeError(
+            "MCP tool registration does not match the versioned tool contract: "
+            f"registered={registered_names!r}, contract={MCP_TOOL_NAMES!r}"
+        )
+    for name, handler in registrations:
+        server.tool(name=name)(handler)
     return server
 
 

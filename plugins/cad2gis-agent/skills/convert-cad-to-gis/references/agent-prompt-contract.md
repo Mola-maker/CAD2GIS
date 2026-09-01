@@ -5,7 +5,8 @@ evidence; the canonical Python service calculates and validates all geometry.
 
 ## Input order
 
-1. Read `get_capabilities` and require `cad2gis.agent_prompt.v2`.
+1. Read `get_capabilities` and require `cad2gis.agent_prompt.v3`, matching
+   package/plugin/skill versions, and the advertised MCP tool-contract digest.
 2. Inspect the exact source or run named by the user.
 3. Page only the evidence needed for the current decision.
 4. Read registered operations and candidate IDs before proposing a repair.
