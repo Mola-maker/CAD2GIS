@@ -4,16 +4,30 @@ import json
 import re
 import tomllib
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 from cad2gis import doctor
 from cad2gis.agent_mcp import get_capabilities
+from cad2gis.contracts import (
+    MCP_TOOL_NAMES,
+    PLUGIN_CONTRACT_VERSION,
+    SKILL_CONTRACT_VERSION,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "cad2gis-agent"
+
+
+class _VersionInfo(tuple[int, int, int, str, int]):
+    @property
+    def major(self) -> int:
+        return self[0]
+
+    @property
+    def minor(self) -> int:
+        return self[1]
 
 
 def test_clean_runner_dependencies_are_explicit_and_lint_is_pinned() -> None:
@@ -38,14 +52,22 @@ def test_plugin_manifests_and_stdio_entrypoint_are_portable() -> None:
     claude = _json(PLUGIN / ".claude-plugin" / "plugin.json")
     assert codex["name"] == claude["name"] == PLUGIN.name
     assert codex["version"] == claude["version"]
+    assert codex["version"] == PLUGIN_CONTRACT_VERSION
     assert codex["mcpServers"] == "./.mcp.json"
 
     server = _json(PLUGIN / ".mcp.json")["mcpServers"]["cad2gis"]
     assert server["command"] == "cad2gis-agent-mcp"
     assert server["args"] == ["--transport", "stdio"]
     assert "cwd" not in server
-    assert "CAD2GIS_PROJECT_ROOTS" not in server["env_vars"]
-    assert "CAD2GIS_PROJECT_ROOT" not in server["env_vars"]
+    assert {
+        "CAD2GIS_CACHE_DIR",
+        "CAD2GIS_PROJECT_ROOTS",
+        "CAD2GIS_PROJECT_ROOT",
+        "CAD2GIS_READER_BACKEND",
+        "CAD2GIS_LIBREDWG_CLI",
+        "CAD2GIS_ACCORECONSOLE",
+        "CAD2GIS_ACCORECONSOLE_TIMEOUT",
+    } <= set(server["env_vars"])
 
 
 def test_codex_and_claude_marketplaces_publish_the_same_plugin() -> None:
@@ -98,8 +120,9 @@ def test_mainstream_client_templates_share_the_canonical_entrypoint() -> None:
 
 
 def test_agent_prompt_contract_is_versioned_and_fail_closed() -> None:
-    contract = get_capabilities()["prompt_contract"]
-    assert contract["version"] == "cad2gis.agent_prompt.v2"
+    capabilities = get_capabilities()
+    contract = capabilities["prompt_contract"]
+    assert contract["version"] == "cad2gis.agent_prompt.v3"
     assert contract["proposal_mode"] == "typed JSON tool arguments"
     assert contract["required_claims"] == [
         "source_geometry",
@@ -108,6 +131,32 @@ def test_agent_prompt_contract_is_versioned_and_fail_closed() -> None:
         "coordinate_accuracy",
     ]
     assert "never invent" in contract["failure_rule"]
+
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert capabilities["package_version"] == project["project"]["version"]
+    assert capabilities["plugin_version"] == PLUGIN_CONTRACT_VERSION
+    assert capabilities["skill_contract_version"] == SKILL_CONTRACT_VERSION
+    assert capabilities["tool_contract"]["tools"] == list(MCP_TOOL_NAMES)
+    assert capabilities["tool_contract"]["tool_count"] == len(MCP_TOOL_NAMES)
+    assert capabilities["runtime"]["status"] in {"ready", "limited"}
+    assert isinstance(capabilities["runtime"]["conversion_ready"], bool)
+
+
+def test_skill_references_only_registered_mcp_tools() -> None:
+    skill = (PLUGIN / "skills" / "convert-cad-to-gis" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    assert f"Skill contract: `{SKILL_CONTRACT_VERSION}`" in skill
+    referenced = {
+        token
+        for token in re.findall(r"`([a-z][a-z0-9_]+)`", skill)
+        if token.startswith((
+            "get_", "inspect_", "install_", "bootstrap_", "prepare_",
+            "apply_", "auto_", "run_", "audit_", "list_", "resolve_",
+            "create_", "validate_",
+        ))
+    }
+    assert referenced <= set(MCP_TOOL_NAMES)
 
 
 def test_plugin_documents_cross_platform_runtime_bootstrap() -> None:
@@ -143,7 +192,7 @@ def test_doctor_accepts_every_declared_python_minor(
     monkeypatch.setattr(
         doctor.sys,
         "version_info",
-        SimpleNamespace(major=3, minor=minor),
+        _VersionInfo((3, minor, 0, "final", 0)),
     )
     monkeypatch.setattr(doctor.platform, "system", lambda: "Linux")
     checks = doctor.collect_checks(
@@ -160,7 +209,7 @@ def test_doctor_rejects_undeclared_python_minor(
     monkeypatch.setattr(
         doctor.sys,
         "version_info",
-        SimpleNamespace(major=3, minor=13),
+        _VersionInfo((3, 13, 0, "final", 0)),
     )
     monkeypatch.setattr(doctor.platform, "system", lambda: "Linux")
     checks = doctor.collect_checks(

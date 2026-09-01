@@ -16,6 +16,7 @@ from .units import (
     UnitCrsContractError,
     build_unit_crs_contract,
 )
+from .geodata import normalize_geodata_registration, registration_scale
 
 ensure_osgeo_runtime()
 from osgeo import osr  # noqa: E402
@@ -171,7 +172,12 @@ class DirectTransformer:
         return float(x), float(y)
 
     def points(self, points):
-        return [self.point(point) for point in points]
+        values = list(points)
+        if not values:
+            return []
+        source_points = [self._source_axis_point(point) for point in values]
+        transformed = self.forward.TransformPoints(source_points)
+        return [(float(point[0]), float(point[1])) for point in transformed]
 
     def target_to_source_point(self, point):
         """Invert one nominal target-grid point back to immutable CAD space.
@@ -187,27 +193,48 @@ class DirectTransformer:
         )
 
     def target_to_source_points(self, points):
-        return [self.target_to_source_point(point) for point in points]
+        values = list(points)
+        if not values:
+            return []
+        transformed = self.reverse.TransformPoints([
+            (float(point[0]), float(point[1])) for point in values
+        ])
+        return [
+            (
+                float(point[0]) / self.source_to_crs_axis_factor,
+                float(point[1]) / self.source_to_crs_axis_factor,
+            )
+            for point in transformed
+        ]
 
     def roundtrip_error(self, points):
-        maximum = 0.0
-        for point in points:
-            target = self.point(point)
-            source = self.target_to_source_point(target)
-            maximum = max(maximum, self.source_length_to_m(
+        values = list(points)
+        targets = self.points(values)
+        sources = self.target_to_source_points(targets)
+        return max((
+            self.source_length_to_m(
                 math.hypot(source[0] - point[0], source[1] - point[1])
-            ))
-        return maximum
+            )
+            for point, source in zip(values, sources)
+        ), default=0.0)
 
     def engine_crosscheck_error(self, points):
-        maximum = 0.0
-        for point in points:
-            osr_target = self.point(point)
-            proj_target = self.audit_forward.transform(*self._source_axis_point(point))
-            maximum = max(maximum, self.target_length_to_m(
-                math.dist(osr_target, proj_target)
+        values = list(points)
+        if not values:
+            return 0.0
+        source_points = [self._source_axis_point(point) for point in values]
+        osr_targets = self.points(values)
+        xs, ys = zip(*source_points)
+        proj_xs, proj_ys = self.audit_forward.transform(xs, ys)
+        return max((
+            self.target_length_to_m(math.dist(
+                osr_target,
+                (float(proj_x), float(proj_y)),
             ))
-        return maximum
+            for osr_target, proj_x, proj_y in zip(
+                osr_targets, proj_xs, proj_ys,
+            )
+        ), default=0.0)
 
     def operation_metadata(self, reference_point=None):
         if reference_point is not None:
@@ -257,6 +284,104 @@ class DirectTransformer:
     def qgis_rotation(self, native_anchor, cad_radians):
         """Transform a CAD direction into clockwise nominal target-grid degrees."""
         return _qgis_rotation(self.point, native_anchor, cad_radians)
+
+
+class GeoDataTransformer(DirectTransformer):
+    """Apply DWG GEODATA local-to-grid registration before CRS projection."""
+
+    def __init__(
+        self,
+        source_crs: str,
+        target_crs: str,
+        *,
+        geodata_registration,
+        unit_contract: UnitCrsContract,
+    ):
+        registration = normalize_geodata_registration(geodata_registration)
+        if not pyproj.CRS.from_user_input(registration["target_crs"]).equals(
+            pyproj.CRS.from_user_input(source_crs)
+        ):
+            raise UnitCrsContractError(
+                "GEODATA target_crs does not match the reviewed source_crs"
+            )
+        super().__init__(
+            source_crs,
+            target_crs,
+            unit_contract=unit_contract,
+        )
+        scale = registration_scale(registration)
+        if not math.isclose(
+            self.source_to_crs_axis_factor,
+            scale,
+            rel_tol=1e-12,
+            abs_tol=1e-15,
+        ):
+            raise UnitCrsContractError(
+                "GEODATA scale does not match the reviewed unit/CRS contract"
+            )
+        self.geodata_registration = registration
+        self._registration_scale = scale
+        self._design_x, self._design_y = registration["design_point"]
+        self._reference_x, self._reference_y = registration["reference_point"]
+        self._north_x, self._north_y = registration["north_direction"]
+        self.lineage_model = "dwg_geodata_nominal"
+        self.coordinate_provenance = "DWG_DERIVED:GEODATA+direct-CRS-transform"
+        self.grid_length_provenance = (
+            f"DWG_DERIVED:GEODATA+{target_crs.replace(':', '')}-geometry-length"
+        )
+        self.geodesic_provenance = "DWG_DERIVED:GEODATA+WGS84-geodesic"
+        self.unit_crs_manifest = {
+            **self.unit_crs_manifest,
+            "coordinate_registration": registration,
+        }
+
+    def _source_axis_point(self, point):
+        dx = float(point[0]) - self._design_x
+        dy = float(point[1]) - self._design_y
+        return (
+            self._reference_x
+            + self._registration_scale
+            * (dx * self._north_y - dy * self._north_x),
+            self._reference_y
+            + self._registration_scale
+            * (dx * self._north_x + dy * self._north_y),
+        )
+
+    def _source_grid_to_local(self, x, y):
+        dx = float(x) - self._reference_x
+        dy = float(y) - self._reference_y
+        return (
+            self._design_x
+            + (dx * self._north_y + dy * self._north_x)
+            / self._registration_scale,
+            self._design_y
+            + (-dx * self._north_x + dy * self._north_y)
+            / self._registration_scale,
+        )
+
+    def target_to_source_point(self, point):
+        x, y, _ = self.reverse.TransformPoint(float(point[0]), float(point[1]))
+        return self._source_grid_to_local(x, y)
+
+    def target_to_source_points(self, points):
+        values = list(points)
+        if not values:
+            return []
+        transformed = self.reverse.TransformPoints([
+            (float(point[0]), float(point[1])) for point in values
+        ])
+        return [
+            self._source_grid_to_local(point[0], point[1])
+            for point in transformed
+        ]
+
+    def operation_metadata(self, reference_point=None):
+        result = super().operation_metadata(reference_point)
+        result["coordinate_registration"] = self.geodata_registration
+        result["absolute_accuracy_validation"] = (
+            "DWG GEODATA registration applied; not independently verified by surveyed GCP"
+        )
+        return result
 
 
 class DeliveryTransformer:

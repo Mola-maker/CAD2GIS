@@ -27,10 +27,10 @@ const transcript = [
   { at: 7080, kind: "info", text: "[3/8] PROJ / Shapely control plane           PASS" },
   { at: 7350, kind: "info", text: "[4/8] Console script after forced repair      PASS" },
   { at: 7620, kind: "info", text: "[5/8] MCP stdio framing                      PASS" },
-  { at: 7890, kind: "muted", text: "[6/8] GDAL / OGR conversion bindings         CONDA REQUIRED" },
-  { at: 8160, kind: "muted", text: "[7/8] DWG reader                             ENV REQUIRED" },
-  { at: 8430, kind: "muted", text: "[8/8] Full conversion readiness              LIMITED" },
-  { at: 8860, kind: "success", text: "MCP READY · 5/8 · use Conda GIS runtime for conversion" },
+  { at: 7890, kind: "info", text: "[6/8] Bundled GDAL / OGR conversion bindings PASS" },
+  { at: 8160, kind: "info", text: "[7/8] Managed LibreDWG CLI reader             PASS" },
+  { at: 8430, kind: "info", text: "[8/8] Full conversion readiness              PASS" },
+  { at: 8860, kind: "success", text: "MCP + CONVERSION READY · 8/8 · AutoCAD and Conda not required" },
 ];
 
 let timers = [];
@@ -78,7 +78,7 @@ const updateMetrics = (elapsed) => {
     metricStage.textContent = elapsed >= 8860 ? "MCP" : "DOCTOR";
     metricThroughput.textContent = (0.6 + Math.max(0, Math.sin(elapsed / 150)) * .4).toFixed(1);
     metricEntities.textContent = "12480";
-    metricHealth.textContent = `${Math.min(5, Math.max(0, Math.floor((elapsed - 6270) / 270)))}/8`;
+    metricHealth.textContent = `${Math.min(8, Math.max(0, Math.floor((elapsed - 6270) / 270)))}/8`;
   }
 };
 

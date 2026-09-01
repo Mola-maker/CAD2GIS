@@ -572,6 +572,7 @@ class SourceProfile:
     source_coordinate_scale_reviewed: bool = False
     local_registration_strategy: str | None = None
     local_registration_reviewed: bool = False
+    geodata_registration: dict[str, Any] | None = None
     project_id: str = ""
     source_size_bytes: int | None = None
     inventory_sha256: str = ""
@@ -727,6 +728,7 @@ class SourceProfile:
         crs_keys = {"source_crs", "target_crs"}
         crs_extended_keys = {
             "local_registration_strategy", "local_registration_reviewed",
+            "geodata_registration",
         }
         if (
             not isinstance(crs, dict)
@@ -792,6 +794,15 @@ class SourceProfile:
         )
         if type(local_registration_reviewed) is not bool:
             raise ValueError("crs.local_registration_reviewed must be boolean")
+        raw_geodata_registration = crs.get("geodata_registration")
+        if raw_geodata_registration is None:
+            geodata_registration = None
+        else:
+            from .geodata import normalize_geodata_registration
+
+            geodata_registration = normalize_geodata_registration(
+                raw_geodata_registration
+            )
         raw_spatial_policy = value["spatial_coverage_policy"]
         spatial_policy = (
             None if raw_spatial_policy is None
@@ -813,6 +824,7 @@ class SourceProfile:
             source_coordinate_scale_reviewed=source_coordinate_scale_reviewed,
             local_registration_strategy=local_registration_strategy,
             local_registration_reviewed=local_registration_reviewed,
+            geodata_registration=geodata_registration,
             spatial_coverage_policy=spatial_policy,
             expected_census=dict(expectations.source_inventory),
             expectations=expectations,

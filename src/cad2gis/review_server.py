@@ -1343,6 +1343,8 @@ def create_review_app(
                 str(resolved_source) if resolved_source is not None else None
             ),
             "source_blocker": source_blocker,
+            "source_entity_count": manifest.get("source_entity_count"),
+            "delivery_counts": manifest.get("delivery_counts"),
             "crs": manifest.get("crs"),
             "validation": manifest.get("validation"),
             "reasoning": manifest.get("reasoning"),

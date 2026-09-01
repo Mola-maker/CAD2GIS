@@ -5,14 +5,18 @@ description: Inspect, convert, register, and review CAD/DWG projects with CAD2GI
 
 # Convert CAD to GIS
 
+Skill contract: `cad2gis.convert_skill.v3`.
+
 Use the CAD2GIS MCP tools as the orchestration surface. The Python package is
 the only conversion implementation; never recreate geometry, topology, length,
 or CRS algorithms inside the host agent or plugin.
 
 ## Required opening sequence
 
-1. Call `get_capabilities`, report its configured filesystem roots, and confirm
-   `prompt_contract.version` before constructing any proposal.
+1. Call `get_capabilities`, report its configured filesystem roots, and require
+   package/plugin/skill version agreement plus the returned tool-contract digest
+   before constructing any proposal. Require `prompt_contract.version` to be
+   `cad2gis.agent_prompt.v3`; stop on a stale cached plugin instead of guessing.
 2. Read the returned `runtime`. If the selected LibreDWG reader is unavailable,
    call `install_runtime`, then call `get_runtime_status` again. Do not require
    AutoCAD or Conda and do not silently select the AutoCAD fallback.
@@ -42,13 +46,21 @@ still passes deterministic compilation and admission gates.
 
 ## Evidence and repair workflow
 
-1. Page evidence with `list_evidence_nodes`; read only needed nodes.
-2. Use `list_visual_regions` and `resolve_visual_hit` as secondary evidence.
-3. Read `list_registered_operations` before proposing a repair.
-4. Select only returned endpoint/network candidate IDs.
-5. Create and validate an ID-only decision pack.
-6. Run `observe` before `assist` unless the user explicitly requested applying
+1. Page evidence with `list_evidence_nodes`; read only needed nodes. Prefer a
+   run that reports `query_backend=sqlite-index` for large drawings.
+2. Read `list_cad_scene_nodes` for pre-semantic structure. Use
+   `list_label_candidates` and `list_legend_catalog_candidates` only as
+   advisory choices; they never authorize exclusion or label attachment.
+3. Use `list_visual_regions` and `resolve_visual_hit` as secondary evidence.
+4. Read `list_registered_operations` before proposing a repair.
+5. Select only returned endpoint/network candidate IDs.
+6. Create and validate an ID-only decision pack.
+7. Run `observe` before `assist` unless the user explicitly requested applying
    a registered repair.
+
+For a user-reported bad result, use the separate `iterate-cad-to-gis` skill.
+Its bounded state machine must reject any candidate that regresses geometry,
+topology, length, coordinate, conservation, or run-status gates.
 
 Read [decision-contract.md](references/decision-contract.md) before creating or
 diagnosing a decision pack.

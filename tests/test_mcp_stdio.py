@@ -33,6 +33,7 @@ def test_plugin_launcher_does_not_pin_project_root_to_plugin_cache(
 
 
 def test_mcp_stdio_lists_cad2gis_tools() -> None:
+    from cad2gis.contracts import MCP_TOOL_NAMES
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
 
@@ -57,30 +58,7 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
                 return {tool.name: tool.description for tool in response.tools}
 
     tools = asyncio.run(exercise())
-    assert set(tools) == {
-        "apply_ai_onboarding",
-        "audit_run",
-        "auto_onboard_and_convert",
-        "bootstrap_project",
-        "create_decision_pack",
-            "get_capabilities",
-            "get_evidence_node",
-            "get_runtime_status",
-            "inspect_source",
-            "inspect_run",
-            "install_runtime",
-        "list_endpoint_join_candidates",
-        "list_evidence_nodes",
-        "list_network_repair_candidates",
-        "list_registered_operations",
-        "list_visual_regions",
-        "prepare_review_workspace",
-        "prepare_ai_onboarding",
-        "resolve_visual_hit",
-        "run_conversion",
-        "validate_decision_pack",
-        "validate_project",
-    }
+    assert set(tools) == set(MCP_TOOL_NAMES)
     assert all(description and description.strip() for description in tools.values())
 
 
@@ -110,3 +88,46 @@ def test_mcp_runtime_status_completes_without_native_import_deadlock() -> None:
                 return not bool(response.isError)
 
     assert asyncio.run(exercise()) is True
+
+
+def test_apply_ai_onboarding_mcp_response_uses_persisted_detail_paging(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from cad2gis import agent_mcp, pipeline
+
+    source = tmp_path / "source.dwg"
+    source.write_bytes(b"dwg")
+    project = tmp_path / "project"
+    project.mkdir()
+    monkeypatch.setenv("CAD2GIS_PROJECT_ROOTS", str(tmp_path))
+
+    monkeypatch.setattr(
+        pipeline,
+        "apply_ai_onboarding",
+        lambda **_kwargs: {
+            "schema_version": "cad2gis.ai_onboarding_compile_result.v1",
+            "status": "auto_accepted",
+            "project_dir": str(project),
+            "semantic_coverage": {
+                "status": "WATCH",
+                "records": [{"source_entity_key": str(i)} for i in range(1000)],
+            },
+            "plan_domain": {"status": "PASS", "issues": [{"code": "fixture"}]},
+        },
+    )
+
+    result = agent_mcp.apply_ai_onboarding(
+        str(source),
+        str(project),
+        {},
+    )
+
+    assert "records" not in result["semantic_coverage"]
+    assert "issues" not in result["plan_domain"]
+    assert result["detail_artifact"]["semantic_coverage_record_count"] == 1000
+    assert result["detail_artifact"]["plan_domain_issue_count"] == 1
+    assert Path(result["detail_artifact"]["path"]).parts[-2:] == (
+        "review",
+        "ai_onboarding_result.json",
+    )

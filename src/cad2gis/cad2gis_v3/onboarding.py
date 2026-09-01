@@ -28,6 +28,7 @@ from .curation_providers import (
     load_provider_config,
 )
 from .ingest import ingest
+from .geodata import normalize_geodata_registration, registration_scale
 from .plan_domain import build_plan_domain
 from .project_profile import (
     _atomic_write_json,
@@ -109,16 +110,32 @@ def _crs_candidates(profile: Mapping[str, Any]) -> list[dict[str, Any]]:
     canonical_crs = (
         f"{authority[0]}:{authority[1]}" if authority else crs.to_string()
     )
+    crs_profile = profile.get("crs")
+    raw_geodata = (
+        crs_profile.get("geodata_registration")
+        if isinstance(crs_profile, Mapping)
+        else None
+    )
+    geodata_registration = None
+    source_scale_to_m = axis_scales[0]
+    candidate_authority = "DWG_DIRECT"
+    if raw_geodata is not None:
+        geodata_registration = normalize_geodata_registration(raw_geodata)
+        if not CRS.from_user_input(geodata_registration["target_crs"]).equals(crs):
+            return []
+        source_scale_to_m = registration_scale(geodata_registration) * axis_scales[0]
+        candidate_authority = "DWG_DIRECT:GEODATA"
     candidate = {
         "candidate_id": (
             f"CAD-METADATA:{cgeocs.upper()}:INSUNITS-{raw_insunits}"
+            + (":GEODATA" if geodata_registration is not None else "")
         ),
         "source_crs": canonical_crs,
         # Preserve the drawing's local projected CRS. QGIS can reproject it
         # on the fly; no datum change is invented during onboarding.
         "target_crs": canonical_crs,
         "drawing_units": axis_names[0],
-        "source_coordinate_scale_to_m": axis_scales[0],
+        "source_coordinate_scale_to_m": source_scale_to_m,
         "source_coordinate_scale_reviewed": True,
         "evidence": {
             "dwg_cgeocs": cgeocs,
@@ -128,9 +145,11 @@ def _crs_candidates(profile: Mapping[str, Any]) -> list[dict[str, Any]]:
             "coordinate_unit_basis": "source_crs_axis",
             "source_crs_axis_unit": axis_names[0],
             "source_crs_axis_metres_per_unit": axis_scales[0],
-            "authority": "DWG_DIRECT",
+            "authority": candidate_authority,
         },
     }
+    if geodata_registration is not None:
+        candidate["geodata_registration"] = geodata_registration
     candidate["candidate_sha256"] = _canonical_sha256(candidate)
     return [candidate]
 
@@ -1094,6 +1113,7 @@ def _compile_profile_draft(
         "target_crs": candidate["target_crs"],
         "local_registration_strategy": None,
         "local_registration_reviewed": False,
+        "geodata_registration": candidate.get("geodata_registration"),
     })
     return result
 
@@ -1125,7 +1145,14 @@ def compile_onboarding_proposal(
     family_validation: dict[str, Any] = {
         "schema_version": "cad2gis-family-validation-v1",
         "repair_attempts": 0,
-        "max_repair_attempts": 2,
+        # The caller is already the model that authored this proposal.  Never
+        # make a hidden second provider request during deterministic admission:
+        # it can hang an otherwise portable MCP server and makes runtime cost
+        # and data egress invisible to the host agent.  Invalid families are
+        # dropped and rebuilt only from source-bound samples below.
+        "max_repair_attempts": 0,
+        "repair_strategy": "deterministic_source_samples_only",
+        "provider_calls": 0,
         "results": [],
         "repaired_families": [],
         "dropped_families": [],
@@ -1307,6 +1334,13 @@ def compile_onboarding_proposal(
 
     profile_path = root / "config" / "source_profile.json"
     registry_path = root / "config" / "mapping_registry.json"
+    stage_token = f"{os.getpid()}-{validated['proposal_sha256'][:12]}"
+    staged_profile_path = profile_path.with_name(
+        f".{profile_path.name}.{stage_token}.staged"
+    )
+    staged_registry_path = registry_path.with_name(
+        f".{registry_path.name}.{stage_token}.staged"
+    )
     draft_profile, draft_registry, _ = _read_project(root)
     review = _review_record(validated, proposer)
     profile_payload = _compile_profile_draft(draft_profile, validated)
@@ -1316,12 +1350,15 @@ def compile_onboarding_proposal(
         review,
     )
     try:
-        _atomic_write_json(profile_path, profile_payload)
-        _atomic_write_json(registry_path, registry_payload)
+        # Dry-run against private staged files.  The live project remains in
+        # its original fail-closed state until every expensive classification
+        # and expectation derivation step has succeeded.
+        _atomic_write_json(staged_profile_path, profile_payload)
+        _atomic_write_json(staged_registry_path, registry_payload)
 
-        profile = SourceProfile.load(profile_path)
+        profile = SourceProfile.load(staged_profile_path)
         registry = MappingRegistry.load(
-            registry_path,
+            staged_registry_path,
             profile.source_sha256,
             require_reviewed=False,
         )
@@ -1422,9 +1459,11 @@ def compile_onboarding_proposal(
             extended = _extend_route_regex(known, suspected_cable_layers)
             if extended != known:
                 registry_payload["positive_route_layer_regex"] = extended
-                _atomic_write_json(registry_path, registry_payload)
+                _atomic_write_json(staged_registry_path, registry_payload)
                 registry = MappingRegistry.load(
-                    registry_path, profile.source_sha256, require_reviewed=False,
+                    staged_registry_path,
+                    profile.source_sha256,
+                    require_reviewed=False,
                 )
                 round_record = {
                     "status": "extended",
@@ -1468,6 +1507,12 @@ def compile_onboarding_proposal(
             annotation_expectations
         )
         profile_payload["review"] = dict(review)
+        _atomic_write_json(staged_profile_path, profile_payload)
+        _atomic_write_json(staged_registry_path, registry_payload)
+        # Publish the reviewed profile last: until this final write, the live
+        # pair cannot pass admission even if a concurrent reader observes the
+        # registry replacement first.
+        _atomic_write_json(registry_path, registry_payload)
         _atomic_write_json(profile_path, profile_payload)
         validation = validate_project(project_dir=root)
         if validation.get("conversion_allowed") is not True:
@@ -1484,6 +1529,10 @@ def compile_onboarding_proposal(
         _atomic_write_json(profile_path, draft_profile)
         _atomic_write_json(registry_path, draft_registry)
         raise
+    finally:
+        for staged_path in (staged_profile_path, staged_registry_path):
+            if staged_path.exists():
+                staged_path.unlink()
     result = {
         "schema_version": "cad2gis.ai_onboarding_compile_result.v1",
         "status": "auto_accepted",
