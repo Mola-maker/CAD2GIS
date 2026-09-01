@@ -1210,12 +1210,25 @@ def create_review_app(
     try:
         from fastapi import FastAPI, HTTPException, Request, WebSocket
         from fastapi.responses import FileResponse
-        from fastapi.staticfiles import StaticFiles
         from starlette.websockets import WebSocketDisconnect
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise ReviewServerError(
             "Review dependencies are missing; install cad2gis[review]"
         ) from exc
+
+    # Activate a bundled pyramids-gis runtime on the server thread before
+    # request handlers import ``osgeo``.  Conversion already performs this
+    # activation, but ``cad2gis review`` starts in a fresh process and must not
+    # depend on a previous conversion import side effect.
+    from .native_runtime import ensure_osgeo_runtime
+
+    gis_runtime = ensure_osgeo_runtime()
+    if not gis_runtime.get("available"):
+        raise ReviewServerError(
+            "Review GIS runtime is unavailable; install cad2gis[agent] or "
+            "cad2gis[portable] so GDAL/OGR can open the delivery GeoPackage "
+            f"({gis_runtime.get('detail', 'no runtime detail')})"
+        )
 
     run_path = Path(run_dir).expanduser().resolve()
     manifest_path = run_path / "run_manifest.json"
@@ -1277,7 +1290,6 @@ def create_review_app(
         raise ReviewServerError(f"Review web assets are missing: {web_root}")
 
     app = FastAPI(title="CAD2GIS Review", version="1")
-    app.mount("/assets", StaticFiles(directory=web_root), name="assets")
 
     @app.exception_handler(ReviewServerError)
     async def review_error_handler(_request: Request, exc: ReviewServerError):
@@ -1289,6 +1301,23 @@ def create_review_app(
     @app.get("/")
     async def index():
         return FileResponse(web_root / "index.html")
+
+    @app.get("/assets/{asset_path:path}", include_in_schema=False)
+    async def web_asset(asset_path: str):
+        """Serve both top-level scripts and packaged binary/SVG assets."""
+
+        relative = Path(asset_path)
+        if relative.is_absolute() or ".." in relative.parts:
+            raise HTTPException(status_code=404, detail="Asset not found")
+        for root in (web_root, web_root / "assets"):
+            resolved_root = root.resolve()
+            candidate = (resolved_root / relative).resolve()
+            if (
+                candidate.is_file()
+                and (candidate == resolved_root or resolved_root in candidate.parents)
+            ):
+                return FileResponse(candidate)
+        raise HTTPException(status_code=404, detail="Asset not found")
 
     @app.get("/api/health")
     async def health():

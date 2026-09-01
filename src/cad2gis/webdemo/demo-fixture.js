@@ -33,7 +33,7 @@
   const loadFixture = async () => {
     if (!fixturePromise) {
       fixturePromise = resolveProject().then(async (project) => {
-        const fixtureUrl = new URL(`./${project.fixture}?v=multi-demo-20260829`, baseUrl);
+        const fixtureUrl = new URL(`./${project.fixture}?v=runtime-fix-20260901`, baseUrl);
         const response = await fetch(fixtureUrl);
         if (!response.ok) throw new Error(`无法加载 ${project.display_name} 派生数据：${response.status}`);
         return response.json();

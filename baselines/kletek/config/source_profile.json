@@ -29,8 +29,8 @@
     "source_geometry_gates": {},
     "source_inventory": {
       "model_dimensions": 0,
-      "model_entities": 711,
-      "model_inserts": 56
+      "model_entities": 527,
+      "model_inserts": 53
     },
     "topology_gates": {}
   },
@@ -43,7 +43,7 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "257a1978eba963f3d5947c42963d26c69315d5fb4b93f2ca8f7a26af8696886d",
+    "inventory_sha256": "c05a64488ec971619730045cb57599092e9502deba02bfa63ac5b408244aae14",
     "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
     "source_size_bytes": 308753
   },

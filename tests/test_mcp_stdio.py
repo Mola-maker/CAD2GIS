@@ -44,7 +44,7 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
         environment.get("PYTHONPATH", ""),
     )))
 
-    async def exercise() -> set[str]:
+    async def exercise() -> dict[str, str | None]:
         parameters = StdioServerParameters(
             command=sys.executable,
             args=["-m", "cad2gis.agent_mcp"],
@@ -54,10 +54,10 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
             async with ClientSession(reader, writer) as session:
                 await session.initialize()
                 response = await session.list_tools()
-                return {tool.name for tool in response.tools}
+                return {tool.name: tool.description for tool in response.tools}
 
-    names = asyncio.run(exercise())
-    assert names == {
+    tools = asyncio.run(exercise())
+    assert set(tools) == {
         "apply_ai_onboarding",
         "audit_run",
         "auto_onboard_and_convert",
@@ -81,6 +81,7 @@ def test_mcp_stdio_lists_cad2gis_tools() -> None:
         "validate_decision_pack",
         "validate_project",
     }
+    assert all(description and description.strip() for description in tools.values())
 
 
 def test_mcp_runtime_status_completes_without_native_import_deadlock() -> None:

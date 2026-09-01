@@ -141,10 +141,14 @@ def build_source_inventory(
         for record in materialized
         if _string(record, "block_name")
     )
+    # Keep the source-inventory census identical to the admission census in
+    # ``ingest``.  A record can physically live in the Model layout while the
+    # plan-domain classifier correctly assigns it a non-model role (title
+    # block, design summary, catalogue, and so on).  Counting the union made
+    # freshly bootstrapped profiles fail their own conversion gate.
     model_records = [
         record for record in materialized
-        if (_string(record, "layout").casefold() == "model"
-            or _string(record, "cad_role").casefold() == "model")
+        if _string(record, "cad_role").casefold() == "model"
     ]
     metadata_texts = sorted(
         _string(record, "text")

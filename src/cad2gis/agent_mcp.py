@@ -32,6 +32,7 @@ class MCPServiceError(ValueError):
 
 
 AGENT_PROMPT_CONTRACT_VERSION = "cad2gis.agent_prompt.v2"
+MAX_EVIDENCE_GRAPH_BYTES = 256 * 1024 * 1024
 
 
 def get_capabilities() -> dict[str, Any]:
@@ -415,7 +416,9 @@ def auto_onboard_and_convert(
 
 
 def _load_graph(graph_path: str) -> EvidenceGraph:
-    return EvidenceGraph.from_dict(_json_object(_path(graph_path)))
+    return EvidenceGraph.from_dict(
+        _json_object(_path(graph_path), max_bytes=MAX_EVIDENCE_GRAPH_BYTES)
+    )
 
 
 def list_evidence_nodes(
@@ -770,12 +773,18 @@ def create_server(
     # FastMCP runs ordinary synchronous tools in a worker thread; importing a
     # native GIS stack there can deadlock on some Windows Python builds.
     async def runtime_capabilities_tool() -> dict[str, Any]:
+        """Describe the stable CAD2GIS protocol and accuracy boundaries."""
+
         return get_capabilities()
 
     async def runtime_status_tool() -> dict[str, Any]:
+        """Report portable reader and GIS runtime readiness."""
+
         return get_runtime_status()
 
     async def runtime_install_tool() -> dict[str, Any]:
+        """Install the checksum-pinned portable LibreDWG runtime."""
+
         return install_runtime()
 
     server.tool(name="get_capabilities")(runtime_capabilities_tool)
