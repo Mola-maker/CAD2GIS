@@ -205,6 +205,8 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     assert "assets/hero-evidence-graph.svg" in page
     assert 'id="process-terminal"' in page
     assert 'data-process-terminal' in page
+    assert "run-label-provenance-fix-003" in page
+    assert "proper interior crossings 1 · promoted connections 0" in page
     assert page.count('data-terminal-line data-stage=') == 14
     assert "DERIVED REPLAY · NOT LIVE EXECUTION" in page
     assert "9,717 immutable source entities" in page
