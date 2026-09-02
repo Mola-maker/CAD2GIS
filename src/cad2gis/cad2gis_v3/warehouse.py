@@ -81,10 +81,9 @@ CABLE_SEGMENT = {
 }
 LAYER_CONFIGS["CABLE_SEGMENT"] = CABLE_SEGMENT
 # The delivery ``CABLE`` layer is the segment-normalised view: one row per
-# immutable source segment, with the DWG nominal dimension label on each row.
-# The layer keeps the reviewed layer name ``CABLE`` (and the colour-to-spec
-# legend categories), while the historical ``CABLE_SEGMENT`` schema supplies
-# the fields and closures.
+# immutable source segment.  Business labels and length evidence deliberately
+# remain separate: ``display_label`` is inherited from a source-bound parent
+# label, while ``length_label`` is populated only by a DWG DIMENSION.
 LAYER_CONFIGS["CABLE"] = {
     **CABLE_SEGMENT,
     "fc_name": "CABLE",
@@ -324,6 +323,25 @@ def _dimension_measurement_label(text: Any, value: float) -> str:
     return _format_dimension_length(value)
 
 
+def _segment_business_label(feature: Feature) -> tuple[str, str]:
+    """Return only a source-bound business label for a cable segment.
+
+    Length measurements are carried by ``length_*`` fields.  Treating a
+    DIMENSION value or a missing-DIMENSION diagnostic as ``display_label``
+    makes a measurement state look like an asset identity, so an unlabelled
+    parent must remain explicitly unlabelled.
+    """
+    label = str(feature.display_label or "").strip()
+    if not label:
+        return "", "UNAVAILABLE"
+    provenance = str(feature.label_provenance or "").strip()
+    if not provenance or provenance == "UNAVAILABLE":
+        raise RuntimeError(
+            f"CABLE business label lacks source provenance for {feature.feature_key}"
+        )
+    return label, provenance
+
+
 def _cable_segment_records(features, transformer):
     """Build and validate normalised delivery rows for every CABLE occurrence.
 
@@ -371,6 +389,7 @@ def _cable_segment_records(features, transformer):
         route_dimension_sum = 0.0
         route_measured = 0
         route_records = []
+        business_label, business_label_provenance = _segment_business_label(feature)
         for segment_index, source_segment in enumerate(source_segments):
             metric = metrics[segment_index]
             if not isinstance(metric, dict):
@@ -543,16 +562,8 @@ def _cable_segment_records(features, transformer):
                 "parent_cable_code": feature.attributes.get("CODE"),
                 "parent_display_label": feature.display_label,
                 "parent_label_provenance": feature.label_provenance,
-                "display_label": dimension_label,
-                "label_provenance": (
-                    "DWG_DIRECT:SPAN-CABLE-DIMENSION;length_source=dwg_dimension"
-                    if status == "measured"
-                    else (
-                        "DWG_DERIVED:source-segment-native-curve-length;"
-                        "length_source=dwg_curve_geometry;"
-                        "dimension_annotation=absent"
-                    )
-                ),
+                "display_label": business_label,
+                "label_provenance": business_label_provenance,
                 "geometry_role": "SOURCE_ROUTE_SEGMENT",
                 "lineage_json": json.dumps(
                     segment_lineage, ensure_ascii=False, separators=(",", ":")
