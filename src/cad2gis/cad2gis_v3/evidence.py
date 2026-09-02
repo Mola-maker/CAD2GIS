@@ -252,6 +252,7 @@ def _write_staged(
         ("extraction_backend", ogr.OFTString),
         ("reader_backend_status", ogr.OFTString),
         ("raw_properties", ogr.OFTString),
+        ("raw_properties_sha256", ogr.OFTString),
         ("aci_color", ogr.OFTInteger), ("true_color", ogr.OFTString),
         ("linetype", ogr.OFTString), ("lineweight", ogr.OFTInteger),
         ("rotation", ogr.OFTReal), ("disposition", ogr.OFTString),
@@ -270,7 +271,9 @@ def _write_staged(
         ("insertion_point_native", ogr.OFTString),
         ("scale_x", ogr.OFTReal), ("scale_y", ogr.OFTReal), ("scale_z", ogr.OFTReal),
         ("rotation", ogr.OFTReal), ("extraction_backend", ogr.OFTString),
-        ("reader_backend_status", ogr.OFTString), ("raw_properties", ogr.OFTString),
+        ("reader_backend_status", ogr.OFTString),
+        ("raw_properties_ref", ogr.OFTString),
+        ("raw_properties_sha256", ogr.OFTString),
     ])
     annotation_carrier_table = _table(dataset, "annotation_carriers", [
         ("entity_key", ogr.OFTString), ("cad_handle", ogr.OFTString),
@@ -279,7 +282,9 @@ def _write_staged(
         ("dwg_layer", ogr.OFTString), ("text", ogr.OFTString),
         ("text_source", ogr.OFTString), ("anchor_native", ogr.OFTString),
         ("extraction_backend", ogr.OFTString),
-        ("reader_backend_status", ogr.OFTString), ("raw_properties", ogr.OFTString),
+        ("reader_backend_status", ogr.OFTString),
+        ("raw_properties_ref", ogr.OFTString),
+        ("raw_properties_sha256", ogr.OFTString),
     ])
     feature_sources = {feature.source_entity_key for feature in features}
     annotation_sources = {
@@ -307,6 +312,13 @@ def _write_staged(
             raw_properties, ensure_ascii=False, sort_keys=True,
             separators=(",", ":"), allow_nan=False,
         )
+        raw_properties_sha256 = hashlib.sha256(
+            raw_properties_json.encode("utf-8")
+        ).hexdigest()
+        raw_properties_ref = (
+            f"cad_entities:{entity.entity_key}:raw_properties:"
+            f"sha256:{raw_properties_sha256}"
+        )
         curve_facts_json = json.dumps(
             entity.curve_facts, ensure_ascii=True, sort_keys=True,
             separators=(",", ":"), allow_nan=False,
@@ -331,6 +343,7 @@ def _write_staged(
             "extraction_backend": entity.extraction_backend,
             "reader_backend_status": entity.reader_backend_status,
             "raw_properties": raw_properties_json,
+            "raw_properties_sha256": raw_properties_sha256,
             "aci_color": entity.style.aci_color, "true_color": entity.style.true_color,
             "linetype": entity.style.linetype, "lineweight": entity.style.lineweight,
             "rotation": entity.style.rotation, "disposition": disposition,
@@ -372,7 +385,8 @@ def _write_staged(
                 "scale_z": entity.scale[2], "rotation": entity.style.rotation,
                 "extraction_backend": entity.extraction_backend,
                 "reader_backend_status": entity.reader_backend_status,
-                "raw_properties": raw_properties_json,
+                "raw_properties_ref": raw_properties_ref,
+                "raw_properties_sha256": raw_properties_sha256,
             })
             block_instance_table.CreateFeature(row)
 
@@ -389,7 +403,8 @@ def _write_staged(
                 ),
                 "extraction_backend": entity.extraction_backend,
                 "reader_backend_status": entity.reader_backend_status,
-                "raw_properties": raw_properties_json,
+                "raw_properties_ref": raw_properties_ref,
+                "raw_properties_sha256": raw_properties_sha256,
             })
             annotation_carrier_table.CreateFeature(row)
 

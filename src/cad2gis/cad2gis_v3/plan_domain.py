@@ -18,6 +18,8 @@ import copy
 import hashlib
 import json
 import math
+import re
+from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import Any
@@ -268,8 +270,26 @@ def _materialize_leaf(
     )
 
 
+def _effective_cad_role(
+    entity: SourceEntity,
+    route_layer_pattern: re.Pattern[str] | None,
+) -> str:
+    """Restore a reader-reclassified role only for a reviewed route layer."""
+
+    original = entity.raw_properties.get("cad_role_original")
+    if (
+        route_layer_pattern is not None
+        and route_layer_pattern.search(entity.layer)
+        and isinstance(original, str)
+        and original.strip()
+    ):
+        return original
+    return entity.cad_role
+
+
 def _root_entities(
     entities: Sequence[SourceEntity],
+    route_layer_pattern: re.Pattern[str] | None = None,
 ) -> tuple[list[SourceEntity], str]:
     model_candidates = [
         entity
@@ -277,12 +297,14 @@ def _root_entities(
         if entity.layout_role.casefold() == "model"
         and entity.dwg_type.upper() not in _NON_ENTITY_TYPES
     ]
-    preferred_model = [
-        entity
-        for entity in model_candidates
-        if entity.cad_role.casefold() == "model"
-    ]
-    if preferred_model:
+    if any(entity.cad_role.casefold() == "model" for entity in model_candidates):
+        preferred_model = [
+            entity
+            for entity in model_candidates
+            if _effective_cad_role(
+                entity, route_layer_pattern,
+            ).casefold() == "model"
+        ]
         return sorted(preferred_model, key=lambda entity: entity.entity_key), (
             "cad-role-partition"
         )
@@ -300,12 +322,14 @@ def _root_entities(
         if entity.layout_role.casefold() == "plan"
         and entity.dwg_type.upper() not in _NON_ENTITY_TYPES
     ]
-    preferred_plan = [
-        entity
-        for entity in plan_candidates
-        if entity.cad_role.casefold() == "plan"
-    ]
-    if preferred_plan:
+    if any(entity.cad_role.casefold() == "plan" for entity in plan_candidates):
+        preferred_plan = [
+            entity
+            for entity in plan_candidates
+            if _effective_cad_role(
+                entity, route_layer_pattern,
+            ).casefold() == "plan"
+        ]
         return sorted(preferred_plan, key=lambda entity: entity.entity_key), (
             "plan-layout-partition"
         )
@@ -316,15 +340,151 @@ def _root_entities(
     return [], "unavailable"
 
 
+def _definition_closure(
+    definitions: Mapping[str, list[SourceEntity]],
+    root_name: str,
+) -> set[str]:
+    reachable: set[str] = set()
+    pending = [root_name]
+    while pending:
+        current = pending.pop()
+        if current in reachable:
+            continue
+        reachable.add(current)
+        for member in definitions.get(current, ()):
+            if member.dwg_type.upper() != "INSERT":
+                continue
+            target = _block_name(member).upper()
+            if target in definitions:
+                pending.append(target)
+    return reachable
+
+
+def _detect_orphan_definitions(
+    definitions: Mapping[str, list[SourceEntity]],
+    roots: Sequence[SourceEntity],
+) -> tuple[list[dict[str, Any]], list[str], set[str]]:
+    """Find definition trees unreachable from selected drawing-space roots."""
+
+    reachable: set[str] = set()
+    for root in roots:
+        if root.dwg_type.upper() != "INSERT":
+            continue
+        name = _block_name(root).upper()
+        if name in definitions:
+            reachable.update(_definition_closure(definitions, name))
+    orphan_names = set(definitions) - reachable
+    nested_referenced = {
+        target
+        for name in orphan_names
+        for member in definitions[name]
+        if member.dwg_type.upper() == "INSERT"
+        for target in [_block_name(member).upper()]
+        if target in orphan_names and target != name
+    }
+    orphan_roots = sorted(orphan_names - nested_referenced)
+    entries: list[dict[str, Any]] = []
+    member_keys: set[str] = set()
+    for name in orphan_roots:
+        closure = _definition_closure(definitions, name) & orphan_names
+        members = [
+            member
+            for definition in closure
+            for member in definitions[definition]
+        ]
+        keys = {member.entity_key for member in members}
+        layers = Counter(member.layer for member in members)
+        entries.append({
+            "block_name": name,
+            "member_count": len(keys),
+            "layer_distribution": dict(
+                sorted(layers.items(), key=lambda item: (-item[1], item[0]))[:10]
+            ),
+            "nested_insert_count": sum(
+                member.dwg_type.upper() == "INSERT" for member in members
+            ),
+        })
+        member_keys.update(keys)
+    return entries, sorted(member_keys), orphan_names
+
+
+def _block_base_point(
+    members: Sequence[SourceEntity],
+) -> tuple[float, float, float] | None:
+    for member in members:
+        facts = member.raw_properties.get("transform_facts")
+        if not isinstance(facts, Mapping):
+            continue
+        value = facts.get("block_base_point")
+        if not isinstance(value, (list, tuple)) or len(value) < 2:
+            continue
+        try:
+            point = tuple(float(component) for component in value[:3])
+        except (TypeError, ValueError):
+            continue
+        if len(point) == 2:
+            point = (*point, 0.0)
+        if all(math.isfinite(component) for component in point):
+            return point
+    return None
+
+
 def build_plan_domain(
     raw_entities: Iterable[SourceEntity],
     *,
     require_complete_fallback: bool = True,
+    route_layer_pattern: re.Pattern[str] | None = None,
+    plan_layouts: tuple[str, ...] = (),
+    include_orphan_blocks: tuple[str, ...] | None = None,
+    plan_domain_authority: str | None = None,
 ) -> PlanDomainView:
     """Build the exact drawing-space view consumed by semantic conversion."""
 
     inventory = tuple(raw_entities)
-    roots, selection_mode = _root_entities(inventory)
+    requested_plan_layouts = tuple(plan_layouts)
+    requested_orphan_blocks = tuple(include_orphan_blocks or ())
+    declarations_authorized = (
+        plan_domain_authority == "reviewed_source_profile"
+    )
+    if not declarations_authorized:
+        plan_layouts = ()
+        include_orphan_blocks = None
+    declared_layouts = {name.casefold() for name in plan_layouts}
+    declared_keys: set[str] = set()
+    selection_input: tuple[SourceEntity, ...] = inventory
+    if declared_layouts:
+        declared_view: list[SourceEntity] = []
+        for entity in inventory:
+            if (
+                entity.layout_role.casefold() == "layout"
+                and entity.layout.casefold() in declared_layouts
+                and entity.dwg_type.upper() not in _NON_ENTITY_TYPES
+            ):
+                raw_properties = copy.deepcopy(entity.raw_properties)
+                raw_properties["plan_domain"] = {
+                    "schema_version": PLAN_DOMAIN_SCHEMA_VERSION,
+                    "materialization": "declared-plan-layout",
+                    "declared_layout": entity.layout,
+                }
+                entity = replace(
+                    entity,
+                    layout_role="plan",
+                    raw_properties=raw_properties,
+                )
+                declared_keys.add(entity.entity_key)
+            declared_view.append(entity)
+        selection_input = tuple(declared_view)
+    roots, selection_mode = _root_entities(
+        selection_input, route_layer_pattern,
+    )
+    if declared_keys:
+        root_keys = {entity.entity_key for entity in roots}
+        roots.extend(
+            entity
+            for entity in selection_input
+            if entity.entity_key in declared_keys
+            and entity.entity_key not in root_keys
+        )
     definitions: dict[str, list[SourceEntity]] = {}
     for entity in inventory:
         name = _definition_name(entity)
@@ -343,9 +503,24 @@ def build_plan_domain(
         "expanded_insert_count": 0,
         "expanded_nested_insert_count": 0,
         "root_layouts": sorted({entity.layout for entity in roots}),
+        "plan_domain_authority": plan_domain_authority,
         "issues": [],
         "status": "PASS",
     }
+    if (
+        requested_plan_layouts or requested_orphan_blocks
+    ) and not declarations_authorized:
+        diagnostics["issues"].append({
+            "code": "unreviewed_plan_domain_declaration",
+            "severity": "warning",
+            "blocking": False,
+            "message": (
+                "Plan-layout and orphan-block declarations remain "
+                "evidence-only until the source profile is reviewed."
+            ),
+            "requested_plan_layouts": list(requested_plan_layouts),
+            "requested_orphan_blocks": list(requested_orphan_blocks),
+        })
     if not roots:
         diagnostics["status"] = "FAIL"
         diagnostics["issues"].append({
@@ -356,18 +531,80 @@ def build_plan_domain(
         })
         raise PlanDomainError("Plan-domain selection failed", diagnostics)
 
+    orphan_blocks, orphan_member_keys, orphan_names = _detect_orphan_definitions(
+        definitions, roots,
+    )
+    diagnostics["orphan_blocks"] = orphan_blocks
+    diagnostics["orphan_member_entity_keys"] = orphan_member_keys
+    for entry in orphan_blocks:
+        diagnostics["issues"].append({
+            "code": "orphan_block_definition",
+            "severity": "warning",
+            "blocking": False,
+            "message": (
+                f"Block definition {entry['block_name']} holds "
+                f"{entry['member_count']} entities but is unreachable from "
+                "the selected drawing roots."
+            ),
+            **entry,
+        })
+
+    undeclared_layout_entities = Counter(
+        entity.layout
+        for entity in inventory
+        if entity.layout_role.casefold() == "layout"
+        and entity.dwg_type.upper() not in _NON_ENTITY_TYPES
+        and entity.layout.casefold() not in declared_layouts
+    )
+    diagnostics["plan_layouts"] = {
+        "requested": list(requested_plan_layouts),
+        "declared": list(plan_layouts),
+        "admitted": sorted(
+            {root.layout for root in roots if root.entity_key in declared_keys}
+        ),
+        "undeclared": dict(sorted(undeclared_layout_entities.items())),
+    }
+    if undeclared_layout_entities:
+        diagnostics["issues"].append({
+            "code": "undeclared_layout_entities",
+            "severity": "warning",
+            "blocking": False,
+            "message": (
+                "Paper-space layouts outside the reviewed plan_layouts "
+                "declaration remain evidence-only."
+            ),
+            "layouts": dict(sorted(undeclared_layout_entities.items())),
+            "entity_count": sum(undeclared_layout_entities.values()),
+        })
+
     output: list[SourceEntity] = []
+    exempted_root_count = 0
     for root in roots:
-        if root.cad_role.casefold() in _DRAWING_CAD_ROLES:
+        effective_role = _effective_cad_role(root, route_layer_pattern)
+        if (
+            effective_role == root.cad_role
+            and root.cad_role.casefold() in _DRAWING_CAD_ROLES
+        ):
             output.append(root)
             continue
         raw_properties = copy.deepcopy(root.raw_properties)
-        raw_properties["plan_domain"] = {
+        plan_domain_record = dict(
+            raw_properties.get("plan_domain")
+            if isinstance(raw_properties.get("plan_domain"), Mapping)
+            else {}
+        )
+        plan_domain_record.update({
             "schema_version": PLAN_DOMAIN_SCHEMA_VERSION,
             "materialization": "layout-root-role-normalization",
             "source_cad_role": root.cad_role,
             "root_entity_key": root.entity_key,
-        }
+        })
+        if effective_role != root.cad_role:
+            exempted_root_count += 1
+            plan_domain_record["route_layer_exemption"] = {
+                "cad_role_original": effective_role,
+            }
+        raw_properties["plan_domain"] = plan_domain_record
         output.append(
             replace(root, cad_role="model", raw_properties=raw_properties)
         )
@@ -480,10 +717,11 @@ def build_plan_domain(
                     block_name=name,
                 )
 
-    fallback_strict = require_complete_fallback and selection_mode in {
-        "layout-role-fallback",
-        "plan-layout-fallback",
-    }
+    fallback_strict = (
+        require_complete_fallback
+        and selection_mode in {"layout-role-fallback", "plan-layout-fallback"}
+        and not declared_keys
+    )
     for root in roots:
         if root.dwg_type.upper() == "INSERT":
             visit(
@@ -494,6 +732,109 @@ def build_plan_domain(
                 path=(),
                 strict=fallback_strict,
             )
+
+    if include_orphan_blocks:
+        configured = sorted({name.strip().upper() for name in include_orphan_blocks})
+        recovery: dict[str, Any] = {
+            "configured": configured,
+            "recovered": [],
+            "skipped": [],
+        }
+        diagnostics["orphan_recovery"] = recovery
+        covered: set[str] = set()
+        recovered_member_keys: set[str] = set()
+
+        def skip_recovery(name: str, reason: str) -> None:
+            recovery["skipped"].append({"block_name": name, "reason": reason})
+            diagnostics["issues"].append({
+                "code": "orphan_block_recovery_skipped",
+                "severity": "warning",
+                "blocking": False,
+                "message": f"Orphan block recovery skipped for {name}: {reason}.",
+                "block_name": name,
+                "reason": reason,
+            })
+
+        for name in configured:
+            if name not in definitions:
+                skip_recovery(name, "unknown_block_definition")
+                continue
+            if name not in orphan_names:
+                skip_recovery(name, "not_orphan_block_definition")
+                continue
+            if name in covered:
+                skip_recovery(name, "covered_by_recovered_root")
+                continue
+            base_point = _block_base_point(definitions[name])
+            if base_point is None:
+                skip_recovery(name, "block_base_point_unavailable")
+                continue
+            synthetic = replace(
+                roots[0],
+                entity_key=f"orphan-recovery-root:{name}",
+                handle=f"orphan-recovery-root:{name}",
+                dwg_type="INSERT",
+                object_name="ACDBBLOCKREFERENCE",
+                cad_role="model",
+                block_name=name,
+                points=((base_point[0], base_point[1]),),
+                centroid=(base_point[0], base_point[1]),
+                raw_properties={
+                    "transform_facts": {
+                        "insertion_point": base_point,
+                        "block_base_point": base_point,
+                        "scale": (1.0, 1.0, 1.0),
+                        "rotation": 0.0,
+                        "normal": (0.0, 0.0, 1.0),
+                        "extrusion": (0.0, 0.0, 1.0),
+                    },
+                },
+            )
+            derived_marker = len(derived)
+            issue_marker = len(diagnostics["issues"])
+            visit(
+                root=synthetic,
+                instance=synthetic,
+                parent=None,
+                stack=(),
+                path=(),
+                strict=False,
+            )
+            new_issues = diagnostics["issues"][issue_marker:]
+            if new_issues:
+                del derived[derived_marker:]
+                skip_recovery(name, "incomplete_transform_chain")
+                continue
+            for index in range(derived_marker, len(derived)):
+                recovered = derived[index]
+                raw_properties = copy.deepcopy(recovered.raw_properties)
+                provenance = dict(
+                    raw_properties.get("provenance")
+                    if isinstance(raw_properties.get("provenance"), Mapping)
+                    else {}
+                )
+                provenance["orphan_block_recovery"] = {
+                    "block_name": name,
+                    "authority": "reviewed_source_profile",
+                }
+                raw_properties["provenance"] = provenance
+                plan_record = dict(raw_properties.get("plan_domain") or {})
+                plan_record["orphan_block_recovery"] = name
+                raw_properties["plan_domain"] = plan_record
+                derived[index] = replace(
+                    recovered, raw_properties=raw_properties,
+                )
+            recovery["recovered"].append(name)
+            closure = _definition_closure(definitions, name)
+            covered.update(closure)
+            recovered_member_keys.update(
+                member.entity_key
+                for definition in closure
+                for member in definitions.get(definition, ())
+            )
+        diagnostics["orphan_member_entity_keys"] = [
+            key for key in orphan_member_keys if key not in recovered_member_keys
+        ]
 
     derived.sort(key=lambda entity: entity.entity_key)
     output.extend(derived)
@@ -510,7 +851,28 @@ def build_plan_domain(
         )
     if diagnostics["issues"]:
         diagnostics["status"] = "WATCH"
-    catalog_roots, scene_partition = detect_style_catalog_entities(roots)
+    catalog_candidates = [
+        root
+        for root in roots
+        if route_layer_pattern is None
+        or route_layer_pattern.search(root.layer) is None
+    ]
+    catalog_roots, scene_partition = detect_style_catalog_entities(
+        catalog_candidates
+    )
+    if route_layer_pattern is not None:
+        output_keys = {entity.entity_key for entity in output}
+        diagnostics["route_layer_exemption"] = {
+            "exempted_count": exempted_root_count,
+            "route_layer_excluded_count": sum(
+                1
+                for entity in inventory
+                if entity.layout_role.casefold() in {"model", "plan"}
+                and entity.dwg_type.upper() not in _NON_ENTITY_TYPES
+                and route_layer_pattern.search(entity.layer)
+                and entity.entity_key not in output_keys
+            ),
+        }
     diagnostics["scene_partition"] = scene_partition
     diagnostics["semantic_entity_count"] = len(output)
     return PlanDomainView(tuple(output), diagnostics, catalog_roots=catalog_roots)

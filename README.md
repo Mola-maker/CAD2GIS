@@ -54,7 +54,7 @@ uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-
 cad2gis runtime install
 Get-Command cad2gis-agent-mcp
 cad2gis-agent-mcp --help
-cad2gis doctor --deep --json
+cad2gis doctor --deep --profile full --json
 ```
 
 macOS：
@@ -65,7 +65,7 @@ uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-
 cad2gis runtime install
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
-cad2gis doctor --deep --json
+cad2gis doctor --deep --profile full --json
 ```
 
 Linux：
@@ -77,7 +77,7 @@ uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-
 cad2gis runtime install  # 无 Homebrew 时从校验过的官方源码构建到用户缓存
 command -v cad2gis-agent-mcp
 cad2gis-agent-mcp --help
-cad2gis doctor --deep --json
+cad2gis doctor --deep --profile full --json
 ```
 
 WSL 使用上面的 Linux 命令，但不把 WSL → Windows GUI 作为受支持的
@@ -85,7 +85,8 @@ AutoCAD/QGIS 会话控制通道。需要操控 Windows AutoCAD 或 Windows QGIS
 桌面会话时，请在 Windows 原生 Codex/CLI 环境中安装运行时。
 
 `cad2gis-agent-mcp --help` 验证插件实际调用的 console script 可以导入并启动。
-`cad2gis doctor --deep --json` 会同时检查 bundled GDAL/OGR、ezdxf 和 LibreDWG。
+`cad2gis doctor --deep --profile full --json` 会同时检查 MCP 入口、WebUI、
+bundled GDAL/OGR、ezdxf 和 LibreDWG。
 `[agent]` extra 的平台 wheel 提供 GDAL/OGR；`cad2gis runtime install` 把官方
 LibreDWG CLI 安装到用户缓存（Windows），在 macOS/Linux 上优先复用 Homebrew，
 否则从固定版本、固定 SHA-256 的官方源码进行无 root 构建。源码回退需要系统已有
@@ -148,14 +149,15 @@ Cursor/VS Code 模板通过 `${workspaceFolder}` 自动使用当前工作区，�
 
 ```shell
 cad2gis-agent-mcp --help
-cad2gis doctor --deep --json
+cad2gis doctor --deep --profile full --json
 codex plugin list
 claude plugin list
 ```
 
 重启客户端并新建任务后，再让智能体调用 `get_capabilities`，确认 MCP 能力和
 当前工作区授权目录已加载。完整 GIS 环境还应执行
-`cad2gis doctor --deep --strict --json` 并确认 `conversion_ready: true`。
+`cad2gis doctor --deep --strict --profile full --json` 并确认
+`selected_profile_ready: true`；这同时覆盖转换、MCP 与 Review WebUI。
 
 ### 4. 更新
 
@@ -229,7 +231,7 @@ AI 是控制平面的规划器，不是坐标或几何生成器。它可以完�
 ```powershell
 uv sync --extra agent --extra test
 uv run cad2gis runtime install
-uv run cad2gis doctor --deep --strict --json
+uv run cad2gis doctor --deep --strict --profile full --json
 ```
 
 需要复现传统原生 GIS 开发栈时，`env/environment.yml` 仍作为可选环境保留：
@@ -238,7 +240,7 @@ uv run cad2gis doctor --deep --strict --json
 conda env create -f env/environment.yml
 conda activate cad2gis
 pip install -e ".[agent,test]"
-cad2gis doctor --deep --strict --json
+cad2gis doctor --deep --strict --profile full --json
 ```
 
 支持 Python 3.11–3.12。MCP、证据协议和 GeoPackage 交付结构跨 Windows、Linux、

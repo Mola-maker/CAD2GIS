@@ -82,7 +82,7 @@
         </article>
         <article class="wsl-card">
           <span class="matrix-index">GIS</span><h3>完整转换环境</h3>
-          <p><code>cad2gis[agent]</code> 携带平台 GDAL/OGR wheel；再运行 <code>cad2gis runtime install</code> 安装 LibreDWG CLI。AutoCAD 与 Conda 都不是默认依赖。只有 <code>cad2gis doctor --deep --strict --json</code> 返回 <code>conversion_ready: true</code> 才表示可转换。</p>
+          <p><code>cad2gis[agent]</code> 携带平台 GDAL/OGR wheel；再运行 <code>cad2gis runtime install</code> 安装 LibreDWG CLI。AutoCAD 与 Conda 都不是默认依赖。只有 <code>cad2gis doctor --deep --strict --profile full --json</code> 返回 <code>selected_profile_ready: true</code>，才表示转换、MCP 与 Review WebUI 都可用。</p>
         </article>
       </div>
     </section>
@@ -134,9 +134,9 @@ Invoke-WebRequest "https://raw.githubusercontent.com/Mola-maker/CAD2GIS/main/plu
       <div class="operation-list">
         <article id="install-commands"><span>01</span><div><h3>安装</h3><p>先执行上面的操作系统分块，再执行对应的客户端分块。正式 marketplace 与 Pages 均只跟随 <code>main</code>。</p></div><a href="#system-matrix">查看安装分块</a></article>
         <article id="verify-commands"><span>02</span><div><h3>验证</h3><div class="code-stack"><pre><code>cad2gis-agent-mcp --help
-cad2gis doctor --deep --json
+cad2gis doctor --deep --profile full --json
 codex plugin list
-claude plugin list</code></pre><button type="button" data-copy="cad2gis-agent-mcp --help&#10;cad2gis doctor --deep --json&#10;codex plugin list&#10;claude plugin list">复制整组</button></div><p><code>--help</code> 验证 console script 可导入；doctor 可能报告控制面可用但 GIS runtime 为 <code>limited</code>。新任务中再调用 <code>get_capabilities</code>。</p></div></article>
+claude plugin list</code></pre><button type="button" data-copy="cad2gis-agent-mcp --help&#10;cad2gis doctor --deep --profile full --json&#10;codex plugin list&#10;claude plugin list">复制整组</button></div><p><code>--help</code> 验证 console script 可导入；full profile 同时检查转换、MCP 与 Review WebUI。新任务中再调用 <code>get_capabilities</code>。</p></div></article>
         <article id="update-commands"><span>03</span><div><h3>更新</h3><p>Windows 上先停止 CAD2GIS MCP/WebUI 进程，再替换运行时，安装完成后重启客户端。</p><div class="code-stack"><pre><code>uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 codex plugin marketplace upgrade cad2gis
 codex plugin add cad2gis-agent@cad2gis

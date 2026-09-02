@@ -26,6 +26,11 @@ The data plane is deterministic:
 8. Delivery and evidence GeoPackages, QML, manifests, and status are published
    atomically.
 
+Each expensive deterministic boundary emits a `cad2gis.stage_contract.v1`
+receipt with input/output hashes, a cache key, counts and elapsed time. These
+receipts permit a future validated artifact cache without serializing live
+Python objects or weakening source binding.
+
 The model-assisted control plane can propose a hash-bound Decision Pack over
 registered evidence IDs. It cannot author coordinates, geometry, lengths, CRS,
 or GCPs. Only registered deterministic executors can materialize a validated
@@ -59,8 +64,17 @@ scale. The manifest records both facts and the resulting source-to-axis factor.
 `cad2gis_v3/plan_domain.py` creates a derived semantic view without modifying
 the reader inventory:
 
-- Model drawing WCS is preferred; plan layouts are considered only when Model
-  is absent.
+- Model drawing WCS is preferred. Named paper-space layouts remain evidence
+  unless a reviewed, source-bound profile lists them in `plan_layouts`; an
+  explicit layout may be admitted alongside Model without rewriting every
+  paper tab globally.
+- Reader scene heuristics retain their original CAD role. A reviewed route
+  layer may restore that source role without admitting nearby legend or title
+  geometry.
+- Unreachable block-definition trees are inventoried as orphan evidence.
+  Recovery requires an explicit `plan_domain.include_orphan_blocks` name,
+  reviewed-profile authority, a finite block base point, and a complete nested
+  transform chain; wildcard or partial recovery is rejected.
 - A role fallback is explicit in diagnostics and requires complete block
   expansion.
 - Nested INSERTs use reader-supplied insertion point, block base, scale,
@@ -70,9 +84,10 @@ the reader inventory:
 - Missing facts/definitions, cycles, oblique transforms and unsupported
   non-uniform curved transforms fail closed.
 
-This stage is source agnostic: it contains no project filename, vendor layer,
-block-name, coordinate or expected-count rule. Semantic mapping remains a
-separate source-bound contract.
+This stage contains no project filename, vendor layer, block-name, coordinate
+or expected-count rule. It accepts only compiled declarations and route-layer
+patterns from the reviewed source-bound contract; semantic mapping remains a
+separate stage.
 
 ## Test Layers
 
@@ -87,6 +102,29 @@ All executable tests live under `tests/`:
 The external `APD_test` corpus is compatibility evidence, not domain or
 absolute-accuracy truth. Full extraction of complex DWGs is an explicit
 performance gate.
+
+## Performance and Evidence Storage
+
+Topology nearest-neighbour hotspots use Shapely 2 `STRtree` with bounded
+queries. Final distances, the 1 cm ambiguity rule and abstention decisions are
+still evaluated by the legacy scalar contract; randomized equivalence tests
+compare both implementations.
+
+The canonical evidence graph is stored as deterministic
+`reasoning/evidence_graph.json.gz`; the content-addressed SQLite index remains
+the normal paged query interface. Repeated `raw_properties` in auxiliary
+block/annotation tables are SHA-256 references to the canonical `cad_entities`
+fact, while the authoritative fact remains queryable for curation and audit.
+
+## OSM Review Boundary
+
+OSM is an optional review aid, never coordinate authority. Place lookup may
+produce a coarse translation candidate. When road data is available, the
+review pack crops implausible lengths and ranks Top-K roads using direction,
+length, normalized shape, endpoint topology and coverage. Low score or a
+small best/second-best gap produces `abstained`. Even a high-scoring result is
+`relative_only`, `applicable_for_delivery=false`, and requires surveyed GCP or
+explicit human review. DWG GEODATA always takes precedence.
 
 **Terminology**: `APD` means **As Plan Drawing** (as-planned construction
 design, not as-built), and the filename suffix `SF` means **Subfeeder**.

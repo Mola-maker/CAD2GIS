@@ -33,6 +33,7 @@ class Check:
     status: str
     detail: str
     required_for_conversion: bool = True
+    required_for_profiles: tuple[str, ...] = ()
     remediation: str | None = None
 
 
@@ -71,6 +72,29 @@ def _module_check(name: str, label: str, *, deep: bool) -> Check:
     if provider and provider != "system":
         detail += f" via {provider}"
     return Check(name=name, status="ok", detail=detail)
+
+
+def _optional_module_check(
+    name: str,
+    label: str,
+    *,
+    deep: bool,
+    profiles: tuple[str, ...],
+    extra: str,
+) -> Check:
+    check = _module_check(name, label, deep=deep)
+    return Check(
+        name=check.name,
+        status=check.status,
+        detail=check.detail,
+        required_for_conversion=False,
+        required_for_profiles=profiles,
+        remediation=(
+            None
+            if check.status == "ok"
+            else f"Install the required runtime with `pip install 'cad2gis[{extra}]'`."
+        ),
+    )
 
 
 def _autocad_version(path: Path) -> int:
@@ -213,6 +237,47 @@ def collect_checks(
     ):
         checks.append(_module_check(module_name, label, deep=deep))
 
+    checks.extend((
+        _optional_module_check(
+            "mcp.server.fastmcp",
+            "Model Context Protocol server",
+            deep=deep,
+            profiles=("agent", "full"),
+            extra="agent",
+        ),
+        _optional_module_check(
+            "fastapi",
+            "FastAPI review server",
+            deep=deep,
+            profiles=("review", "full"),
+            extra="agent",
+        ),
+        _optional_module_check(
+            "uvicorn",
+            "Uvicorn review server",
+            deep=deep,
+            profiles=("review", "full"),
+            extra="agent",
+        ),
+    ))
+    mcp_entrypoint = shutil.which("cad2gis-agent-mcp")
+    checks.append(Check(
+        name="cad2gis_agent_mcp_entrypoint",
+        status="ok" if mcp_entrypoint else "missing",
+        detail=(
+            f"cad2gis-agent-mcp is available at {mcp_entrypoint}"
+            if mcp_entrypoint
+            else "cad2gis-agent-mcp is not available on PATH"
+        ),
+        required_for_conversion=False,
+        required_for_profiles=("agent", "full"),
+        remediation=(
+            None
+            if mcp_entrypoint
+            else "Reinstall a non-editable `cad2gis[agent]` wheel in the agent environment."
+        ),
+    ))
+
     try:
         from .reader.resolver import (
             configured_reader,
@@ -283,16 +348,31 @@ def collect_checks(
     return tuple(checks)
 
 
-def build_report(*, deep: bool = False) -> dict[str, Any]:
+def build_report(*, deep: bool = False, profile: str = "conversion") -> dict[str, Any]:
+    if profile not in {"conversion", "agent", "review", "full"}:
+        raise ValueError("profile must be one of: conversion, agent, review, full")
     contract = dict(backend_contract())
     checks = collect_checks(deep=deep, _contract=contract)
     base_ready = all(
         check.status == "ok" for check in checks if check.required_for_conversion
     )
     dwg_ready = base_ready
+    profile_ready = {
+        name: base_ready and all(
+            check.status == "ok"
+            for check in checks
+            if name in check.required_for_profiles
+        )
+        for name in ("agent", "review", "full")
+    }
+    profile_ready["conversion"] = base_ready
+    selected_ready = profile_ready[profile]
     return {
         "schema_version": "cad2gis.doctor.v1",
-        "status": "ready" if base_ready else "limited",
+        "status": "ready" if selected_ready else "limited",
+        "selected_profile": profile,
+        "selected_profile_ready": selected_ready,
+        "profile_ready": profile_ready,
         "conversion_ready": base_ready,
         "capabilities": {
             "cli": True,
@@ -309,6 +389,8 @@ def build_report(*, deep: bool = False) -> dict[str, Any]:
 def format_report(report: dict[str, Any]) -> str:
     lines = [
         f"CAD2GIS doctor: {report['status']}",
+        f"selected profile: {report['selected_profile']} "
+        f"({'ready' if report['selected_profile_ready'] else 'limited'})",
         f"configured conversion ready: {'yes' if report['conversion_ready'] else 'no'}",
         f"DWG ingest ready: {'yes' if report['capabilities']['dwg_ingest'] else 'no'}",
     ]
@@ -320,9 +402,9 @@ def format_report(report: dict[str, Any]) -> str:
 
 
 def render_report(
-    *, as_json: bool = False, deep: bool = False
+    *, as_json: bool = False, deep: bool = False, profile: str = "conversion"
 ) -> tuple[dict[str, Any], str]:
-    report = build_report(deep=deep)
+    report = build_report(deep=deep, profile=profile)
     if as_json:
         return report, json.dumps(report, ensure_ascii=False, indent=2)
     return report, format_report(report)

@@ -590,7 +590,9 @@ def test_ambiguous_project_configuration_has_actionable_error(tmp_path: Path):
     assert "source_profile" in str(error.value)
 
 
-def _fake_conversion_status(*, reader_protocol=None, georeference=None):
+def _fake_conversion_status(
+    *, reader_protocol=None, georeference=None, validation_summary=None,
+):
     pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
     return pipeline._derive_conversion_status(
         entities=[object()],
@@ -612,10 +614,36 @@ def _fake_conversion_status(*, reader_protocol=None, georeference=None):
             "errored": 0,
             "total": 1,
         },
-        validation_summary={},
+        validation_summary=(
+            {} if validation_summary is None else validation_summary
+        ),
         georeference_diagnostics={} if georeference is None else georeference,
         diagnostics={},
     )
+
+
+def test_unverified_coordinate_accuracy_keeps_run_conditional():
+    status = _fake_conversion_status(
+        validation_summary={
+            "coordinate_accuracy": {
+                "passed": None,
+                "verification_status": "not_independently_verified",
+            }
+        }
+    )
+    assert status.value == "CONDITIONAL"
+
+
+def test_invalid_coordinate_accuracy_makes_run_unsafe():
+    status = _fake_conversion_status(
+        validation_summary={
+            "coordinate_accuracy": {
+                "passed": False,
+                "verification_status": "invalid_coordinate_domain",
+            }
+        }
+    )
+    assert status.value == "UNSAFE"
 
 
 def _run_fake_conversion(
@@ -906,7 +934,7 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
     manifest = _json(run_dir / "run_manifest.json")
     expected_artifacts = {
         "source.gpkg", "delivery.gpkg", "evidence.gpkg", "style_manifest.json",
-        "evidence_graph.json", "evidence_index.sqlite3", "cad_scene_graph.json",
+        "evidence_graph.json.gz", "evidence_index.sqlite3", "cad_scene_graph.json",
         "manifest.json",
     }
     artifact_names = {
@@ -929,9 +957,17 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
     assert manifest["artifacts"]["source"]["sha256"] == _sha256_bytes(
         result.source_path.read_bytes()
     )
-    assert manifest["reasoning"]["graph_sha256"] == _json(
-        run_dir / "reasoning" / "evidence_graph.json"
+    from cad2gis.cad2gis_v3.artifact_io import read_json_object
+
+    assert manifest["reasoning"]["graph_sha256"] == read_json_object(
+        run_dir / "reasoning" / "evidence_graph.json.gz"
     )["graph_sha256"]
+    assert manifest["artifacts"]["evidence_graph"]["encoding"] == "gzip"
+    assert manifest["stage_contracts"]["stage_count"] >= 7
+    assert all(
+        stage["deterministic"] and stage["cacheable"]
+        for stage in manifest["stage_contracts"]["stages"]
+    )
 
 
 def test_alias_failure_preserves_old_alias_after_bundle_publication(

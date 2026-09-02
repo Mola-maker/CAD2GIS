@@ -196,17 +196,39 @@ def _deployment_anchor_radius(anchor_points: Sequence[Sequence[float]]) -> float
     neighbourhood that works across CRS scales and multi-cluster drawings.
     """
     distances: list[float] = []
-    for index, point in enumerate(anchor_points):
-        neighbours = [
-            math.hypot(
-                float(point[0]) - float(other[0]),
-                float(point[1]) - float(other[1]),
+    coordinates = [
+        (float(point[0]), float(point[1])) for point in anchor_points
+    ]
+    try:
+        from collections import Counter
+        from shapely.geometry import Point
+        from shapely.strtree import STRtree
+
+        points = [Point(x, y) for x, y in coordinates]
+        tree = STRtree(points)
+        duplicates = Counter(coordinates)
+        for coordinate, point in zip(coordinates, points):
+            if duplicates[coordinate] > 1:
+                distances.append(0.0)
+                continue
+            indices, nearest = tree.query_nearest(
+                point,
+                exclusive=True,
+                all_matches=False,
+                return_distance=True,
             )
-            for other_index, other in enumerate(anchor_points)
-            if other_index != index
-        ]
-        if neighbours:
-            distances.append(min(neighbours))
+            if len(indices):
+                distances.append(float(nearest[0]))
+    except (ImportError, AttributeError, TypeError, ValueError):
+        # Exact legacy fallback for independently embedded/core-only use.
+        for index, point in enumerate(coordinates):
+            neighbours = [
+                math.hypot(point[0] - other[0], point[1] - other[1])
+                for other_index, other in enumerate(coordinates)
+                if other_index != index
+            ]
+            if neighbours:
+                distances.append(min(neighbours))
     positive = sorted(distance for distance in distances if distance > 0.01)
     if not positive:
         return None

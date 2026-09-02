@@ -19,6 +19,12 @@ from cad2gis.cad2gis_v3.ports import resolve_insert_affine
 TRANSFORM_SCHEMA = "cad2gis.reader-transform-facts.v1"
 
 
+def test_named_paper_layout_is_not_silently_promoted_to_model():
+    assert libredwg._classify_layout_role("Model") == "model"
+    assert libredwg._classify_layout_role("APD - SF") == "layout"
+    assert libredwg._classify_layout_role("Paper") == "layout"
+
+
 class _Vec3:
     def __init__(self, x: float, y: float, z: float):
         self.x = x

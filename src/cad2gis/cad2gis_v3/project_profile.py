@@ -874,8 +874,45 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
         failures.append("mapping registry inventory binding is stale")
     if profile.project_id != registry.project_id:
         failures.append("project profile and mapping registry project_id values differ")
+    if not profile.is_legacy and profile.plan_layouts:
+        inventory_layouts = {
+            str(name).casefold() for name in inventory.get("layouts", {})
+        }
+        missing_layouts = [
+            name
+            for name in profile.plan_layouts
+            if name.casefold() not in inventory_layouts
+        ]
+        if missing_layouts:
+            failures.append(
+                "plan_layouts declares layouts missing from the source "
+                f"inventory: {missing_layouts}"
+            )
     if failures:
         raise ValueError("Invalid project bindings: " + "; ".join(failures))
+
+    warnings: list[str] = []
+    plan_domain_summary = inventory.get("plan_domain")
+    if isinstance(plan_domain_summary, Mapping):
+        issue_codes = plan_domain_summary.get("issue_codes")
+        if isinstance(issue_codes, Mapping):
+            orphan_count = int(
+                issue_codes.get("orphan_block_definition", 0) or 0
+            )
+            if orphan_count:
+                warnings.append(
+                    f"{orphan_count} orphan block definition(s) hold entities "
+                    "unreachable from selected roots; explicitly review "
+                    "plan_domain.include_orphan_blocks."
+                )
+            undeclared_count = int(
+                issue_codes.get("undeclared_layout_entities", 0) or 0
+            )
+            if undeclared_count:
+                warnings.append(
+                    "Paper-space layouts outside plan_layouts remain "
+                    "evidence-only and are not converted."
+                )
 
     # ── Coordinate-domain plausibility gate ───────────────────────────────
     # A DWG ``CGEOCS`` declaration does not prove that entity WCS coordinates
@@ -929,8 +966,8 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
                 )
 
         if domain["status"] == "LOCAL_OR_MISREGISTERED_COORDINATES":
-            status = "reviewed_ready_local_coordinates"
-            conversion_allowed = True
+            status = "registration_required"
+            conversion_allowed = False
             return {
                 "schema_version": "cad2gis-project-validation-result-v1",
                 "status": status,
@@ -944,10 +981,11 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
                     "mapping_registry": registry.review.status,
                 },
                 "coordinate_domain": domain,
+                "warnings": warnings,
                 "next_actions": [
                     "Drawing coordinates do not occupy the declared CRS domain.",
-                    "Conversion proceeds with declared CRS — coordinates will be displaced.",
-                    "Run cad2gis review to capture GCP pairs for absolute accuracy.",
+                    "Supply reviewed DWG GEODATA or an accepted surveyed GCP profile.",
+                    "OSM place-name results are relative candidates and cannot authorize delivery.",
                 ],
             }
 
@@ -973,6 +1011,7 @@ def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
         "unsupported_record_count": int(
             inventory.get("counts", {}).get("unsupported_records", 0)
         ),
+        "warnings": warnings,
         "next_actions": next_actions,
     }
 

@@ -7,7 +7,7 @@ The supported agent runtime is an ordinary Python 3.11/3.12 tool installation:
 ```shell
 uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 cad2gis runtime install
-cad2gis doctor --deep --strict --json
+cad2gis doctor --deep --strict --profile full --json
 ```
 
 On Windows, stop CAD2GIS MCP clients and any `cad2gis review` process before a

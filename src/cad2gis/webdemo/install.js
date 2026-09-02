@@ -21,7 +21,7 @@ const transcript = [
   { at: 4770, kind: "success", text: "Installed cad2gis with 2 executables" },
   { at: 5200, kind: "command", text: "codex plugin marketplace add Mola-maker/CAD2GIS --ref main" },
   { at: 5580, kind: "success", text: "Marketplace cad2gis registered from main" },
-  { at: 6030, kind: "command", text: "cad2gis-agent-mcp --help && cad2gis doctor --deep --json" },
+  { at: 6030, kind: "command", text: "cad2gis-agent-mcp --help && cad2gis doctor --deep --profile full --json" },
   { at: 6540, kind: "info", text: "[1/8] Python runtime                         PASS" },
   { at: 6810, kind: "info", text: "[2/8] Installed package import               PASS" },
   { at: 7080, kind: "info", text: "[3/8] PROJ / Shapely control plane           PASS" },

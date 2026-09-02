@@ -57,7 +57,9 @@ coordinates for this stage.
 `cad2gis.evidence_graph.v1` binds every node and edge to one source SHA-256.
 Nodes are content-addressed and contain immutable reader or pipeline facts.
 Edges reference only existing nodes. The graph is emitted as
-`reasoning/evidence_graph.json` and recorded in `run_manifest.json`.
+`reasoning/evidence_graph.json.gz` (transparent deterministic gzip) and recorded
+in `run_manifest.json`. The adjacent SQLite evidence index remains the default
+query surface, so agents do not need to inflate the full graph for paged reads.
 
 ### Visual evidence
 

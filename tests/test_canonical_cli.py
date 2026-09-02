@@ -195,12 +195,36 @@ def test_doctor_report_is_structured_and_fail_closed(
 
     assert report["schema_version"] == "cad2gis.doctor.v1"
     assert report["status"] == "limited"
+    assert report["selected_profile"] == "conversion"
+    assert report["selected_profile_ready"] is False
     assert report["conversion_ready"] is False
     assert report["capabilities"]["cli"] is True
     assert any(
         check["name"] == "backend" and check["status"] == "missing"
         for check in report["checks"]
     )
+
+
+def test_doctor_agent_profile_checks_control_plane(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(doctor, "collect_checks", lambda **_kwargs: (
+        doctor.Check("python", "ok", "ready"),
+        doctor.Check(
+            "mcp",
+            "missing",
+            "missing",
+            required_for_conversion=False,
+            required_for_profiles=("agent", "full"),
+        ),
+    ))
+
+    report = doctor.build_report(profile="agent")
+
+    assert report["conversion_ready"] is True
+    assert report["profile_ready"]["agent"] is False
+    assert report["selected_profile_ready"] is False
+    assert report["status"] == "limited"
 
 
 def test_module_help_does_not_import_gis_modules(tmp_path: Path) -> None:

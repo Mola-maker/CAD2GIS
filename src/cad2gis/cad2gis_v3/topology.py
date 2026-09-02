@@ -23,7 +23,8 @@ def _relation(kind, source, target, status, method, distance=None, evidence=()):
     return Relation(key, kind, source, target, status, method, distance, tuple(evidence))
 
 
-def _nearest_unique(point, features, tolerance):
+def _nearest_unique_linear(point, features, tolerance):
+    """Reference implementation retained for semantic equivalence tests."""
     ranked = sorted(
         (math.dist(point, feature.native_centroid), feature.feature_key, feature)
         for feature in features
@@ -33,6 +34,82 @@ def _nearest_unique(point, features, tolerance):
     if len(ranked) > 1 and ranked[1][0] - ranked[0][0] <= 0.01:
         return None, None, "multiple_optima"
     return ranked[0][2], ranked[0][0], "unique"
+
+
+class _NearestFeatureIndex:
+    """Indexed nearest-centroid lookup with the legacy fail-closed contract.
+
+    ``STRtree.query_nearest`` supplies the nearest distance while a bounded
+    radius query finds only the possible 1 cm ambiguity competitors.  The
+    final distances and ordering are still computed with ``math.dist`` so the
+    accepted feature, tolerance boundary, and ``multiple_optima`` result are
+    identical to the former exhaustive scan.
+    """
+
+    def __init__(self, features):
+        self.features = tuple(features)
+        self._tree = None
+        if not self.features:
+            return
+        try:
+            from shapely.geometry import Point
+            from shapely.strtree import STRtree
+
+            self._point_type = Point
+            self._tree = STRtree([
+                Point(float(item.native_centroid[0]), float(item.native_centroid[1]))
+                for item in self.features
+            ])
+        except (ImportError, AttributeError, TypeError, ValueError):
+            # Shapely is a declared runtime dependency, but keeping this
+            # deterministic fallback makes the topology core independently
+            # testable and avoids changing conversion semantics on old builds.
+            self._tree = None
+
+    def nearest_unique(self, point, tolerance):
+        if self._tree is None:
+            return _nearest_unique_linear(point, self.features, tolerance)
+        query_point = self._point_type(float(point[0]), float(point[1]))
+        try:
+            nearest_indices, nearest_distances = self._tree.query_nearest(
+                query_point,
+                max_distance=float(tolerance),
+                all_matches=True,
+                return_distance=True,
+            )
+        except (TypeError, ValueError):
+            return _nearest_unique_linear(point, self.features, tolerance)
+        indices = [int(value) for value in nearest_indices]
+        distances = [float(value) for value in nearest_distances]
+        if not indices:
+            return None, None, "outside_tolerance"
+        nearest_distance = min(distances)
+        # Only candidates within 1 cm of the optimum can change the legacy
+        # unique/ambiguous decision.  Querying that small envelope avoids an
+        # O(n) scan while exact distance calculation below preserves results.
+        radius = min(float(tolerance), nearest_distance + 0.0100000001)
+        candidate_indices = {
+            int(value) for value in self._tree.query(query_point.buffer(radius))
+        }
+        candidate_indices.update(indices)
+        ranked = sorted(
+            (
+                math.dist(point, self.features[index].native_centroid),
+                self.features[index].feature_key,
+                self.features[index],
+            )
+            for index in candidate_indices
+        )
+        if not ranked or ranked[0][0] > tolerance:
+            return None, None, "outside_tolerance"
+        if len(ranked) > 1 and ranked[1][0] - ranked[0][0] <= 0.01:
+            return None, None, "multiple_optima"
+        return ranked[0][2], ranked[0][0], "unique"
+
+
+def _nearest_unique(point, features, tolerance):
+    """Compatibility wrapper for callers and focused unit tests."""
+    return _NearestFeatureIndex(features).nearest_unique(point, tolerance)
 
 
 def _project_to_segment(point, start, end):
@@ -633,6 +710,8 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         by_class[feature.feature_class].append(feature)
     supports, boxes, sites = by_class["PTECH"], by_class["BOITE"], by_class["SITE"]
     routes = by_class["CABLE"]
+    support_index = _NearestFeatureIndex(supports)
+    site_index = _NearestFeatureIndex(sites)
     route_source_segments = {
         route.feature_key: delivery_segments(route, require_materialized=False)
         for route in routes
@@ -749,7 +828,9 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
         return within[0]
 
     for asset in boxes + sites:
-        support, distance, status = _nearest_unique(asset.native_centroid, supports, support_tolerance)
+        support, distance, status = support_index.nearest_unique(
+            asset.native_centroid, support_tolerance,
+        )
         collocated = (
             _collocated_support(asset)
             if asset.feature_class == "BOITE"
@@ -791,8 +872,8 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
     route_vertex_support = Counter()
     for route in routes:
         for vertex_index, point in enumerate(route.native_points):
-            support, distance, status = _nearest_unique(
-                point, supports, dimension_support_tolerance,
+            support, distance, status = support_index.nearest_unique(
+                point, dimension_support_tolerance,
             )
             if support is None:
                 route_vertex_support["unresolved"] += 1
@@ -887,7 +968,7 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
 
     def unique_support_pair(points):
         matches = [
-            _nearest_unique(point, supports, support_tolerance)
+            support_index.nearest_unique(point, support_tolerance)
             for point in points
         ]
         if any(match[0] is None for match in matches):
@@ -1000,7 +1081,10 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
                 "cable_matches": len(cable_matches),
                 "sling_matches": len(sling_matches),
             })
-        matches = [_nearest_unique(point, supports, support_tolerance) for point in dimension.points]
+        matches = [
+            support_index.nearest_unique(point, support_tolerance)
+            for point in dimension.points
+        ]
         if any(match[0] is None for match in matches):
             unresolved.append({"kind": "span_dimension", "entity_key": dimension.entity_key, "status": "endpoint_unresolved"})
             continue
@@ -1283,7 +1367,9 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
                 })
                 continue
             group_start = group[0].native_points[0]
-            site, distance, status = _nearest_unique(group_start, sites, support_tolerance)
+            site, distance, status = site_index.nearest_unique(
+                group_start, support_tolerance,
+            )
             if site is None:
                 unresolved.append({"kind": "fdt_component", "layout": layout, "status": status})
             else:
@@ -1302,10 +1388,13 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             )
 
     optical_nodes = boxes + sites
+    optical_node_index = _NearestFeatureIndex(optical_nodes)
     for route in routes:
         endpoints = (("ORIGINE", route.native_points[0]), ("EXTREMITE", route.native_points[-1]))
         for field_name, point in endpoints:
-            target, distance, status = _nearest_unique(point, optical_nodes, support_tolerance)
+            target, distance, status = optical_node_index.nearest_unique(
+                point, support_tolerance,
+            )
             if target is None:
                 unresolved.append({"kind": "route_endpoint", "route": route.feature_key, "endpoint": field_name, "status": status})
                 continue

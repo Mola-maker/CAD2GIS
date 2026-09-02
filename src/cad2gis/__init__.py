@@ -7,12 +7,26 @@ backend is loaded only when a conversion or project-profile operation runs.
 from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
+import tomllib
 from typing import Any
 
-try:
-    __version__ = version("cad2gis")
-except PackageNotFoundError:  # Running directly from an unpacked source tree.
-    __version__ = "0.3.0"
+def _package_version() -> str:
+    """Prefer the active checkout version over stale global metadata."""
+    project_file = Path(__file__).resolve().parents[2] / "pyproject.toml"
+    if project_file.is_file():
+        try:
+            project = tomllib.loads(project_file.read_text(encoding="utf-8"))
+            return str(project["project"]["version"])
+        except (OSError, KeyError, TypeError, tomllib.TOMLDecodeError):
+            pass
+    try:
+        return version("cad2gis")
+    except PackageNotFoundError:  # Running from a partial source archive.
+        return "0.3.0"
+
+
+__version__ = _package_version()
 
 __all__ = [
     "__version__",
