@@ -95,14 +95,9 @@ const palette = {
 };
 
 const displayLabel = (feature) => {
-  const layer = String(feature.get("_layer") || "").toUpperCase();
-  if (layer === "CABLE_SEGMENT" || layer === "CABLE") {
-    const value = Number(feature.get("source_native_length_m"));
-    if (feature.get("measurement_native_m") != null) {
-      return `${Number(feature.get("measurement_native_m")).toFixed(3)} m [DWG DIMENSION]`;
-    }
-    if (Number.isFinite(value)) return `${value.toFixed(3)} m [CAD geometry; no DIMENSION]`;
-  }
+  // A map label is an asset/route identity backed by CAD text.  Length and
+  // DIMENSION state stay in their dedicated evidence fields and review pane;
+  // they must never masquerade as the feature's business label.
   return String(feature.get("display_label") || "");
 };
 

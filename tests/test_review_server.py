@@ -354,7 +354,8 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
     assert "/geojson`" in script.text
     assert 'dataProjection: "EPSG:4326"' in script.text
     assert 'featureProjection: "EPSG:3857"' in script.text
-    assert 'layer === "CABLE_SEGMENT" || layer === "CABLE"' in script.text
+    assert "CAD geometry; no DIMENSION" not in script.text
+    assert 'feature.get("display_label")' in script.text
     assert "run.source_entity_count" in script.text
     assert "run.delivery_counts" in script.text
     assert "declutter: true" in script.text
