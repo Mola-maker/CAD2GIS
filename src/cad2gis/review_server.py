@@ -17,6 +17,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping
 
+from .cad2gis_v3.artifact_io import read_json_object
+
 
 REVIEW_SCHEMA = "cad2gis.review_workspace.v1"
 _FEATURE_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,256}$")
@@ -31,10 +33,10 @@ class ReviewConflictError(ReviewServerError):
 
 
 def _json_object(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ReviewServerError(f"JSON root must be an object: {path}")
-    return payload
+    try:
+        return read_json_object(path)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise ReviewServerError(str(exc)) from exc
 
 
 def _utc_now() -> str:
@@ -876,7 +878,7 @@ _PORTABLE_ARTIFACT_PATHS = {
     "evidence": Path("evidence.gpkg"),
     "delivery": Path("delivery.gpkg"),
     "styles": Path("qgis") / "styles" / "style_manifest.json",
-    "evidence_graph": Path("reasoning") / "evidence_graph.json",
+    "evidence_graph": Path("reasoning") / "evidence_graph.json.gz",
     "visual_evidence": Path("reasoning") / "visual" / "manifest.json",
 }
 

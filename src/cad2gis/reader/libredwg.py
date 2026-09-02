@@ -801,11 +801,9 @@ def _classify_layout_role(layout_name: str) -> str:
         return "block_definition"
     if name.casefold() == "model":
         return "model"
-    # Named paper-space layout tabs (e.g. "APD - SF", the subfeeder plan
-    # layout, or "Layout2") carry plan geometry and must not be discarded as
-    # paper space.
-    if name and name.casefold() != "paper":
-        return "model"
+    # A named paper tab is not model space.  It may carry authoritative plan
+    # geometry, but admitting it requires a source-bound ``plan_layouts``
+    # declaration instead of a reader-wide rewrite.
     return "layout"
 
 

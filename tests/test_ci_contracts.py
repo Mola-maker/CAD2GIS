@@ -13,7 +13,7 @@ def test_cross_platform_ci_uses_portable_agent_runtime() -> None:
     assert "actions/setup-python@v6" in workflow
     assert 'python -m pip install -e ".[agent,test]"' in workflow
     assert "cad2gis runtime install" in workflow
-    assert "cad2gis doctor --deep --strict --json" in workflow
+    assert "cad2gis doctor --deep --strict --profile full --json" in workflow
     assert "micromamba" not in workflow
     assert "conda" not in workflow.casefold()
     assert "shell: ${{ matrix.shell }}" not in workflow

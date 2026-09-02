@@ -3074,6 +3074,27 @@ def extract_com_entity(
     return record
 
 
+def _reclassify(record, new_role, rule, reason):
+    """Change a CAD role while preserving the reader's original fact."""
+
+    old_role = record.get("cad_role")
+    record["cad_role"] = new_role
+    if old_role == new_role:
+        return
+    original = record.setdefault("cad_role_original", old_role)
+    change = {
+        "rule": rule,
+        "reason": reason,
+        "from": old_role,
+        "to": new_role,
+    }
+    record["role_reclassification"] = change
+    raw_properties = record.get("raw_properties")
+    if isinstance(raw_properties, dict):
+        raw_properties.setdefault("cad_role_original", original)
+        raw_properties["role_reclassification"] = change
+
+
 def partition_plan_roles(records):
     """Mark legend/summary/title/frame zones inside a model or plan sheet."""
     points = [point for record in records for point in record.get("points", ())]
@@ -3097,17 +3118,42 @@ def partition_plan_roles(records):
         span_x = max(xs) - min(xs) if xs else 0.0
         span_y = max(ys) - min(ys) if ys else 0.0
         if _TITLE_BLOCK_NAME.search(record.get("block_name", "")):
-            record["cad_role"] = "title_block"
+            _reclassify(
+                record,
+                "title_block",
+                "plan_roles_title_block_name",
+                "block name matches the title-block pattern",
+            )
         elif record.get("closed") and span_x >= 0.85 * width and span_y >= 0.85 * height:
-            record["cad_role"] = "frame"
+            _reclassify(
+                record,
+                "frame",
+                "plan_roles_frame_span",
+                "closed entity spans the full sheet extent",
+            )
         elif legend_x is not None and x >= legend_x - 0.10 * width:
-            record["cad_role"] = "style_legend" if y >= legend_floor else "title_block"
+            _reclassify(
+                record,
+                "style_legend" if y >= legend_floor else "title_block",
+                "plan_roles_legend_region",
+                "entity lies in the reviewed legend/title region heuristic",
+            )
         elif _SUMMARY_TEXT.search(text) or (
             summary_anchors and x <= min_x + 0.36 * width and y <= min_y + 0.25 * height
         ):
-            record["cad_role"] = "design_summary"
+            _reclassify(
+                record,
+                "design_summary",
+                "plan_roles_design_summary",
+                "entity matches the design-summary text or region",
+            )
         elif _TITLE_TEXT.search(text) or (title_anchors and y <= min_y + 0.12 * height):
-            record["cad_role"] = "title_block"
+            _reclassify(
+                record,
+                "title_block",
+                "plan_roles_title_region",
+                "entity matches title text or the bottom title band",
+            )
     return records
 
 
@@ -3131,7 +3177,12 @@ def partition_model_legend(records):
         return records
     for record in records:
         if record.get("centroid", (float("-inf"), 0.0))[0] > cutoff and record.get("cad_role") == "model":
-            record["cad_role"] = "style_legend"
+            _reclassify(
+                record,
+                "style_legend",
+                "model_legend_gap",
+                "entity lies beyond the isolated legend-cluster x-gap",
+            )
     return records
 
 
@@ -3630,7 +3681,12 @@ def _items_from_grouped(
             # and summary remain evidence, but plan geometry is not duplicated.
             for record in records:
                 if record["cad_role"] == "plan":
-                    record["cad_role"] = "layout"
+                    _reclassify(
+                        record,
+                        "layout",
+                        "paper_layout_duplicate_model",
+                        "model-space telecom entities make this paper layout duplicative",
+                    )
         selected.extend(records)
     return build_items_from_records(
         selected, source.name, reproject_point, assign_fc, classify_block, extract_attributes,

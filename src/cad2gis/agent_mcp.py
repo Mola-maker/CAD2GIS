@@ -20,6 +20,7 @@ from .contracts import (
     mcp_tool_contract,
 )
 from .cad2gis_v3.cad_scene_graph import CadSceneGraph
+from .cad2gis_v3.artifact_io import read_json_object
 from .cad2gis_v3.evidence_graph import EvidenceGraph, EvidenceNode
 from .cad2gis_v3.evidence_index import (
     EvidenceIndexError,
@@ -194,12 +195,10 @@ def _path(value: str | Path, *, must_exist: bool = True) -> Path:
 
 
 def _json_object(path: Path, *, max_bytes: int = 64 * 1024 * 1024) -> dict[str, Any]:
-    if path.stat().st_size > max_bytes:
-        raise MCPServiceError(f"JSON artifact exceeds {max_bytes} bytes: {path.name}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise MCPServiceError(f"JSON artifact root must be an object: {path.name}")
-    return payload
+    try:
+        return read_json_object(path, max_uncompressed_bytes=max_bytes)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        raise MCPServiceError(str(exc)) from exc
 
 
 def inspect_run(run_dir: str) -> dict[str, Any]:

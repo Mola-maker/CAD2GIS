@@ -47,7 +47,7 @@ jobs:
         run: cad2gis runtime install
 
       - name: Verify conversion runtime
-        run: cad2gis doctor --deep --strict --json
+        run: cad2gis doctor --deep --strict --profile full --json
 
       - name: Lint Python
         run: python -m ruff check src tests tools plugins/cad2gis-agent/scripts

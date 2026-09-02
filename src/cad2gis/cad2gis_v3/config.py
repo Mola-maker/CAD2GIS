@@ -576,6 +576,8 @@ class SourceProfile:
     project_id: str = ""
     source_size_bytes: int | None = None
     inventory_sha256: str = ""
+    plan_layouts: tuple[str, ...] = ()
+    include_orphan_blocks: tuple[str, ...] = ()
 
     @property
     def is_legacy(self) -> bool:
@@ -678,7 +680,9 @@ class SourceProfile:
             "schema_version", "project_id", "review", "source_binding",
             "drawing", "crs", "spatial_coverage_policy", "expectations",
         }
-        missing, unknown = expected - set(value), set(value) - expected
+        optional = {"plan_domain", "plan_layouts"}
+        missing = expected - set(value)
+        unknown = set(value) - expected - optional
         if missing or unknown:
             raise ValueError(
                 "Invalid project profile keys; "
@@ -811,6 +815,45 @@ class SourceProfile:
         expectations = ProjectExpectations.from_mapping(
             value["expectations"], allow_incomplete=not review.is_reviewed,
         )
+        raw_plan_layouts = value.get("plan_layouts", [])
+        if not isinstance(raw_plan_layouts, list) or any(
+            not isinstance(item, str) or not item.strip()
+            for item in raw_plan_layouts
+        ):
+            raise ValueError("plan_layouts must be an array of non-empty strings")
+        plan_layouts = tuple(
+            dict.fromkeys(item.strip() for item in raw_plan_layouts)
+        )
+
+        include_orphan_blocks: tuple[str, ...] = ()
+        raw_plan_domain = value.get("plan_domain")
+        if raw_plan_domain is not None:
+            expected_plan_domain_keys = {"include_orphan_blocks"}
+            actual = (
+                set(raw_plan_domain)
+                if isinstance(raw_plan_domain, dict)
+                else set()
+            )
+            if (
+                not isinstance(raw_plan_domain, dict)
+                or actual != expected_plan_domain_keys
+            ):
+                raise ValueError(
+                    "Invalid plan_domain keys; expected exactly "
+                    "['include_orphan_blocks']"
+                )
+            raw_blocks = raw_plan_domain["include_orphan_blocks"]
+            if not isinstance(raw_blocks, list) or any(
+                not isinstance(item, str) or not item.strip()
+                for item in raw_blocks
+            ):
+                raise ValueError(
+                    "plan_domain.include_orphan_blocks must be an array of "
+                    "explicit non-empty block names; wildcard recovery is unsafe"
+                )
+            include_orphan_blocks = tuple(
+                dict.fromkeys(item.strip() for item in raw_blocks)
+            )
         return cls(
             path=resolved,
             schema_version=PROJECT_PROFILE_SCHEMA_VERSION,
@@ -832,6 +875,8 @@ class SourceProfile:
             project_id=project_id,
             source_size_bytes=source_size_bytes,
             inventory_sha256=inventory_sha256,
+            plan_layouts=plan_layouts,
+            include_orphan_blocks=include_orphan_blocks,
         )
 
     def validate_source(self, source: str | Path) -> str:

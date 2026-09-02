@@ -1077,6 +1077,33 @@ def classify_entities(
             and plan_domain.get("materialization") == "nested-insert-affine"
         )
 
+    def _is_reviewed_orphan_route(entity: SourceEntity) -> bool:
+        """Admit only explicitly recovered, transform-complete route geometry."""
+
+        if route_pattern is None or route_pattern.search(entity.layer) is None:
+            return False
+        if entity.dwg_type.upper() not in _ROUTE_ENTITY_TYPES:
+            return False
+        if len(entity.points) < 2:
+            return False
+        plan_domain = entity.raw_properties.get("plan_domain")
+        provenance = entity.raw_properties.get("provenance")
+        recovery = (
+            provenance.get("orphan_block_recovery")
+            if isinstance(provenance, Mapping)
+            else None
+        )
+        return (
+            isinstance(plan_domain, Mapping)
+            and plan_domain.get("materialization") == "nested-insert-affine"
+            and isinstance(plan_domain.get("affine"), Mapping)
+            and isinstance(plan_domain.get("orphan_block_recovery"), str)
+            and isinstance(recovery, Mapping)
+            and recovery.get("authority") == "reviewed_source_profile"
+            and recovery.get("block_name")
+            == plan_domain.get("orphan_block_recovery")
+        )
+
     attributed_block_styles: dict[str, list[tuple[str, Any]]] = defaultdict(list)
     for entity in model_entities:
         if not _is_materialized_block_entity(entity):
@@ -1099,7 +1126,11 @@ def classify_entities(
                 entity, "scene_partition_catalog_root", "EVIDENCE_ONLY",
             ))
             continue
-        if _is_materialized_block_entity(entity) and entity.dwg_type.upper() not in _ANNOTATION_CARRIER_TYPES:
+        if (
+            _is_materialized_block_entity(entity)
+            and entity.dwg_type.upper() not in _ANNOTATION_CARRIER_TYPES
+            and not _is_reviewed_orphan_route(entity)
+        ):
             # Issue 4 materializes block-definition members as evidence so
             # their TEXT/MTEXT labels can enter semantics.  Non-annotation
             # block geometry (title-frame swatches, hatch, sample lines) is

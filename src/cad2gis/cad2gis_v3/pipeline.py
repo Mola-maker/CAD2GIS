@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .calibration import GCPProfile, fit_profile
+from .artifact_io import write_json_object
 from .cad_scene_graph import build_cad_scene_graph
 from .accounting import account_entities, summarize_accounting
 from .config import MappingRegistry, SourceProfile
@@ -34,10 +35,11 @@ from .georef import (
 )
 from .ingest import ingest
 from .implementation import implementation_manifest_fields, production_conversion_provenance
-from .model import SourceEntity, canonical_curve_fingerprint
+from .model import canonical_curve_fingerprint
 from .semantics import classify_entities
 from .spatial_coverage import evaluate_corridor_coverage, evaluate_spatial_coverage
 from .styles import write_styles
+from .stage_contract import StageRecorder, canonical_sha256
 from .topology import build_topology
 from .run_status import RunStatus, derive_run_status, publish_verified_alias
 from .source_gpkg import write_source_gpkg
@@ -240,15 +242,7 @@ class ConversionResult:
 
 
 def _write_manifest(path, payload):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.{os.getpid()}.{time.time_ns()}.tmp")
-    try:
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(temporary, path)
-    finally:
-        if temporary.exists():
-            temporary.unlink()
+    write_json_object(path, payload)
 
 
 def _publish_run_bundle(staged_run_dir: Path, destination_run_dir: Path) -> None:
@@ -856,6 +850,19 @@ def _manifest_validation_summary(
     calibration = georeference_diagnostics["calibration"]
     coverage = calibration.get("spatial_coverage") or {}
     lineage = georeference_diagnostics["lineage"]
+    coordinate_domain = georeference_diagnostics.get("coordinate_domain") or {}
+    calibration_status = calibration["status"]
+    if calibration_status == "accepted":
+        coordinate_accuracy_passed: bool | None = True
+        coordinate_verification_status = "independently_validated_gcp"
+    elif coordinate_domain.get("passed") is False:
+        coordinate_accuracy_passed = False
+        coordinate_verification_status = "invalid_coordinate_domain"
+    else:
+        # A plausible declared CRS or DWG GEODATA registration permits
+        # conversion, but neither independently verifies absolute accuracy.
+        coordinate_accuracy_passed = None
+        coordinate_verification_status = "not_independently_verified"
     return {
         "schema_version": "cad2gis-validation-summary-v2",
         "source_geometry": {
@@ -920,13 +927,11 @@ def _manifest_validation_summary(
         },
         "segment_delivery": _segment_delivery_summary(features, delivery_counts),
         "coordinate_accuracy": {
-            "calibration_status": calibration["status"],
-            "coordinate_domain_status": (
-                georeference_diagnostics.get("coordinate_domain") or {}
-            ).get("status"),
-            "coordinate_domain_passed": (
-                georeference_diagnostics.get("coordinate_domain") or {}
-            ).get("passed"),
+            "passed": coordinate_accuracy_passed,
+            "verification_status": coordinate_verification_status,
+            "calibration_status": calibration_status,
+            "coordinate_domain_status": coordinate_domain.get("status"),
+            "coordinate_domain_passed": coordinate_domain.get("passed"),
             "spatial_coverage_passed": coverage.get("passed"),
             "lineage_model": lineage["model"],
             "lineage_feature_count": lineage["feature_count"],
@@ -1261,6 +1266,14 @@ def _derive_conversion_status(
         style_counts = {}
     warning_count += _status_count(semantic_counts, "warned")
     warning_count += _status_count(style_counts, "warned")
+    coordinate_accuracy = validation_summary.get("coordinate_accuracy")
+    if (
+        isinstance(coordinate_accuracy, Mapping)
+        and coordinate_accuracy.get("passed") is None
+    ):
+        # Nominal CRS plausibility and DWG GEODATA are not independent
+        # absolute-accuracy validation.  Keep usable output CONDITIONAL.
+        warning_count += 1
     semantic_coverage_status = semantic_diagnostics.get("coverage", {})
     if (
         isinstance(semantic_coverage_status, Mapping)
@@ -1339,6 +1352,12 @@ def convert(request: ConversionRequest) -> ConversionResult:
     source_hash = profile.validate_source(source)
     registry = MappingRegistry.load(request.mapping_registry, source_hash)
     _validate_project_bindings(profile, registry)
+    stage_recorder = StageRecorder()
+    stage_inputs = {
+        "source_sha256": source_hash,
+        "source_profile_sha256": _sha256(profile.path),
+        "mapping_registry_sha256": _sha256(registry.path),
+    }
 
     from .units import build_unit_crs_contract
 
@@ -1360,7 +1379,19 @@ def convert(request: ConversionRequest) -> ConversionResult:
         )
     run_dir.parent.mkdir(parents=True, exist_ok=True)
 
-    entities, ingest_diagnostics = ingest(source, profile)
+    entities, ingest_diagnostics = stage_recorder.run(
+        "ingest",
+        version="v3-reader-ir-2",
+        inputs=stage_inputs,
+        operation=lambda: ingest(source, profile),
+        summarize=lambda result: {
+            "entity_count": len(result[0]),
+            "entity_keys_sha256": canonical_sha256(sorted(
+                entity.entity_key for entity in result[0]
+            )),
+            "census_sha256": canonical_sha256(result[1].get("census", {})),
+        },
+    )
     accounting_records = account_entities(entities)
     terminal_accounting = summarize_accounting(accounting_records)
     source_entity_count = len(entities)
@@ -1398,7 +1429,41 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
     from .plan_domain import build_plan_domain
 
-    plan_domain = build_plan_domain(entities)
+    route_regex = getattr(registry, "positive_route_layer_regex", "")
+    route_layer_pattern = (
+        None
+        if not route_regex or route_regex == "(?!)"
+        else re.compile(route_regex)
+    )
+    plan_domain = stage_recorder.run(
+        "plan_domain",
+        version="v2-reviewed-orphan-recovery",
+        inputs={
+            **stage_inputs,
+            "ingest_output_sha256": stage_recorder.receipts[-1]["output_sha256"],
+            "route_regex": route_regex,
+            "plan_layouts": list(getattr(profile, "plan_layouts", ())),
+            "include_orphan_blocks": list(
+                getattr(profile, "include_orphan_blocks", ())
+            ),
+        },
+        operation=lambda: build_plan_domain(
+            entities,
+            route_layer_pattern=route_layer_pattern,
+            plan_layouts=getattr(profile, "plan_layouts", ()),
+            include_orphan_blocks=(
+                getattr(profile, "include_orphan_blocks", ()) or None
+            ),
+            plan_domain_authority="reviewed_source_profile",
+        ),
+        summarize=lambda result: {
+            "entity_count": len(result.entities),
+            "entity_keys_sha256": canonical_sha256(sorted(
+                entity.entity_key for entity in result.entities
+            )),
+            "diagnostics_sha256": canonical_sha256(result.diagnostics),
+        },
+    )
     semantic_entities = list(plan_domain.entities)
     cad_scene_graph = build_cad_scene_graph(
         source_sha256=source_hash,
@@ -1491,16 +1556,24 @@ def convert(request: ConversionRequest) -> ConversionResult:
     coordinate_domain = assess_coordinate_domain(
         coordinate_domain_entities, profile.source_crs,
     )
-    # ── OSM place-name anchor for local engineering coordinates ────────
+    # OSM place-name lookup is relative evidence only.  Persisting a coarse
+    # candidate helps a later review, but it must never mutate delivery
+    # geometry or turn a failed coordinate-domain gate into a pass.
     osm_anchor: dict[str, Any] | None = None
     if request.gcp_profile is None and geodata_registration is None:
         from .osm_anchor import derive_osm_anchor
 
-        # A cached/reviewed anchor is explicit project configuration and wins
-        # even when the coordinate-domain heuristic accepted the declared CRS
-        # (some validation drawings carry local offsets with magnitudes that
-        # look EPSG:3857-plausible but still land near the QGIS origin).
+        # Legacy v1 caches used ``status=derived``.  Treat them as candidates,
+        # never as reviewed registration authority.
         anchor = _load_osm_anchor(request.mapping_registry.parent)
+        if anchor is not None and anchor.get("status") in {"derived", "candidate"}:
+            anchor = {
+                **anchor,
+                "status": "candidate",
+                "authority": "relative_only",
+                "applicable_for_delivery": False,
+                "refinement": "surveyed_gcp_required",
+            }
         if anchor is None and coordinate_domain.get("passed") is not True:
             extent = coordinate_domain.get("observed_extent") or {}
             if len(extent) == 4:
@@ -1508,68 +1581,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
                     source,
                     [extent["min_x"], extent["min_y"], extent["max_x"], extent["max_y"]],
                 )
-                if anchor.get("status") == "derived":
+                if anchor.get("status") == "candidate":
                     _save_osm_anchor(request.mapping_registry.parent, anchor)
-        if anchor is not None and anchor.get("status") == "derived":
-            dx = float(anchor.get("translation_dx", 0.0))
-            dy = float(anchor.get("translation_dy", 0.0))
-            if dx or dy:
-                from dataclasses import replace as _replace
-                import copy as _copy
-
-                def _shift_point(point: Sequence[float]) -> tuple[float, ...]:
-                    shifted = (float(point[0]) + dx, float(point[1]) + dy)
-                    if len(point) > 2:
-                        shifted = shifted + (float(point[2]),)
-                    return shifted
-
-                translated: list[SourceEntity] = []
-                for entity in semantic_entities:
-                    new_points = (
-                        tuple(_shift_point(p) for p in entity.points)
-                        if entity.points
-                        else entity.points
-                    )
-                    new_centroid = (
-                        entity.centroid[0] + dx, entity.centroid[1] + dy
-                    )
-                    new_facts: dict[str, Any] | None = None
-                    if entity.curve_facts:
-                        new_facts = _copy.deepcopy(entity.curve_facts)
-                        if "vertices_wcs" in new_facts:
-                            new_facts["vertices_wcs"] = [
-                                _shift_point(point)
-                                for point in new_facts["vertices_wcs"]
-                            ]
-                        parameters = new_facts.get("primitive_parameters")
-                        if isinstance(parameters, dict):
-                            segments = parameters.get(
-                                "delivery_segments_wcs"
-                            )
-                            if isinstance(segments, list):
-                                for segment in segments:
-                                    if not isinstance(segment, dict):
-                                        continue
-                                    if "points_wcs" in segment:
-                                        segment["points_wcs"] = [
-                                            _shift_point(point)
-                                            for point in segment["points_wcs"]
-                                        ]
-                    translated.append(_replace(
-                        entity,
-                        points=new_points,
-                        centroid=new_centroid,
-                        curve_facts=new_facts,
-                        curve_fingerprint="",
-                    ))
-                semantic_entities = translated
-                osm_anchor = anchor
-                coordinate_domain = {
-                    **coordinate_domain,
-                    "passed": True,
-                    "status": "OSM_ANCHOR_APPLIED",
-                    "osm_anchor": anchor,
-                }
+        if anchor is not None and anchor.get("status") == "candidate":
+            osm_anchor = anchor
     raw_entity_keys = {entity.entity_key for entity in entities}
     evidence_entities = [
         *entities,
@@ -1579,15 +1594,51 @@ def convert(request: ConversionRequest) -> ConversionResult:
             if entity.entity_key not in raw_entity_keys
         ),
     ]
-    features, relations, unresolved, semantic_diagnostics = classify_entities(
-        semantic_entities,
-        registry,
-        coverage_policy=registry.semantic_coverage_policy,
-        coverage_allowlist=list(registry.semantic_coverage_allowlist),
-        catalog_roots=catalog_roots,
-        project_id=profile.project_id,
-        project_slug=profile.path.parent.parent.name,
+    features, relations, unresolved, semantic_diagnostics = stage_recorder.run(
+        "semantic_classification",
+        version="v4-reviewed-admission",
+        inputs={
+            **stage_inputs,
+            "semantic_entity_keys_sha256": canonical_sha256(sorted(
+                entity.entity_key for entity in semantic_entities
+            )),
+            "coverage_policy": registry.semantic_coverage_policy,
+            "coverage_allowlist": list(registry.semantic_coverage_allowlist),
+            "catalog_roots": sorted(catalog_roots),
+        },
+        operation=lambda: classify_entities(
+            semantic_entities,
+            registry,
+            coverage_policy=registry.semantic_coverage_policy,
+            coverage_allowlist=list(registry.semantic_coverage_allowlist),
+            catalog_roots=catalog_roots,
+            project_id=profile.project_id,
+            project_slug=profile.path.parent.parent.name,
+        ),
+        summarize=lambda result: {
+            "feature_count": len(result[0]),
+            "relation_count": len(result[1]),
+            "unresolved_count": len(result[2]),
+            "feature_keys_sha256": canonical_sha256(sorted(
+                feature.feature_key for feature in result[0]
+            )),
+            "diagnostics_sha256": canonical_sha256(result[3]),
+        },
     )
+    if (
+        osm_anchor is not None
+        and "road_match" not in osm_anchor
+    ):
+        from .osm_anchor import refine_osm_anchor_with_roads
+
+        osm_anchor = refine_osm_anchor_with_roads(
+            osm_anchor,
+            [
+                feature for feature in features
+                if feature.feature_class == "CABLE"
+            ],
+        )
+        _save_osm_anchor(request.mapping_registry.parent, osm_anchor)
     semantic_diagnostics["legend_spatial"] = {
         "flagged_entity_keys": sorted(legend_flag_map.keys()),
         "flagged_count": len(legend_flag_map),
@@ -1632,8 +1683,34 @@ def convert(request: ConversionRequest) -> ConversionResult:
         profile.expectations.source_geometry_gates,
         {**source_policy, "curve_materialization": curve_materialization},
     )
-    relations, unresolved, topology_diagnostics = build_topology(
-        semantic_entities, features, registry, relations, unresolved,
+    relations, unresolved, topology_diagnostics = stage_recorder.run(
+        "topology",
+        version="v4-strtree-equivalent",
+        inputs={
+            **stage_inputs,
+            "feature_state_sha256": canonical_sha256([
+                {
+                    "key": feature.feature_key,
+                    "class": feature.feature_class,
+                    "points": feature.native_points,
+                }
+                for feature in features
+            ]),
+            "relation_keys": sorted(
+                relation.relation_key for relation in relations
+            ),
+        },
+        operation=lambda: build_topology(
+            semantic_entities, features, registry, relations, unresolved,
+        ),
+        summarize=lambda result: {
+            "relation_count": len(result[0]),
+            "unresolved_count": len(result[1]),
+            "relation_keys_sha256": canonical_sha256(sorted(
+                relation.relation_key for relation in result[0]
+            )),
+            "diagnostics_sha256": canonical_sha256(result[2]),
+        },
     )
     # CABLE length labels are segment-level facts.  The delivery ``CABLE``
     # layer is the normalised segment view: the warehouse attaches each DWG
@@ -2016,7 +2093,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
     evidence_path = run_dir / f"{artifact_prefix}evidence.gpkg"
     delivery_path = run_dir / f"{artifact_prefix}delivery.gpkg"
     style_manifest_path = run_dir / "qgis" / "styles" / "style_manifest.json"
-    evidence_graph_path = run_dir / "reasoning" / "evidence_graph.json"
+    evidence_graph_path = run_dir / "reasoning" / "evidence_graph.json.gz"
     evidence_index_path = run_dir / "reasoning" / EVIDENCE_INDEX_FILENAME
     cad_scene_graph_path = run_dir / "reasoning" / "cad_scene_graph.json"
     decision_execution_path = run_dir / "reasoning" / "decision_execution.json"
@@ -2031,8 +2108,25 @@ def convert(request: ConversionRequest) -> ConversionResult:
         staged_evidence_path = staged_run_dir / evidence_path.name
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
-        staged_evidence_graph_path = staged_run_dir / "reasoning" / "evidence_graph.json"
-        _write_manifest(staged_evidence_graph_path, evidence_graph.to_dict())
+        staged_evidence_graph_path = staged_run_dir / "reasoning" / "evidence_graph.json.gz"
+        stage_recorder.run(
+            "write_evidence_graph",
+            version="v2-deterministic-gzip",
+            inputs={
+                **stage_inputs,
+                "graph_sha256": evidence_graph.graph_sha256,
+                "node_count": len(evidence_graph.nodes),
+                "edge_count": len(evidence_graph.edges),
+            },
+            operation=lambda: _write_manifest(
+                staged_evidence_graph_path, evidence_graph.to_dict(),
+            ),
+            summarize=lambda _result: {
+                "bytes": staged_evidence_graph_path.stat().st_size,
+                "artifact_sha256": _sha256(staged_evidence_graph_path),
+                "graph_sha256": evidence_graph.graph_sha256,
+            },
+        )
         staged_evidence_index_path = (
             staged_run_dir / "reasoning" / EVIDENCE_INDEX_FILENAME
         )
@@ -2065,9 +2159,23 @@ def convert(request: ConversionRequest) -> ConversionResult:
             decision_pack_path = run_dir / "reasoning" / "decision_pack.json"
             staged_decision_pack_path = staged_run_dir / "reasoning" / "decision_pack.json"
             shutil.copy2(Path(request.decision_pack).resolve(), staged_decision_pack_path)
-        source_result = write_source_gpkg(
-            staged_source_path, entities, profile.source_crs,
-            legend_flag_map=legend_flag_map,
+        source_result = stage_recorder.run(
+            "write_source_gpkg",
+            version="v2-immutable-source-facts",
+            inputs={
+                **stage_inputs,
+                "entity_count": len(entities),
+                "legend_flags_sha256": canonical_sha256(legend_flag_map),
+            },
+            operation=lambda: write_source_gpkg(
+                staged_source_path, entities, profile.source_crs,
+                legend_flag_map=legend_flag_map,
+            ),
+            summarize=lambda _result: {
+                "bytes": staged_source_path.stat().st_size,
+                "artifact_sha256": _sha256(staged_source_path),
+                "entity_count": len(entities),
+            },
         )
         if not staged_source_path.is_file():
             raise RuntimeError(
@@ -2078,19 +2186,57 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "Source GeoPackage entity count does not match ingested source entities: "
                 f"{getattr(source_result, 'entity_count', None)} != {source_entity_count}"
             )
-        write_evidence(
-            staged_evidence_path,
-            evidence_entities,
-            features,
-            relations,
-            unresolved,
-            diagnostics, transformer.source,
-            calibration_audit=(calibration_audit or lineage_audit),
-            target_srs=transformer.target,
-            delivery_transformer=selected_transformer,
+        stage_recorder.run(
+            "write_evidence_gpkg",
+            version="v3-hash-referenced-facts",
+            inputs={
+                **stage_inputs,
+                "evidence_graph_sha256": evidence_graph.graph_sha256,
+                "feature_count": len(features),
+                "relation_count": len(relations),
+            },
+            operation=lambda: write_evidence(
+                staged_evidence_path,
+                evidence_entities,
+                features,
+                relations,
+                unresolved,
+                diagnostics, transformer.source,
+                calibration_audit=(calibration_audit or lineage_audit),
+                target_srs=transformer.target,
+                delivery_transformer=selected_transformer,
+            ),
+            summarize=lambda _result: {
+                "bytes": staged_evidence_path.stat().st_size,
+                "artifact_sha256": _sha256(staged_evidence_path),
+                "entity_count": len(evidence_entities),
+            },
         )
-        counts = write_delivery(
-            staged_delivery_path, main_delivery_features, selected_transformer,
+        counts = stage_recorder.run(
+            "write_delivery_gpkg",
+            version="v4-eight-layer-contract",
+            inputs={
+                **stage_inputs,
+                "feature_state_sha256": canonical_sha256([
+                    {
+                        "key": feature.feature_key,
+                        "class": feature.feature_class,
+                        "points": feature.native_points,
+                        "label": feature.display_label,
+                    }
+                    for feature in main_delivery_features
+                ]),
+            },
+            operation=lambda: write_delivery(
+                staged_delivery_path,
+                main_delivery_features,
+                selected_transformer,
+            ),
+            summarize=lambda result: {
+                "bytes": staged_delivery_path.stat().st_size,
+                "artifact_sha256": _sha256(staged_delivery_path),
+                "counts": result,
+            },
         )
         delivery_gate = _validate_declared_counts(
             "delivery", profile.expectations.delivery_counts, counts,
@@ -2209,6 +2355,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "strategy": "same-volume-staged-run-directory-swap",
             },
             "run_status": run_status.value,
+            "stage_contracts": stage_recorder.manifest(),
             "modes": {"domain": request.domain, "llm": request.llm},
             "source": {"path": str(source), "sha256": source_hash},
             "profiles": {
@@ -2235,6 +2382,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "evidence_graph": {
                     "path": str(evidence_graph_path),
                     "sha256": _sha256(staged_evidence_graph_path),
+                    "encoding": "gzip",
+                    "content_type": "application/json",
+                    "graph_sha256": evidence_graph.graph_sha256,
+                    "stored_bytes": staged_evidence_graph_path.stat().st_size,
                 },
                 "evidence_index": {
                     "path": str(evidence_index_path),

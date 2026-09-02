@@ -1363,7 +1363,23 @@ def compile_onboarding_proposal(
             require_reviewed=False,
         )
         entities, diagnostics = ingest(source_path, profile, skip_census_check=True)
-        plan_domain = build_plan_domain(entities)
+        route_regex = getattr(registry, "positive_route_layer_regex", "")
+        route_layer_pattern = (
+            None
+            if not route_regex or route_regex == "(?!)"
+            else re.compile(route_regex)
+        )
+        plan_domain = build_plan_domain(
+            entities,
+            route_layer_pattern=route_layer_pattern,
+            plan_layouts=getattr(profile, "plan_layouts", ()),
+            include_orphan_blocks=(
+                getattr(profile, "include_orphan_blocks", ()) or None
+            ),
+            plan_domain_authority=(
+                "reviewed_source_profile" if profile.is_reviewed else None
+            ),
+        )
         semantic_base = list(plan_domain.entities)
 
         # ── Dry-run classification with route-regex check chain ─────────

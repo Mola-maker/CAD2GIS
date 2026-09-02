@@ -251,7 +251,9 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
 
     assert result["status"] == "auto_accepted"
     assert result["feature_counts"] == {"CABLE": 1, "INFRASTRUCTURE": 1}
-    assert validate_project(project_dir=root)["conversion_allowed"] is True
+    validation = validate_project(project_dir=root)
+    assert validation["status"] == "registration_required"
+    assert validation["conversion_allowed"] is False
     profile = json.loads(
         (root / "config" / "source_profile.json").read_text(encoding="utf-8")
     )

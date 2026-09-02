@@ -12,7 +12,7 @@ directory; do not use an editable worktree for a long-lived plugin process:
 ```shell
 uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
 cad2gis runtime install
-cad2gis doctor --deep --strict --json
+cad2gis doctor --deep --strict --profile full --json
 ```
 
 On Windows, stop CAD2GIS MCP clients and any `cad2gis review` process before a
@@ -70,9 +70,10 @@ plugin. Plugin registration intentionally does not download Python packages or
 silently select another interpreter.
 
 Run `cad2gis runtime install` once after installation or from the MCP
-`install_runtime` tool. Run `cad2gis doctor --deep --json` to inspect the
-platform wheel and reader state; require `cad2gis doctor --deep --strict --json`
-and `conversion_ready: true` before converting production drawings. The Conda
+`install_runtime` tool. Run `cad2gis doctor --deep --profile full --json` to inspect
+the MCP entry point, review UI, platform wheel, and reader state; require
+`cad2gis doctor --deep --strict --profile full --json` and
+`selected_profile_ready: true` before converting production drawings. The Conda
 file in the source repository remains an optional native-development profile.
 
 All stdio clients invoke the installed `cad2gis-agent-mcp` entry point. Local

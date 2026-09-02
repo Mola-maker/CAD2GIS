@@ -49,6 +49,12 @@ def _parser() -> argparse.ArgumentParser:
     runtime_command = commands.add_parser(
         "runtime", help="Inspect or install the portable native runtime."
     )
+    doctor.add_argument(
+        "--profile",
+        choices=("conversion", "agent", "review", "full"),
+        default="conversion",
+        help="Validate conversion, MCP agent, review UI, or the full runtime.",
+    )
     runtime_commands = runtime_command.add_subparsers(
         dest="runtime_command", metavar="RUNTIME_COMMAND", required=True
     )
@@ -305,9 +311,11 @@ def _source(args: argparse.Namespace) -> Path:
 def _doctor(args: argparse.Namespace) -> tuple[Any, int]:
     from .doctor import render_report
 
-    report, rendered = render_report(as_json=args.json, deep=args.deep)
+    report, rendered = render_report(
+        as_json=args.json, deep=args.deep, profile=args.profile,
+    )
     print(rendered)
-    return None, 2 if args.strict and not report["conversion_ready"] else 0
+    return None, 2 if args.strict and not report["selected_profile_ready"] else 0
 
 
 def _runtime_status(args: argparse.Namespace) -> tuple[Any, int]:
