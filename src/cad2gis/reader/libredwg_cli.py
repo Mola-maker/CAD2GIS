@@ -533,9 +533,18 @@ def _contexts(document: Any) -> Iterable[tuple[Any, str, str, str]]:
 
 
 def _geodata_reader(executable: Path) -> Path | None:
-    name = "dwgread.exe" if os.name == "nt" else "dwgread"
-    candidate = executable.with_name(name)
-    return candidate if candidate.is_file() else None
+    # Keep the companion lookup tied to the selected dwg2dxf distribution,
+    # not only to the host OS.  This also supports Windows tool bundles that
+    # are mounted or exercised from a non-Windows host (for example in CI or
+    # through Wine) without weakening the sibling-only trust boundary.
+    names = ["dwgread.exe"] if executable.suffix.casefold() == ".exe" else []
+    names.append("dwgread.exe" if os.name == "nt" else "dwgread")
+    names.append("dwgread" if names[-1] == "dwgread.exe" else "dwgread.exe")
+    for name in dict.fromkeys(names):
+        candidate = executable.with_name(name)
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 def _read_geodata_registration(
