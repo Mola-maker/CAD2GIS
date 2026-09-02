@@ -1315,83 +1315,43 @@ def _derive_conversion_status(
     )
 
 
-def convert(request: ConversionRequest) -> ConversionResult:
-    source = Path(request.source).resolve()
-    run_dir = Path(request.run_dir).resolve()
-    from .implementation import (
-        conversion_snapshot_manifest_fields,
-        freeze_conversion_snapshot,
-        verify_conversion_snapshot,
+@dataclass(frozen=True)
+class _StyledDelivery:
+    counts: dict[str, int]
+    delivery_gate: dict[str, Any]
+    style_manifest_path: Path
+    style_coverage: dict[str, Any]
+
+
+def _write_styled_delivery(path, styles_dir, features, transformer, registry, expectations):
+    """Finish every delivery mutation before recording its artifact hash."""
+    counts = write_delivery(path, features, transformer)
+    delivery_gate = _validate_declared_counts("delivery", expectations, counts)
+    style_manifest_path = write_styles(
+        styles_dir, features, path,
+        coverage_policy=registry.style_coverage_policy,
+        coverage_allowlist=list(registry.style_coverage_allowlist),
+        color_unification=getattr(registry, "render_color_unification", None),
     )
-    from .runtime_provenance import collect_runtime_provenance, runtime_manifest_fields
-    startup_runtime = collect_runtime_provenance()
-    try:
-        conversion_snapshot = freeze_conversion_snapshot(
-            source,
-            request.source_profile,
-            request.mapping_registry,
-            request.gcp_profile,
-            decision_pack=request.decision_pack,
-            runtime=startup_runtime,
-        )
-    except FileNotFoundError:
-        # Preserve the stronger, actionable review error for a draft pack even
-        # when another required artifact has not yet been authored.  The
-        # snapshot attempt still occurs first, and no reader/runtime stage is
-        # entered.  A reviewed profile re-raises the missing-artifact failure.
-        incomplete_profile = SourceProfile.load(request.source_profile)
-        incomplete_profile.require_reviewed()
-        raise
-    profile = SourceProfile.load(request.source_profile)
-    # This review gate is before unit/CRS work, AutoCAD startup, or ingestion.
-    # Validation never upgrades a draft.
-    profile.require_reviewed()
-    # Keep the pipeline tolerant of legacy/custom SourceProfile-like objects
-    # created before the optional DWG GEODATA registration field existed.
-    geodata_registration = getattr(profile, "geodata_registration", None)
-    source_hash = profile.validate_source(source)
-    registry = MappingRegistry.load(request.mapping_registry, source_hash)
-    _validate_project_bindings(profile, registry)
-    stage_recorder = StageRecorder()
-    stage_inputs = {
-        "source_sha256": source_hash,
-        "source_profile_sha256": _sha256(profile.path),
-        "mapping_registry_sha256": _sha256(registry.path),
+    written_style_manifest = json.loads(style_manifest_path.read_text(encoding="utf-8"))
+    coverage = written_style_manifest.get("coverage")
+    if not isinstance(coverage, dict) or coverage.get("conversion_allowed") is not True:
+        raise RuntimeError(f"Written style manifest coverage gate failed: {coverage}")
+    return _StyledDelivery(counts, delivery_gate, style_manifest_path, coverage)
+
+
+def _styled_delivery_fingerprint(path, styles_dir):
+    return {
+        "artifact_sha256": _sha256(path),
+        "style_files": {
+            item.relative_to(styles_dir).as_posix(): _sha256(item)
+            for item in sorted(styles_dir.rglob("*")) if item.is_file()
+        },
     }
 
-    from .units import build_unit_crs_contract
 
-    unit_contract = build_unit_crs_contract(
-        dwg_insunits=profile.dwg_insunits,
-        source_crs=profile.source_crs,
-        target_crs=profile.target_crs,
-        source_coordinate_scale_to_m=profile.source_coordinate_scale_to_m,
-        source_coordinate_scale_reviewed=profile.source_coordinate_scale_reviewed,
-        local_registration_strategy=profile.local_registration_strategy,
-        local_registration_reviewed=profile.local_registration_reviewed,
-    )
-    # DirectTransformer is the only implemented geometry transform at this
-    # boundary.  Registration contracts must never masquerade as direct CRS.
-    if unit_contract.coordinate_mode != "direct_crs":
-        raise RuntimeError(
-            "Conversion requires an implemented reviewed authoritative registration; "
-            f"unit/CRS contract mode is {unit_contract.coordinate_mode!r}"
-        )
-    run_dir.parent.mkdir(parents=True, exist_ok=True)
-
-    entities, ingest_diagnostics = stage_recorder.run(
-        "ingest",
-        version="v3-reader-ir-2",
-        inputs=stage_inputs,
-        operation=lambda: ingest(source, profile),
-        summarize=lambda result: {
-            "entity_count": len(result[0]),
-            "entity_keys_sha256": canonical_sha256(sorted(
-                entity.entity_key for entity in result[0]
-            )),
-            "census_sha256": canonical_sha256(result[1].get("census", {})),
-        },
-    )
+def _validate_ingested_source(source, entities, ingest_diagnostics, profile):
+    """Enforce inventory conservation and dependency admission before semantics."""
     accounting_records = account_entities(entities)
     terminal_accounting = summarize_accounting(accounting_records)
     source_entity_count = len(entities)
@@ -1427,51 +1387,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
         profile.expectations.source_inventory,
         ingest_diagnostics["census"],
     )
-    from .plan_domain import build_plan_domain
+    return terminal_accounting, source_dependencies, inventory_gate
 
-    route_regex = getattr(registry, "positive_route_layer_regex", "")
-    route_layer_pattern = (
-        None
-        if not route_regex or route_regex == "(?!)"
-        else re.compile(route_regex)
-    )
-    plan_domain = stage_recorder.run(
-        "plan_domain",
-        version="v2-reviewed-orphan-recovery",
-        inputs={
-            **stage_inputs,
-            "ingest_output_sha256": stage_recorder.receipts[-1]["output_sha256"],
-            "route_regex": route_regex,
-            "plan_layouts": list(getattr(profile, "plan_layouts", ())),
-            "include_orphan_blocks": list(
-                getattr(profile, "include_orphan_blocks", ())
-            ),
-        },
-        operation=lambda: build_plan_domain(
-            entities,
-            route_layer_pattern=route_layer_pattern,
-            plan_layouts=getattr(profile, "plan_layouts", ()),
-            include_orphan_blocks=(
-                getattr(profile, "include_orphan_blocks", ()) or None
-            ),
-            plan_domain_authority="reviewed_source_profile",
-        ),
-        summarize=lambda result: {
-            "entity_count": len(result.entities),
-            "entity_keys_sha256": canonical_sha256(sorted(
-                entity.entity_key for entity in result.entities
-            )),
-            "diagnostics_sha256": canonical_sha256(result.diagnostics),
-        },
-    )
-    semantic_entities = list(plan_domain.entities)
-    cad_scene_graph = build_cad_scene_graph(
-        source_sha256=source_hash,
-        source_entities=entities,
-        plan_entities=semantic_entities,
-    )
 
-    # ── Spatial denoising (detectors + LLM supervisor) ──────────────────
+def _denoise_plan_entities(semantic_entities, plan_domain, registry, request):
+    """Build a derived plan view using the unchanged reviewed detector policy."""
     from .spatial_filter import apply_spatial_denoising
 
     catalog_roots: frozenset[str] = getattr(
@@ -1527,6 +1447,145 @@ def convert(request: ConversionRequest) -> ConversionResult:
         topology_anchor_insert_layers=getattr(
             registry, "insert_layer_families", {}
         ).get("PTECH", ()),
+    )
+    return catalog_roots, spatial_result
+
+
+def convert(request: ConversionRequest) -> ConversionResult:
+    source = Path(request.source).resolve()
+    run_dir = Path(request.run_dir).resolve()
+    from .implementation import (
+        conversion_snapshot_manifest_fields,
+        freeze_conversion_snapshot,
+        verify_conversion_snapshot,
+    )
+    from .runtime_provenance import collect_runtime_provenance, runtime_manifest_fields
+    startup_runtime = collect_runtime_provenance()
+    try:
+        conversion_snapshot = freeze_conversion_snapshot(
+            source,
+            request.source_profile,
+            request.mapping_registry,
+            request.gcp_profile,
+            decision_pack=request.decision_pack,
+            runtime=startup_runtime,
+        )
+    except FileNotFoundError:
+        # Preserve the stronger, actionable review error for a draft pack even
+        # when another required artifact has not yet been authored.  The
+        # snapshot attempt still occurs first, and no reader/runtime stage is
+        # entered.  A reviewed profile re-raises the missing-artifact failure.
+        incomplete_profile = SourceProfile.load(request.source_profile)
+        incomplete_profile.require_reviewed()
+        raise
+    profile = SourceProfile.load(request.source_profile)
+    # This review gate is before unit/CRS work, AutoCAD startup, or ingestion.
+    # Validation never upgrades a draft.
+    profile.require_reviewed()
+    # Keep the pipeline tolerant of legacy/custom SourceProfile-like objects
+    # created before the optional DWG GEODATA registration field existed.
+    geodata_registration = getattr(profile, "geodata_registration", None)
+    source_hash = profile.validate_source(source)
+    registry = MappingRegistry.load(request.mapping_registry, source_hash)
+    _validate_project_bindings(profile, registry)
+    from ..reader.resolver import configured_reader
+
+    stage_recorder = StageRecorder(context={
+        # Includes code/runtime identity and source, profile, registry, GCP
+        # and decision-pack bytes. No result reuse is enabled by this receipt.
+        "conversion_snapshot": conversion_snapshot,
+        "modes": {"domain": request.domain, "llm": request.llm},
+        "reader_backend": configured_reader(),
+    })
+    stage_inputs = {
+        "source_sha256": source_hash,
+        "source_profile_sha256": _sha256(profile.path),
+        "mapping_registry_sha256": _sha256(registry.path),
+    }
+
+    from .units import build_unit_crs_contract
+
+    unit_contract = build_unit_crs_contract(
+        dwg_insunits=profile.dwg_insunits,
+        source_crs=profile.source_crs,
+        target_crs=profile.target_crs,
+        source_coordinate_scale_to_m=profile.source_coordinate_scale_to_m,
+        source_coordinate_scale_reviewed=profile.source_coordinate_scale_reviewed,
+        local_registration_strategy=profile.local_registration_strategy,
+        local_registration_reviewed=profile.local_registration_reviewed,
+    )
+    # DirectTransformer is the only implemented geometry transform at this
+    # boundary.  Registration contracts must never masquerade as direct CRS.
+    if unit_contract.coordinate_mode != "direct_crs":
+        raise RuntimeError(
+            "Conversion requires an implemented reviewed authoritative registration; "
+            f"unit/CRS contract mode is {unit_contract.coordinate_mode!r}"
+        )
+    run_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    entities, ingest_diagnostics = stage_recorder.run(
+        "ingest",
+        version="v3-reader-ir-2",
+        inputs=stage_inputs,
+        operation=lambda: ingest(source, profile),
+        summarize=lambda result: {
+            "entity_count": len(result[0]),
+            "entity_keys_sha256": canonical_sha256(sorted(
+                entity.entity_key for entity in result[0]
+            )),
+            "census_sha256": canonical_sha256(result[1].get("census", {})),
+        },
+    )
+    source_entity_count = len(entities)
+    terminal_accounting, source_dependencies, inventory_gate = _validate_ingested_source(
+        source, entities, ingest_diagnostics, profile,
+    )
+    from .plan_domain import build_plan_domain
+
+    route_regex = getattr(registry, "positive_route_layer_regex", "")
+    route_layer_pattern = (
+        None
+        if not route_regex or route_regex == "(?!)"
+        else re.compile(route_regex)
+    )
+    plan_domain = stage_recorder.run(
+        "plan_domain",
+        version="v2-reviewed-orphan-recovery",
+        inputs=lambda: {
+            **stage_inputs,
+            "ingest_output_sha256": stage_recorder.receipts[-1]["output_sha256"],
+            "route_regex": route_regex,
+            "plan_layouts": list(getattr(profile, "plan_layouts", ())),
+            "include_orphan_blocks": list(
+                getattr(profile, "include_orphan_blocks", ())
+            ),
+        },
+        operation=lambda: build_plan_domain(
+            entities,
+            route_layer_pattern=route_layer_pattern,
+            plan_layouts=getattr(profile, "plan_layouts", ()),
+            include_orphan_blocks=(
+                getattr(profile, "include_orphan_blocks", ()) or None
+            ),
+            plan_domain_authority="reviewed_source_profile",
+        ),
+        summarize=lambda result: {
+            "entity_count": len(result.entities),
+            "entity_keys_sha256": canonical_sha256(sorted(
+                entity.entity_key for entity in result.entities
+            )),
+            "diagnostics_sha256": canonical_sha256(result.diagnostics),
+        },
+    )
+    semantic_entities = list(plan_domain.entities)
+    cad_scene_graph = build_cad_scene_graph(
+        source_sha256=source_hash,
+        source_entities=entities,
+        plan_entities=semantic_entities,
+    )
+
+    catalog_roots, spatial_result = _denoise_plan_entities(
+        semantic_entities, plan_domain, registry, request,
     )
     semantic_entities = list(spatial_result["entities"])
     legend_flag_map: dict[str, str] = spatial_result["flag_map"]
@@ -1597,14 +1656,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
     features, relations, unresolved, semantic_diagnostics = stage_recorder.run(
         "semantic_classification",
         version="v4-reviewed-admission",
-        inputs={
+        inputs=lambda: {
             **stage_inputs,
-            "semantic_entity_keys_sha256": canonical_sha256(sorted(
-                entity.entity_key for entity in semantic_entities
-            )),
+            "semantic_entities_sha256": canonical_sha256(semantic_entities),
             "coverage_policy": registry.semantic_coverage_policy,
             "coverage_allowlist": list(registry.semantic_coverage_allowlist),
             "catalog_roots": sorted(catalog_roots),
+            "project_id": profile.project_id,
+            "project_slug": profile.path.parent.parent.name,
         },
         operation=lambda: classify_entities(
             semantic_entities,
@@ -1686,23 +1745,19 @@ def convert(request: ConversionRequest) -> ConversionResult:
     relations, unresolved, topology_diagnostics = stage_recorder.run(
         "topology",
         version="v4-strtree-equivalent",
-        inputs={
+        inputs=lambda: {
             **stage_inputs,
-            "feature_state_sha256": canonical_sha256([
-                {
-                    "key": feature.feature_key,
-                    "class": feature.feature_class,
-                    "points": feature.native_points,
-                }
-                for feature in features
-            ]),
-            "relation_keys": sorted(
-                relation.relation_key for relation in relations
-            ),
+            "entities_sha256": canonical_sha256(semantic_entities),
+            "feature_state_sha256": canonical_sha256(features),
+            "relations_sha256": canonical_sha256(relations),
+            "unresolved_sha256": canonical_sha256(unresolved),
         },
         operation=lambda: build_topology(
             semantic_entities, features, registry, relations, unresolved,
         ),
+        # Topology mutates feature geometry, attributes and lineage in place.
+        # Those changes are part of its output, not just the returned relations.
+        fingerprint=lambda result: {"features": features, "result": result},
         summarize=lambda result: {
             "relation_count": len(result[0]),
             "unresolved_count": len(result[1]),
@@ -1712,11 +1767,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "diagnostics_sha256": canonical_sha256(result[2]),
         },
     )
-    # CABLE length labels are segment-level facts.  The delivery ``CABLE``
-    # layer is the normalised segment view: the warehouse attaches each DWG
-    # dimension label to its own source segment (``42m``) and leaves segments
-    # without a DWG dimension unlabelled.  Route features keep their reviewed
-    # semantic label only; no aggregate label is manufactured here.
+    # CABLE business labels retain reviewed route identity. DIMENSION evidence
+    # belongs only in segment length fields; it never substitutes for identity.
     base_evidence_graph = build_stage_evidence_graph(
         source_sha256=source_hash,
         entities=evidence_entities,
@@ -2112,7 +2164,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
         stage_recorder.run(
             "write_evidence_graph",
             version="v2-deterministic-gzip",
-            inputs={
+            inputs=lambda: {
                 **stage_inputs,
                 "graph_sha256": evidence_graph.graph_sha256,
                 "node_count": len(evidence_graph.nodes),
@@ -2121,6 +2173,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             operation=lambda: _write_manifest(
                 staged_evidence_graph_path, evidence_graph.to_dict(),
             ),
+            fingerprint=lambda _result: _sha256(staged_evidence_graph_path),
             summarize=lambda _result: {
                 "bytes": staged_evidence_graph_path.stat().st_size,
                 "artifact_sha256": _sha256(staged_evidence_graph_path),
@@ -2162,15 +2215,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
         source_result = stage_recorder.run(
             "write_source_gpkg",
             version="v2-immutable-source-facts",
-            inputs={
+            inputs=lambda: {
                 **stage_inputs,
                 "entity_count": len(entities),
+                "entities_sha256": canonical_sha256(entities),
                 "legend_flags_sha256": canonical_sha256(legend_flag_map),
             },
             operation=lambda: write_source_gpkg(
                 staged_source_path, entities, profile.source_crs,
                 legend_flag_map=legend_flag_map,
             ),
+            fingerprint=lambda _result: _sha256(staged_source_path),
             summarize=lambda _result: {
                 "bytes": staged_source_path.stat().st_size,
                 "artifact_sha256": _sha256(staged_source_path),
@@ -2189,11 +2244,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
         stage_recorder.run(
             "write_evidence_gpkg",
             version="v3-hash-referenced-facts",
-            inputs={
+            inputs=lambda: {
                 **stage_inputs,
                 "evidence_graph_sha256": evidence_graph.graph_sha256,
                 "feature_count": len(features),
                 "relation_count": len(relations),
+                "state_sha256": canonical_sha256({
+                    "entities": evidence_entities, "features": features,
+                    "relations": relations, "unresolved": unresolved,
+                    "diagnostics": diagnostics,
+                    "calibration_audit": calibration_audit or lineage_audit,
+                }),
             },
             operation=lambda: write_evidence(
                 staged_evidence_path,
@@ -2206,60 +2267,38 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 target_srs=transformer.target,
                 delivery_transformer=selected_transformer,
             ),
+            fingerprint=lambda _result: _sha256(staged_evidence_path),
             summarize=lambda _result: {
                 "bytes": staged_evidence_path.stat().st_size,
                 "artifact_sha256": _sha256(staged_evidence_path),
                 "entity_count": len(evidence_entities),
             },
         )
-        counts = stage_recorder.run(
+        styled_delivery = stage_recorder.run(
             "write_delivery_gpkg",
-            version="v4-eight-layer-contract",
-            inputs={
+            version="v5-styled-eight-layer-contract",
+            inputs=lambda: {
                 **stage_inputs,
-                "feature_state_sha256": canonical_sha256([
-                    {
-                        "key": feature.feature_key,
-                        "class": feature.feature_class,
-                        "points": feature.native_points,
-                        "label": feature.display_label,
-                    }
-                    for feature in main_delivery_features
-                ]),
+                "feature_state_sha256": canonical_sha256(main_delivery_features),
             },
-            operation=lambda: write_delivery(
-                staged_delivery_path,
-                main_delivery_features,
-                selected_transformer,
+            operation=lambda: _write_styled_delivery(
+                staged_delivery_path, staged_styles_dir,
+                main_delivery_features, selected_transformer, registry,
+                profile.expectations.delivery_counts,
+            ),
+            fingerprint=lambda _result: _styled_delivery_fingerprint(
+                staged_delivery_path, staged_styles_dir,
             ),
             summarize=lambda result: {
                 "bytes": staged_delivery_path.stat().st_size,
                 "artifact_sha256": _sha256(staged_delivery_path),
-                "counts": result,
+                "counts": result.counts,
             },
         )
-        delivery_gate = _validate_declared_counts(
-            "delivery", profile.expectations.delivery_counts, counts,
-        )
-        staged_style_manifest_path = write_styles(
-            staged_styles_dir, main_delivery_features, staged_delivery_path,
-            coverage_policy=registry.style_coverage_policy,
-            coverage_allowlist=list(registry.style_coverage_allowlist),
-            color_unification=getattr(
-                registry, "render_color_unification", None,
-            ),
-        )
-        written_style_manifest = json.loads(
-            staged_style_manifest_path.read_text(encoding="utf-8")
-        )
-        written_style_coverage = written_style_manifest.get("coverage")
-        if (
-            not isinstance(written_style_coverage, dict)
-            or written_style_coverage.get("conversion_allowed") is not True
-        ):
-            raise RuntimeError(
-                f"Written style manifest coverage gate failed: {written_style_coverage}"
-            )
+        counts = styled_delivery.counts
+        delivery_gate = styled_delivery.delivery_gate
+        staged_style_manifest_path = styled_delivery.style_manifest_path
+        written_style_coverage = styled_delivery.style_coverage
         delivery_partition_artifacts: dict[str, Any] = {}
         for partition in output_partitions:
             region_id = partition["region_id"]

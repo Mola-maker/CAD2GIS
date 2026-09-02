@@ -854,7 +854,11 @@ def _run_fake_conversion(
         Path(path).write_bytes(b"delivery")
         return {}
 
-    def fake_styles(path, *_args, **_kwargs):
+    def fake_styles(path, _features, delivery_path, **_kwargs):
+        # Embedding default QGIS styles is a delivery mutation. A stage
+        # receipt taken before this boundary must not describe the final file.
+        with Path(delivery_path).open("ab") as stream:
+            stream.write(b"-embedded-styles")
         destination = Path(path)
         destination.mkdir(parents=True, exist_ok=True)
         manifest = destination / "style_manifest.json"
@@ -965,9 +969,14 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
     assert manifest["artifacts"]["evidence_graph"]["encoding"] == "gzip"
     assert manifest["stage_contracts"]["stage_count"] >= 7
     assert all(
-        stage["deterministic"] and stage["cacheable"]
+        not stage["cacheable"] and stage["cache_status"] == "disabled_receipt_only"
         for stage in manifest["stage_contracts"]["stages"]
     )
+    stages = {stage["stage"]: stage for stage in manifest["stage_contracts"]["stages"]}
+    assert stages["write_delivery_gpkg"]["output_summary"]["artifact_sha256"] == (
+        _sha256_bytes(result.delivery_path.read_bytes())
+    )
+    assert result.delivery_path.read_bytes().endswith(b"-embedded-styles")
 
 
 def test_alias_failure_preserves_old_alias_after_bundle_publication(
