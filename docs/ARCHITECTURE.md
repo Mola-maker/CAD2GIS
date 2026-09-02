@@ -26,10 +26,28 @@ The data plane is deterministic:
 8. Delivery and evidence GeoPackages, QML, manifests, and status are published
    atomically.
 
-Each expensive deterministic boundary emits a `cad2gis.stage_contract.v1`
-receipt with input/output hashes, a cache key, counts and elapsed time. These
-receipts permit a future validated artifact cache without serializing live
-Python objects or weakening source binding.
+Instrumented boundaries emit `cad2gis.stage_contract.v2` receipts. The full
+output-state fingerprint is separate from the counts/summary fingerprint;
+topology includes its in-place feature changes. Context binds the conversion
+snapshot (implementation, runtime, source, profiles, GCP and decision pack),
+reader selection and modes. Delivery fingerprints are taken after embedded
+QGIS styles, and include external style-file hashes. Hashing time is recorded
+separately from operation time; these sums are not total conversion wall time.
+
+There is **no result-cache reuse**: every receipt declares `cacheable: false`
+and `cache_status: disabled_receipt_only`. The reserved `cache_key` alone must
+never authorize reuse. A future cache still needs complete external-input and
+side-effect contracts, replay validation and deterministic-output tests.
+`deterministic: false` means no determinism guarantee has been asserted for
+that receipt; it does not change the conversion algorithm.
+
+Source admission, reviewed spatial filtering, styled delivery, layer schema
+creation and segment/asset row writing have explicit helper boundaries.
+Classification and topology still need further decomposition; this work does
+not change their matching or denoising policy. Before a refactor is accepted,
+`tools/verify_delivery_equivalence.py BASELINE.gpkg CANDIDATE.gpkg` compares
+feature schemas and exact rows (including binary geometries, labels, lengths
+and lineage). Equivalence is a regression check, not surveyed accuracy proof.
 
 The model-assisted control plane can propose a hash-bound Decision Pack over
 registered evidence IDs. It cannot author coordinates, geometry, lengths, CRS,

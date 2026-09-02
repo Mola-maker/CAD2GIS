@@ -616,6 +616,212 @@ def _line_geometry(points):
     return geometry
 
 
+def _create_delivery_layer(dataset, layer_name, transformer):
+    """Create the reviewed schema in stable field order."""
+    geom_types = {
+        "Point": ogr.wkbPoint, "LineString": ogr.wkbLineString, "Polygon": ogr.wkbPolygon,
+    }
+    config = LAYER_CONFIGS[layer_name]
+    geometry_kind = _contract_geometry_kind(config["geometry_type"])
+    layer = dataset.CreateLayer(layer_name, transformer.target, geom_types[geometry_kind])
+    schema_fields = {}
+    for field in config["fields"]:
+        name = field["full_name"]
+        if name in {"X", "Y", "LONGUEUR"}:
+            continue
+        # A few normalised segment fields intentionally use the same names
+        # as the common lineage/style fields below.  Create each field only
+        # once while retaining the schema's deterministic order.
+        if name in schema_fields:
+            continue
+        definition = ogr.FieldDefn(name, _ogr_field_type(field))
+        if field.get("length"):
+            definition.SetWidth(int(field["length"]))
+        layer.CreateField(definition)
+        schema_fields[name] = field
+    if geometry_kind == "Point":
+        layer.CreateField(ogr.FieldDefn("X", ogr.OFTReal))
+        layer.CreateField(ogr.FieldDefn("Y", ogr.OFTReal))
+    if geometry_kind == "LineString":
+        layer.CreateField(ogr.FieldDefn("LONGUEUR", ogr.OFTReal))
+    for name, field_type in (
+        ("display_label", ogr.OFTString), ("label_provenance", ogr.OFTString),
+        ("source_entity_key", ogr.OFTString), ("source_handle", ogr.OFTString),
+        ("source_layer", ogr.OFTString), ("geometry_role", ogr.OFTString),
+        ("style_aci", ogr.OFTInteger), ("style_truecolor", ogr.OFTString),
+        ("style_linetype", ogr.OFTString), ("style_lineweight", ogr.OFTInteger),
+        ("style_rotation", ogr.OFTReal), ("style_rotation_deg", ogr.OFTReal),
+        ("style_qgis_rotation_deg", ogr.OFTReal),
+        ("style_render_key", ogr.OFTString), ("lineage_json", ogr.OFTString),
+        ("source_cad_length_m", ogr.OFTReal), ("dimension_length_m", ogr.OFTReal),
+        ("source_segment_sum_m", ogr.OFTReal),
+        ("source_native_length_delta_m", ogr.OFTReal),
+        ("delivery_grid_length_m", ogr.OFTReal), ("geodesic_length_m", ogr.OFTReal),
+    ):
+        if name not in schema_fields:
+            layer.CreateField(ogr.FieldDefn(name, field_type))
+    return layer, schema_fields, geometry_kind
+
+
+def _write_segment_row(layer, feature, transformer):
+    """Write a normalized source segment and enforce geometry-length closure."""
+    geometry = _line_geometry(feature["target_points"])
+    points = list(feature["target_points"])
+    row = ogr.Feature(layer.GetLayerDefn())
+    row.SetGeometry(geometry)
+    for name, value in feature.items():
+        if name in {"target_points", "geometry"} or value is None:
+            continue
+        field_defn = layer.GetLayerDefn().GetFieldIndex(name)
+        if field_defn < 0:
+            continue
+        try:
+            row.SetField(name, value)
+        except (TypeError, ValueError):
+            raise RuntimeError(
+                f"Could not set CABLE delivery segment field {name} "
+                f"for {feature['route_key']}:segment:{feature['segment_index']}"
+            )
+    actual_grid_length = _grid_length_m(transformer, points)
+    if abs(actual_grid_length - float(feature["delivery_grid_length_m"])) > 1e-6:
+        raise RuntimeError(
+            f"CABLE delivery segment geometry length closure failed for "
+            f"{feature['route_key']}:segment:{feature['segment_index']}"
+        )
+    row.SetField("LONGUEUR", float(feature["delivery_grid_length_m"]))
+    if layer.CreateFeature(row) != 0:
+        raise RuntimeError(
+            f"Could not write CABLE delivery segment feature "
+            f"{feature['route_key']}:segment:{feature['segment_index']}"
+        )
+
+
+def _write_asset_row(layer, layer_name, feature, transformer, schema_fields, geometry_kind):
+    """Write an enriched semantic feature without altering its source facts."""
+    geometry, points = _geometry(feature, transformer)
+    row = ogr.Feature(layer.GetLayerDefn())
+    row.SetGeometry(geometry)
+    for name, field in schema_fields.items():
+        value = feature.attributes.get(name)
+        if value is None or value == "":
+            continue
+        try:
+            if field["type"] == "Integer":
+                row.SetField(name, int(value))
+            elif field["type"] == "Double":
+                row.SetField(name, float(value))
+            else:
+                row.SetField(name, str(value))
+        except (TypeError, ValueError):
+            continue
+    if geometry_kind == "Point":
+        if feature.attributes.get("X") is None or feature.attributes.get("Y") is None:
+            raise RuntimeError(f"Missing projected coordinates for {feature.feature_key}")
+        enriched_point = (
+            float(feature.attributes["X"]), float(feature.attributes["Y"]),
+        )
+        if math.dist(enriched_point, points[0]) > 1e-6:
+            raise RuntimeError(
+                f"Projected coordinate enrichment mismatch for {feature.feature_key}: "
+                f"{enriched_point} != {points[0]}"
+            )
+        row.SetField("X", enriched_point[0])
+        row.SetField("Y", enriched_point[1])
+    if geometry_kind == "LineString":
+        actual_grid_length = _grid_length_m(transformer, points)
+        grid_length = feature.attributes.get("delivery_grid_length_m")
+        geodesic_length = feature.attributes.get("geodesic_length_m")
+        if grid_length is None or geodesic_length is None:
+            raise RuntimeError(f"Missing enriched length metrics for {feature.feature_key}")
+        if abs(actual_grid_length - float(grid_length)) > 1e-6:
+            raise RuntimeError(
+                f"Projected length enrichment mismatch for {feature.feature_key}: "
+                f"{grid_length} != {actual_grid_length}"
+            )
+        row.SetField("LONGUEUR", float(grid_length))
+        row.SetField("delivery_grid_length_m", float(grid_length))
+        row.SetField("geodesic_length_m", float(geodesic_length))
+        if feature.attributes.get("source_cad_length_m") is not None:
+            row.SetField("source_cad_length_m", float(feature.attributes["source_cad_length_m"]))
+        if feature.attributes.get("source_segment_sum_m") is not None:
+            row.SetField(
+                "source_segment_sum_m", float(feature.attributes["source_segment_sum_m"]),
+            )
+        if feature.attributes.get("source_native_length_delta_m") is not None:
+            row.SetField(
+                "source_native_length_delta_m",
+                float(feature.attributes["source_native_length_delta_m"]),
+            )
+        if feature.attributes.get("dimension_length_m") is not None:
+            row.SetField("dimension_length_m", float(feature.attributes["dimension_length_m"]))
+        if layer_name == "CABLE":
+            span_payload = _cable_span_payload(
+                feature, transformer, float(grid_length), float(geodesic_length),
+            )
+            for name in (
+                "curve_materialization_schema_version",
+                "curve_materialization_policy_version",
+                "curve_source_segment_count",
+                "curve_delivery_vertex_count",
+            ):
+                value = feature.attributes.get(name)
+                if value is not None:
+                    row.SetField(name, value)
+            row.SetField("span_count", int(feature.attributes["span_count"]))
+            row.SetField(
+                "measured_span_count",
+                int(feature.attributes["measured_span_count"]),
+            )
+            row.SetField(
+                "unmeasured_span_count",
+                int(feature.attributes["unmeasured_span_count"]),
+            )
+            if feature.attributes.get("dimension_measured_sum_m") is not None:
+                row.SetField(
+                    "dimension_measured_sum_m",
+                    float(feature.attributes["dimension_measured_sum_m"]),
+                )
+            row.SetField(
+                "dimension_measurement_status",
+                str(feature.attributes["dimension_measurement_status"]),
+            )
+            row.SetField(
+                "dimension_coverage_ratio",
+                float(feature.attributes["dimension_coverage_ratio"]),
+            )
+            row.SetField(
+                "span_schema_version",
+                str(feature.attributes["span_schema_version"]),
+            )
+            row.SetField("span_unit", str(feature.attributes["span_unit"]))
+            row.SetField("span_metrics_json", span_payload)
+    row.SetField("display_label", feature.display_label)
+    row.SetField("label_provenance", feature.label_provenance)
+    row.SetField("source_entity_key", feature.source_entity_key)
+    row.SetField("source_handle", feature.source_handle)
+    row.SetField("source_layer", feature.source_layer)
+    row.SetField("geometry_role", feature.geometry_role)
+    row.SetField("style_aci", feature.style.aci_color)
+    row.SetField("style_truecolor", feature.style.true_color)
+    row.SetField("style_linetype", feature.style.linetype)
+    row.SetField("style_lineweight", feature.style.lineweight)
+    row.SetField("style_rotation", feature.style.rotation)
+    row.SetField("style_rotation_deg", feature.style.rotation_degrees)
+    row.SetField(
+        "style_qgis_rotation_deg",
+        float(feature.attributes.get(
+            "delivery_style_qgis_rotation_deg", feature.style.qgis_rotation_degrees,
+        )),
+    )
+    row.SetField(
+        "style_render_key",
+        str(feature.attributes.get("delivery_style_render_key", feature.style.render_key)),
+    )
+    row.SetField("lineage_json", json.dumps(feature.lineage, ensure_ascii=False, separators=(",", ":")))
+    if layer.CreateFeature(row) != 0:
+        raise RuntimeError(f"Could not write {layer_name} feature {feature.feature_key}")
+
+
 def _populate_dataset(dataset, features, transformer):
     by_class = defaultdict(list)
     for feature in features:
@@ -623,211 +829,23 @@ def _populate_dataset(dataset, features, transformer):
             by_class[feature.feature_class].append(feature)
     cable_segment_records = _cable_segment_records(features, transformer)
     counts = {}
-    geom_types = {
-        "Point": ogr.wkbPoint, "LineString": ogr.wkbLineString, "Polygon": ogr.wkbPolygon,
-    }
     for layer_name in _active_layer_order(features):
-        config = LAYER_CONFIGS[layer_name]
-        geometry_kind = _contract_geometry_kind(config["geometry_type"])
-        layer = dataset.CreateLayer(layer_name, transformer.target, geom_types[geometry_kind])
-        schema_fields = {}
-        for field in config["fields"]:
-            name = field["full_name"]
-            if name in {"X", "Y", "LONGUEUR"}:
-                continue
-            # A few normalised segment fields intentionally use the same names
-            # as the common lineage/style fields below.  Create each field only
-            # once while retaining the schema's deterministic order.
-            if name in schema_fields:
-                continue
-            definition = ogr.FieldDefn(name, _ogr_field_type(field))
-            if field.get("length"):
-                definition.SetWidth(int(field["length"]))
-            layer.CreateField(definition)
-            schema_fields[name] = field
-        if geometry_kind == "Point":
-            layer.CreateField(ogr.FieldDefn("X", ogr.OFTReal))
-            layer.CreateField(ogr.FieldDefn("Y", ogr.OFTReal))
-        if geometry_kind == "LineString":
-            layer.CreateField(ogr.FieldDefn("LONGUEUR", ogr.OFTReal))
-        for name, field_type in (
-            ("display_label", ogr.OFTString), ("label_provenance", ogr.OFTString),
-            ("source_entity_key", ogr.OFTString), ("source_handle", ogr.OFTString),
-            ("source_layer", ogr.OFTString), ("geometry_role", ogr.OFTString),
-            ("style_aci", ogr.OFTInteger), ("style_truecolor", ogr.OFTString),
-            ("style_linetype", ogr.OFTString), ("style_lineweight", ogr.OFTInteger),
-            ("style_rotation", ogr.OFTReal), ("style_rotation_deg", ogr.OFTReal),
-            ("style_qgis_rotation_deg", ogr.OFTReal),
-            ("style_render_key", ogr.OFTString), ("lineage_json", ogr.OFTString),
-            ("source_cad_length_m", ogr.OFTReal), ("dimension_length_m", ogr.OFTReal),
-            ("source_segment_sum_m", ogr.OFTReal),
-            ("source_native_length_delta_m", ogr.OFTReal),
-            ("delivery_grid_length_m", ogr.OFTReal), ("geodesic_length_m", ogr.OFTReal),
-        ):
-            if name not in schema_fields:
-                layer.CreateField(ogr.FieldDefn(name, field_type))
-        count = 0
+        layer, schema_fields, geometry_kind = _create_delivery_layer(
+            dataset, layer_name, transformer,
+        )
+        is_segment_layer = layer_name in {"CABLE", "CABLE_SEGMENT"}
         items = (
-            cable_segment_records
-            if layer_name in {"CABLE", "CABLE_SEGMENT"}
+            cable_segment_records if is_segment_layer
             else sorted(by_class[layer_name], key=lambda item: item.feature_key)
         )
+        count = 0
         for feature in items:
-            if layer_name in {"CABLE", "CABLE_SEGMENT"}:
-                geometry = _line_geometry(feature["target_points"])
-                points = list(feature["target_points"])
-                row = ogr.Feature(layer.GetLayerDefn())
-                row.SetGeometry(geometry)
-                for name, value in feature.items():
-                    if name in {"target_points", "geometry"} or value is None:
-                        continue
-                    field_defn = layer.GetLayerDefn().GetFieldIndex(name)
-                    if field_defn < 0:
-                        continue
-                    try:
-                        row.SetField(name, value)
-                    except (TypeError, ValueError):
-                        raise RuntimeError(
-                            f"Could not set CABLE delivery segment field {name} "
-                            f"for {feature['route_key']}:segment:{feature['segment_index']}"
-                        )
-                actual_grid_length = _grid_length_m(transformer, points)
-                if abs(actual_grid_length - float(feature["delivery_grid_length_m"])) > 1e-6:
-                    raise RuntimeError(
-                        f"CABLE delivery segment geometry length closure failed for "
-                        f"{feature['route_key']}:segment:{feature['segment_index']}"
-                    )
-                row.SetField("LONGUEUR", float(feature["delivery_grid_length_m"]))
-                if layer.CreateFeature(row) != 0:
-                    raise RuntimeError(
-                        f"Could not write CABLE delivery segment feature "
-                        f"{feature['route_key']}:segment:{feature['segment_index']}"
-                    )
-                count += 1
-                continue
-
-            geometry, points = _geometry(feature, transformer)
-            row = ogr.Feature(layer.GetLayerDefn())
-            row.SetGeometry(geometry)
-            for name, field in schema_fields.items():
-                value = feature.attributes.get(name)
-                if value is None or value == "":
-                    continue
-                try:
-                    if field["type"] == "Integer":
-                        row.SetField(name, int(value))
-                    elif field["type"] == "Double":
-                        row.SetField(name, float(value))
-                    else:
-                        row.SetField(name, str(value))
-                except (TypeError, ValueError):
-                    continue
-            if geometry_kind == "Point":
-                if feature.attributes.get("X") is None or feature.attributes.get("Y") is None:
-                    raise RuntimeError(f"Missing projected coordinates for {feature.feature_key}")
-                enriched_point = (
-                    float(feature.attributes["X"]), float(feature.attributes["Y"]),
+            if is_segment_layer:
+                _write_segment_row(layer, feature, transformer)
+            else:
+                _write_asset_row(
+                    layer, layer_name, feature, transformer, schema_fields, geometry_kind,
                 )
-                if math.dist(enriched_point, points[0]) > 1e-6:
-                    raise RuntimeError(
-                        f"Projected coordinate enrichment mismatch for {feature.feature_key}: "
-                        f"{enriched_point} != {points[0]}"
-                    )
-                row.SetField("X", enriched_point[0])
-                row.SetField("Y", enriched_point[1])
-            if geometry_kind == "LineString":
-                actual_grid_length = _grid_length_m(transformer, points)
-                grid_length = feature.attributes.get("delivery_grid_length_m")
-                geodesic_length = feature.attributes.get("geodesic_length_m")
-                if grid_length is None or geodesic_length is None:
-                    raise RuntimeError(f"Missing enriched length metrics for {feature.feature_key}")
-                if abs(actual_grid_length - float(grid_length)) > 1e-6:
-                    raise RuntimeError(
-                        f"Projected length enrichment mismatch for {feature.feature_key}: "
-                        f"{grid_length} != {actual_grid_length}"
-                    )
-                row.SetField("LONGUEUR", float(grid_length))
-                row.SetField("delivery_grid_length_m", float(grid_length))
-                row.SetField("geodesic_length_m", float(geodesic_length))
-                if feature.attributes.get("source_cad_length_m") is not None:
-                    row.SetField("source_cad_length_m", float(feature.attributes["source_cad_length_m"]))
-                if feature.attributes.get("source_segment_sum_m") is not None:
-                    row.SetField(
-                        "source_segment_sum_m", float(feature.attributes["source_segment_sum_m"]),
-                    )
-                if feature.attributes.get("source_native_length_delta_m") is not None:
-                    row.SetField(
-                        "source_native_length_delta_m",
-                        float(feature.attributes["source_native_length_delta_m"]),
-                    )
-                if feature.attributes.get("dimension_length_m") is not None:
-                    row.SetField("dimension_length_m", float(feature.attributes["dimension_length_m"]))
-                if layer_name == "CABLE":
-                    span_payload = _cable_span_payload(
-                        feature, transformer, float(grid_length), float(geodesic_length),
-                    )
-                    for name in (
-                        "curve_materialization_schema_version",
-                        "curve_materialization_policy_version",
-                        "curve_source_segment_count",
-                        "curve_delivery_vertex_count",
-                    ):
-                        value = feature.attributes.get(name)
-                        if value is not None:
-                            row.SetField(name, value)
-                    row.SetField("span_count", int(feature.attributes["span_count"]))
-                    row.SetField(
-                        "measured_span_count",
-                        int(feature.attributes["measured_span_count"]),
-                    )
-                    row.SetField(
-                        "unmeasured_span_count",
-                        int(feature.attributes["unmeasured_span_count"]),
-                    )
-                    if feature.attributes.get("dimension_measured_sum_m") is not None:
-                        row.SetField(
-                            "dimension_measured_sum_m",
-                            float(feature.attributes["dimension_measured_sum_m"]),
-                        )
-                    row.SetField(
-                        "dimension_measurement_status",
-                        str(feature.attributes["dimension_measurement_status"]),
-                    )
-                    row.SetField(
-                        "dimension_coverage_ratio",
-                        float(feature.attributes["dimension_coverage_ratio"]),
-                    )
-                    row.SetField(
-                        "span_schema_version",
-                        str(feature.attributes["span_schema_version"]),
-                    )
-                    row.SetField("span_unit", str(feature.attributes["span_unit"]))
-                    row.SetField("span_metrics_json", span_payload)
-            row.SetField("display_label", feature.display_label)
-            row.SetField("label_provenance", feature.label_provenance)
-            row.SetField("source_entity_key", feature.source_entity_key)
-            row.SetField("source_handle", feature.source_handle)
-            row.SetField("source_layer", feature.source_layer)
-            row.SetField("geometry_role", feature.geometry_role)
-            row.SetField("style_aci", feature.style.aci_color)
-            row.SetField("style_truecolor", feature.style.true_color)
-            row.SetField("style_linetype", feature.style.linetype)
-            row.SetField("style_lineweight", feature.style.lineweight)
-            row.SetField("style_rotation", feature.style.rotation)
-            row.SetField("style_rotation_deg", feature.style.rotation_degrees)
-            row.SetField(
-                "style_qgis_rotation_deg",
-                float(feature.attributes.get(
-                    "delivery_style_qgis_rotation_deg", feature.style.qgis_rotation_degrees,
-                )),
-            )
-            row.SetField(
-                "style_render_key",
-                str(feature.attributes.get("delivery_style_render_key", feature.style.render_key)),
-            )
-            row.SetField("lineage_json", json.dumps(feature.lineage, ensure_ascii=False, separators=(",", ":")))
-            if layer.CreateFeature(row) != 0:
-                raise RuntimeError(f"Could not write {layer_name} feature {feature.feature_key}")
             count += 1
         counts[layer_name] = count
     return counts
