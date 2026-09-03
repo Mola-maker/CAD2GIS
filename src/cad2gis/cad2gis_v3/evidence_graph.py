@@ -12,8 +12,11 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
+import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 
@@ -38,6 +41,25 @@ class EvidenceGraphError(ValueError):
 
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _write_indented_object(
+    file: Any,
+    serialized: str,
+    indent: int,
+) -> None:
+    """Write ``serialized`` as one indented nested JSON object.
+
+    ``serialized`` must be the output of ``json.dumps(..., indent=2)`` for one
+    object.  Every line receives ``indent`` additional spaces so it can be
+    embedded at the exact nesting depth produced by a monolithic
+    ``json.dumps(..., indent=2)`` call.
+    """
+    lines = serialized.split("\n")
+    prefix = " " * indent
+    file.write(prefix + lines[0])
+    for line in lines[1:]:
+        file.write("\n" + prefix + line)
 
 
 def _graph_sha256(
@@ -360,6 +382,53 @@ class EvidenceGraph:
     @property
     def logical_index(self) -> dict[str, EvidenceNode]:
         return {node.logical_id: node for node in self.nodes}
+
+    def write_json(self, path: str | Path) -> Path:
+        """Stream the graph to ``path`` without materialising a graph dict.
+
+        The emitted bytes are identical to
+        ``json.dumps(self.to_dict(), ensure_ascii=False, indent=2)`` (which is
+        how ``pipeline._write_manifest`` serialises this artifact).  Nodes and
+        edges are serialised one at a time in their stored sorted order.
+        """
+        destination = Path(path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_name(
+            f".{destination.name}.{os.getpid()}.{time.time_ns()}.tmp"
+        )
+        try:
+            with temporary.open("w", encoding="utf-8", newline="\n") as file:
+                file.write("{\n")
+                file.write("  " + _json_scalar("schema_version") + ": ")
+                file.write(_json_scalar(EVIDENCE_GRAPH_SCHEMA) + ",\n")
+                file.write("  " + _json_scalar("source_sha256") + ": ")
+                file.write(_json_scalar(self.source_sha256) + ",\n")
+                file.write("  " + _json_scalar("graph_sha256") + ": ")
+                file.write(_json_scalar(self.graph_sha256) + ",\n")
+                file.write('  "nodes": [\n')
+                for index, node in enumerate(self.nodes):
+                    if index:
+                        file.write(",\n")
+                    serialized = json.dumps(
+                        node.to_dict(), ensure_ascii=False, indent=2,
+                    )
+                    _write_indented_object(file, serialized, 4)
+                file.write("\n  ],\n")
+                file.write('  "edges": [\n')
+                for index, edge in enumerate(self.edges):
+                    if index:
+                        file.write(",\n")
+                    serialized = json.dumps(
+                        edge.to_dict(), ensure_ascii=False, indent=2,
+                    )
+                    _write_indented_object(file, serialized, 4)
+                file.write("\n  ]\n")
+                file.write("}")
+            os.replace(temporary, destination)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+        return destination
 
     def to_dict(self) -> dict[str, Any]:
         return {
