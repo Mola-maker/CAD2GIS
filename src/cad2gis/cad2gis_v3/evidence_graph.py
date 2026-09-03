@@ -425,7 +425,8 @@ def build_stage_evidence_graph(
         nodes.append(node)
         return node
 
-    for entity in sorted(entities, key=lambda item: str(item.entity_key)):
+    entity_order = sorted(entities, key=lambda item: str(item.entity_key))
+    for entity in entity_order:
         add_node(entity.entity_key, "source_entity", {
             "handle": entity.handle,
             "layout": entity.layout,
@@ -450,9 +451,11 @@ def build_stage_evidence_graph(
             "curve_fingerprint": entity.curve_fingerprint,
             "raw_properties": entity.raw_properties,
         })
+    del entity_order
 
     feature_source_pairs: list[tuple[str, str]] = []
-    for feature in sorted(features, key=lambda item: str(item.feature_key)):
+    feature_order = sorted(features, key=lambda item: str(item.feature_key))
+    for feature in feature_order:
         add_node(feature.feature_key, "feature", {
             "feature_class": feature.feature_class,
             "geometry_kind": feature.geometry_kind,
@@ -469,6 +472,7 @@ def build_stage_evidence_graph(
             "lineage": feature.lineage,
         })
         feature_source_pairs.append((feature.feature_key, feature.source_entity_key))
+    del feature_order
 
     unresolved_nodes: list[EvidenceNode] = []
     for index, record in enumerate(unresolved):
@@ -518,6 +522,11 @@ def build_stage_evidence_graph(
     # Unresolved records remain nodes because their shape is source/profile
     # specific; they are selectable as evidence but never executable targets.
     _ = unresolved_nodes
+    # Build-time duplicate lookup is complete: release the logical-id index and
+    # consumed sort/pair tables before EvidenceGraph.create computes the
+    # streamed graph digest, so they never coexist with digest-time work.
+    node_by_logical.clear()
+    del node_by_logical, feature_source_pairs, unresolved_nodes
     return EvidenceGraph.create(source_sha256=source, nodes=nodes, edges=edges)
 
 
