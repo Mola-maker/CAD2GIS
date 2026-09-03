@@ -614,7 +614,10 @@ def _reviewed_contract_state(
     # INFRASTRUCTURE and ZNRO are deterministic delivery derivatives: the
     # total set of reviewed CABLE geometry and the parent zone of reviewed
     # ZPM polygons.  They have no DWG mapping rules by design.
-    generated_delivery_classes = {"INFRASTRUCTURE", "ZNRO"}
+    # EMR is likewise derived deterministically from ``EMR-xxxx`` labels and
+    # their concentric-square equipment symbols (see semantics.py), so it also
+    # has no DWG mapping rules by design.
+    generated_delivery_classes = {"EMR", "INFRASTRUCTURE", "ZNRO"}
     unconfigured_classes = (
         expected_classes - configured_classes - generated_delivery_classes
     )
