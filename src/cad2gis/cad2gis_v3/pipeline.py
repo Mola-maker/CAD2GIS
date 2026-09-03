@@ -1972,7 +1972,12 @@ def convert(request: ConversionRequest) -> ConversionResult:
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
         staged_evidence_graph_path = staged_run_dir / "reasoning" / "evidence_graph.json"
-        _write_manifest(staged_evidence_graph_path, evidence_graph.to_dict())
+        if os.environ.get("CAD2GIS_GRAPH_STREAMING", "1") != "0":
+            # Large artifact path: stream nodes/edges one at a time.
+            # Set CAD2GIS_GRAPH_STREAMING=0 to use the legacy whole-dict path.
+            evidence_graph.write_json(staged_evidence_graph_path)
+        else:
+            _write_manifest(staged_evidence_graph_path, evidence_graph.to_dict())
         staged_visual_manifest_path = visual_evidence.write(staged_run_dir)
         staged_decision_execution_path = None
         staged_derived_network_path = None
