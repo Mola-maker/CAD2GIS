@@ -33,7 +33,7 @@ def _parser() -> argparse.ArgumentParser:
         help="Show Python tracebacks for diagnostics (accepted before or after a command).",
     )
     commands = parser.add_subparsers(dest="command", metavar="COMMAND", required=True)
-
+    #创建一级子命令 doctor, runtime, inspect, bootstrap, validate, convert, auto-convert, gcp, review, verify
     doctor = commands.add_parser("doctor", help="Check runtime and backend readiness.")
     doctor.add_argument("--json", action="store_true", help="Emit the structured report.")
     doctor.add_argument(
@@ -45,29 +45,34 @@ def _parser() -> argparse.ArgumentParser:
         help="Return a non-zero status when configured conversion is not ready.",
     )
     doctor.set_defaults(handler=_doctor)
+    #若用户选择了doctor命令，则调用_doctor函数处理
+    doctor.add_argument(
+            "--profile",
+            choices=("conversion", "agent", "review", "full"),
+            default="conversion",
+            help="Validate conversion, MCP agent, review UI, or the full runtime.",
+    )
 
     runtime_command = commands.add_parser(
         "runtime", help="Inspect or install the portable native runtime."
     )
-    doctor.add_argument(
-        "--profile",
-        choices=("conversion", "agent", "review", "full"),
-        default="conversion",
-        help="Validate conversion, MCP agent, review UI, or the full runtime.",
-    )
+    #创建二级子命令 runtime status, runtime install
+    
+
+
     runtime_commands = runtime_command.add_subparsers(
         dest="runtime_command", metavar="RUNTIME_COMMAND", required=True
     )
     runtime_status = runtime_commands.add_parser(
         "status", help="Report managed reader and GIS runtime availability."
     )
-    _add_json(runtime_status)
-    runtime_status.set_defaults(handler=_runtime_status)
+    _add_json(runtime_status)  #给runtime status命令添加--json参数
+    runtime_status.set_defaults(handler=_runtime_status) #最终调用_runtime_status函数处理
     runtime_install = runtime_commands.add_parser(
         "install", help="Install the checksum-pinned LibreDWG CLI runtime."
     )
-    _add_json(runtime_install)
-    runtime_install.set_defaults(handler=_runtime_install)
+    _add_json(runtime_install) #给runtime install命令添加--json参数
+    runtime_install.set_defaults(handler=_runtime_install) #最终调用_runtime_install函数处理
 
     inspect = commands.add_parser(
         "inspect", help="Inventory a source and propose an unreviewed project profile."
