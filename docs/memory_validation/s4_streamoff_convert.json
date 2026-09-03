@@ -1,0 +1,1691 @@
+{
+  "counts": {
+    "BOITE": 38,
+    "CABLE": 237,
+    "IMB": 423,
+    "INFRASTRUCTURE": 53,
+    "PTECH": 208,
+    "SITE": 2,
+    "ZNRO": 1,
+    "ZPM": 38
+  },
+  "delivery": "/tmp/mem_s4_streamoff/delivery.gpkg",
+  "evidence": "/tmp/mem_s4_streamoff/evidence.gpkg",
+  "manifest": "/tmp/mem_s4_streamoff/run_manifest.json",
+  "status": "success",
+  "styles": "/tmp/mem_s4_streamoff/qgis/styles/style_manifest.json",
+  "topology": {
+    "accepted_span_dimensions": 209,
+    "candidate_span_dimensions": 0,
+    "connection_port_status_counts": {
+      "abstain_block_footprint": 331
+    },
+    "fat_labels_total": 38,
+    "inferred_fat_labels": 0,
+    "layout_facts": {},
+    "policy": {
+      "crossing_is_connection": false,
+      "dimension_is_cable_geometry": false,
+      "force_route_components_connected": false,
+      "generic_line_is_cable": false,
+      "source_geometry_immutable": true,
+      "support_is_optical_node": false
+    },
+    "route_collinear_endpoint_on_segment": [],
+    "route_collinear_overlaps": [],
+    "route_crossing_candidates": [
+      {
+        "candidate_key": "1d8a1287ae3f824b5bf9152ca08f2e32d983bfa9cf10d31b65a1c7be9d084a86",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612991.980860481,
+          605979.1651673921
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "552e6a0bb3be5f5789b2b0991bbc78c135c04c4a705eb766292d13cfee7d5b1b",
+        "route_a_fraction": 0.945121582482542,
+        "route_a_key": "03a239027f7066f6977d0a594696e509e0d10414b6894585de51ecde03afae1a",
+        "route_a_position": "interior",
+        "route_a_segment_index": 2,
+        "route_a_segment_key": "03a239027f7066f6977d0a594696e509e0d10414b6894585de51ecde03afae1a:segment:2",
+        "route_a_source_entity_key": "1893a9e32256db0687115c402eb728c64c434708c943534030e0aaa3b362b6f2",
+        "route_a_source_handle": "1B1FCD",
+        "route_b_fraction": 0.9938300477383029,
+        "route_b_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_b_position": "interior",
+        "route_b_segment_index": 3,
+        "route_b_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:3",
+        "route_b_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_b_source_handle": "1B0BD8",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "d11940b35ecb82225398d9e943768d106e84d88d343f5cb0e8f573c415be2134",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612929.018435188,
+          605987.0423028717
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "be9d72da1781c6d12b259369b0ffaaf86b7459e6cd914c630657467765b2c70a",
+        "route_a_fraction": 0.04526945811789261,
+        "route_a_key": "0f64de53862460d6abf3919550e7ca69c9c7eb04a79e03885647ac8ca2bfb834",
+        "route_a_position": "interior",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "0f64de53862460d6abf3919550e7ca69c9c7eb04a79e03885647ac8ca2bfb834:segment:0",
+        "route_a_source_entity_key": "119cf1966668a395803d2ccda89c612653b277f464a576ffa823ddf388e1b0ad",
+        "route_a_source_handle": "1B1FCE",
+        "route_b_fraction": 0.9984772917119437,
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "interior",
+        "route_b_segment_index": 5,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:5",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "82b378f6cb84666179f5861f8150ea2f7d6c4379837501a53b437c62b35c4ccc",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612938.780128758,
+          606676.0498517505
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "230e188e095bda85dcb0c1ba0ff799228781ca6b82f9ef636cb234936631e69a",
+        "route_a_fraction": 0.0016974427592377575,
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "interior",
+        "route_a_segment_index": 24,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:24",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_fraction": 0.9597268368302083,
+        "route_b_key": "d88faf5b42b5a27924a4e1932d53b615756045de15d582729189ca07b85621f5",
+        "route_b_position": "interior",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "d88faf5b42b5a27924a4e1932d53b615756045de15d582729189ca07b85621f5:segment:0",
+        "route_b_source_entity_key": "2f04d937f270b0136e5e850b7860133d62c8fd266728cdb62b8fcb87f475f624",
+        "route_b_source_handle": "1B1FD1",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "c078e673be4805a1d39f343566acfd6fab2835b96c896b0d54fb15ffb2fc6b50",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612902.100453742,
+          606684.2101046483
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "404942f921b5887d88318bc91f52ce76d874c31eb10d545995aa3bb04f3483dd",
+        "route_a_fraction": 0.9968967050727362,
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "interior",
+        "route_a_segment_index": 24,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:24",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_fraction": 0.026833519936953282,
+        "route_b_key": "e6c2e56899b979139b4dcb9699e9bfd91e1dc83bdbf5e6cfb702b2926188f4b8",
+        "route_b_position": "interior",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "e6c2e56899b979139b4dcb9699e9bfd91e1dc83bdbf5e6cfb702b2926188f4b8:segment:0",
+        "route_b_source_entity_key": "c1060ce623311675f9ffed092ee1edd0db347f68cef7bb225f73cfd74b6c794e",
+        "route_b_source_handle": "1B1FD3",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "05e6e45f3c12171435f8bb264fa9da5d685b46bac2023c244af9a61fc3a7ce96",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612780.702657657,
+          606539.5683694793
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "5d994e9a2f7bab59ab1633d6cfdfad74bcffb8e63ffcc54a5d375c3661088fd2",
+        "route_a_fraction": 0.9739361569644064,
+        "route_a_key": "37f871afbf969d08d57979c36aba617c42f34f61eceb20bde3df57110b0933d2",
+        "route_a_position": "interior",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "37f871afbf969d08d57979c36aba617c42f34f61eceb20bde3df57110b0933d2:segment:0",
+        "route_a_source_entity_key": "088e1324db3029d23ef2880a6f82f18aa8aebd581ebb4cd52168afa9f40fd90a",
+        "route_a_source_handle": "1B3406",
+        "route_b_fraction": 0.9984130247805085,
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "interior",
+        "route_b_segment_index": 38,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:38",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "4b71797f31fa9275a29766e14374917f5f5500b60e5b4917fa1c898866ae001c",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612823.589499874,
+          606531.5845806018
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "f7861b1774584516972ac69a21365117f870fddd679c5b5ffdbe53078ca4e18e",
+        "route_a_fraction": 0.9650177956545026,
+        "route_a_key": "3def71e5c0c66bee0ca2566b70ebb6de55303c5a4cbc3ba62715562036b722f1",
+        "route_a_position": "interior",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3def71e5c0c66bee0ca2566b70ebb6de55303c5a4cbc3ba62715562036b722f1:segment:0",
+        "route_a_source_entity_key": "ada2987107184727da555233017d5a6ba4c73c0bb513723b1a304dd848d22a99",
+        "route_a_source_handle": "1B3407",
+        "route_b_fraction": 0.9976493646926261,
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "interior",
+        "route_b_segment_index": 36,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:36",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "4a901a177dba584ae5f7c02ef074c21d555cf07aa8a50d6d14a7d3cfd696427c",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612920.63458295,
+          605988.9299776339
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "0cc197c897019655f1d35d4d9f93efdf79aa77a6ee67407e62371eaa68f12c7d",
+        "route_a_fraction": 0.05013919898092599,
+        "route_a_key": "4bd551c67ddfd5ef7d8cc59a00c5c6960af4c5b233580b9d73e489764893054d",
+        "route_a_position": "interior",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "4bd551c67ddfd5ef7d8cc59a00c5c6960af4c5b233580b9d73e489764893054d:segment:0",
+        "route_a_source_entity_key": "2cb0814179afbc405c27f9f94e218581353e09f5d9b966b2748fea2fcc167a48",
+        "route_a_source_handle": "1B1FCF",
+        "route_b_fraction": 0.9707411462880257,
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "interior",
+        "route_b_segment_index": 6,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:6",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "4c67a696150b0d3fcb3940d7aa9cbbe7b764d8c72a030ed83d937b7317ce015f",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612207.513308058,
+          605947.2348284256
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "b84ec0941f46c9252e706d2f2b0b4d264d43bf4103f3c03f33b4cdcc27941200",
+        "route_a_fraction": 0.9837133484625432,
+        "route_a_key": "9244bda200d4a86ccdb9eaa72484e5cb76dd13358c70fa3e7ef628d43aeaab2e",
+        "route_a_position": "interior",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "9244bda200d4a86ccdb9eaa72484e5cb76dd13358c70fa3e7ef628d43aeaab2e:segment:0",
+        "route_a_source_entity_key": "b24e9647c0edc43d99d876789c2effd9730fe6303140869dadbba0b41805e21d",
+        "route_a_source_handle": "1B29D8",
+        "route_b_fraction": 0.2209287940352101,
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "interior",
+        "route_b_segment_index": 2,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:2",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "7f3dd649da3f94a2bb7af67ded78f7aaf05ed42b61d6111dbfdea6b721f65710",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612208.48037467,
+          605948.1463036265
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "dc81a77f3b20e458b314627e8bc0da8f41ccf9961fc664ac3017f17c9bcb3f07",
+        "route_a_fraction": 0.0028195724652040543,
+        "route_a_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_a_position": "interior",
+        "route_a_segment_index": 3,
+        "route_a_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:3",
+        "route_a_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_a_source_handle": "1B1ACF",
+        "route_b_fraction": 0.9679385010971221,
+        "route_b_key": "f51fd783ea68a66b60a728a093cae7aaef914dfc7bb9e342c51cb1ab9ecf0af6",
+        "route_b_position": "interior",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "f51fd783ea68a66b60a728a093cae7aaef914dfc7bb9e342c51cb1ab9ecf0af6:segment:0",
+        "route_b_source_entity_key": "ae0a7179f807030ed45719485073281e9f18cd30be4a47aa715800d7c606b11d",
+        "route_b_source_handle": "1B29D7",
+        "status": "candidate_not_connection"
+      },
+      {
+        "candidate_key": "a576863fb19695afcbda94dc79b5d46b66d6fbf67acba210ad0524cc4a89c189",
+        "classification": "proper_interior_crossing",
+        "intersection_native": [
+          10612571.847419092,
+          605696.192608229
+        ],
+        "method": "deterministic-proper-interior-source-segment-crossing",
+        "relation_key": "3007a6e970b20dd0472d22fc0a586201594f8e75d57d9e897b06fb8cc2a10633",
+        "route_a_fraction": 0.9727934397518475,
+        "route_a_key": "ea6c8654b6f47d79a3e168846b54103090c0f0b58added69eb6d81f37b04ef8e",
+        "route_a_position": "interior",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "ea6c8654b6f47d79a3e168846b54103090c0f0b58added69eb6d81f37b04ef8e:segment:1",
+        "route_a_source_entity_key": "75f0d1017e1f6cbb5e7b664d7fdd9a7309909febf0e5e629e51fe8b186893fc0",
+        "route_a_source_handle": "1B24D9",
+        "route_b_fraction": 0.9958948904968353,
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "interior",
+        "route_b_segment_index": 20,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:20",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2",
+        "status": "candidate_not_connection"
+      }
+    ],
+    "route_curve_materialization": {
+      "curved_source_segments": 0,
+      "delivery_vertices": 290,
+      "materialized_routes": 53,
+      "source_segments": 237
+    },
+    "route_endpoint_on_segment_intersections": [
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612248.262271931,
+          605941.8552225564
+        ],
+        "route_a_fraction": 0.999999999999739,
+        "route_a_key": "0ec4762f2a7075a14e954a4a990308b88a144d83dec45ea95cd94e8d76cd7410",
+        "route_a_position": "end",
+        "route_a_segment_index": 2,
+        "route_a_segment_key": "0ec4762f2a7075a14e954a4a990308b88a144d83dec45ea95cd94e8d76cd7410:segment:2",
+        "route_a_source_entity_key": "4b31bea3090b9e41086e5ec07123011505e2601064596ae7ccd393eaf407c421",
+        "route_a_source_handle": "1B29D9",
+        "route_b_fraction": 0.4999999999741494,
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "interior",
+        "route_b_segment_index": 4,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:4",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612902.224957332,
+          606685.3092991036
+        ],
+        "route_a_fraction": 0.5000000039712151,
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "interior",
+        "route_a_segment_index": 25,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:25",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_fraction": 0.0,
+        "route_b_key": "e6c2e56899b979139b4dcb9699e9bfd91e1dc83bdbf5e6cfb702b2926188f4b8",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "e6c2e56899b979139b4dcb9699e9bfd91e1dc83bdbf5e6cfb702b2926188f4b8:segment:0",
+        "route_b_source_entity_key": "c1060ce623311675f9ffed092ee1edd0db347f68cef7bb225f73cfd74b6c794e",
+        "route_b_source_handle": "1B1FD3"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612823.691701273,
+          606532.6707341091
+        ],
+        "route_a_fraction": 0.0,
+        "route_a_key": "3a122e3d69c05327252f1883866e41a73b29e64b9bef9efebe935a64eaae28ba",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3a122e3d69c05327252f1883866e41a73b29e64b9bef9efebe935a64eaae28ba:segment:0",
+        "route_a_source_entity_key": "23389d4b32f5b5c490131c9e2048cfa844bdc8833be8ef6f5772758101024b86",
+        "route_a_source_handle": "1B3408",
+        "route_b_fraction": 0.5000000000264581,
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "interior",
+        "route_b_segment_index": 37,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:37",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612823.691701273,
+          606532.6707341091
+        ],
+        "route_a_fraction": 1.0,
+        "route_a_key": "3def71e5c0c66bee0ca2566b70ebb6de55303c5a4cbc3ba62715562036b722f1",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3def71e5c0c66bee0ca2566b70ebb6de55303c5a4cbc3ba62715562036b722f1:segment:0",
+        "route_a_source_entity_key": "ada2987107184727da555233017d5a6ba4c73c0bb513723b1a304dd848d22a99",
+        "route_a_source_handle": "1B3407",
+        "route_b_fraction": 0.5000000000264578,
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "interior",
+        "route_b_segment_index": 37,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:37",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612667.2567185,
+          606173.6841429572
+        ],
+        "route_a_fraction": 1.0,
+        "route_a_key": "56aeee8bc9f4b2714d26d76fcf9dd15a37e72eca2fbbab027250eed482fd0527",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "56aeee8bc9f4b2714d26d76fcf9dd15a37e72eca2fbbab027250eed482fd0527:segment:1",
+        "route_a_source_entity_key": "28bc52b9b680bf2c1d48fa5fc31f66164c0efb52db80941a682c6ed1dfe9a931",
+        "route_a_source_handle": "1B3403",
+        "route_b_fraction": 0.499999999571798,
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "interior",
+        "route_b_segment_index": 18,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:18",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612333.164782364,
+          606115.1855875059
+        ],
+        "route_a_fraction": 1.9619352601043005e-12,
+        "route_a_key": "6a360a935b16df0d8b6f6655f571360082ed5467da98a196ef1d258773ed6d67",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "6a360a935b16df0d8b6f6655f571360082ed5467da98a196ef1d258773ed6d67:segment:0",
+        "route_a_source_entity_key": "0d163a27e77e490adb88f17471bf7eb8d3704cbd967778833557e5f622c5b7d5",
+        "route_a_source_handle": "1B29EE",
+        "route_b_fraction": 0.4999999995879554,
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "interior",
+        "route_b_segment_index": 23,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:23",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612333.164782364,
+          606115.1855875058
+        ],
+        "route_a_fraction": 0.9999999999894071,
+        "route_a_key": "7496cbec436de8aa85677512a189c273399c983f5f57e0919eedaa873047f877",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7496cbec436de8aa85677512a189c273399c983f5f57e0919eedaa873047f877:segment:0",
+        "route_a_source_entity_key": "62337446347883310365101bdd5d028699e6f6e8b80d8a26eddf71a1ae4880b6",
+        "route_a_source_handle": "1B29EF",
+        "route_b_fraction": 0.49999999980127485,
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "interior",
+        "route_b_segment_index": 23,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:23",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612665.48252578,
+          606507.3588962351
+        ],
+        "route_a_fraction": 0.5000000004070667,
+        "route_a_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_a_position": "interior",
+        "route_a_segment_index": 44,
+        "route_a_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:44",
+        "route_a_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_a_source_handle": "1B10D5",
+        "route_b_fraction": 1.0,
+        "route_b_key": "c45d76fe0c54765c4020b4e401f2bf68460939250b6193eec070eff3a852dc4c",
+        "route_b_position": "end",
+        "route_b_segment_index": 1,
+        "route_b_segment_key": "c45d76fe0c54765c4020b4e401f2bf68460939250b6193eec070eff3a852dc4c:segment:1",
+        "route_b_source_entity_key": "88b304594cadbe24fdb4e94935f586363a94eade2f56a7c7fbf76ff2888704ae",
+        "route_b_source_handle": "1B340A"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612081.20273395,
+          606118.3567221476
+        ],
+        "route_a_fraction": 0.0,
+        "route_a_key": "9d762ee5912aa7a3e808fd9e95c40695cea9f25175e61eff39c27af52d0b9888",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "9d762ee5912aa7a3e808fd9e95c40695cea9f25175e61eff39c27af52d0b9888:segment:0",
+        "route_a_source_entity_key": "02d5b185ab5c698ac2551028550ff768a5af17205aa1301c8a6c86bae88dfffa",
+        "route_a_source_handle": "1B2A01",
+        "route_b_fraction": 0.5000000015983436,
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "interior",
+        "route_b_segment_index": 34,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:34",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612408.428994019,
+          606084.5464215
+        ],
+        "route_a_fraction": 0.0,
+        "route_a_key": "b65d287f78c0780f2b36c75378c080b3b8cf0244a9da92d451cfd60a911c5944",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "b65d287f78c0780f2b36c75378c080b3b8cf0244a9da92d451cfd60a911c5944:segment:0",
+        "route_a_source_entity_key": "0e2c81092555bbaeb14eaa520c7b0b9272419e18ca967d49a4270f084ae71e68",
+        "route_a_source_handle": "1B29DB",
+        "route_b_fraction": 0.5000000001485231,
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "interior",
+        "route_b_segment_index": 19,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:19",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "source_endpoint_on_segment",
+        "intersection_native": [
+          10612333.164782364,
+          606115.1855875059
+        ],
+        "route_a_fraction": 0.4999999995723728,
+        "route_a_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_a_position": "interior",
+        "route_a_segment_index": 23,
+        "route_a_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:23",
+        "route_a_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_a_source_handle": "1B1ACF",
+        "route_b_fraction": 2.709305255389559e-12,
+        "route_b_key": "ffe95bd7933e2c1885dd108d9952fa27f3f561eb175fdd43dfd664d06afac859",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "ffe95bd7933e2c1885dd108d9952fa27f3f561eb175fdd43dfd664d06afac859:segment:0",
+        "route_b_source_entity_key": "d1934e273731294aae831ac5192470b6dc47dc7c06d8369b3520314c74b383f6",
+        "route_b_source_handle": "1B29DC"
+      }
+    ],
+    "route_segment_intersection_counts": {
+      "collinear_endpoint_on_segment": 0,
+      "collinear_overlap": 0,
+      "proper_interior_crossing": 10,
+      "shared_source_segment_endpoint": 59,
+      "source_endpoint_on_segment": 11
+    },
+    "route_segment_occurrences": 237,
+    "route_segments_with_span_dimension": 209,
+    "route_segments_without_span_dimension": 28,
+    "route_shared_segment_endpoints": [
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612559.476039568,
+          605838.1215620347
+        ],
+        "route_a_key": "0543fc80194f713582e33ea226165bad5d83873b7ad7dd709290b8854602ee21",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "0543fc80194f713582e33ea226165bad5d83873b7ad7dd709290b8854602ee21:segment:1",
+        "route_a_source_entity_key": "5717a6c1ac4c2fde96cb62f537e8042349d181b09916adee91527324400bf08c",
+        "route_a_source_handle": "1B24D7",
+        "route_b_key": "eb0bc008e2d4809c50f0f377d1b44b041ee7f2e7471a5940c7df18d13148a5d9",
+        "route_b_position": "end",
+        "route_b_segment_index": 1,
+        "route_b_segment_key": "eb0bc008e2d4809c50f0f377d1b44b041ee7f2e7471a5940c7df18d13148a5d9:segment:1",
+        "route_b_source_entity_key": "7ba6fa4a9e2264c8a7d924ae12a8d68eff391da8a06ac09d4bf0879de9e50df3",
+        "route_b_source_handle": "1B24D8"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612559.476039568,
+          605838.1215620347
+        ],
+        "route_a_key": "0543fc80194f713582e33ea226165bad5d83873b7ad7dd709290b8854602ee21",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "0543fc80194f713582e33ea226165bad5d83873b7ad7dd709290b8854602ee21:segment:1",
+        "route_a_source_entity_key": "5717a6c1ac4c2fde96cb62f537e8042349d181b09916adee91527324400bf08c",
+        "route_a_source_handle": "1B24D7",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "end",
+        "route_b_segment_index": 8,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:8",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612559.476039568,
+          605838.1215620347
+        ],
+        "route_a_key": "0543fc80194f713582e33ea226165bad5d83873b7ad7dd709290b8854602ee21",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "0543fc80194f713582e33ea226165bad5d83873b7ad7dd709290b8854602ee21:segment:1",
+        "route_a_source_entity_key": "5717a6c1ac4c2fde96cb62f537e8042349d181b09916adee91527324400bf08c",
+        "route_a_source_handle": "1B24D7",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "start",
+        "route_b_segment_index": 9,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:9",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612973.821961408,
+          605827.2659501241
+        ],
+        "route_a_key": "0becbac6489e9b8b5eba01b541fd71a84f10833df4351c958595a711112b4e59",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "0becbac6489e9b8b5eba01b541fd71a84f10833df4351c958595a711112b4e59:segment:1",
+        "route_a_source_entity_key": "eab0389f51bccc54b14993193ae987b81922acd45c1236ddb593aeb68cc8809c",
+        "route_a_source_handle": "1B1FCC",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:0",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612046.905068612,
+          606214.4427318124
+        ],
+        "route_a_key": "0efec8d228ba2feba4aefd0e1fde4d4a8d0cf158febfc96f617f6d075b5408b5",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "0efec8d228ba2feba4aefd0e1fde4d4a8d0cf158febfc96f617f6d075b5408b5:segment:0",
+        "route_a_source_entity_key": "0ab4a81953fc11de7f5e87c8f2fee6c3749e3f4ade9c9acebb4afcd96da32c17",
+        "route_a_source_handle": "1B2A02",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "end",
+        "route_b_segment_index": 38,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:38",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612046.905068612,
+          606214.4427318124
+        ],
+        "route_a_key": "0efec8d228ba2feba4aefd0e1fde4d4a8d0cf158febfc96f617f6d075b5408b5",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "0efec8d228ba2feba4aefd0e1fde4d4a8d0cf158febfc96f617f6d075b5408b5:segment:0",
+        "route_a_source_entity_key": "0ab4a81953fc11de7f5e87c8f2fee6c3749e3f4ade9c9acebb4afcd96da32c17",
+        "route_a_source_handle": "1B2A02",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "start",
+        "route_b_segment_index": 39,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:39",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612864.90909354,
+          606847.375992035
+        ],
+        "route_a_key": "1bebf39e8cac17e0ceb01bc4906fb37f1cc1ef5e12656c8a4c574b6fab02d056",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "1bebf39e8cac17e0ceb01bc4906fb37f1cc1ef5e12656c8a4c574b6fab02d056:segment:1",
+        "route_a_source_entity_key": "3ba8c0c4ecb1c73cb9bdc4a4a4aabb74ad037147e6de0c4cbb2d8634ab84070b",
+        "route_a_source_handle": "1B1FD6",
+        "route_b_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_b_position": "end",
+        "route_b_segment_index": 34,
+        "route_b_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:34",
+        "route_b_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_b_source_handle": "1B0BD8"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612716.005468158,
+          606401.6451231727
+        ],
+        "route_a_key": "1d42f8b24130936a69ee733560284bde3d4d2e510ba1069a22a604904b8111aa",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "1d42f8b24130936a69ee733560284bde3d4d2e510ba1069a22a604904b8111aa:segment:0",
+        "route_a_source_entity_key": "e45156f454b96e6289c2465edb5f7ebf84291bf6f36eb68343d55b518df92372",
+        "route_a_source_handle": "1B3404",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "end",
+        "route_b_segment_index": 30,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:30",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612716.005468158,
+          606401.6451231727
+        ],
+        "route_a_key": "1d42f8b24130936a69ee733560284bde3d4d2e510ba1069a22a604904b8111aa",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "1d42f8b24130936a69ee733560284bde3d4d2e510ba1069a22a604904b8111aa:segment:0",
+        "route_a_source_entity_key": "e45156f454b96e6289c2465edb5f7ebf84291bf6f36eb68343d55b518df92372",
+        "route_a_source_handle": "1B3404",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "start",
+        "route_b_segment_index": 31,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:31",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612544.69695759,
+          606728.6219544667
+        ],
+        "route_a_key": "1dfb645d094cd07579ed41e870500d06bf3f0115b3cd5f286207750b5211d6f4",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "1dfb645d094cd07579ed41e870500d06bf3f0115b3cd5f286207750b5211d6f4:segment:0",
+        "route_a_source_entity_key": "4dd6b35896fd9cf19f20b53bf5e8ee7d916666dd773fe79343cc43a377e3f819",
+        "route_a_source_handle": "1B340D",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "end",
+        "route_b_segment_index": 53,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:53",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612606.537690751,
+          605837.4265425334
+        ],
+        "route_a_key": "23e472e6786f6beaa92933d5bcd963cce6ba2607a4bb72044024c643aeea22b9",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "23e472e6786f6beaa92933d5bcd963cce6ba2607a4bb72044024c643aeea22b9:segment:0",
+        "route_a_source_entity_key": "6112efe79cee5b08d34193f6e669b8041bf62704cc4cfb9352e73ee02f0c0941",
+        "route_a_source_handle": "1B24D6",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "end",
+        "route_b_segment_index": 7,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:7",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612606.537690751,
+          605837.4265425334
+        ],
+        "route_a_key": "23e472e6786f6beaa92933d5bcd963cce6ba2607a4bb72044024c643aeea22b9",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "23e472e6786f6beaa92933d5bcd963cce6ba2607a4bb72044024c643aeea22b9:segment:0",
+        "route_a_source_entity_key": "6112efe79cee5b08d34193f6e669b8041bf62704cc4cfb9352e73ee02f0c0941",
+        "route_a_source_handle": "1B24D6",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "start",
+        "route_b_segment_index": 8,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:8",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612963.924679458,
+          606558.9247770265
+        ],
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "end",
+        "route_a_segment_index": 19,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:19",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_key": "62960ecde906a6676fd15827036945e51978a21c377e8ea7dcba8dad29dc6895",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "62960ecde906a6676fd15827036945e51978a21c377e8ea7dcba8dad29dc6895:segment:0",
+        "route_b_source_entity_key": "adeb39e9325067e95d9e48ae94757d2b6c6c1f1fcc80198d2c0c097f73a5fece",
+        "route_b_source_handle": "1B1FD0"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612963.924679458,
+          606558.9247770265
+        ],
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "start",
+        "route_a_segment_index": 20,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:20",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_key": "62960ecde906a6676fd15827036945e51978a21c377e8ea7dcba8dad29dc6895",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "62960ecde906a6676fd15827036945e51978a21c377e8ea7dcba8dad29dc6895:segment:0",
+        "route_b_source_entity_key": "adeb39e9325067e95d9e48ae94757d2b6c6c1f1fcc80198d2c0c097f73a5fece",
+        "route_b_source_handle": "1B1FD0"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612989.85567898,
+          606737.6912185914
+        ],
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "end",
+        "route_a_segment_index": 29,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:29",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_key": "87f7b44690be5fb88019cdcb16326e12f1526b0d67e1893d1cd75f483c296ef6",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "87f7b44690be5fb88019cdcb16326e12f1526b0d67e1893d1cd75f483c296ef6:segment:0",
+        "route_b_source_entity_key": "c0a8073d59dfc41b1c1da3efbe9ba2c9cb09a0d069a6f750848446cd5c17456b",
+        "route_b_source_handle": "1B1FD4"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612989.85567898,
+          606737.6912185914
+        ],
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "start",
+        "route_a_segment_index": 30,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:30",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_key": "87f7b44690be5fb88019cdcb16326e12f1526b0d67e1893d1cd75f483c296ef6",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "87f7b44690be5fb88019cdcb16326e12f1526b0d67e1893d1cd75f483c296ef6:segment:0",
+        "route_b_source_entity_key": "c0a8073d59dfc41b1c1da3efbe9ba2c9cb09a0d069a6f750848446cd5c17456b",
+        "route_b_source_handle": "1B1FD4"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612939.121697498,
+          606791.873499936
+        ],
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "end",
+        "route_a_segment_index": 31,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:31",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_key": "8845fd602c84fa59c388117eddfc1e6da32abf040d1b14e92822a87cacf82dd6",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "8845fd602c84fa59c388117eddfc1e6da32abf040d1b14e92822a87cacf82dd6:segment:0",
+        "route_b_source_entity_key": "0fd3ce6ed2b0e21c3ecd53875ae455c4d5b8593e1f561d8ce7fb28fd1b8ad02e",
+        "route_b_source_handle": "1B1FD5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612939.121697498,
+          606791.873499936
+        ],
+        "route_a_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4",
+        "route_a_position": "start",
+        "route_a_segment_index": 32,
+        "route_a_segment_key": "25dce1ea875942add3a7353bdf3b00ecc7fef9ce80b60b0971d7bd32960cfea4:segment:32",
+        "route_a_source_entity_key": "b6a5290ff77fdaf37a3d2d7e8bbf26eade6f34ab0dd6feb4f59a6deeb64a8b7f",
+        "route_a_source_handle": "1B0BD8",
+        "route_b_key": "8845fd602c84fa59c388117eddfc1e6da32abf040d1b14e92822a87cacf82dd6",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "8845fd602c84fa59c388117eddfc1e6da32abf040d1b14e92822a87cacf82dd6:segment:0",
+        "route_b_source_entity_key": "0fd3ce6ed2b0e21c3ecd53875ae455c4d5b8593e1f561d8ce7fb28fd1b8ad02e",
+        "route_b_source_handle": "1B1FD5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10611984.521181693,
+          606301.7175447852
+        ],
+        "route_a_key": "38c74ee16f020fb802dab443640473f1a88589668cbbb448805ed31476f7a209",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "38c74ee16f020fb802dab443640473f1a88589668cbbb448805ed31476f7a209:segment:0",
+        "route_a_source_entity_key": "10513cc77de4c9ecfcb2cee81a419e6e71ebaaed0c8aad4ad776440bcb1ea5ed",
+        "route_a_source_handle": "1B2A04",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "end",
+        "route_b_segment_index": 42,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:42",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10611984.521181693,
+          606301.7175447852
+        ],
+        "route_a_key": "38c74ee16f020fb802dab443640473f1a88589668cbbb448805ed31476f7a209",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "38c74ee16f020fb802dab443640473f1a88589668cbbb448805ed31476f7a209:segment:0",
+        "route_a_source_entity_key": "10513cc77de4c9ecfcb2cee81a419e6e71ebaaed0c8aad4ad776440bcb1ea5ed",
+        "route_a_source_handle": "1B2A04",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "start",
+        "route_b_segment_index": 43,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:43",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612622.801247552,
+          605838.0888411327
+        ],
+        "route_a_key": "39eb37eaf8b8cd01ca2afb67c1202188c48877797fb52eb64ef6caa67d08b6e7",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "39eb37eaf8b8cd01ca2afb67c1202188c48877797fb52eb64ef6caa67d08b6e7:segment:0",
+        "route_a_source_entity_key": "c6ab7a3870b47f35b41001da7efed04597b5860709ab8b7a94955659702842bf",
+        "route_a_source_handle": "1B24D5",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "end",
+        "route_b_segment_index": 6,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:6",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612622.801247552,
+          605838.0888411327
+        ],
+        "route_a_key": "39eb37eaf8b8cd01ca2afb67c1202188c48877797fb52eb64ef6caa67d08b6e7",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "39eb37eaf8b8cd01ca2afb67c1202188c48877797fb52eb64ef6caa67d08b6e7:segment:0",
+        "route_a_source_entity_key": "c6ab7a3870b47f35b41001da7efed04597b5860709ab8b7a94955659702842bf",
+        "route_a_source_handle": "1B24D5",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "start",
+        "route_b_segment_index": 7,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:7",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10611863.342412427,
+          606362.7185860823
+        ],
+        "route_a_key": "3a015069e0b08b1263b854c8c3d0e02cd04fbfc490e960b45ed8fe6b6cb517a8",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3a015069e0b08b1263b854c8c3d0e02cd04fbfc490e960b45ed8fe6b6cb517a8:segment:0",
+        "route_a_source_entity_key": "1d8adec9661a5b3acf74ee31826f9868864ab6b58fe2feef420d705f0d58c670",
+        "route_a_source_handle": "1B2A07",
+        "route_b_key": "45f6145cde14e7acfcd4fe4a7deeab1e1821506a72d6879684333c3cd4771d46",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "45f6145cde14e7acfcd4fe4a7deeab1e1821506a72d6879684333c3cd4771d46:segment:0",
+        "route_b_source_entity_key": "6b92d0b4bedc73b4fd72562b91d1183eb1691468d576bbddb1a69df23657a3e8",
+        "route_b_source_handle": "1B2A06"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10611863.342412427,
+          606362.7185860823
+        ],
+        "route_a_key": "3a015069e0b08b1263b854c8c3d0e02cd04fbfc490e960b45ed8fe6b6cb517a8",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3a015069e0b08b1263b854c8c3d0e02cd04fbfc490e960b45ed8fe6b6cb517a8:segment:0",
+        "route_a_source_entity_key": "1d8adec9661a5b3acf74ee31826f9868864ab6b58fe2feef420d705f0d58c670",
+        "route_a_source_handle": "1B2A07",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "end",
+        "route_b_segment_index": 48,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:48",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612823.691701273,
+          606532.6707341091
+        ],
+        "route_a_key": "3a122e3d69c05327252f1883866e41a73b29e64b9bef9efebe935a64eaae28ba",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3a122e3d69c05327252f1883866e41a73b29e64b9bef9efebe935a64eaae28ba:segment:0",
+        "route_a_source_entity_key": "23389d4b32f5b5c490131c9e2048cfa844bdc8833be8ef6f5772758101024b86",
+        "route_a_source_handle": "1B3408",
+        "route_b_key": "3def71e5c0c66bee0ca2566b70ebb6de55303c5a4cbc3ba62715562036b722f1",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "3def71e5c0c66bee0ca2566b70ebb6de55303c5a4cbc3ba62715562036b722f1:segment:0",
+        "route_b_source_entity_key": "ada2987107184727da555233017d5a6ba4c73c0bb513723b1a304dd848d22a99",
+        "route_b_source_handle": "1B3407"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612755.327607948,
+          606101.9857353371
+        ],
+        "route_a_key": "3c6d9354c2803b5b274c6508e3e6e03f2de683bc63a0b0441ebb559d2d64349c",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3c6d9354c2803b5b274c6508e3e6e03f2de683bc63a0b0441ebb559d2d64349c:segment:0",
+        "route_a_source_entity_key": "e73d074143f353af1dadef15e8026c6f3a5402cffbf018a39527b4977ff7465b",
+        "route_a_source_handle": "1B3402",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "end",
+        "route_b_segment_index": 13,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:13",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612755.327607948,
+          606101.9857353371
+        ],
+        "route_a_key": "3c6d9354c2803b5b274c6508e3e6e03f2de683bc63a0b0441ebb559d2d64349c",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "3c6d9354c2803b5b274c6508e3e6e03f2de683bc63a0b0441ebb559d2d64349c:segment:0",
+        "route_a_source_entity_key": "e73d074143f353af1dadef15e8026c6f3a5402cffbf018a39527b4977ff7465b",
+        "route_a_source_handle": "1B3402",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "start",
+        "route_b_segment_index": 14,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:14",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10611863.342412427,
+          606362.7185860823
+        ],
+        "route_a_key": "45f6145cde14e7acfcd4fe4a7deeab1e1821506a72d6879684333c3cd4771d46",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "45f6145cde14e7acfcd4fe4a7deeab1e1821506a72d6879684333c3cd4771d46:segment:0",
+        "route_a_source_entity_key": "6b92d0b4bedc73b4fd72562b91d1183eb1691468d576bbddb1a69df23657a3e8",
+        "route_a_source_handle": "1B2A06",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "end",
+        "route_b_segment_index": 48,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:48",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612734.41646634,
+          606548.3090809431
+        ],
+        "route_a_key": "69cf8b00f73f430295028d12af5965598b2843a72dfe4abc3b11064732fac025",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "69cf8b00f73f430295028d12af5965598b2843a72dfe4abc3b11064732fac025:segment:1",
+        "route_a_source_entity_key": "81db08236c9404ee4c2be6154fd71a098c08924283fa835e816db22b1f6563e6",
+        "route_a_source_handle": "1B3409",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "end",
+        "route_b_segment_index": 40,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:40",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612734.41646634,
+          606548.3090809431
+        ],
+        "route_a_key": "69cf8b00f73f430295028d12af5965598b2843a72dfe4abc3b11064732fac025",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "69cf8b00f73f430295028d12af5965598b2843a72dfe4abc3b11064732fac025:segment:1",
+        "route_a_source_entity_key": "81db08236c9404ee4c2be6154fd71a098c08924283fa835e816db22b1f6563e6",
+        "route_a_source_handle": "1B3409",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "start",
+        "route_b_segment_index": 41,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:41",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612333.164782364,
+          606115.1855875058
+        ],
+        "route_a_key": "6a360a935b16df0d8b6f6655f571360082ed5467da98a196ef1d258773ed6d67",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "6a360a935b16df0d8b6f6655f571360082ed5467da98a196ef1d258773ed6d67:segment:0",
+        "route_a_source_entity_key": "0d163a27e77e490adb88f17471bf7eb8d3704cbd967778833557e5f622c5b7d5",
+        "route_a_source_handle": "1B29EE",
+        "route_b_key": "7496cbec436de8aa85677512a189c273399c983f5f57e0919eedaa873047f877",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "7496cbec436de8aa85677512a189c273399c983f5f57e0919eedaa873047f877:segment:0",
+        "route_b_source_entity_key": "62337446347883310365101bdd5d028699e6f6e8b80d8a26eddf71a1ae4880b6",
+        "route_b_source_handle": "1B29EF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612333.164782364,
+          606115.1855875058
+        ],
+        "route_a_key": "6a360a935b16df0d8b6f6655f571360082ed5467da98a196ef1d258773ed6d67",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "6a360a935b16df0d8b6f6655f571360082ed5467da98a196ef1d258773ed6d67:segment:0",
+        "route_a_source_entity_key": "0d163a27e77e490adb88f17471bf7eb8d3704cbd967778833557e5f622c5b7d5",
+        "route_a_source_handle": "1B29EE",
+        "route_b_key": "ffe95bd7933e2c1885dd108d9952fa27f3f561eb175fdd43dfd664d06afac859",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "ffe95bd7933e2c1885dd108d9952fa27f3f561eb175fdd43dfd664d06afac859:segment:0",
+        "route_b_source_entity_key": "d1934e273731294aae831ac5192470b6dc47dc7c06d8369b3520314c74b383f6",
+        "route_b_source_handle": "1B29DC"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612575.863821618,
+          606639.1510729074
+        ],
+        "route_a_key": "7214a87f33060fc584d91a9312087fd2b6d8af00ba8cb3533804cf7892d97c10",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7214a87f33060fc584d91a9312087fd2b6d8af00ba8cb3533804cf7892d97c10:segment:0",
+        "route_a_source_entity_key": "6b087ee0eef387e3d86ef4d0d6bb47cbf1668395ef1384dd9405a097ca642bdf",
+        "route_a_source_handle": "1B340C",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "end",
+        "route_b_segment_index": 50,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:50",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612575.863821618,
+          606639.1510729074
+        ],
+        "route_a_key": "7214a87f33060fc584d91a9312087fd2b6d8af00ba8cb3533804cf7892d97c10",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7214a87f33060fc584d91a9312087fd2b6d8af00ba8cb3533804cf7892d97c10:segment:0",
+        "route_a_source_entity_key": "6b087ee0eef387e3d86ef4d0d6bb47cbf1668395ef1384dd9405a097ca642bdf",
+        "route_a_source_handle": "1B340C",
+        "route_b_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_b_position": "start",
+        "route_b_segment_index": 51,
+        "route_b_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:51",
+        "route_b_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_b_source_handle": "1B10D5"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612575.863821618,
+          606639.1510729074
+        ],
+        "route_a_key": "7214a87f33060fc584d91a9312087fd2b6d8af00ba8cb3533804cf7892d97c10",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7214a87f33060fc584d91a9312087fd2b6d8af00ba8cb3533804cf7892d97c10:segment:0",
+        "route_a_source_entity_key": "6b087ee0eef387e3d86ef4d0d6bb47cbf1668395ef1384dd9405a097ca642bdf",
+        "route_a_source_handle": "1B340C",
+        "route_b_key": "971ac25e4b36ab2b429d8b8907b28bcdd7b98b3cc36114188b0eaf2f61167b9f",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "971ac25e4b36ab2b429d8b8907b28bcdd7b98b3cc36114188b0eaf2f61167b9f:segment:0",
+        "route_b_source_entity_key": "3df9e93b05b6175e15b24c964a185100eef0ec6bc1c18449643eca8c1681b4d3",
+        "route_b_source_handle": "1B340B"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612017.591840401,
+          606226.0628461757
+        ],
+        "route_a_key": "72a33ae76e9b19212eda45effff1eab67a40c30b7c225b2999cd777ef4cc14da",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "72a33ae76e9b19212eda45effff1eab67a40c30b7c225b2999cd777ef4cc14da:segment:0",
+        "route_a_source_entity_key": "3eb9efd89f94fa5df3038637cd1ab6d2c298d2119eb79e6af3ce27a159234972",
+        "route_a_source_handle": "1B2A03",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "end",
+        "route_b_segment_index": 39,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:39",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612017.591840401,
+          606226.0628461757
+        ],
+        "route_a_key": "72a33ae76e9b19212eda45effff1eab67a40c30b7c225b2999cd777ef4cc14da",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "72a33ae76e9b19212eda45effff1eab67a40c30b7c225b2999cd777ef4cc14da:segment:0",
+        "route_a_source_entity_key": "3eb9efd89f94fa5df3038637cd1ab6d2c298d2119eb79e6af3ce27a159234972",
+        "route_a_source_handle": "1B2A03",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "start",
+        "route_b_segment_index": 40,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:40",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612333.164782364,
+          606115.1855875058
+        ],
+        "route_a_key": "7496cbec436de8aa85677512a189c273399c983f5f57e0919eedaa873047f877",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7496cbec436de8aa85677512a189c273399c983f5f57e0919eedaa873047f877:segment:0",
+        "route_a_source_entity_key": "62337446347883310365101bdd5d028699e6f6e8b80d8a26eddf71a1ae4880b6",
+        "route_a_source_handle": "1B29EF",
+        "route_b_key": "ffe95bd7933e2c1885dd108d9952fa27f3f561eb175fdd43dfd664d06afac859",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "ffe95bd7933e2c1885dd108d9952fa27f3f561eb175fdd43dfd664d06afac859:segment:0",
+        "route_b_source_entity_key": "d1934e273731294aae831ac5192470b6dc47dc7c06d8369b3520314c74b383f6",
+        "route_b_source_handle": "1B29DC"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612575.863821618,
+          606639.1510729074
+        ],
+        "route_a_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_a_position": "end",
+        "route_a_segment_index": 50,
+        "route_a_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:50",
+        "route_a_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_a_source_handle": "1B10D5",
+        "route_b_key": "971ac25e4b36ab2b429d8b8907b28bcdd7b98b3cc36114188b0eaf2f61167b9f",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "971ac25e4b36ab2b429d8b8907b28bcdd7b98b3cc36114188b0eaf2f61167b9f:segment:0",
+        "route_b_source_entity_key": "3df9e93b05b6175e15b24c964a185100eef0ec6bc1c18449643eca8c1681b4d3",
+        "route_b_source_handle": "1B340B"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612575.863821618,
+          606639.1510729074
+        ],
+        "route_a_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_a_position": "start",
+        "route_a_segment_index": 51,
+        "route_a_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:51",
+        "route_a_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_a_source_handle": "1B10D5",
+        "route_b_key": "971ac25e4b36ab2b429d8b8907b28bcdd7b98b3cc36114188b0eaf2f61167b9f",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "971ac25e4b36ab2b429d8b8907b28bcdd7b98b3cc36114188b0eaf2f61167b9f:segment:0",
+        "route_b_source_entity_key": "3df9e93b05b6175e15b24c964a185100eef0ec6bc1c18449643eca8c1681b4d3",
+        "route_b_source_handle": "1B340B"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612749.367976382,
+          606438.6370337117
+        ],
+        "route_a_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_a_position": "end",
+        "route_a_segment_index": 32,
+        "route_a_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:32",
+        "route_a_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_a_source_handle": "1B10D5",
+        "route_b_key": "bc365abf360b9ef5613ccc946709843ee223fbef5d8e84ece2f1fe1a09d0779f",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "bc365abf360b9ef5613ccc946709843ee223fbef5d8e84ece2f1fe1a09d0779f:segment:0",
+        "route_b_source_entity_key": "26a9a37de67b3c0c10f8e272a0a2c0c356867ca7709f64f08e483e94d521ca8f",
+        "route_b_source_handle": "1B3405"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612749.367976382,
+          606438.6370337117
+        ],
+        "route_a_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_a_position": "start",
+        "route_a_segment_index": 33,
+        "route_a_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:33",
+        "route_a_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_a_source_handle": "1B10D5",
+        "route_b_key": "bc365abf360b9ef5613ccc946709843ee223fbef5d8e84ece2f1fe1a09d0779f",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "bc365abf360b9ef5613ccc946709843ee223fbef5d8e84ece2f1fe1a09d0779f:segment:0",
+        "route_b_source_entity_key": "26a9a37de67b3c0c10f8e272a0a2c0c356867ca7709f64f08e483e94d521ca8f",
+        "route_b_source_handle": "1B3405"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612754.51232803,
+          606060.5356465373
+        ],
+        "route_a_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_a_position": "end",
+        "route_a_segment_index": 12,
+        "route_a_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:12",
+        "route_a_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_a_source_handle": "1B10D5",
+        "route_b_key": "c3a01095e2fb900f15c12c75802944ab8f29984665c730d8003d0f03e1c8267c",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "c3a01095e2fb900f15c12c75802944ab8f29984665c730d8003d0f03e1c8267c:segment:0",
+        "route_b_source_entity_key": "61dc59d738b8c8177adb589cfd6e28cf03184e9699ea330e5b4261624ed94072",
+        "route_b_source_handle": "1B3401"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612754.51232803,
+          606060.5356465373
+        ],
+        "route_a_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980",
+        "route_a_position": "start",
+        "route_a_segment_index": 13,
+        "route_a_segment_key": "7e6177a24f7a7ad62af979df4dbd6432db487bc60d5501781aecdf204098d980:segment:13",
+        "route_a_source_entity_key": "30aafcf93c299f7bc342d981a0727baf660db94701e5554225dde9632a6973af",
+        "route_a_source_handle": "1B10D5",
+        "route_b_key": "c3a01095e2fb900f15c12c75802944ab8f29984665c730d8003d0f03e1c8267c",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "c3a01095e2fb900f15c12c75802944ab8f29984665c730d8003d0f03e1c8267c:segment:0",
+        "route_b_source_entity_key": "61dc59d738b8c8177adb589cfd6e28cf03184e9699ea330e5b4261624ed94072",
+        "route_b_source_handle": "1B3401"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612687.951034715,
+          605850.7440771476
+        ],
+        "route_a_key": "7ec07773e5903c29c3a3522ef8b2c58cb73c25001c2dcd4134b1de7312a15fae",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7ec07773e5903c29c3a3522ef8b2c58cb73c25001c2dcd4134b1de7312a15fae:segment:0",
+        "route_a_source_entity_key": "8b35551efa65327b153b93defd0d44677f49020f9f980043cd9f6f498c5b88db",
+        "route_a_source_handle": "1B24D3",
+        "route_b_key": "a77516fe98465f619564e55f878cf8bb272983f76218647dd1699adf2b4fb810",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "a77516fe98465f619564e55f878cf8bb272983f76218647dd1699adf2b4fb810:segment:0",
+        "route_b_source_entity_key": "3a28bc82d01cf391d39938e2b5f707224bcebfffdfa202a4956552f1ab65eb4f",
+        "route_b_source_handle": "1B24D4"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612687.951034715,
+          605850.7440771476
+        ],
+        "route_a_key": "7ec07773e5903c29c3a3522ef8b2c58cb73c25001c2dcd4134b1de7312a15fae",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7ec07773e5903c29c3a3522ef8b2c58cb73c25001c2dcd4134b1de7312a15fae:segment:0",
+        "route_a_source_entity_key": "8b35551efa65327b153b93defd0d44677f49020f9f980043cd9f6f498c5b88db",
+        "route_a_source_handle": "1B24D3",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "end",
+        "route_b_segment_index": 5,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:5",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612687.951034715,
+          605850.7440771476
+        ],
+        "route_a_key": "7ec07773e5903c29c3a3522ef8b2c58cb73c25001c2dcd4134b1de7312a15fae",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "7ec07773e5903c29c3a3522ef8b2c58cb73c25001c2dcd4134b1de7312a15fae:segment:0",
+        "route_a_source_entity_key": "8b35551efa65327b153b93defd0d44677f49020f9f980043cd9f6f498c5b88db",
+        "route_a_source_handle": "1B24D3",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "start",
+        "route_b_segment_index": 6,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:6",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612649.770178081,
+          605655.6697107023
+        ],
+        "route_a_key": "8a7e514a8353083e187235925291a94c7ad327a0b69c4eafadbc0c5d32502f0e",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "8a7e514a8353083e187235925291a94c7ad327a0b69c4eafadbc0c5d32502f0e:segment:1",
+        "route_a_source_entity_key": "7b58aa1d673dbd6a61f3898aa687b21973671776de623da5f3157dad01ee85b2",
+        "route_a_source_handle": "1B24DA",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "end",
+        "route_b_segment_index": 24,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:24",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612208.36748783,
+          605947.0610076956
+        ],
+        "route_a_key": "9244bda200d4a86ccdb9eaa72484e5cb76dd13358c70fa3e7ef628d43aeaab2e",
+        "route_a_position": "end",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "9244bda200d4a86ccdb9eaa72484e5cb76dd13358c70fa3e7ef628d43aeaab2e:segment:0",
+        "route_a_source_entity_key": "b24e9647c0edc43d99d876789c2effd9730fe6303140869dadbba0b41805e21d",
+        "route_a_source_handle": "1B29D8",
+        "route_b_key": "f51fd783ea68a66b60a728a093cae7aaef914dfc7bb9e342c51cb1ab9ecf0af6",
+        "route_b_position": "end",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "f51fd783ea68a66b60a728a093cae7aaef914dfc7bb9e342c51cb1ab9ecf0af6:segment:0",
+        "route_b_source_entity_key": "ae0a7179f807030ed45719485073281e9f18cd30be4a47aa715800d7c606b11d",
+        "route_b_source_handle": "1B29D7"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10611924.22642533,
+          606364.9492337394
+        ],
+        "route_a_key": "92f305d6130543329ed4af83562249ddc43be25637d2bb2da0fdbdf53fe6fe5f",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "92f305d6130543329ed4af83562249ddc43be25637d2bb2da0fdbdf53fe6fe5f:segment:0",
+        "route_a_source_entity_key": "ab35163059e014b0b8d742058411704b2bccaada8e15fd2020dce5cc1323bff9",
+        "route_a_source_handle": "1B2A05",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "end",
+        "route_b_segment_index": 45,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:45",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10611924.22642533,
+          606364.9492337394
+        ],
+        "route_a_key": "92f305d6130543329ed4af83562249ddc43be25637d2bb2da0fdbdf53fe6fe5f",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "92f305d6130543329ed4af83562249ddc43be25637d2bb2da0fdbdf53fe6fe5f:segment:0",
+        "route_a_source_entity_key": "ab35163059e014b0b8d742058411704b2bccaada8e15fd2020dce5cc1323bff9",
+        "route_a_source_handle": "1B2A05",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "start",
+        "route_b_segment_index": 46,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:46",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612687.951034715,
+          605850.7440771476
+        ],
+        "route_a_key": "a77516fe98465f619564e55f878cf8bb272983f76218647dd1699adf2b4fb810",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "a77516fe98465f619564e55f878cf8bb272983f76218647dd1699adf2b4fb810:segment:0",
+        "route_a_source_entity_key": "3a28bc82d01cf391d39938e2b5f707224bcebfffdfa202a4956552f1ab65eb4f",
+        "route_a_source_handle": "1B24D4",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "end",
+        "route_b_segment_index": 5,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:5",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612687.951034715,
+          605850.7440771476
+        ],
+        "route_a_key": "a77516fe98465f619564e55f878cf8bb272983f76218647dd1699adf2b4fb810",
+        "route_a_position": "start",
+        "route_a_segment_index": 0,
+        "route_a_segment_key": "a77516fe98465f619564e55f878cf8bb272983f76218647dd1699adf2b4fb810:segment:0",
+        "route_a_source_entity_key": "3a28bc82d01cf391d39938e2b5f707224bcebfffdfa202a4956552f1ab65eb4f",
+        "route_a_source_handle": "1B24D4",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "start",
+        "route_b_segment_index": 6,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:6",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612214.5997947,
+          606082.3142298957
+        ],
+        "route_a_key": "d7abc5defa57176ff710f13ca398c406baa40096245cc75a918f95aa948ad43d",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "d7abc5defa57176ff710f13ca398c406baa40096245cc75a918f95aa948ad43d:segment:1",
+        "route_a_source_entity_key": "a7fd0911b2cdca84e4cad326263998ea730e4d47a308a1273a46d51164336e6e",
+        "route_a_source_handle": "1B2A00",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "end",
+        "route_b_segment_index": 27,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:27",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612214.5997947,
+          606082.3142298957
+        ],
+        "route_a_key": "d7abc5defa57176ff710f13ca398c406baa40096245cc75a918f95aa948ad43d",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "d7abc5defa57176ff710f13ca398c406baa40096245cc75a918f95aa948ad43d:segment:1",
+        "route_a_source_entity_key": "a7fd0911b2cdca84e4cad326263998ea730e4d47a308a1273a46d51164336e6e",
+        "route_a_source_handle": "1B2A00",
+        "route_b_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_b_position": "start",
+        "route_b_segment_index": 28,
+        "route_b_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:28",
+        "route_b_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_b_source_handle": "1B1ACF"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612324.516300902,
+          605912.7296330538
+        ],
+        "route_a_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_a_position": "end",
+        "route_a_segment_index": 10,
+        "route_a_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:10",
+        "route_a_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_a_source_handle": "1B1ACF",
+        "route_b_key": "f3e2b07bfd92ccea110d15bf13c3df0671072ea80a17691cbcf508f4fae8602f",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "f3e2b07bfd92ccea110d15bf13c3df0671072ea80a17691cbcf508f4fae8602f:segment:0",
+        "route_b_source_entity_key": "9217efe0233d430a85fccfa48bbcc0207d405387fc0ec6e3a6ff5553035e79b3",
+        "route_b_source_handle": "1B29DA"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612324.516300902,
+          605912.7296330538
+        ],
+        "route_a_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7",
+        "route_a_position": "start",
+        "route_a_segment_index": 11,
+        "route_a_segment_key": "e1f85b65f7f4add717758669cc0fe2e9f35c75e714dd03a0b2b3f7e5db1a32e7:segment:11",
+        "route_a_source_entity_key": "169495ef170fcc38c4632934afd11cb65d3506bf03f0717f576a49ba5ad2a666",
+        "route_a_source_handle": "1B1ACF",
+        "route_b_key": "f3e2b07bfd92ccea110d15bf13c3df0671072ea80a17691cbcf508f4fae8602f",
+        "route_b_position": "start",
+        "route_b_segment_index": 0,
+        "route_b_segment_key": "f3e2b07bfd92ccea110d15bf13c3df0671072ea80a17691cbcf508f4fae8602f:segment:0",
+        "route_b_source_entity_key": "9217efe0233d430a85fccfa48bbcc0207d405387fc0ec6e3a6ff5553035e79b3",
+        "route_b_source_handle": "1B29DA"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612559.476039568,
+          605838.1215620347
+        ],
+        "route_a_key": "eb0bc008e2d4809c50f0f377d1b44b041ee7f2e7471a5940c7df18d13148a5d9",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "eb0bc008e2d4809c50f0f377d1b44b041ee7f2e7471a5940c7df18d13148a5d9:segment:1",
+        "route_a_source_entity_key": "7ba6fa4a9e2264c8a7d924ae12a8d68eff391da8a06ac09d4bf0879de9e50df3",
+        "route_a_source_handle": "1B24D8",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "end",
+        "route_b_segment_index": 8,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:8",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      },
+      {
+        "classification": "shared_source_segment_endpoint",
+        "intersection_native": [
+          10612559.476039568,
+          605838.1215620347
+        ],
+        "route_a_key": "eb0bc008e2d4809c50f0f377d1b44b041ee7f2e7471a5940c7df18d13148a5d9",
+        "route_a_position": "end",
+        "route_a_segment_index": 1,
+        "route_a_segment_key": "eb0bc008e2d4809c50f0f377d1b44b041ee7f2e7471a5940c7df18d13148a5d9:segment:1",
+        "route_a_source_entity_key": "7ba6fa4a9e2264c8a7d924ae12a8d68eff391da8a06ac09d4bf0879de9e50df3",
+        "route_a_source_handle": "1B24D8",
+        "route_b_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23",
+        "route_b_position": "start",
+        "route_b_segment_index": 9,
+        "route_b_segment_key": "fc13184da83706d907790f41f9be79efab49b07f3b1be7271ce1e92812103b23:segment:9",
+        "route_b_source_entity_key": "2ac531104380284b1e3d01cf849c0282a66ccee6078b60aaf0043e5b430c90ae",
+        "route_b_source_handle": "1B15D2"
+      }
+    ],
+    "route_vertex_support": {
+      "accepted": 215,
+      "candidate": 75
+    },
+    "source_route_component_diagnostics": {
+      "route_group_components": 40,
+      "source_segment_graph_components": 21,
+      "status": "mismatch"
+    },
+    "source_route_components": 40,
+    "source_route_graph": {
+      "components": 21,
+      "duplicate_or_reverse_occurrences": 0,
+      "segment_occurrences": 237,
+      "self_loops": 0,
+      "unique_edges": 237,
+      "unique_nodes": 258
+    },
+    "source_route_native_length_max_abs_delta_m": 9.71121942477248,
+    "source_route_native_lengths": 53,
+    "source_routes": 53,
+    "span_dimensions": 209,
+    "span_measurement_max_abs_error_m": 1.3675354825177521,
+    "span_roles": {
+      "cable_route_span": 209
+    },
+    "span_support_nodes": 204,
+    "synthetic_route_vertices": 0,
+    "unique_span_edges": 202,
+    "unique_span_edges_all": 202
+  }
+}
