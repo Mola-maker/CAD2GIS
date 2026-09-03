@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import os
 from collections import Counter
 from pathlib import Path
@@ -55,6 +56,11 @@ def ingest(
             f"skips cannot enter conversion: {reader_protocol}"
         )
     entities = [SourceEntity.from_record(record) for record in records]
+    # The flat reader inventory is not referenced after entity materialisation:
+    # release it before census/inventory diagnostics so records and SourceEntity
+    # objects never coexist for the remainder of ingest.
+    del records
+    gc.collect()
     model = [entity for entity in entities if entity.cad_role == "model"]
     metadata = next((entity.text for entity in entities if entity.dwg_type == "DOCUMENT_METADATA"), "")
     if profile.dwg_cgeocs is not None:
