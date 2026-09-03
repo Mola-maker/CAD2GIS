@@ -40,6 +40,36 @@ def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _graph_sha256(
+    source: str,
+    nodes: Iterable[EvidenceNode],
+    edges: Iterable[EvidenceEdge],
+) -> str:
+    """Compute the canonical graph digest as a single-pass streamed hash.
+
+    Equivalent to ``_sha256_bytes(_canonical_json(identity).encode("utf-8"))``
+    over the canonical graph identity, but avoids materialising the full
+    identity dict and full JSON string.
+    """
+    digest = hashlib.sha256()
+    digest.update(b'{"edges":[')
+    for index, edge in enumerate(edges):
+        if index:
+            digest.update(b",")
+        digest.update(edge.canonical_json().encode("utf-8"))
+    digest.update(b'],"nodes":[')
+    for index, node in enumerate(nodes):
+        if index:
+            digest.update(b",")
+        digest.update(node.canonical_json().encode("utf-8"))
+    digest.update(b'],"schema_version":')
+    digest.update(_json_scalar(EVIDENCE_GRAPH_SCHEMA).encode("utf-8"))
+    digest.update(b',"source_sha256":')
+    digest.update(_json_scalar(source).encode("utf-8"))
+    digest.update(b"}")
+    return digest.hexdigest()
+
+
 def _require_sha256(value: Any, path: str) -> str:
     text = str(value)
     if len(text) != 64 or any(char not in "0123456789abcdef" for char in text):
@@ -78,6 +108,17 @@ def _canonical(value: Any, path: str = "$") -> Any:
 def _canonical_json(value: Any) -> str:
     return json.dumps(
         _canonical(value),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def _json_scalar(value: Any) -> str:
+    """Serialize one already-validated scalar/list with canonical settings."""
+    return json.dumps(
+        value,
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
@@ -124,6 +165,24 @@ class EvidenceNode:
     @property
     def facts(self) -> dict[str, Any]:
         return json.loads(self._facts_json)
+
+    def canonical_json(self) -> str:
+        """Return the sorted-key canonical node JSON without re-serializing facts.
+
+        This is exactly the string ``_canonical_json(self.to_dict())`` would
+        produce; the cached ``_facts_json`` segment is embedded verbatim so no
+        full node/facts dict copy is made for graph digest computation.
+        """
+        return (
+            '{"facts":' + self._facts_json
+            + ',"facts_sha256":' + _json_scalar(self.facts_sha256)
+            + ',"kind":' + _json_scalar(self.kind)
+            + ',"logical_id":' + _json_scalar(self.logical_id)
+            + ',"node_id":' + _json_scalar(self.node_id)
+            + ',"schema_version":' + _json_scalar(EVIDENCE_NODE_SCHEMA)
+            + ',"source_sha256":' + _json_scalar(self.source_sha256)
+            + "}"
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -203,6 +262,21 @@ class EvidenceEdge:
     def facts(self) -> dict[str, Any]:
         return json.loads(self._facts_json)
 
+    def canonical_json(self) -> str:
+        """Return the sorted-key canonical edge JSON without re-serializing facts."""
+        return (
+            '{"edge_id":' + _json_scalar(self.edge_id)
+            + ',"evidence_node_ids":' + _json_scalar(list(self.evidence_node_ids))
+            + ',"facts":' + self._facts_json
+            + ',"facts_sha256":' + _json_scalar(self.facts_sha256)
+            + ',"kind":' + _json_scalar(self.kind)
+            + ',"schema_version":' + _json_scalar(EVIDENCE_EDGE_SCHEMA)
+            + ',"source_node_id":' + _json_scalar(self.source_node_id)
+            + ',"source_sha256":' + _json_scalar(self.source_sha256)
+            + ',"target_node_id":' + _json_scalar(self.target_node_id)
+            + "}"
+        )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": EVIDENCE_EDGE_SCHEMA,
@@ -276,13 +350,7 @@ class EvidenceGraph:
             missing = referenced - node_ids
             if missing:
                 raise EvidenceGraphError(f"Evidence edge references missing nodes: {sorted(missing)}")
-        identity = {
-            "schema_version": EVIDENCE_GRAPH_SCHEMA,
-            "source_sha256": source,
-            "nodes": [node.to_dict() for node in ordered_nodes],
-            "edges": [edge.to_dict() for edge in ordered_edges],
-        }
-        digest = _sha256_bytes(_canonical_json(identity).encode("utf-8"))
+        digest = _graph_sha256(source, ordered_nodes, ordered_edges)
         return cls(source, ordered_nodes, ordered_edges, digest)
 
     @property
