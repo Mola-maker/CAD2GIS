@@ -1,0 +1,147 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.81kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#2 DONE 1.3s
+
+#3 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#3 resolve docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e 0.0s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/mambaorg/micromamba:2.0.5
+#4 ...
+
+#5 [context libredwg] load .dockerignore
+#5 transferring libredwg: 369B done
+#5 DONE 0.0s
+
+#6 [context raw] load .dockerignore
+#6 transferring raw: 2B done
+#6 DONE 0.0s
+
+#7 [context src] load .dockerignore
+#7 transferring src: 2B done
+#7 DONE 0.0s
+
+#8 [context baselines] load .dockerignore
+#8 transferring baselines: 2B done
+#8 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/mambaorg/micromamba:2.0.5
+#4 DONE 1.0s
+
+#9 [context libredwg] load from client
+#9 transferring libredwg: 61.04kB done
+#9 DONE -0.7s
+
+#10 [internal] load .dockerignore
+#10 transferring context: 2B done
+#10 DONE 0.0s
+
+#11 [gis  1/15] FROM docker.io/mambaorg/micromamba:2.0.5@sha256:8d0d4cad074afe3ac93b58dce88bd2659153d3fa6de3a6968f501710e8d3c832
+#11 resolve docker.io/mambaorg/micromamba:2.0.5@sha256:8d0d4cad074afe3ac93b58dce88bd2659153d3fa6de3a6968f501710e8d3c832 0.0s done
+#11 DONE 0.0s
+
+#12 [context raw] load from client
+#12 transferring raw: 612B done
+#12 DONE 0.0s
+
+#13 [context baselines] load from client
+#13 transferring baselines: 5.06kB done
+#13 DONE 0.0s
+
+#14 [internal] load build context
+#14 transferring context: 163B done
+#14 DONE 0.0s
+
+#15 [context src] load from client
+#15 transferring src: 10.23kB done
+#15 DONE 0.0s
+
+#16 [gis  7/15] RUN export PATH=/opt/mamba/envs/cad2gis/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin     && autoreconf -fi     && ./configure --prefix=/usr/local --enable-python     && make -j"$(nproc)"     && make install     && ldconfig     && printf '%s\n' /usr/local/lib/python3.12/site-packages        > /opt/mamba/envs/cad2gis/lib/python3.12/site-packages/libredwg.pth
+#16 CACHED
+
+#17 [gis  8/15] COPY pyproject.toml /app/pyproject.toml
+#17 CACHED
+
+#18 [gis  2/15] COPY env/environment.yml /app/env/environment.yml
+#18 CACHED
+
+#19 [gis  3/15] RUN micromamba create -y -n cad2gis -f /app/env/environment.yml     && micromamba clean -ay
+#19 CACHED
+
+#20 [gis  6/15] WORKDIR /usr/src/libredwg
+#20 CACHED
+
+#21 [gis  4/15] RUN apt-get update && apt-get install -y --no-install-recommends         autoconf automake libtool gcc g++ make swig python3-dev pkg-config texinfo     && rm -rf /var/lib/apt/lists/*
+#21 CACHED
+
+#22 [gis  5/15] COPY --from=libredwg / /usr/src/libredwg/
+#22 CACHED
+
+#23 [gis  9/15] COPY --from=src / /app/src/
+#23 CACHED
+
+#24 [gis 10/15] RUN /opt/mamba/envs/cad2gis/bin/pip install pillow     && /opt/mamba/envs/cad2gis/bin/pip install /app     && /opt/mamba/envs/cad2gis/bin/python -c "import LibreDWG, PIL; print('LibreDWG OK; Pillow', PIL.__version__)"
+#24 1.732 Collecting pillow
+#24 2.217   Downloading pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+#24 2.389 Downloading pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+#24 3.850    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 7.7 MB/s eta 0:00:00
+#24 3.873 Installing collected packages: pillow
+#24 4.085 Successfully installed pillow-12.3.0
+#24 4.085 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#24 5.031 Processing /app
+#24 5.033   Installing build dependencies: started
+#24 7.985   Installing build dependencies: finished with status 'done'
+#24 7.986   Getting requirements to build wheel: started
+#24 8.257   Getting requirements to build wheel: finished with status 'done'
+#24 8.258   Preparing metadata (pyproject.toml): started
+#24 8.373   Preparing metadata (pyproject.toml): finished with status 'done'
+#24 8.375 Requirement already satisfied: numpy>=1.24 in /opt/mamba/envs/cad2gis/lib/python3.12/site-packages (from cad2gis==0.1.0) (2.5.2)
+#24 9.746 Collecting scipy>=1.10 (from cad2gis==0.1.0)
+#24 10.21   Downloading scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+#24 10.51 Requirement already satisfied: shapely>=2.0 in /opt/mamba/envs/cad2gis/lib/python3.12/site-packages (from cad2gis==0.1.0) (2.1.2)
+#24 10.67 Downloading scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+#24 13.85    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 12.4 MB/s eta 0:00:00
+#24 13.86 Building wheels for collected packages: cad2gis
+#24 13.87   Building wheel for cad2gis (pyproject.toml): started
+#24 14.04   Building wheel for cad2gis (pyproject.toml): finished with status 'done'
+#24 14.04   Created wheel for cad2gis: filename=cad2gis-0.1.0-py3-none-any.whl size=464306 sha256=28533b88e77bab53262ec091ab56ceb5356b5bc89548647bc122dd94060a0dec
+#24 14.04   Stored in directory: /tmp/pip-ephem-wheel-cache-o1i8bggk/wheels/54/1b/b7/aa63e25c8f14f4f2ae7b04e6097bdecb770e455c5c1ee0a600
+#24 14.05 Successfully built cad2gis
+#24 14.07 Installing collected packages: scipy, cad2gis
+#24 14.66 
+#24 14.66 Successfully installed cad2gis-0.1.0 scipy-1.18.1
+#24 14.66 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#24 14.75 LibreDWG OK; Pillow 12.3.0
+#24 DONE 15.2s
+
+#25 [gis 11/15] COPY --from=baselines / /app/baselines/
+#25 DONE 0.1s
+
+#26 [gis 12/15] COPY --from=raw / /app/raw/
+#26 DONE 0.0s
+
+#27 [gis 13/15] COPY scripts/run_all.sh /usr/local/bin/run_all.sh
+#27 DONE 0.0s
+
+#28 [gis 14/15] RUN chmod +x /usr/local/bin/run_all.sh
+#28 DONE 0.2s
+
+#29 [gis 15/15] WORKDIR /app
+#29 DONE 0.1s
+
+#30 exporting to image
+#30 exporting layers
+#30 exporting layers 4.6s done
+#30 exporting manifest sha256:644daf03b9b8d9395643e3f6e4ba179ec134443d39dedcf693699e3328dc1314 0.0s done
+#30 exporting config sha256:50b97a5318fe1a9c8bb71dae243c4041aa6a7acdcad901e661f3ffbc34de4ea1 0.0s done
+#30 exporting attestation manifest sha256:edb42dfce221d0cee101e09c41db8834848e78e0425395b87859660ea9811ec3 0.0s done
+#30 exporting manifest list sha256:0aa2d0033162f2f71cea71f467868b641cf20a8a9829bb1ec53213460d0e0de2 0.0s done
+#30 naming to docker.io/library/cad2gis-ftth:0.1.0 done
+#30 unpacking to docker.io/library/cad2gis-ftth:0.1.0
+#30 unpacking to docker.io/library/cad2gis-ftth:0.1.0 1.0s done
+#30 DONE 5.7s

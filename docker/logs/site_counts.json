@@ -1,0 +1,256 @@
+[
+  {
+    "site": "hutabohu",
+    "delivery_gpkg": "/tmp/cad2gis_out/hutabohu/delivery.gpkg",
+    "counts": {
+      "SITE": 2,
+      "BOITE": 43,
+      "PTECH": 167,
+      "IMB": 682,
+      "INFRASTRUCTURE": 31,
+      "CABLE": 179,
+      "ZPM": 43,
+      "ZNRO": 3
+    },
+    "source_profile_expectations": {
+      "BOITE": 43,
+      "CABLE": 31,
+      "IMB": 682,
+      "PTECH": 167,
+      "SITE": 2,
+      "ZPM": 43,
+      "INFRASTRUCTURE": 31,
+      "ZNRO": 3
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "lamteh_main",
+    "delivery_gpkg": "/tmp/cad2gis_out/lamteh_main/delivery.gpkg",
+    "counts": {
+      "SITE": 2,
+      "BOITE": 38,
+      "PTECH": 208,
+      "IMB": 423,
+      "INFRASTRUCTURE": 53,
+      "CABLE": 237,
+      "ZPM": 38,
+      "ZNRO": 1
+    },
+    "source_profile_expectations": {
+      "BOITE": 38,
+      "CABLE": 53,
+      "IMB": 423,
+      "PTECH": 208,
+      "SITE": 2,
+      "ZPM": 38,
+      "INFRASTRUCTURE": 53,
+      "ZNRO": 1
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "lamteh_sf",
+    "delivery_gpkg": "/tmp/cad2gis_out/lamteh_sf/delivery.gpkg",
+    "counts": {
+      "SITE": 2,
+      "BOITE": 2,
+      "PTECH": 26,
+      "IMB": 0,
+      "INFRASTRUCTURE": 1,
+      "CABLE": 25,
+      "ZPM": 0,
+      "ZNRO": 0
+    },
+    "source_profile_expectations": {
+      "CABLE": 1,
+      "PTECH": 26,
+      "SITE": 2,
+      "INFRASTRUCTURE": 1,
+      "ZNRO": 0,
+      "BOITE": 2
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "kletek",
+    "delivery_gpkg": "/tmp/cad2gis_out/kletek/delivery.gpkg",
+    "counts": {
+      "SITE": 1,
+      "BOITE": 9,
+      "PTECH": 33,
+      "IMB": 167,
+      "INFRASTRUCTURE": 9,
+      "CABLE": 33,
+      "ZPM": 9,
+      "ZNRO": 2
+    },
+    "source_profile_expectations": {
+      "BOITE": 9,
+      "CABLE": 9,
+      "IMB": 167,
+      "PTECH": 33,
+      "SITE": 1,
+      "ZPM": 9,
+      "INFRASTRUCTURE": 9,
+      "ZNRO": 2
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "semarang_sf",
+    "delivery_gpkg": "/tmp/cad2gis_out/semarang_sf/delivery.gpkg",
+    "counts": {
+      "SITE": 1,
+      "BOITE": 0,
+      "PTECH": 19,
+      "IMB": 0,
+      "INFRASTRUCTURE": 1,
+      "CABLE": 18,
+      "ZPM": 0,
+      "ZNRO": 0
+    },
+    "source_profile_expectations": {
+      "CABLE": 1,
+      "PTECH": 19,
+      "SITE": 1,
+      "INFRASTRUCTURE": 1,
+      "ZNRO": 0
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "darat_sekip_sf",
+    "delivery_gpkg": "/tmp/cad2gis_out/darat_sekip_sf/delivery.gpkg",
+    "counts": {
+      "SITE": 1,
+      "BOITE": 1,
+      "PTECH": 13,
+      "IMB": 0,
+      "INFRASTRUCTURE": 1,
+      "CABLE": 12,
+      "ZPM": 0,
+      "ZNRO": 0
+    },
+    "source_profile_expectations": {
+      "BOITE": 1,
+      "CABLE": 1,
+      "PTECH": 13,
+      "SITE": 1,
+      "INFRASTRUCTURE": 1,
+      "ZNRO": 0
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "manado-tomohon_uplink",
+    "delivery_gpkg": "/tmp/cad2gis_out/manado-tomohon_uplink/delivery.gpkg",
+    "counts": {
+      "SITE": 1,
+      "BOITE": 16,
+      "PTECH": 61,
+      "IMB": 243,
+      "INFRASTRUCTURE": 16,
+      "CABLE": 62,
+      "ZPM": 15,
+      "ZNRO": 1,
+      "EMR": 2
+    },
+    "source_profile_expectations": {
+      "BOITE": 16,
+      "CABLE": 16,
+      "IMB": 243,
+      "PTECH": 61,
+      "SITE": 1,
+      "ZPM": 15,
+      "EMR": 2,
+      "INFRASTRUCTURE": 16,
+      "ZNRO": 1
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "taipa",
+    "delivery_gpkg": "/tmp/cad2gis_out/taipa/delivery.gpkg",
+    "counts": {
+      "SITE": 1,
+      "BOITE": 26,
+      "PTECH": 112,
+      "IMB": 369,
+      "INFRASTRUCTURE": 17,
+      "CABLE": 118,
+      "ZPM": 26,
+      "ZNRO": 4
+    },
+    "source_profile_expectations": {
+      "BOITE": 26,
+      "CABLE": 17,
+      "IMB": 369,
+      "PTECH": 112,
+      "SITE": 1,
+      "ZPM": 26,
+      "INFRASTRUCTURE": 17,
+      "ZNRO": 4
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "tinggar",
+    "delivery_gpkg": "/tmp/cad2gis_out/tinggar/delivery.gpkg",
+    "counts": {
+      "SITE": 2,
+      "BOITE": 31,
+      "PTECH": 109,
+      "IMB": 435,
+      "INFRASTRUCTURE": 17,
+      "CABLE": 119,
+      "ZPM": 0,
+      "ZNRO": 2
+    },
+    "source_profile_expectations": {
+      "BOITE": 31,
+      "CABLE": 17,
+      "IMB": 435,
+      "PTECH": 109,
+      "SITE": 2,
+      "INFRASTRUCTURE": 17,
+      "ZNRO": 2
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  },
+  {
+    "site": "tinggede",
+    "delivery_gpkg": "/tmp/cad2gis_out/tinggede/delivery.gpkg",
+    "counts": {
+      "SITE": 1,
+      "BOITE": 22,
+      "PTECH": 51,
+      "IMB": 337,
+      "INFRASTRUCTURE": 16,
+      "CABLE": 65,
+      "ZPM": 22,
+      "ZNRO": 1
+    },
+    "source_profile_expectations": {
+      "BOITE": 22,
+      "CABLE": 16,
+      "IMB": 337,
+      "PTECH": 51,
+      "SITE": 1,
+      "ZPM": 22,
+      "INFRASTRUCTURE": 16,
+      "ZNRO": 1
+    },
+    "non_cable_census_ok": true,
+    "cable_note": "profile CABLE = semantic cable-route count (equals INFRASTRUCTURE layer); GPKG CABLE layer contains materialized per-segment cable geometry"
+  }
+]

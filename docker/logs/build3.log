@@ -1,0 +1,112 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.81kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#2 DONE 0.7s
+
+#3 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#3 resolve docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e 0.0s done
+#3 CACHED
+
+#4 [context raw] load .dockerignore
+#4 transferring raw: 2B done
+#4 DONE 0.0s
+
+#5 [context libredwg] load .dockerignore
+#5 transferring libredwg: 369B done
+#5 DONE 0.0s
+
+#6 [context baselines] load .dockerignore
+#6 transferring baselines: 2B done
+#6 DONE 0.0s
+
+#7 [context src] load .dockerignore
+#7 transferring src: 2B done
+#7 DONE 0.0s
+
+#8 [internal] load metadata for docker.io/mambaorg/micromamba:2.0.5
+#8 DONE 0.8s
+
+#9 [internal] load .dockerignore
+#9 transferring context: 2B done
+#9 DONE 0.0s
+
+#10 [gis  1/15] FROM docker.io/mambaorg/micromamba:2.0.5@sha256:8d0d4cad074afe3ac93b58dce88bd2659153d3fa6de3a6968f501710e8d3c832
+#10 resolve docker.io/mambaorg/micromamba:2.0.5@sha256:8d0d4cad074afe3ac93b58dce88bd2659153d3fa6de3a6968f501710e8d3c832 0.0s done
+#10 DONE 0.0s
+
+#11 [context raw] load from client
+#11 transferring raw: 612B done
+#11 DONE 0.0s
+
+#12 [context baselines] load from client
+#12 transferring baselines: 5.06kB done
+#12 DONE 0.0s
+
+#13 [internal] load build context
+#13 transferring context: 163B done
+#13 DONE 0.0s
+
+#14 [context src] load from client
+#14 transferring src: 10.23kB done
+#14 DONE 0.0s
+
+#15 [context libredwg] load from client
+#15 transferring libredwg: 61.04kB 0.0s done
+#15 DONE 0.0s
+
+#16 [gis  3/15] RUN micromamba create -y -n cad2gis -f /app/env/environment.yml     && micromamba clean -ay
+#16 CACHED
+
+#17 [gis  7/15] RUN export PATH=/opt/mamba/envs/cad2gis/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin     && autoreconf -fi     && ./configure --prefix=/usr/local --enable-python     && make -j"$(nproc)"     && make install     && ldconfig     && printf '%s\n' /usr/local/lib/python3.12/site-packages        > /opt/mamba/envs/cad2gis/lib/python3.12/site-packages/libredwg.pth
+#17 CACHED
+
+#18 [gis  8/15] COPY pyproject.toml /app/pyproject.toml
+#18 CACHED
+
+#19 [gis 12/15] COPY --from=raw / /app/raw/
+#19 CACHED
+
+#20 [gis  4/15] RUN apt-get update && apt-get install -y --no-install-recommends         autoconf automake libtool gcc g++ make swig python3-dev pkg-config texinfo     && rm -rf /var/lib/apt/lists/*
+#20 CACHED
+
+#21 [gis  6/15] WORKDIR /usr/src/libredwg
+#21 CACHED
+
+#22 [gis  9/15] COPY --from=src / /app/src/
+#22 CACHED
+
+#23 [gis 11/15] COPY --from=baselines / /app/baselines/
+#23 CACHED
+
+#24 [gis  2/15] COPY env/environment.yml /app/env/environment.yml
+#24 CACHED
+
+#25 [gis  5/15] COPY --from=libredwg / /usr/src/libredwg/
+#25 CACHED
+
+#26 [gis 10/15] RUN /opt/mamba/envs/cad2gis/bin/pip install pillow     && /opt/mamba/envs/cad2gis/bin/pip install /app     && /opt/mamba/envs/cad2gis/bin/python -c "import LibreDWG, PIL; print('LibreDWG OK; Pillow', PIL.__version__)"
+#26 CACHED
+
+#27 [gis 13/15] COPY scripts/run_all.sh /usr/local/bin/run_all.sh
+#27 CACHED
+
+#28 [gis 14/15] RUN chmod 0755 /usr/local/bin/run_all.sh
+#28 DONE 0.2s
+
+#29 [gis 15/15] WORKDIR /app
+#29 DONE 0.0s
+
+#30 exporting to image
+#30 exporting layers 0.1s done
+#30 exporting manifest sha256:818db79e1ccadc6132e749a7ae6da52326af8996d3f6adcf814b8ff177f2d4c8 0.0s done
+#30 exporting config sha256:f2974b6fb20a6d7bd9094ce73609d85bbad7beaf96c4bcadbc98867abbde5084 0.0s done
+#30 exporting attestation manifest sha256:2306ee82aac5cd08c668fcb314decf204290cc46546b78faf0ca211f76ba91b1 0.0s done
+#30 exporting manifest list sha256:7d15d6b8b4aaec1bc60825070e4cb3a7ba72a651157dc149938ee321a25e4b51 0.0s done
+#30 naming to docker.io/library/cad2gis-ftth:0.1.0 done
+#30 unpacking to docker.io/library/cad2gis-ftth:0.1.0
+#30 unpacking to docker.io/library/cad2gis-ftth:0.1.0 0.0s done
+#30 DONE 0.3s

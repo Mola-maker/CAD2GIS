@@ -1,0 +1,478 @@
+===== hutabohu =====
+{
+  "conversion_allowed": true,
+  "inventory_sha256": "03da0cb622d78d7bcacc2a5f8a0a6895baea9eb090e3d00c6282657acb2c7139",
+  "next_actions": [],
+  "project_id": "source-557e01413c39",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
+  "status": "reviewed_ready",
+  "unit_crs_contract": {
+    "coordinate_mode": "direct_crs",
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "provenance": {
+      "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+      "local_registration": null,
+      "source_coordinate_scale": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+      "source_crs": "PROJECT_PROFILE:reviewed",
+      "target_crs": "PROJECT_PROFILE:reviewed"
+    },
+    "schema_version": "cad2gis.unit-crs-contract.v1",
+    "source_coordinate_scale_origin": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0,
+    "source_crs": "EPSG:3857",
+    "source_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    },
+    "source_crs_kind": "projected",
+    "source_geometry_unit": {
+      "insunits": 6,
+      "metres_per_unit": 1.0,
+      "name": "metre",
+      "symbol": "m"
+    },
+    "source_to_crs_axis_factor": 1.0,
+    "status": "reviewed",
+    "target_crs": "EPSG:3857",
+    "target_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    }
+  },
+  "unsupported_record_count": 1527,
+  "valid": true
+}
+exit=0
+===== lamteh_main =====
+{
+  "conversion_allowed": true,
+  "coordinate_domain": {
+    "failures": [
+      "Declared EPSG:3857 but coordinate magnitude is below 100000 units — local engineering coordinates detected; OSM anchor or GCP registration required before geographic delivery."
+    ],
+    "max_abs_coordinate": 24322.510439064466,
+    "minimum_inside_fraction": 0.95,
+    "observed_extent": {
+      "max_x": 24322.510439064466,
+      "max_y": 280.7772508468755,
+      "min_x": 1060.1946219895071,
+      "min_y": -9831.602118449955
+    },
+    "passed": false,
+    "point_count": 6481,
+    "schema_version": "cad2gis-coordinate-domain-v1",
+    "source_crs": "EPSG:3857",
+    "status": "LOCAL_OR_MISREGISTERED_COORDINATES"
+  },
+  "inventory_sha256": "7e7e14910d66e9ff6e49cb2110355d8955d6abe7f483cdc1ca85e4d31e7b1604",
+  "next_actions": [
+    "Drawing coordinates do not occupy the declared CRS domain.",
+    "Conversion proceeds with declared CRS — coordinates will be displaced.",
+    "Run cad2gis review to capture GCP pairs for absolute accuracy."
+  ],
+  "project_id": "source-d71ad87e6c0c",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78",
+  "status": "reviewed_ready_local_coordinates",
+  "valid": true
+}
+exit=0
+===== lamteh_sf =====
+{
+  "conversion_allowed": true,
+  "coordinate_domain": {
+    "failures": [
+      "Declared EPSG:3857 but coordinate magnitude is below 100000 units — local engineering coordinates detected; OSM anchor or GCP registration required before geographic delivery."
+    ],
+    "max_abs_coordinate": 24621.849112992375,
+    "minimum_inside_fraction": 0.95,
+    "observed_extent": {
+      "max_x": 24621.849112992375,
+      "max_y": 279.5676283502675,
+      "min_x": 1359.5332959174157,
+      "min_y": -10296.86035810694
+    },
+    "passed": false,
+    "point_count": 699,
+    "schema_version": "cad2gis-coordinate-domain-v1",
+    "source_crs": "EPSG:3857",
+    "status": "LOCAL_OR_MISREGISTERED_COORDINATES"
+  },
+  "inventory_sha256": "308883cc2c56d1ae3b7484019b531eab5e54cc191a42073ac9d3e6875c3aa2db",
+  "next_actions": [
+    "Drawing coordinates do not occupy the declared CRS domain.",
+    "Conversion proceeds with declared CRS — coordinates will be displaced.",
+    "Run cad2gis review to capture GCP pairs for absolute accuracy."
+  ],
+  "project_id": "source-5b0872935a07",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+  "status": "reviewed_ready_local_coordinates",
+  "valid": true
+}
+exit=0
+===== kletek =====
+{
+  "conversion_allowed": true,
+  "coordinate_domain": {
+    "failures": [
+      "Declared EPSG:3857 but coordinate magnitude is below 100000 units — local engineering coordinates detected; OSM anchor or GCP registration required before geographic delivery."
+    ],
+    "max_abs_coordinate": 317.6689423413027,
+    "minimum_inside_fraction": 0.95,
+    "observed_extent": {
+      "max_x": 274.88019829319086,
+      "max_y": 281.145644913968,
+      "min_x": -262.95095403325365,
+      "min_y": -317.6689423413027
+    },
+    "passed": false,
+    "point_count": 1254,
+    "schema_version": "cad2gis-coordinate-domain-v1",
+    "source_crs": "EPSG:3857",
+    "status": "LOCAL_OR_MISREGISTERED_COORDINATES"
+  },
+  "inventory_sha256": "257a1978eba963f3d5947c42963d26c69315d5fb4b93f2ca8f7a26af8696886d",
+  "next_actions": [
+    "Drawing coordinates do not occupy the declared CRS domain.",
+    "Conversion proceeds with declared CRS — coordinates will be displaced.",
+    "Run cad2gis review to capture GCP pairs for absolute accuracy."
+  ],
+  "project_id": "source-756f6e5bb4fe",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
+  "status": "reviewed_ready_local_coordinates",
+  "valid": true
+}
+exit=0
+===== semarang_sf =====
+{
+  "conversion_allowed": true,
+  "inventory_sha256": "40b9a04e97fea6a48f3268983c1ce8157d61fab5e13037d35924cb952fa8521d",
+  "next_actions": [],
+  "project_id": "source-a03aacdc2846",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
+  "status": "reviewed_ready",
+  "unit_crs_contract": {
+    "coordinate_mode": "direct_crs",
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "provenance": {
+      "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+      "local_registration": null,
+      "source_coordinate_scale": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+      "source_crs": "PROJECT_PROFILE:reviewed",
+      "target_crs": "PROJECT_PROFILE:reviewed"
+    },
+    "schema_version": "cad2gis.unit-crs-contract.v1",
+    "source_coordinate_scale_origin": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0,
+    "source_crs": "EPSG:3857",
+    "source_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    },
+    "source_crs_kind": "projected",
+    "source_geometry_unit": {
+      "insunits": 6,
+      "metres_per_unit": 1.0,
+      "name": "metre",
+      "symbol": "m"
+    },
+    "source_to_crs_axis_factor": 1.0,
+    "status": "reviewed",
+    "target_crs": "EPSG:3857",
+    "target_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    }
+  },
+  "unsupported_record_count": 217,
+  "valid": true
+}
+exit=0
+===== darat_sekip_sf =====
+{
+  "conversion_allowed": true,
+  "inventory_sha256": "768d4c8b6b0103db93c548a1c1639755afd2f954109a94f88d3ab7e2b9116c5c",
+  "next_actions": [],
+  "project_id": "source-524aa257bdbe",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "524aa257bdbe706a3175337e5722787c269c8ebe44dca4f5525c0092046c77a8",
+  "status": "reviewed_ready",
+  "unit_crs_contract": {
+    "coordinate_mode": "direct_crs",
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "provenance": {
+      "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+      "local_registration": null,
+      "source_coordinate_scale": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+      "source_crs": "PROJECT_PROFILE:reviewed",
+      "target_crs": "PROJECT_PROFILE:reviewed"
+    },
+    "schema_version": "cad2gis.unit-crs-contract.v1",
+    "source_coordinate_scale_origin": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0,
+    "source_crs": "EPSG:3857",
+    "source_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    },
+    "source_crs_kind": "projected",
+    "source_geometry_unit": {
+      "insunits": 1,
+      "metres_per_unit": 0.0254,
+      "name": "inch",
+      "symbol": "in"
+    },
+    "source_to_crs_axis_factor": 1.0,
+    "status": "reviewed",
+    "target_crs": "EPSG:3857",
+    "target_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    }
+  },
+  "unsupported_record_count": 640,
+  "valid": true
+}
+exit=0
+===== manado-tomohon_uplink =====
+{
+  "conversion_allowed": true,
+  "inventory_sha256": "2d17d3efe990c42e2f0e5135646e595b5006525936e5265cd6e2726ffd168721",
+  "next_actions": [],
+  "project_id": "source-100a90e5f833",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "100a90e5f8332e333ffc6a8a7c1ef51a719707836a5e836140115200b6048977",
+  "status": "reviewed_ready",
+  "unit_crs_contract": {
+    "coordinate_mode": "direct_crs",
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "provenance": {
+      "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+      "local_registration": null,
+      "source_coordinate_scale": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+      "source_crs": "PROJECT_PROFILE:reviewed",
+      "target_crs": "PROJECT_PROFILE:reviewed"
+    },
+    "schema_version": "cad2gis.unit-crs-contract.v1",
+    "source_coordinate_scale_origin": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0,
+    "source_crs": "EPSG:3857",
+    "source_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    },
+    "source_crs_kind": "projected",
+    "source_geometry_unit": {
+      "insunits": 6,
+      "metres_per_unit": 1.0,
+      "name": "metre",
+      "symbol": "m"
+    },
+    "source_to_crs_axis_factor": 1.0,
+    "status": "reviewed",
+    "target_crs": "EPSG:3857",
+    "target_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    }
+  },
+  "unsupported_record_count": 676,
+  "valid": true
+}
+exit=0
+===== taipa =====
+{
+  "conversion_allowed": true,
+  "inventory_sha256": "8308164a4135c537970a9c2bdc870798d8e30f28e648ce2233882634a886cd4c",
+  "next_actions": [],
+  "project_id": "source-57cc7756b55a",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "57cc7756b55aa10b6d18a7986b9c55cf0e7796a451e9e220c7d8ef4856e40614",
+  "status": "reviewed_ready",
+  "unit_crs_contract": {
+    "coordinate_mode": "direct_crs",
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "provenance": {
+      "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+      "local_registration": null,
+      "source_coordinate_scale": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+      "source_crs": "PROJECT_PROFILE:reviewed",
+      "target_crs": "PROJECT_PROFILE:reviewed"
+    },
+    "schema_version": "cad2gis.unit-crs-contract.v1",
+    "source_coordinate_scale_origin": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0,
+    "source_crs": "EPSG:3857",
+    "source_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    },
+    "source_crs_kind": "projected",
+    "source_geometry_unit": {
+      "insunits": 4,
+      "metres_per_unit": 0.001,
+      "name": "millimetre",
+      "symbol": "mm"
+    },
+    "source_to_crs_axis_factor": 1.0,
+    "status": "reviewed",
+    "target_crs": "EPSG:3857",
+    "target_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    }
+  },
+  "unsupported_record_count": 423,
+  "valid": true
+}
+exit=0
+===== tinggar =====
+{
+  "conversion_allowed": true,
+  "inventory_sha256": "5ce1a12e48fc970e0bb0775d515fe72a7af3f96f8022c1ac3204ee4f0dee61cf",
+  "next_actions": [],
+  "project_id": "source-d4ebc3bbae4d",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "d4ebc3bbae4da60a1f367da6301e9ac0945607eb7c972b546ac0af9f4323b74f",
+  "status": "reviewed_ready",
+  "unit_crs_contract": {
+    "coordinate_mode": "direct_crs",
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "provenance": {
+      "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+      "local_registration": null,
+      "source_coordinate_scale": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+      "source_crs": "PROJECT_PROFILE:reviewed",
+      "target_crs": "PROJECT_PROFILE:reviewed"
+    },
+    "schema_version": "cad2gis.unit-crs-contract.v1",
+    "source_coordinate_scale_origin": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0,
+    "source_crs": "EPSG:3857",
+    "source_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    },
+    "source_crs_kind": "projected",
+    "source_geometry_unit": {
+      "insunits": 6,
+      "metres_per_unit": 1.0,
+      "name": "metre",
+      "symbol": "m"
+    },
+    "source_to_crs_axis_factor": 1.0,
+    "status": "reviewed",
+    "target_crs": "EPSG:3857",
+    "target_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    }
+  },
+  "unsupported_record_count": 2123,
+  "valid": true
+}
+exit=0
+===== tinggede =====
+{
+  "conversion_allowed": true,
+  "inventory_sha256": "928b98469cbc48062e623471078edf1468bb3a81d0bd49043fbb9c9496114703",
+  "next_actions": [],
+  "project_id": "source-f71526ec36d5",
+  "review": {
+    "mapping_registry": "auto_accepted",
+    "source_profile": "auto_accepted"
+  },
+  "schema_version": "cad2gis-project-validation-result-v1",
+  "source_sha256": "f71526ec36d503d07f883d22fdadaa9c3ccdc30be804402df4c533309f664a5b",
+  "status": "reviewed_ready",
+  "unit_crs_contract": {
+    "coordinate_mode": "direct_crs",
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "provenance": {
+      "dwg_insunits": "DWG_DIRECT:$INSUNITS",
+      "local_registration": null,
+      "source_coordinate_scale": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+      "source_crs": "PROJECT_PROFILE:reviewed",
+      "target_crs": "PROJECT_PROFILE:reviewed"
+    },
+    "schema_version": "cad2gis.unit-crs-contract.v1",
+    "source_coordinate_scale_origin": "PROJECT_PROFILE:reviewed-source-coordinate-scale",
+    "source_coordinate_scale_reviewed": true,
+    "source_coordinate_scale_to_m": 1.0,
+    "source_crs": "EPSG:3857",
+    "source_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    },
+    "source_crs_kind": "projected",
+    "source_geometry_unit": {
+      "insunits": 0,
+      "metres_per_unit": 1.0,
+      "name": "unitless",
+      "symbol": ""
+    },
+    "source_to_crs_axis_factor": 1.0,
+    "status": "reviewed",
+    "target_crs": "EPSG:3857",
+    "target_crs_axis_unit": {
+      "metres_per_unit": 1.0,
+      "name": "metre"
+    }
+  },
+  "unsupported_record_count": 381,
+  "valid": true
+}
+exit=0
