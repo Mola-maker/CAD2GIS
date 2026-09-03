@@ -1,0 +1,68 @@
+{
+  "schema_version": "cad2gis.doctor.v1",
+  "status": "ready",
+  "conversion_ready": true,
+  "capabilities": {
+    "cli": true,
+    "configured_conversion": true,
+    "dwg_ingest": true
+  },
+  "deep_import_check": true,
+  "backend_contract": {
+    "package": "cad2gis.cad2gis_v3",
+    "environment_variable": "CAD2GIS_BACKEND_PATH",
+    "supported_modes": [
+      "installed_package",
+      "external_path",
+      "editable_checkout"
+    ],
+    "selected_mode": "installed_package",
+    "location": "/opt/mamba/envs/cad2gis/lib/python3.12/site-packages/cad2gis/cad2gis_v3/__init__.py",
+    "external_path_requirement": "directory containing cad2gis_v3 plus sibling reader modules",
+    "wheel_bundles_backend": true
+  },
+  "checks": [
+    {
+      "name": "python",
+      "status": "ok",
+      "detail": "3.12.14 (pinned GIS runtime is Python 3.12)",
+      "required_for_conversion": true,
+      "remediation": null
+    },
+    {
+      "name": "backend",
+      "status": "ok",
+      "detail": "installed_package: /opt/mamba/envs/cad2gis/lib/python3.12/site-packages/cad2gis/cad2gis_v3/__init__.py",
+      "required_for_conversion": true,
+      "remediation": null
+    },
+    {
+      "name": "backend_import",
+      "status": "ok",
+      "detail": "cad2gis.cad2gis_v3.pipeline imports successfully",
+      "required_for_conversion": true,
+      "remediation": null
+    },
+    {
+      "name": "osgeo",
+      "status": "ok",
+      "detail": "GDAL/OGR Python bindings imports successfully (3.10.3)",
+      "required_for_conversion": true,
+      "remediation": null
+    },
+    {
+      "name": "pyproj",
+      "status": "ok",
+      "detail": "PROJ Python bindings imports successfully (3.7.2)",
+      "required_for_conversion": true,
+      "remediation": null
+    },
+    {
+      "name": "ezdxf",
+      "status": "ok",
+      "detail": "ezdxf imports successfully (1.4.2)",
+      "required_for_conversion": true,
+      "remediation": null
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+name: cad2gis
+channels:
+  - conda-forge
+dependencies:
+  # The supported GIS runtime.  System Python (in particular 3.14) is not the
+  # target for the GDAL/QGIS stack.
+  - python=3.12.*
+  - pip=25.1.*
+  - setuptools=80.9.*
+  - wheel=0.45.*
+  - gdal=3.10.*
+  - pyproj=3.7.*
+  - ezdxf=1.4.*
+  - shapely=2.1.*
+  - pytest=9.0.*
+  - ruff=0.12.*
+  - basedpyright=1.29.*

@@ -456,3 +456,31 @@
 - **Pages:** session-log-2026-08-24-acf4b893.md
 - **Summary:** Auto-captured session log for d14ea146-4ad2-4caa-850b-d7adacf4b893
 
+## [2026-08-31T15:42:33.083Z] ingest
+- **Pages:** session-log-2026-08-31-0edea889.md
+- **Summary:** Auto-captured session log for 3d68e7f5-531d-452d-8ec0-76e50edea889
+
+## [2026-09-01T16:23:52.387Z] ingest
+- **Pages:** session-log-2026-09-01-83879cf1.md
+- **Summary:** Auto-captured session log for cce3d7bb-5424-482a-8de4-a63283879cf1
+
+## [2026-09-01T16:38:42.489Z] ingest
+- **Pages:** session-log-2026-09-01-0edea889.md
+- **Summary:** Auto-captured session log for 3d68e7f5-531d-452d-8ec0-76e50edea889
+
+## [2026-09-02T04:31:25.971Z] ingest
+- **Pages:** session-log-2026-09-02-7e46d450.md
+- **Summary:** Auto-captured session log for 119f7de2-4d93-4866-af9c-61d57e46d450
+
+## [2026-09-02T15:13:57.552Z] ingest
+- **Pages:** session-log-2026-09-02-0edea889.md
+- **Summary:** Auto-captured session log for 3d68e7f5-531d-452d-8ec0-76e50edea889
+
+## [2026-09-03T12:55:00.643Z] ingest
+- **Pages:** session-log-2026-09-03-a641b3ec.md
+- **Summary:** Auto-captured session log for a42ab3c4-6d28-4c0f-9996-6ec0a641b3ec
+
+## [2026-09-03T14:07:23.498Z] ingest
+- **Pages:** session-log-2026-09-03-0edea889.md
+- **Summary:** Auto-captured session log for 3d68e7f5-531d-452d-8ec0-76e50edea889
+
