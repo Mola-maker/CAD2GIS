@@ -5,7 +5,12 @@
 
   const FIXTURE_KIND = "CAD2GIS_DERIVED_FIXTURE";
   const PUBLICATION_BOUNDARY = "公开页面仅含真实转换的筛选派生证据，不包含任何 DWG/GPKG 原始文件";
-  const baseUrl = new URL(document.currentScript?.src || location.href);
+  const pageConfig = JSON.parse(document.getElementById("cad2gis-page-config")?.textContent || "{}");
+  // The standalone public page shares this script but keeps its own catalog.
+  const baseUrl = pageConfig.fixtureBaseUrl
+    ? new URL(pageConfig.fixtureBaseUrl, location.href)
+    : new URL(document.currentScript?.src || location.href);
+  const fixtureCacheVersion = pageConfig.fixtureCacheVersion || "runtime-fix-20260901";
   const catalogUrl = new URL("./demo-catalog.json?v=multi-demo-20260829", baseUrl);
   const requestedProject = new URLSearchParams(location.search).get("project");
   const reviewByProject = new Map();
@@ -33,7 +38,7 @@
   const loadFixture = async () => {
     if (!fixturePromise) {
       fixturePromise = resolveProject().then(async (project) => {
-        const fixtureUrl = new URL(`./${project.fixture}?v=runtime-fix-20260901`, baseUrl);
+        const fixtureUrl = new URL(`./${project.fixture}?v=${fixtureCacheVersion}`, baseUrl);
         const response = await fetch(fixtureUrl);
         if (!response.ok) throw new Error(`无法加载 ${project.display_name} 派生数据：${response.status}`);
         return response.json();

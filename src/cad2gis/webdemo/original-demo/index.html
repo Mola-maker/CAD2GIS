@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f8f7">
   <title>CAD2GIS — 可验证的 GIS 交付</title>
+  <script id="cad2gis-page-config" type="application/json">
+    {"worldCenterLonLat":[112.7,-7.45],"worldZoom":5,"localExtentControl":true,"worldExtentControl":[12541000,-824000,12547000,-818000],"fixtureBaseUrl":"./assets/","fixtureCacheVersion":"multi-demo-20260829"}
+  </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
-  <link rel="preload" href="./assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="./assets/noto-sans-sc-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="./assets/smiley-sans-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/noto-sans-sc-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/smiley-sans-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./assets/styles.css?v=font-system-20260829">
 </head>
 <body>
@@ -35,7 +38,7 @@
       </div>
       <div class="hero-visual" data-parallax="0.12">
         <div class="hero-visual-meta"><span>DERIVED RUN / HUTABOHU</span><span>01—05</span></div>
-        <img src="./assets/hero-evidence-graph.svg" alt="从源事实到 GIS 交付的证据链示意图">
+        <img src="../assets/hero-evidence-graph.svg" alt="从源事实到 GIS 交付的证据链示意图">
         <div class="hero-visual-readout"><span>GRAPH STATUS</span><strong>14,702 <small>nodes</small></strong><span>20,074 relationships / replayable</span></div>
       </div>
     </div>
@@ -69,7 +72,7 @@
     </section>
 
     <section id="validation-tunnel" class="validation-tunnel" aria-labelledby="tunnel-title">
-      <img class="tunnel-art" src="./assets/hero-tunnel.svg" alt="四条独立校验轨道的径向示意图">
+      <img class="tunnel-art" src="../assets/hero-tunnel.svg" alt="四条独立校验轨道的径向示意图">
       <div class="tunnel-copy"><p class="hero-overline"><span>05</span> INDEPENDENT CLAIMS</p><h3 id="tunnel-title">几何正确，<br><em>不等于坐标准确。</em></h3><p>我们不会把一个绿色的总分当成全部答案。源几何、拓扑、长度和坐标精度各自拥有证据，各自拥有失败方式。</p><div class="validation-tracks"><span>01 / SOURCE GEOMETRY</span><span>02 / TOPOLOGY</span><span>03 / LENGTH</span><span>04 / COORDINATE ACCURACY</span></div></div>
     </section>
 
@@ -279,7 +282,7 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
     </section>
 
     <section class="hero-final hero-section-width" aria-labelledby="final-title">
-      <img class="hero-stickers" src="./assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
+      <img class="hero-stickers" src="../assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
       <div class="hero-final-copy"><p class="hero-overline"><span>09</span> OPEN THE RUN</p><h3 id="final-title">把十张图，<br>变成十条可追溯的链。</h3><p>工作台现已加载 10 份来自 <code>run/delivery.gpkg</code> 的真实派生运行，覆盖 Gorontalo、Aceh、Sidoarjo、Pontianak、Manado、Semarang、Palu 与 Serang。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">选择转换案例 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
       <div class="hero-final-footer"><span>CAD2GIS / v4 EVIDENCE-FIRST PIPELINE</span><span>EPSG:3857 NOMINAL DOMAIN · ABSOLUTE ACCURACY NOT VERIFIED</span></div>
     </section>
@@ -465,7 +468,7 @@ claude plugin install cad2gis-agent@cad2gis-tools</code></pre></div>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
-  <script src="./assets/demo-fixture.js?v=multi-demo-20260829"></script>
+  <script src="../demo-fixture.js?v=multi-demo-20260829"></script>
   <script type="module" src="./assets/hero-motion.js?v=font-system-20260829"></script>
   <script type="module" src="./assets/app.js?v=multi-demo-20260829"></script>
 </body>

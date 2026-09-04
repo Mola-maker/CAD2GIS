@@ -9,7 +9,7 @@ import math
 import pyproj
 from pyproj import Geod, Transformer
 
-from ..apd_rules import set_traditional_axis_order
+from ..coordinate_runtime import set_traditional_axis_order
 from ..native_runtime import ensure_osgeo_runtime
 from .units import (
     UnitCrsContract,

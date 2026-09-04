@@ -6,9 +6,9 @@ plane can start before optional conversion components are ready.
 
 Supported backend deployments are explicit:
 
-* an importable ``cad2gis_v3`` package installed in the active environment;
-* ``CAD2GIS_BACKEND_PATH`` pointing at a directory containing
-  ``cad2gis_v3/__init__.py`` and its sibling reader modules; or
+* the bundled, importable ``cad2gis.cad2gis_v3`` package;
+* ``CAD2GIS_BACKEND_PATH`` pointing at an import root containing
+  ``cad2gis/cad2gis_v3/__init__.py`` and ``cad2gis/reader``; or
 * the repository backend when this package is used from an editable checkout.
 
 A wheel installed elsewhere never searches the current working directory for
@@ -32,6 +32,7 @@ BACKEND_PATH_ENV = "CAD2GIS_BACKEND_PATH"
 BACKEND_PACKAGE = "cad2gis.cad2gis_v3"
 PROJECT_BACKEND_MODULES = (
     "cad2gis.cad2gis_v3.project_profile",
+    # Older separately deployed backends may still expose this module.
     "cad2gis.cad2gis_v3.profile_builder",
 )
 
@@ -59,9 +60,8 @@ def _editable_backend_root() -> Path | None:
     repository_root = src_dir.parent
     if src_dir.name != "src" or not (repository_root / "pyproject.toml").is_file():
         return None
-    candidate = repository_root / "src" / "cad2gis"
-    if (candidate / "cad2gis_v3" / "__init__.py").is_file():
-        return candidate.resolve()
+    if (package_dir / "cad2gis_v3" / "__init__.py").is_file():
+        return src_dir.resolve()
     return None
 
 
@@ -70,9 +70,7 @@ def _valid_backend_root(candidate: Path) -> Path | None:
         resolved = candidate.resolve()
     except OSError:
         return None
-    package_path = resolved
-    for part in BACKEND_PACKAGE.split("."):
-        package_path = package_path / part
+    package_path = _backend_package_path(resolved)
     if (package_path / "__init__.py").is_file():
         return resolved
     return None
@@ -168,9 +166,9 @@ def _prepare_backend_import() -> None:
     root = _backend_root_for_import()
     if root is None:
         raise BackendUnavailable(
-            "CAD2GIS v3 backend was not found. Install an importable cad2gis_v3 "
+            "CAD2GIS v3 backend was not found. Install cad2gis with its bundled backend "
             f"deployment or set {BACKEND_PATH_ENV} to the directory containing "
-            "cad2gis_v3 and its sibling reader modules; run `cad2gis doctor`."
+            "cad2gis/cad2gis_v3 and cad2gis/reader; run `cad2gis doctor`."
         )
     root_text = str(root)
     if root_text not in sys.path:
@@ -293,7 +291,7 @@ def backend_contract() -> Mapping[str, Any]:
         "selected_mode": deployment["mode"],
         "location": deployment["location"],
         "external_path_requirement": (
-            "directory containing cad2gis_v3 plus sibling reader modules"
+            "import root containing cad2gis/cad2gis_v3 and cad2gis/reader"
         ),
         "wheel_bundles_backend": True,
     }

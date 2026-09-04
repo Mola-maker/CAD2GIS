@@ -52,9 +52,13 @@ def source_entity_drawing_points(
 ) -> tuple[Point, ...]:
     """Return all finite immutable model-space source vertices.
 
-    Coverage is a property of the geospatial plan, not of the classified output
-    subset.  Paper/layout and block-definition coordinates are separate CAD
-    spaces, while model-space legends and title material are non-plan roles.
+    This public helper is retained for callers explicitly evaluating a source
+    plan domain. The conversion pipeline instead evaluates the classified
+    asset network within the current delivery partition; this helper is not
+    used to select that coverage domain.
+
+    Paper/layout and block-definition coordinates are separate CAD spaces,
+    while model-space legends and title material are non-plan roles.
     HATCH records are also excluded because the current reader exposes only a
     placement sentinel, not their boundary loops.  A contradictory layout
     classification or invalid plan coordinate is rejected rather than silently

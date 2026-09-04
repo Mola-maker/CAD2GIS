@@ -1,5 +1,9 @@
 """Coordinate-free semantic anchors for the offline review lane.
 
+This experimental framework is retained for callers that supply their own
+candidates. It is not integrated into the current CLI, MCP, or conversion
+pipeline, and it does not generate target candidates automatically.
+
 This module is intentionally a small, deterministic domain boundary.  It does
 not import the conversion pipeline, a GIS library, or a model provider.  Source
 facts and relation facts are reduced to a stable :class:`Anchor`; external

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "cad2gis"
 version = "0.3.0"
 description = "Deterministic CAD-to-GIS orchestration and verification CLI"
-readme = { text = "CAD2GIS provides a lightweight canonical API and CLI. The pinned GIS runtime and separately deployed cad2gis_v3 backend are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
+readme = { text = "CAD2GIS provides a lightweight canonical API and CLI with a bundled cad2gis.cad2gis_v3 backend. The GIS runtime and backend deployment are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
 requires-python = ">=3.11,<3.13"
 license = "LicenseRef-Proprietary"
 authors = [{ name = "CAD2GIS contributors" }]

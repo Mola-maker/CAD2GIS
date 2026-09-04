@@ -60,7 +60,21 @@ operation. See [LLM_AGENT_ARCHITECTURE.md](LLM_AGENT_ARCHITECTURE.md).
 - `reader/autocad.py`: maintained Windows adapter selected with
   `CAD2GIS_READER_BACKEND=autocad`.
 - `reader/contracts.py`: shared inventory and typed reader errors.
-- `reader/records_adapter.py`: replay of a source-bound immutable record bundle.
+- `reader/records_adapter.py`: review-bundle integrity and source-binding
+  validation only. Its historical `load_records` entrypoint reports that
+  source-record replay is not implemented; proposal-only curation bundles
+  cannot supply the geometry and identity required by conversion.
+
+The canonical AutoCAD adapter emits records only. Its historical GIS item
+conversion functions remain available through lazy compatibility wrappers;
+their implementation and drawing-specific APD rules live in `cad2gis.legacy`.
+The shared GDAL axis-order helper lives in `coordinate_runtime.py`, so the
+production coordinate path does not import those legacy semantic rules.
+
+`python -m cad2gis.cad2gis_v3.cli` remains a compatibility command. Its legacy
+flags are passed to `cad2gis convert`, sharing configuration validation,
+successful JSON result fields and structured errors. Public profile/ingest
+facades and the standalone offline curation CLI remain available.
 
 A reader succeeds only when inventory is complete, zero rows were silently
 skipped, every record is bound to the source hash, and required native facts

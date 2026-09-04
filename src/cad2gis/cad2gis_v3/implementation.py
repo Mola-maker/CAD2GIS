@@ -17,14 +17,14 @@ from typing import Any
 
 IMPLEMENTATION_SCHEMA_VERSION = "cad2gis-implementation-provenance-v1"
 PRODUCTION_CONVERSION_SCOPE = "production-conversion"
-PRODUCTION_CONVERSION_SCOPE_VERSION = 7
+PRODUCTION_CONVERSION_SCOPE_VERSION = 8
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
 # Paths are relative to src/cad2gis.  Keep this list explicit: adding
 # a runtime conversion dependency is an architectural decision and must update
 # the recorded scope, while optional review/provider modules remain outside it.
 PRODUCTION_CONVERSION_FILES = (
-    "apd_rules.py",
+    "coordinate_runtime.py",
     "native_runtime.py",
     "reader/autocad.py",
     "reader/contracts.py",

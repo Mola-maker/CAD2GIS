@@ -1,4 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
+const pageConfig = JSON.parse(document.getElementById("cad2gis-page-config")?.textContent || "{}");
 
 const terminalEvent = (level, message) => {
   const root = $("#terminal-log");
@@ -158,10 +159,14 @@ const localProjection = new ol.proj.Projection({
 // CAD drawings are small (a few hundred metres) and their points are only
 // separable at high magnification.  No zoom ceiling below the OpenLayers
 // maximum, and a one-click fit control to zoom back out to the full extent.
+const mapControls = (extent) => {
+  const controls = ol.control.defaults.defaults();
+  return extent ? controls.extend([new ol.control.ZoomToExtent({ extent })]) : controls;
+};
 const localMap = new ol.Map({
   target: "local-map",
   layers: [new ol.layer.Vector({ source: gcpLocalSource, style: gcpStyle, zIndex: 100 })],
-  controls: ol.control.defaults.defaults(),
+  controls: mapControls(pageConfig.localExtentControl ? localProjection.getExtent() : null),
   view: new ol.View({
     projection: localProjection, center: [0, 0], zoom: 2,
     maxZoom: 50, constrainResolution: false,
@@ -173,9 +178,10 @@ const worldMap = new ol.Map({
     new ol.layer.Tile({ source: new ol.source.OSM() }),
     new ol.layer.Vector({ source: gcpMapSource, style: gcpStyle, zIndex: 100 }),
   ],
-  controls: ol.control.defaults.defaults(),
+  controls: mapControls(pageConfig.worldExtentControl),
   view: new ol.View({
-    center: ol.proj.fromLonLat([0, 0]), zoom: 2,
+    center: ol.proj.fromLonLat(pageConfig.worldCenterLonLat || [0, 0]),
+    zoom: pageConfig.worldZoom ?? 2,
     maxZoom: 50, constrainResolution: false,
   }),
 });

@@ -1,51 +1,35 @@
-"""Source-bound records-bundle adapter for deterministic replay.
+"""Compatibility API for review-bundle integrity and source binding.
 
-The pipeline's canonical entry point is ``ingest(source_path, profile)`` which
-expects a real DWG path. For reader-independent verification, this adapter:
-
-1. accepts an explicit bundle path;
-2. verifies the bundle schema and source hash binding;
-3. materializes each canonical fact record as a ``SourceEntity``;
-4. feeds those immutable facts into the deterministic conversion stages.
-
-No project name, filename, entity count, layer, coordinate, or expected output
-is selected here. Source-specific expectations belong only in reviewed project
-profiles and test fixtures.
+Current curation bundles are proposal-only: they omit native coordinates and
+do not contain complete ``SourceEntity`` records. Integrity validation does
+not authorize conversion or establish replay readiness. ``load_records`` is
+retained as an explicitly unsupported entry point until a complete source
+record replay protocol exists. Conversion uses the canonical DWG entry point,
+``cad2gis.cad2gis_v3.ingest.ingest(source, profile)``.
 """
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from ..cad2gis_v3.config import SourceProfile
 from ..cad2gis_v3.model import SourceEntity
 
-_MAX_BUNDLE_BYTES = 256 * 1024 * 1024
-
-
-def _load_bundle(bundle_path: Path) -> dict:
-    if bundle_path.stat().st_size > _MAX_BUNDLE_BYTES:
-        raise ValueError(
-            f"records bundle exceeds maximum allowed size ({_MAX_BUNDLE_BYTES} bytes)"
-        )
-    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
-    if not isinstance(bundle, dict) or not isinstance(bundle.get("objects"), list):
-        raise ValueError("invalid records bundle schema")
-    return bundle
-
-
 def load_records(bundle_path: Path) -> list[SourceEntity]:
-    """Materialise a records bundle into SourceEntity list."""
-    bundle = _load_bundle(bundle_path)
-    return [
-        SourceEntity.from_record(obj["facts"])
-        for obj in bundle["objects"]
-    ]
+    """Retain the legacy signature without materializing incomplete facts."""
+    raise NotImplementedError(
+        "Record-bundle replay is not implemented. Current review bundles are "
+        "proposal-only and cannot be materialized as SourceEntity records. "
+        "Use cad2gis.cad2gis_v3.ingest.ingest(source, profile) with the "
+        "original DWG for canonical conversion."
+    )
 
 
 def validate_bundle_facts(bundle_path: Path, profile: SourceProfile) -> dict:
-    """Verify bundle schema invariants + profile binding."""
+    """Verify review-bundle integrity and profile binding, not replay readiness.
+
+    A successful result still has ``conversion_import_allowed=False``.
+    """
     from ..cad2gis_v3.curation import load_review_bundle
 
     review_bundle = load_review_bundle(bundle_path)
@@ -67,4 +51,5 @@ def validate_bundle_facts(bundle_path: Path, profile: SourceProfile) -> dict:
         "schema_version": bundle["schema_version"],
         "bundle_sha256": review_bundle.bundle_sha256,
         "source_sha256": review_bundle.source_sha256,
+        "conversion_import_allowed": False,
     }

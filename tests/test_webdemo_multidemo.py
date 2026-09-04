@@ -91,8 +91,6 @@ def test_map_previews_stay_near_their_declared_real_locations() -> None:
     assert "nominalTransform.tx" in app
     assert "clearProjectState" in app
     assert "window.CAD2GIS_DEMO.selectProject" in app
-    assert "ZoomToExtent" not in app
-    assert "ol.proj.fromLonLat([0, 0]), zoom: 2" in app
     assert "12541000" not in app
 
 
@@ -106,7 +104,7 @@ def test_demo_selector_and_typography_assets_are_self_hosted() -> None:
     assert "app.js?v=live-geodata-declutter-20260901" in page
     assert "demo-fixture.js?v=runtime-fix-20260901" in page
     assert "demo-catalog.json" in fixture_script
-    assert "?v=runtime-fix-20260901" in fixture_script
+    assert '"runtime-fix-20260901"' in fixture_script
     assert "history.replaceState" in fixture_script
     assert "reviewByProject" in fixture_script
 
