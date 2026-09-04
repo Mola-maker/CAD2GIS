@@ -173,11 +173,6 @@ def _partition_features(
     return main_features, by_region
 
 
-def _implementation_digest():
-    """Compatibility wrapper for callers of the former scalar-only helper."""
-    return production_conversion_provenance()["sha256"]
-
-
 # Domain vocabulary: APD = As Plan Drawing (construction-industry plan
 # drawings, as-planned not as-built), SF = Subfeeder (network distribution
 # leg).  ``ftth_apd`` selects the FTTH As-Plan-Drawing conversion domain.

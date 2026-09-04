@@ -27,6 +27,7 @@ demo/output/
 # Temp
 *.tmp
 *.bak
+/baselines/*/config/*.bak.*
 /temp/
 /.firecrawl/
 

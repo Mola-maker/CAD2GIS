@@ -82,36 +82,6 @@ def _polyline_nearest_distance(
     )
 
 
-def _convex_hull(points: Sequence[Sequence[float]]) -> list[tuple[float, float]]:
-    """Andrew monotone-chain convex hull; returns CCW vertices."""
-    unique = sorted({(float(p[0]), float(p[1])) for p in points})
-    if len(unique) <= 2:
-        return unique
-
-    def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
-    lower = []
-    for point in unique:
-        while len(lower) >= 2 and cross(lower[-2], lower[-1], point) <= 0:
-            lower.pop()
-        lower.append(point)
-    upper = []
-    for point in reversed(unique):
-        while len(upper) >= 2 and cross(upper[-2], upper[-1], point) <= 0:
-            upper.pop()
-        upper.append(point)
-    return lower[:-1] + upper[:-1]
-
-
-def _polygon_area_signed(points: Sequence[Sequence[float]]) -> float:
-    """Twice the signed shoelace area (positive for CCW ordering)."""
-    total = 0.0
-    for left, right in zip(points, points[1:]):
-        total += float(left[0]) * float(right[1]) - float(right[0]) * float(left[1])
-    return total
-
-
 def _is_red_boundary(entity: SourceEntity) -> bool:
     """A ZNRO boundary candidate must render red in the source drawing."""
     true_color = str(getattr(entity.style, "true_color", "") or "").strip().upper().lstrip("#")
