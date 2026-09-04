@@ -199,26 +199,6 @@ def annotation_pattern_specificity(pattern: str) -> int:
     return len(_literal_tokens(pattern))
 
 
-def _separator_normalized(pattern: str) -> str:
-    """Map separator variants to a canonical dot so they compare equal."""
-    normalized = re.sub(r"[^A-Za-z0-9\\A-Za-z\\d]", ".", pattern)
-    normalized = re.sub(r"\\.", ".", normalized)
-    return normalized
-
-
-def _field_tokens(pattern: str) -> list[str]:
-    """Extract the field-level tokens a pattern actually asserts."""
-    normalized = _separator_normalized(pattern)
-    fields: list[str] = []
-    for field in normalized.split("."):
-        if not field:
-            continue
-        if field == "*" or field == "+":
-            continue
-        fields.append(field)
-    return fields
-
-
 def _fullmatch(pattern: str, text: str) -> bool:
     try:
         return re.compile(pattern).fullmatch(text) is not None

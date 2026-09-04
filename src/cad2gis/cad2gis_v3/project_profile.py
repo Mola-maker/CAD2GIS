@@ -752,19 +752,6 @@ def _model_space_entities(
     return entities
 
 
-def _patch_source_profile_local(profile_path: Path) -> None:
-    """Set a source profile to local-engineering-coordinate mode in place."""
-    data = _read_json(profile_path)
-    crs = data.setdefault("crs", {})
-    crs["source_crs"] = None
-    crs["local_registration_strategy"] = "gcp_required"
-    crs["local_registration_reviewed"] = False
-    data["review"] = data.get("review", {})
-    data["review"]["status"] = "draft"
-    with open(profile_path, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2, ensure_ascii=False)
-
-
 def validate_project(*, project_dir: str | Path) -> dict[str, Any]:
     """Validate a pack without changing review state or authorizing facts."""
 

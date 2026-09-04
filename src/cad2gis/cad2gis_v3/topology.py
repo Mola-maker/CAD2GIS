@@ -107,11 +107,6 @@ class _NearestFeatureIndex:
         return ranked[0][2], ranked[0][0], "unique"
 
 
-def _nearest_unique(point, features, tolerance):
-    """Compatibility wrapper for callers and focused unit tests."""
-    return _NearestFeatureIndex(features).nearest_unique(point, tolerance)
-
-
 def _project_to_segment(point, start, end):
     dx, dy = end[0] - start[0], end[1] - start[1]
     squared = dx * dx + dy * dy

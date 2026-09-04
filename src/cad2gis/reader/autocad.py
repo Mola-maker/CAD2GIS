@@ -15,7 +15,6 @@ import shutil
 import subprocess
 import tempfile
 import time
-import uuid
 from pathlib import Path
 
 from cad2gis.apd_rules import is_telecom_block, link_apd_annotations
@@ -2133,56 +2132,6 @@ def _iter_com_collection(collection):
         yield _retry_com(lambda index=index: collection.Item(index))
 
 
-def _select_model_collections(document, assign_fc):
-    """Use AutoCAD's native selection engine to avoid scanning every object."""
-    import pythoncom
-    import win32com.client
-
-    selection_sets = _safe_get(document, "SelectionSets")
-    layers = _safe_get(document, "Layers")
-    if selection_sets is None or layers is None:
-        return []
-    relevant_layers = []
-    for layer in _iter_com_collection(layers):
-        layer_name = str(_safe_get(layer, "Name", ""))
-        fc_name, _, _, _ = assign_fc(layer_name, "")
-        if fc_name != "fc_misc":
-            relevant_layers.append(layer_name)
-
-    selected = []
-    specifications = [(
-        "TEXT,MTEXT,ATTRIB,ATTDEF,INSERT,MULTILEADER,MLEADER,TABLE,DIMENSION",
-        None,
-    )]
-    if relevant_layers:
-        specifications.append(("LINE,LWPOLYLINE,POLYLINE,CIRCLE,ARC,POINT", ",".join(relevant_layers)))
-    try:
-        for entity_types, layer_names in specifications:
-            name = f"CAD2GIS_{uuid.uuid4().hex[:12]}"
-            selection = _retry_com(lambda name=name: selection_sets.Add(name))
-            filter_types = [0]
-            filter_values = [entity_types]
-            if layer_names:
-                filter_types.append(8)
-                filter_values.append(layer_names)
-            type_variant = win32com.client.VARIANT(
-                pythoncom.VT_ARRAY | pythoncom.VT_I2, filter_types
-            )
-            data_variant = win32com.client.VARIANT(
-                pythoncom.VT_ARRAY | pythoncom.VT_VARIANT, filter_values
-            )
-            _retry_com(lambda: selection.Select(5, None, None, type_variant, data_variant))
-            selected.append(selection)
-        return selected
-    except Exception:
-        for selection in selected:
-            try:
-                _retry_com(selection.Delete)
-            except Exception:
-                pass
-        return []
-
-
 def _xy(value):
     try:
         return float(value[0]), float(value[1])
@@ -2568,10 +2517,6 @@ def _entity_text_facts(entity, object_name):
     return _plain_text(raw), raw, source
 
 
-def _entity_text(entity, object_name):
-    return _entity_text_facts(entity, object_name)[0]
-
-
 def _block_attribute_facts(entity):
     result = {}
     unsupported = []
@@ -2592,10 +2537,6 @@ def _block_attribute_facts(entity):
             if tag:
                 result[tag] = value
     return result, unsupported
-
-
-def _block_attributes(entity):
-    return _block_attribute_facts(entity)[0]
 
 
 def _dynamic_block_facts(entity):
