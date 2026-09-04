@@ -1,18 +1,13 @@
 """Deterministic ZNRO parent-zone geometry for reviewed FTTH APD drawings.
 
-ZNRO is the parent service zone of the delivered ZPM polygons.  The drawing's
-ZPM polygons are separate small parcels with narrow gaps between them; the
-reviewed ZNRO is the single polygon that spans all of them and fills those
-narrow gaps without swallowing the large empty regions a convex hull would
-swallow.
+The conversion pipeline uses ``conservative_znro_polygons`` for its
+ZPM-derived fallback: it preserves isolated parcels and fills narrow gaps
+within nearby groups, without bridging independent groups. Explicit source
+boundaries are handled separately by the semantic stage.
 
-The implementation uses the alpha-shape of the ZPM vertices: Delaunay
-triangles whose circumradius fits inside ``alpha`` are kept.  ``alpha`` starts
-at half of the longest minimum-spanning-tree edge between ZPM polygon
-centroids (the minimum radius that can bridge the widest inter-polygon gap)
-and grows by fixed steps until the kept triangles form one simple polygon
-that covers every ZPM polygon.  All interior holes are then filled, so the
-result is one maximum-spanning simple polygon.
+``alpha_shape_union`` is retained as a reference algorithm and callable API.
+It uses Delaunay triangles and an increasing circumradius threshold to span
+all input parcels with one polygon. It is not the current conversion policy.
 """
 from __future__ import annotations
 
@@ -194,7 +189,10 @@ def alpha_shape_union(
     *,
     gap_fill_multiplier: float = 1.2,
 ) -> Polygon:
-    """Return one simple polygon spanning all ZPM polygons with gaps filled.
+    """Reference algorithm spanning all ZPM polygons with gaps filled.
+
+    Retained for explicit callers and algorithm comparisons; conversion uses
+    ``conservative_znro_polygons`` instead.
 
     ``gap_fill_multiplier`` scales the bridging radius computed from the
     longest MST edge; values above 1.0 make the result slightly more generous

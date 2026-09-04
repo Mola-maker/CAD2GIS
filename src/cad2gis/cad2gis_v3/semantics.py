@@ -2394,9 +2394,9 @@ def classify_entities(
     # - SF projects never deliver ZNRO.
     # - A large red outer boundary ring in the main drawing is authoritative
     #   and may exist even when the drawing has no ZPM (Tinggar's two rings).
-    # - Otherwise, when ZPM polygons exist, ZNRO is the single alpha-shape
-    #   polygon that spans every ZPM polygon and fills only the narrow gaps
-    #   between them (never the convex hull's large empty regions).
+    # - Otherwise, when ZPM polygons exist, conservative ZNRO polygons preserve
+    #   isolated parcels and fill narrow gaps within nearby parcel groups;
+    #   independent groups remain separate.
     delivered_zpm = [
         feature for feature in features if feature.feature_class == "ZPM"
     ]

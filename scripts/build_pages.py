@@ -25,8 +25,28 @@ DEMO_REQUIRED = (
     "index.html",
     "assets/app.js",
     "assets/styles.css",
-    "assets/demo-fixture.js",
     "assets/demo-catalog.json",
+)
+
+# Only these data-free assets are shared with the local, ten-case console.
+# Public fixtures and their publication gate remain under original-demo/assets.
+SHARED_DEMO_SCRIPTS = ("app.js", "demo-fixture.js")
+SHARED_DEMO_ASSETS = (
+    "cad2gis-hero-display.woff2",
+    "hero-evidence-graph.svg",
+    "hero-geometry.json",
+    "hero-grid.svg",
+    "hero-stickers.svg",
+    "hero-tunnel.svg",
+    "ibm-plex-mono-regular-subset.woff2",
+    "ibm-plex-mono-semibold-subset.woff2",
+    "noto-sans-sc-subset.woff2",
+    "smiley-sans-subset.woff2",
+    "space-grotesk-subset.woff2",
+    "font-licenses/OFL-IBMPlexMono.txt",
+    "font-licenses/OFL-NotoSansSC.txt",
+    "font-licenses/OFL-SmileySans.txt",
+    "font-licenses/OFL-SpaceGrotesk.txt",
 )
 
 FORBIDDEN_DEMO_SUFFIXES = {
@@ -86,6 +106,10 @@ def _validate_demo() -> None:
     missing = [name for name in DEMO_REQUIRED if not (DEMO_ROOT / name).is_file()]
     if missing:
         raise ValueError("Original WebDemo is incomplete: " + ", ".join(missing))
+    shared = SHARED_DEMO_SCRIPTS + tuple(f"assets/{name}" for name in SHARED_DEMO_ASSETS)
+    missing_shared = [name for name in shared if not (WEB_ROOT / name).is_file()]
+    if missing_shared:
+        raise ValueError("Shared WebDemo assets are incomplete: " + ", ".join(missing_shared))
     forbidden = sorted(
         path.relative_to(DEMO_ROOT).as_posix()
         for path in DEMO_ROOT.rglob("*")
@@ -112,6 +136,9 @@ def _validate_demo() -> None:
 
 
 def _workspace_page(source: str) -> str:
+    config_start = source.index('  <script id="cad2gis-page-config" type="application/json">')
+    config_end = source.index("</script>", config_start) + len("</script>")
+    page_config = source[config_start:config_end]
     fragment_start = source.index('  <div id="console-app">')
     fragment_end = source.index('  <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js">')
     fragment = source[fragment_start:fragment_end]
@@ -133,6 +160,7 @@ def _workspace_page(source: str) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f5f8f7">
   <title>CAD2GIS — 图纸理解与交付控制台</title>
+{page_config}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
   <link rel="preload" href="./assets/cad2gis-hero-display.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="./assets/noto-sans-sc-subset.woff2" as="font" type="font/woff2" crossorigin>
@@ -187,7 +215,19 @@ def build(output: Path) -> None:
         _rewrite_install(install), encoding="utf-8",
     )
     workspace_dir = output / "workspace"
-    shutil.copytree(DEMO_ROOT / "assets", workspace_dir / "assets")
+    workspace_assets = workspace_dir / "assets"
+    shutil.copytree(DEMO_ROOT / "assets", workspace_assets)
+    for filename in SHARED_DEMO_SCRIPTS:
+        shutil.copy2(WEB_ROOT / filename, workspace_assets / filename)
+    for filename in SHARED_DEMO_ASSETS:
+        destination = workspace_assets / filename
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(WEB_ROOT / "assets" / filename, destination)
+    # Source HTML/CSS can be served in place; the Pages artifact is self-contained.
+    stylesheet = (workspace_assets / "styles.css").read_text(encoding="utf-8")
+    (workspace_assets / "styles.css").write_text(
+        stylesheet.replace('url("../../assets/', 'url("./'), encoding="utf-8",
+    )
     demo_source = (DEMO_ROOT / "index.html").read_text(encoding="utf-8")
     (workspace_dir / "index.html").write_text(
         _workspace_page(demo_source), encoding="utf-8",

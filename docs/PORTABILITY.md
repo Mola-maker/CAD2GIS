@@ -45,6 +45,13 @@ AutoCAD adapter.
 
 ## Workspace roots
 
+The wheel includes `cad2gis.cad2gis_v3`. Backend import roots consistently
+refer to the directory above `cad2gis`: in a checkout this is `src`, and an
+explicit `CAD2GIS_BACKEND_PATH` deployment contains
+`cad2gis/cad2gis_v3/__init__.py` beneath its root. The external deployment and
+older `profile_builder` compatibility paths are retained; the B cleanup does
+not retire these interfaces or redesign their loading policy.
+
 Client templates do not contain a developer drive or checkout path. Claude Code
 uses `CLAUDE_PROJECT_DIR`; Cursor/VS Code use `${workspaceFolder}`; Codex starts
 the server in the current project. `CAD2GIS_PROJECT_ROOTS` is an optional

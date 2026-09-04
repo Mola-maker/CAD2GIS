@@ -15,6 +15,7 @@ on:
       - "tests/test_plugin_contracts.py"
       - "tests/test_webdemo_plugin_guide.py"
       - "tests/test_pages_publication_gate.py"
+      - "tests/test_webdemo_shared_assets.py"
   workflow_dispatch:
 
 permissions:
@@ -48,8 +49,10 @@ jobs:
           node --check src/cad2gis/webdemo/hero-tube.js
           node --check src/cad2gis/webdemo/install.js
           node --check src/cad2gis/webdemo/pointer.js
+          node --check src/cad2gis/webdemo/app.js
+          node --check src/cad2gis/webdemo/demo-fixture.js
           node --check src/cad2gis/webdemo/original-demo/assets/app.js
-          python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py -q
+          python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py tests/test_webdemo_shared_assets.py -q
 
       - name: Build data-free Pages artifact
         run: python scripts/build_pages.py --output _site
