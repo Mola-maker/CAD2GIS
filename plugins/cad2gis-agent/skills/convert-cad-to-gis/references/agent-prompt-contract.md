@@ -1,4 +1,4 @@
-# CAD2GIS agent prompt contract v2
+# CAD2GIS agent prompt contract v3
 
 This contract keeps different MCP hosts consistent. The model plans and selects
 evidence; the canonical Python service calculates and validates all geometry.
@@ -16,6 +16,14 @@ evidence; the canonical Python service calculates and validates all geometry.
 - Send typed JSON arguments directly to MCP tools.
 - Select only identifiers returned for this source: layer, block, entity,
   evidence, endpoint, network candidate, CRS candidate, and operation IDs.
+- Onboarding proposals use `cad2gis.ai_onboarding_proposal.v2`. Submit
+  `annotation_family_selections` containing only observed `candidate_id` and
+  registered `policy_id` values. The service derives text patterns, source-layer
+  filters and distance policies before the model selects them; never submit
+  free-form annotation regexes or numeric distance overrides.
+- Require `manifest_bound` indexed evidence for official runs. Explicit
+  standalone access is labelled `standalone_unbound` and grants no run or
+  delivery authority. A missing or broken official manifest rejects the query.
 - Keep geometry, topology, length, and coordinate accuracy as four independent
   claims. Passing one does not imply any other passed.
 - Treat vector reader facts as primary and screenshots as secondary evidence.

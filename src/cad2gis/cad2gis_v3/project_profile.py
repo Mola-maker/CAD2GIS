@@ -363,11 +363,11 @@ def _plan_domain_summary(diagnostics: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _inspect_source_products(
+def _inspect_source_facts(
     *,
     source: str | Path,
     records: Iterable[Any] | None = None,
-) -> tuple[dict[str, Any], CadSceneGraph]:
+) -> tuple[dict[str, Any], CadSceneGraph, tuple[SourceEntity, ...], tuple[SourceEntity, ...]]:
     """Return inventory plus a pre-semantic, source-bound structural graph."""
 
     source_path = Path(source).expanduser().resolve()
@@ -436,6 +436,16 @@ def _inspect_source_products(
         "next_action": "bootstrap_source_bound_project_pack",
     }
     inventory["inventory_sha256"] = inventory_sha256(inventory)
+    return inventory, scene_graph, tuple(entities), plan_entities
+
+
+def _inspect_source_products(
+    *,
+    source: str | Path,
+    records: Iterable[Any] | None = None,
+) -> tuple[dict[str, Any], CadSceneGraph]:
+    """Compatibility port for onboarding consumers of inventory and graph."""
+    inventory, scene_graph, _, _ = _inspect_source_facts(source=source, records=records)
     return inventory, scene_graph
 
 

@@ -45,6 +45,13 @@ def _parser() -> argparse.ArgumentParser:
         help="Return a non-zero status when configured conversion is not ready.",
     )
     doctor.set_defaults(handler=_doctor)
+    debug_mcp = commands.add_parser("debug-mcp", help="Read MCP identity and bounded diagnostics.")
+    debug_mcp.add_argument("--scope", choices=("identity", "runtime", "artifacts", "query"), default="identity")
+    debug_mcp.add_argument("--run-dir", default="")
+    debug_mcp.add_argument("--graph-path", default="")
+    _add_json(debug_mcp)
+    debug_mcp.set_defaults(handler=_debug_mcp)
+    _add_database_commands(commands)
     #若用户选择了doctor命令，则调用_doctor函数处理
     doctor.add_argument(
             "--profile",
@@ -223,6 +230,99 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _add_database_commands(commands: argparse._SubParsersAction[Any]) -> None:
+    export = commands.add_parser("export-source", help="Create an immutable native CAD fact snapshot.")
+    _add_source(export)
+    export.add_argument("--run-dir", required=True)
+    export.add_argument("--source-crs", default=None)
+    _add_json(export)
+    export.set_defaults(handler=_export_source)
+
+    query = commands.add_parser("query-source", help="Query source facts with bounded SQL templates.")
+    query.add_argument("run_dir")
+    for name in ("layer", "dwg-type", "layout", "terminal-state", "text-query", "cursor"):
+        query.add_argument(f"--{name}")
+    query.add_argument("--view", choices=("source", "plan"), default="source")
+    query.add_argument("--bbox", type=float, nargs=4)
+    query.add_argument("--projection", nargs="+")
+    query.add_argument("--limit", type=int, default=50)
+    query.add_argument("--max-bytes", type=int, default=65536)
+    query.add_argument("--timeout-ms", type=int, default=2000)
+    _add_json(query)
+    query.set_defaults(handler=_query_source)
+
+    semantic = commands.add_parser("semantic", help="Prepare, revise and compile source-bound semantics.")
+    actions = semantic.add_subparsers(dest="semantic_action", required=True)
+    for action in ("prepare", "init", "candidates", "preview", "commit", "compile", "status", "cancel", "recover"):
+        sub = actions.add_parser(action)
+        if action in {"prepare", "init", "preview", "commit", "compile", "recover"}:
+            sub.add_argument("--source-run", required=True)
+        if action in {"init", "candidates", "preview", "commit", "compile", "recover"}:
+            sub.add_argument("--prepare-manifest", required=True)
+        if action in {"init", "preview", "commit", "compile", "status", "cancel", "recover"}:
+            sub.add_argument("--semantic-store", required=True)
+        if action in {"prepare", "compile"}:
+            sub.add_argument("--output-dir", required=True)
+        if action in {"preview", "commit"}:
+            sub.add_argument("--patch", required=True, type=Path, help="ID-only patch JSON file.")
+        if action == "commit":
+            sub.add_argument("--preview-hash", required=True)
+        if action in {"commit", "compile"}:
+            sub.add_argument("--idempotency-key", required=True)
+        if action == "compile":
+            sub.add_argument("--revision", required=True, type=int)
+            sub.add_argument("--retry-failed", action="store_true")
+        if action in {"status", "cancel"}:
+            sub.add_argument("--job-id", required=action == "cancel")
+        if action == "status":
+            sub.add_argument("--idempotency-key")
+        if action == "candidates":
+            sub.add_argument("--relation-kind", choices=("label", "class", "dimension"), default="label")
+            sub.add_argument("--entity-ids", nargs="+")
+            sub.add_argument("--policy-id")
+            sub.add_argument("--cursor")
+            sub.add_argument("--limit", type=int, default=50)
+            sub.add_argument("--max-bytes", type=int, default=65536)
+        _add_json(sub)
+        sub.set_defaults(handler=_semantic)
+
+
+def _export_source(args: argparse.Namespace) -> tuple[Any, int]:
+    from .pipeline import export_source
+    return export_source(source=_source(args), run_dir=Path(args.run_dir), source_crs=args.source_crs), 0
+
+
+def _query_source(args: argparse.Namespace) -> tuple[Any, int]:
+    from .cad2gis_v3.source_query import query_source_entities
+    keys = ("run_dir", "layer", "dwg_type", "layout", "terminal_state", "text_query",
+            "bbox", "projection", "view", "cursor", "limit", "max_bytes", "timeout_ms")
+    return query_source_entities(**{key: getattr(args, key) for key in keys}), 0
+
+
+def _semantic(args: argparse.Namespace) -> tuple[Any, int]:
+    from .cad2gis_v3 import semantic_stage, semantic_store
+    handlers = {
+        "prepare": semantic_stage.prepare_semantics,
+        "candidates": semantic_stage.query_relationship_candidates,
+        "init": semantic_store.initialize_semantic_store,
+        "preview": semantic_store.preview_semantic_patch,
+        "commit": semantic_store.commit_semantic_patch,
+        "compile": semantic_store.compile_semantic_revision,
+        "status": semantic_store.inspect_semantic_store,
+        "cancel": semantic_store.cancel_compile_job,
+        "recover": semantic_store.reconcile_compile_jobs,
+    }
+    excluded = {"command", "semantic_action", "handler", "json", "debug"}
+    values = {key: value for key, value in vars(args).items() if key not in excluded}
+    if "patch" in values:
+        path = values["patch"]
+        if path.stat().st_size > 1024 * 1024:
+            raise CLIUsageError("Patch exceeds the 1 MiB input budget")
+        values["patch"] = json.loads(path.read_text(encoding="utf-8"))
+    result = handlers[args.semantic_action](**values)
+    return result, 0
+
+
 def _add_source(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("source", nargs="?", type=Path, metavar="SOURCE")
     parser.add_argument(
@@ -327,6 +427,19 @@ def _runtime_status(args: argparse.Namespace) -> tuple[Any, int]:
     from .native_runtime import portable_runtime_status
 
     return portable_runtime_status(), 0
+
+
+def _debug_mcp(args: argparse.Namespace) -> tuple[Any, int]:
+    import asyncio
+    from .agent_mcp import create_server
+    from .mcp_diagnostics import diagnose
+
+    server = create_server()
+    schemas = [tool.model_dump(mode="json", exclude_none=True)
+               for tool in asyncio.run(server.list_tools())]
+    report = diagnose(scope=args.scope, tool_schemas=schemas,
+                      graph_path=args.graph_path, run_dir=args.run_dir)
+    return report, 0 if report["status"] == "ok" else 2
 
 
 def _runtime_install(args: argparse.Namespace) -> tuple[Any, int]:
@@ -676,7 +789,7 @@ def _conversion_payload(result: Any) -> Any:
 _COMMANDS = frozenset(
     {
         "doctor", "runtime", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
-        "review", "verify",
+        "review", "verify", "debug-mcp", "export-source", "query-source", "semantic",
     }
 )
 
@@ -693,6 +806,8 @@ def _error_code(exc: Exception) -> str:
     from .reader.contracts import ReaderUnavailableError
     from .runtime import BackendUnavailable
 
+    if isinstance(getattr(exc, "code", None), str):
+        return exc.code
     if isinstance(exc, CLIUsageError):
         return "CLI_USAGE"
     if isinstance(exc, SourceNotFoundError):
@@ -751,7 +866,8 @@ def _jsonable(value: Any) -> Any:
 def _emit(value: Any, *, compact: bool = False) -> None:
     if value is None:
         return
-    kwargs = {"ensure_ascii": False, "sort_keys": True}
+    # ASCII JSON is lossless and independent of a redirected Windows codepage.
+    kwargs = {"ensure_ascii": True, "sort_keys": True}
     if compact:
         kwargs["separators"] = (",", ":")
     else:
@@ -795,7 +911,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         error = _error_payload(exc, stage=stage)
         payload = {"status": "error", "error": error}
         if bool(getattr(args, "json", False)) or "--json" in filtered:
-            print(json.dumps(payload, ensure_ascii=False, sort_keys=True), file=sys.stderr)
+            print(json.dumps(payload, ensure_ascii=True, sort_keys=True), file=sys.stderr)
         else:
             print(f"cad2gis: error: {exc}", file=sys.stderr)
             for field in ("error_code", "stage", "artifact_status", "recovery_command"):

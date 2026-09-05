@@ -44,7 +44,45 @@ or CRS algorithms inside the host agent or plugin.
 Provider-backed onboarding may use `auto_onboard_and_convert`, but its proposal
 still passes deterministic compilation and admission gates.
 
-## Evidence and repair workflow
+## Source database and semantic revision workflow (package 0.4+)
+
+Use `debug_mcp` to compare the running code and complete tool schema digests
+before relying on this workflow. Older installed plugins may expose a different
+implementation even when tool names look similar.
+
+1. `export_source` publishes a new immutable source snapshot. Omit CRS if it is
+   not established; native coordinates and unknown units stay explicit.
+2. Use `query_source_entities` with filters and keyset cursors, then
+   `get_entity_context_batch` for observed IDs. Use `view=plan` to inspect
+   expanded instances and their lineage. This revision's semantic patch service
+   accepts source entity keys; instance-level semantic writes need the canonical
+   plan-domain adapter. Do not infer curve intersections from
+   conservative bbox candidates alone. Context chunks must be reassembled before
+   interpreting a long text or geometry field. MCP byte budgets include the
+   protocol envelope (8–64 KiB); never request arbitrary SQL.
+3. `prepare_semantic_batches` builds a separate immutable candidate index.
+   `query_relationship_candidates` returns registered class, label or DIMENSION
+   choices; a nearby label is advisory until explicitly selected.
+4. `initialize_semantic_store`, then construct a patch using the returned binding
+   hashes, `base_revision`, and only observed entity/candidate/policy/target IDs.
+   Onboarding v2 similarly selects `annotation_family_selections` candidate and
+   policy IDs; the model cannot supply regexes or numeric matching thresholds.
+5. `preview_semantic_patch` validates without writing. Commit its exact
+   `preview_hash` with `commit_semantic_patch` and a stable idempotency key.
+   Revision conflicts require a fresh read and preview; never overwrite source
+   coordinates, native lengths, curve parameters, original text, CRS or GCP.
+6. `compile_semantic_revision` produces a new source-coordinate semantic
+   candidate. It is not an accepted canonical GIS delivery; use the established
+   conversion and registration gates for final delivery. Unsupported and
+   unclassified entities remain explicitly unresolved.
+7. After a timeout or cancelled RPC, use `inspect_semantic_store` with the same
+   idempotency key before retrying. `cancel_compile_job` fences publication.
+   `reconcile_compile_jobs` is for recovery after the worker is known stopped.
+
+SQLite revisions, jobs and outbox are authoritative. Redis is optional and is
+not required for this local workflow.
+
+## Existing delivery evidence and repair workflow
 
 1. Page evidence with `list_evidence_nodes`; read only needed nodes. Prefer a
    run that reports `query_backend=sqlite-index` for large drawings.

@@ -294,6 +294,17 @@ def convert_project(
 convert = convert_project
 
 
+def export_source(
+    *, source: str | Path, run_dir: str | Path, source_crs: str | None = None,
+) -> dict[str, Any]:
+    """Freeze reader facts without requiring semantic mapping or registration."""
+    backend = runtime.load_backend_module("cad2gis.cad2gis_v3.source_export")
+    return backend.export_source(
+        source=_source_file(source), run_dir=Path(run_dir).expanduser().resolve(),
+        source_crs=source_crs,
+    )
+
+
 def inspect_source(
     *, source: str | Path, project_dir: str | Path | None = None
 ) -> Any:

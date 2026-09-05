@@ -10,6 +10,42 @@ from pathlib import Path
 from typing import Any
 
 
+def file_cache_identity(path: str | Path) -> tuple[int, ...]:
+    """Invalidate verified-content caches even when Windows mtime is restored.
+
+    Windows stat.ctime is creation time, not metadata change time. Use the
+    kernel's ChangeTime. If unavailable, return a fresh token so verification
+    fails open only in performance: callers must rehash, never trust stale data.
+    """
+    artifact = Path(path)
+    stat = artifact.stat()
+    identity = (stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns, stat.st_dev, stat.st_ino)
+    if os.name != "nt":
+        return identity
+    import ctypes
+    from ctypes import wintypes
+    import msvcrt
+
+    class FileBasicInfo(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_longlong) for name in (
+            "CreationTime", "LastAccessTime", "LastWriteTime", "ChangeTime",
+        )] + [("FileAttributes", wintypes.DWORD)]
+
+    try:
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        get_info = kernel.GetFileInformationByHandleEx
+        get_info.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+        get_info.restype = wintypes.BOOL
+        with artifact.open("rb") as stream:
+            info = FileBasicInfo()
+            handle = msvcrt.get_osfhandle(stream.fileno())
+            if get_info(handle, 0, ctypes.byref(info), ctypes.sizeof(info)) and info.ChangeTime:
+                return (*identity, info.ChangeTime)
+    except (OSError, ValueError):
+        pass
+    return (*identity, time.perf_counter_ns())
+
+
 def read_json_object(
     path: str | Path, *, max_uncompressed_bytes: int | None = None,
 ) -> dict[str, Any]:
@@ -70,4 +106,4 @@ def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
             temporary.unlink()
 
 
-__all__ = ["read_json_object", "write_json_object"]
+__all__ = ["file_cache_identity", "read_json_object", "write_json_object"]

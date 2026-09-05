@@ -6,7 +6,6 @@ import argparse
 import json
 import os
 import re
-from functools import lru_cache
 from pathlib import Path
 from typing import Any, cast
 
@@ -28,7 +27,7 @@ from .cad2gis_v3.evidence_index import (
     index_path_for_graph,
     indexed_nodes_by_kind,
     page_evidence_nodes,
-    validate_index_manifest_binding,
+    resolve_evidence_index,
 )
 from .cad2gis_v3.geometry_repairs import (
     COLLINEAR_MERGE_POLICY_IDS,
@@ -53,6 +52,10 @@ from .cad2gis_v3.repair_decisions import (
 
 class MCPServiceError(ValueError):
     """An MCP request escaped its configured project roots or schema."""
+
+    def __init__(self, message: str, *, code: str = "VALIDATION_FAILED"):
+        super().__init__(message)
+        self.code = code
 
 
 MAX_EVIDENCE_GRAPH_BYTES = 256 * 1024 * 1024
@@ -102,6 +105,17 @@ def get_capabilities() -> dict[str, Any]:
             "review edits are revisioned separately; registration export "
             "returns a command that creates a new immutable run"
         ),
+        "semantic_database": {
+            "workflow": ["export_source", "query_source_entities", "get_entity_context_batch",
+                         "prepare_semantic_batches", "query_relationship_candidates",
+                         "initialize_semantic_store", "preview_semantic_patch",
+                         "commit_semantic_patch", "compile_semantic_revision"],
+            "status_tool": "inspect_semantic_store",
+            "write_authority": "SQLite revision CAS; immutable source facts",
+            "patch_fields": "observed IDs, registered operations and policy IDs only",
+            "output_role": "native-coordinate semantic candidate; no automatic delivery promotion",
+            "redis": "optional, not configured; SQLite jobs and outbox are durable authority",
+        },
         "prompt_contract": {
             "version": AGENT_PROMPT_CONTRACT_VERSION,
             "proposal_mode": "typed JSON tool arguments",
@@ -188,7 +202,10 @@ def install_runtime() -> dict[str, Any]:
 def _path(value: str | Path, *, must_exist: bool = True) -> Path:
     path = Path(value).expanduser().resolve()
     if not any(path == root or root in path.parents for root in _roots()):
-        raise MCPServiceError(f"Path is outside configured CAD2GIS project roots: {path}")
+        raise MCPServiceError(
+            f"Path is outside configured CAD2GIS project roots: {path}",
+            code="PATH_OUTSIDE_ROOT",
+        )
     if must_exist and not path.exists():
         raise MCPServiceError(f"Path does not exist: {path}")
     return path
@@ -595,6 +612,123 @@ def _load_cad_scene_graph(graph_path: str) -> CadSceneGraph:
     return CadSceneGraph.from_dict(_json_object(_path(graph_path)))
 
 
+def export_source(source: str, run_dir: str, source_crs: str | None = None) -> dict[str, Any]:
+    """Create a new immutable CAD snapshot; omit CRS unless authoritative evidence exists."""
+    from .pipeline import export_source as export
+    return export(source=_path(source), run_dir=_path(run_dir, must_exist=False),
+                  source_crs=source_crs)
+
+
+def query_source_entities(
+    run_dir: str, *, layer: str | None = None, dwg_type: str | None = None,
+    layout: str | None = None, terminal_state: str | None = None,
+    text_query: str | None = None, bbox: list[float] | None = None,
+    projection: list[str] | None = None, limit: int = 50, cursor: str | None = None,
+    view: str = "source", timeout_ms: int = 2000, max_bytes: int = 65536,
+) -> dict[str, Any]:
+    """Query a snapshot using bounded SQL filters, stable keyset cursors and exact facts."""
+    from .cad2gis_v3.source_query import query_source_entities as query
+    return query(run_dir=_path(run_dir), layer=layer, dwg_type=dwg_type, layout=layout,
+                 terminal_state=terminal_state, text_query=text_query, bbox=bbox,
+                 projection=projection, limit=limit, cursor=cursor, view=view,
+                 timeout_ms=timeout_ms, max_bytes=max_bytes)
+
+
+def get_entity_context_batch(
+    run_dir: str, entity_keys: list[str], *, fields: list[str] | None = None,
+    view: str = "source", cursor: str | None = None, max_bytes: int = 65536,
+    timeout_ms: int = 2000,
+) -> dict[str, Any]:
+    """Read bounded source or instance facts for observed IDs without changing them."""
+    from .cad2gis_v3.source_query import get_entity_context_batch as batch
+    return batch(run_dir=_path(run_dir), entity_keys=entity_keys, fields=fields,
+                 view=view, cursor=cursor, max_bytes=max_bytes, timeout_ms=timeout_ms)
+
+
+def prepare_semantic_batches(source_run: str, output_dir: str) -> dict[str, Any]:
+    """Materialize source-bound semantic candidates in a separate new directory."""
+    from .cad2gis_v3.semantic_stage import prepare_semantics
+    return prepare_semantics(source_run=_path(source_run),
+                             output_dir=_path(output_dir, must_exist=False))
+
+
+def query_relationship_candidates(
+    prepare_manifest: str, *, entity_ids: list[str] | None = None,
+    relation_kind: str = "label", policy_id: str | None = None,
+    cursor: str | None = None, limit: int = 50, max_bytes: int = 65536,
+) -> dict[str, Any]:
+    """Read only observed class, label or dimension candidates with registered policy IDs."""
+    from .cad2gis_v3.semantic_stage import query_relationship_candidates as query
+    return query(prepare_manifest=_path(prepare_manifest), entity_ids=entity_ids,
+                 relation_kind=relation_kind, policy_id=policy_id, cursor=cursor,
+                 limit=limit, max_bytes=max_bytes)
+
+
+def initialize_semantic_store(
+    source_run: str, prepare_manifest: str, semantic_store: str,
+) -> dict[str, Any]:
+    """Initialize a durable revision ledger bound to a verified source and candidate set."""
+    from .cad2gis_v3.semantic_store import initialize_semantic_store as initialize
+    return initialize(source_run=_path(source_run), prepare_manifest=_path(prepare_manifest),
+                      semantic_store=_path(semantic_store, must_exist=False))
+
+
+def inspect_semantic_store(
+    semantic_store: str, job_id: str | None = None, idempotency_key: str | None = None,
+) -> dict[str, Any]:
+    """Read the authoritative semantic revision and optional durable compile job state."""
+    from .cad2gis_v3.semantic_store import inspect_semantic_store as inspect_store
+    return inspect_store(semantic_store=_path(semantic_store), job_id=job_id,
+                         idempotency_key=idempotency_key)
+
+
+def cancel_compile_job(semantic_store: str, job_id: str) -> dict[str, Any]:
+    """Durably cancel a compile job and fence its worker from publishing a result."""
+    from .cad2gis_v3.semantic_store import cancel_compile_job as cancel
+    return cancel(semantic_store=_path(semantic_store), job_id=job_id)
+
+
+def reconcile_compile_jobs(
+    source_run: str, prepare_manifest: str, semantic_store: str,
+) -> dict[str, Any]:
+    """Recover interrupted compile jobs; call only when their workers are known stopped."""
+    from .cad2gis_v3.semantic_store import reconcile_compile_jobs as reconcile
+    return reconcile(source_run=_path(source_run), prepare_manifest=_path(prepare_manifest),
+                     semantic_store=_path(semantic_store))
+
+
+def preview_semantic_patch(
+    source_run: str, prepare_manifest: str, semantic_store: str, patch: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate an ID-only semantic patch against frozen facts and its base revision."""
+    from .cad2gis_v3.semantic_store import preview_semantic_patch as preview
+    return preview(source_run=_path(source_run), prepare_manifest=_path(prepare_manifest),
+                   semantic_store=_path(semantic_store), patch=patch)
+
+
+def commit_semantic_patch(
+    source_run: str, prepare_manifest: str, semantic_store: str, patch: dict[str, Any],
+    preview_hash: str, idempotency_key: str,
+) -> dict[str, Any]:
+    """Atomically commit a validated semantic patch with revision CAS and idempotency."""
+    from .cad2gis_v3.semantic_store import commit_semantic_patch as commit
+    return commit(source_run=_path(source_run), prepare_manifest=_path(prepare_manifest),
+                  semantic_store=_path(semantic_store, must_exist=False), patch=patch,
+                  preview_hash=preview_hash, idempotency_key=idempotency_key)
+
+
+def compile_semantic_revision(
+    source_run: str, prepare_manifest: str, semantic_store: str, revision: int,
+    output_dir: str, idempotency_key: str, retry_failed: bool = False,
+) -> dict[str, Any]:
+    """Compile an immutable source-coordinate semantic candidate, without auto promotion."""
+    from .cad2gis_v3.semantic_store import compile_semantic_revision as compile_revision
+    return compile_revision(source_run=_path(source_run), prepare_manifest=_path(prepare_manifest),
+                            semantic_store=_path(semantic_store), revision=revision,
+                            output_dir=_path(output_dir, must_exist=False),
+                            idempotency_key=idempotency_key, retry_failed=retry_failed)
+
+
 def list_cad_scene_nodes(
     graph_path: str,
     *,
@@ -773,26 +907,16 @@ def _load_graph(graph_path: str) -> EvidenceGraph:
     )
 
 
-@lru_cache(maxsize=32)
-def _validate_index_once(path: str, size: int, mtime_ns: int) -> bool:
-    """Hash-bind one official index once per stable file identity."""
-
-    del size, mtime_ns
-    return validate_index_manifest_binding(Path(path))
-
-
-def _evidence_index(graph_path: str) -> Path | None:
+def _evidence_index(graph_path: str, *, allow_standalone: bool = False) -> Path | None:
     graph = _path(graph_path)
     index_path = index_path_for_graph(graph)
-    if not index_path.is_file():
-        return None
-    index = _path(index_path)
-    stat = index.stat()
+    if index_path.exists():
+        _path(index_path)
     try:
-        _validate_index_once(str(index), stat.st_size, stat.st_mtime_ns)
+        binding = resolve_evidence_index(graph, allow_standalone=allow_standalone)
     except EvidenceIndexError as exc:
-        raise MCPServiceError(str(exc)) from exc
-    return index
+        raise MCPServiceError(str(exc), code="ARTIFACT_BINDING_INVALID") from exc
+    return None if binding is None else binding.index_path
 
 
 def list_evidence_nodes(
@@ -801,6 +925,7 @@ def list_evidence_nodes(
     kind: str = "",
     cursor: int = 0,
     limit: int = 50,
+    allow_standalone: bool = False,
 ) -> dict[str, Any]:
     """Page through source-bound evidence nodes without changing any facts."""
 
@@ -808,12 +933,17 @@ def list_evidence_nodes(
         raise MCPServiceError("cursor must be a non-negative integer")
     if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
         raise MCPServiceError("limit must be between 1 and 200")
-    index = _evidence_index(graph_path)
+    index = _evidence_index(graph_path, allow_standalone=allow_standalone)
     if index is not None:
         try:
-            return page_evidence_nodes(
+            result = page_evidence_nodes(
                 index, kind=kind, cursor=cursor, limit=limit,
             )
+            result["binding_status"] = (
+                "manifest_bound" if (index.parent.parent / "run_manifest.json").is_file()
+                else "standalone_unbound"
+            )
+            return result
         except EvidenceIndexError as exc:
             raise MCPServiceError(str(exc)) from exc
     graph = _load_graph(graph_path)
@@ -839,10 +969,10 @@ def list_evidence_nodes(
     }
 
 
-def get_evidence_node(graph_path: str, node_id: str) -> dict[str, Any]:
+def get_evidence_node(graph_path: str, node_id: str, *, allow_standalone: bool = False) -> dict[str, Any]:
     """Read one exact evidence node, including immutable reader facts."""
 
-    index = _evidence_index(graph_path)
+    index = _evidence_index(graph_path, allow_standalone=allow_standalone)
     if index is not None:
         try:
             node = get_indexed_evidence_node(index, node_id)
@@ -924,6 +1054,8 @@ def resolve_visual_hit(hit_index_path: str, rgb_hex: str) -> dict[str, Any]:
 def list_registered_operations() -> dict[str, Any]:
     """Describe the only repair operations a model may propose."""
 
+    from .cad2gis_v3.decision_executor import _EXECUTABLE_OPERATIONS
+
     return {
         "schema_version": "cad2gis.repair_operation_registry.v1",
         "operations": {
@@ -934,6 +1066,11 @@ def list_registered_operations() -> dict[str, Any]:
                 "allowed_parameters": sorted(spec.allowed_parameters),
                 "required_parameters": sorted(spec.required_parameters),
                 "changes_geometry": spec.changes_geometry,
+                "registered": True,
+                "execution_status": (
+                    "executable" if name in _EXECUTABLE_OPERATIONS else "quarantined"
+                ),
+                "required_validators": ["geometry", "topology", "native_length"],
             }
             for name, spec in sorted(OPERATION_REGISTRY.items())
         },
@@ -1185,8 +1322,8 @@ def create_server(
     )
 
     # Bundled GDAL activation must happen on the server event-loop thread.
-    # FastMCP runs ordinary synchronous tools in a worker thread; importing a
-    # native GIS stack there can deadlock on some Windows Python builds.
+    # Native GIS activation is explicit before our database tools dispatch to
+    # worker threads; the SDK itself may run sync tools directly on its loop.
     async def runtime_capabilities_tool() -> dict[str, Any]:
         """Describe the stable CAD2GIS protocol and accuracy boundaries."""
 
@@ -1202,8 +1339,47 @@ def create_server(
 
         return install_runtime()
 
+    async def debug_tool(
+        scope: str = "identity", graph_path: str = "", run_dir: str = "",
+        expected_identity: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Inspect code/schema identity, runtime or artifact/query binding without mutation."""
+        from .mcp_diagnostics import diagnose
+
+        schemas = [tool.model_dump(mode="json", exclude_none=True)
+                   for tool in await server.list_tools()]
+        report = diagnose(
+            scope=scope, tool_schemas=schemas, expected_identity=expected_identity,
+            graph_path=graph_path, run_dir=run_dir,
+        )
+        try:
+            from mcp import types
+            from mcp.shared.version import SUPPORTED_PROTOCOL_VERSIONS
+            requested = server.get_context().session.client_params.protocolVersion
+            # This is the SDK ServerSession initialization negotiation rule.
+            report["protocol_version"] = (requested if requested in SUPPORTED_PROTOCOL_VERSIONS
+                                          else types.LATEST_PROTOCOL_VERSION)
+            report["protocol_note"] = "Negotiated by this initialized SDK ServerSession."
+        except (AttributeError, LookupError, ValueError):
+            pass
+        report["transport"] = getattr(server, "cad2gis_transport", "in_process_or_host_selected")
+        return report
+
     registrations = (
         ("get_capabilities", runtime_capabilities_tool),
+        ("debug_mcp", debug_tool),
+        ("export_source", export_source),
+        ("query_source_entities", query_source_entities),
+        ("get_entity_context_batch", get_entity_context_batch),
+        ("prepare_semantic_batches", prepare_semantic_batches),
+        ("query_relationship_candidates", query_relationship_candidates),
+        ("initialize_semantic_store", initialize_semantic_store),
+        ("inspect_semantic_store", inspect_semantic_store),
+        ("preview_semantic_patch", preview_semantic_patch),
+        ("commit_semantic_patch", commit_semantic_patch),
+        ("compile_semantic_revision", compile_semantic_revision),
+        ("cancel_compile_job", cancel_compile_job),
+        ("reconcile_compile_jobs", reconcile_compile_jobs),
         ("get_runtime_status", runtime_status_tool),
         ("install_runtime", runtime_install_tool),
         ("inspect_source", inspect_source),
@@ -1243,8 +1419,19 @@ def create_server(
             "MCP tool registration does not match the versioned tool contract: "
             f"registered={registered_names!r}, contract={MCP_TOOL_NAMES!r}"
         )
+    from .mcp_diagnostics import _code_identity, database_tool, traced_tool
+
+    trace_identity = _code_identity()["source_files_sha256"]
     for name, handler in registrations:
-        server.tool(name=name)(handler)
+        if name in {
+            "export_source", "query_source_entities", "get_entity_context_batch",
+            "prepare_semantic_batches", "query_relationship_candidates",
+            "initialize_semantic_store", "inspect_semantic_store",
+            "preview_semantic_patch", "commit_semantic_patch",
+            "compile_semantic_revision", "cancel_compile_job", "reconcile_compile_jobs",
+        }:
+            handler = database_tool(name, handler)
+        server.tool(name=name)(traced_tool(name, handler, server, trace_identity))
     return server
 
 
@@ -1266,11 +1453,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Use stateless Streamable HTTP sessions.",
     )
     args = parser.parse_args(argv)
-    create_server(
+    server = create_server(
         host=args.host,
         port=args.port,
         stateless_http=args.stateless_http,
-    ).run(transport=args.transport)
+    )
+    server.cad2gis_transport = args.transport
+    server.run(transport=args.transport)
     return 0
 
 
