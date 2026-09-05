@@ -41,8 +41,9 @@ from .semantics import classify_entities
 from .units import resolve_insunits
 
 
-ONBOARDING_BUNDLE_SCHEMA = "cad2gis.ai_onboarding_bundle.v1"
-ONBOARDING_PROPOSAL_SCHEMA = "cad2gis.ai_onboarding_proposal.v1"
+ONBOARDING_BUNDLE_SCHEMA = "cad2gis.ai_onboarding_bundle.v2"
+ONBOARDING_PROPOSAL_SCHEMA = "cad2gis.ai_onboarding_proposal.v2"
+ANNOTATION_POLICY_ID = "cad2gis.annotation_assignment.native_metres15.v1"
 _FEATURE_CLASSES = ("BOITE", "PTECH", "SITE")
 _CGEOCS_CRS = {
     "UTM84-49S": "EPSG:32749",
@@ -413,6 +414,58 @@ def _insert_census(instances: Any) -> dict[str, Any]:
     }
 
 
+def _annotation_candidates(
+    samples_by_layer: Mapping[str, Sequence[Mapping[str, Any]]],
+    *,
+    source_sha256: str,
+    inventory_sha256: str,
+) -> list[dict[str, Any]]:
+    """Publish source-bound choices before the model is allowed to select them.
+
+    Regexes, source-layer filters, class hints and the 15-metre assignment
+    policy are deterministic. The policy bounds relationship search only; it
+    neither moves source coordinates nor asserts measured position accuracy.
+    """
+
+    from .family_validation import derive_family_from_samples, l1_validate_family
+
+    result: list[dict[str, Any]] = []
+    for layer in sorted(samples_by_layer, key=str.casefold):
+        samples = samples_by_layer[layer]
+        groups: dict[int | None, list[Mapping[str, Any]]] = defaultdict(list)
+        all_colours_observed = bool(samples) and all(
+            isinstance(sample.get("aci_color"), int)
+            and not isinstance(sample["aci_color"], bool)
+            and 1 <= sample["aci_color"] <= 255
+            for sample in samples
+        )
+        for sample in samples:
+            groups[sample["aci_color"] if all_colours_observed else None].append(sample)
+        for colour, group in sorted(groups.items(), key=lambda item: item[0] or 0):
+            for family in derive_family_from_samples(layer, group):
+                if colour is not None:
+                    family["aci_color"] = colour
+                # A deterministic candidate still has to satisfy structural evidence.
+                if not l1_validate_family(family, samples_by_layer)["passed"]:
+                    continue
+                identity = {
+                    "source_sha256": source_sha256,
+                    "inventory_sha256": inventory_sha256,
+                    "policy_id": ANNOTATION_POLICY_ID,
+                    "family": family,
+                }
+                digest = _canonical_sha256(identity)
+                # Human-readable derivation IDs can collide on long/non-Latin
+                # layer names. Content addressing keeps choices unique.
+                family = {**family, "family_id": f"observed_{digest[:32]}"}
+                result.append({
+                    "candidate_id": f"annotation-family:{digest}",
+                    "policy_ids": [ANNOTATION_POLICY_ID],
+                    "family": family,
+                })
+    return result
+
+
 def prepare_onboarding_bundle(project_dir: str | Path) -> dict[str, Any]:
     """Build compact model context from one immutable source inventory."""
 
@@ -456,6 +509,16 @@ def prepare_onboarding_bundle(project_dir: str | Path) -> dict[str, Any]:
             "unmapped_entities_are_preserved_as_abstentions": True,
         },
     }
+    bundle["annotation_policies"] = [{
+        "policy_id": ANNOTATION_POLICY_ID,
+        "max_distance_native_m": 15.0,
+        "authority": "deterministic_relationship_search_only",
+    }]
+    bundle["annotation_family_candidates"] = _annotation_candidates(
+        bundle["text_samples_by_layer"],
+        source_sha256=str(bundle["source"].get("sha256", "")),
+        inventory_sha256=str(bundle["inventory_sha256"]),
+    )
     bundle["bundle_sha256"] = _canonical_sha256(bundle)
     bundle["proposal_schema"] = onboarding_proposal_json_schema(bundle)
     return bundle
@@ -470,6 +533,10 @@ def onboarding_proposal_json_schema(bundle: Mapping[str, Any]) -> dict[str, Any]
         str(item["candidate_id"])
         for item in bundle.get("crs_candidates", ())
         if isinstance(item, Mapping) and item.get("candidate_id")
+    ]
+    annotation_candidate_ids = [
+        str(item["candidate_id"])
+        for item in bundle.get("annotation_family_candidates", ())
     ]
     layer_array = {
         "type": "array",
@@ -527,19 +594,16 @@ def onboarding_proposal_json_schema(bundle: Mapping[str, Any]) -> dict[str, Any]
                 "additionalProperties": False,
             },
             "rationale": {"type": "string", "minLength": 1, "maxLength": 4000},
-            "annotation_families": {
+            "annotation_family_selections": {
                 "type": "array",
+                "uniqueItems": True,
                 "items": {
                     "type": "object",
                     "properties": {
-                        "family_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-                        "text_pattern": {"type": "string", "minLength": 1},
-                        "target_class": {"type": "string", "enum": list(_FEATURE_CLASSES)},
-                        "max_distance_native_m": {"type": "number", "minimum": 0.1, "maximum": 100.0},
-                        "aci_color": {"type": "integer", "minimum": 1, "maximum": 255},
-                        "source_layer": {"type": "string", "minLength": 1},
+                        "candidate_id": {"type": "string", "enum": annotation_candidate_ids},
+                        "policy_id": {"const": ANNOTATION_POLICY_ID},
                     },
-                    "required": ["family_id", "text_pattern", "target_class", "max_distance_native_m"],
+                    "required": ["candidate_id", "policy_id"],
                     "additionalProperties": False,
                 },
             },
@@ -559,6 +623,7 @@ def onboarding_proposal_json_schema(bundle: Mapping[str, Any]) -> dict[str, Any]
             "insert_layer_families",
             "confidence",
             "rationale",
+            "annotation_family_selections",
         ],
         "additionalProperties": False,
     }
@@ -583,13 +648,14 @@ def validate_onboarding_proposal(
     schema = onboarding_proposal_json_schema(bundle)
     required = set(schema["required"])
     allowed = required | set(schema["properties"])
-    if required - set(proposal):
+    if not isinstance(proposal, Mapping):
+        raise OnboardingError("Onboarding proposal must be an object")
+    if required - set(proposal) or set(proposal) - allowed:
         raise OnboardingError(
             "Invalid onboarding proposal keys; "
-            f"missing={sorted(required - set(proposal))}"
+            f"missing={sorted(required - set(proposal))}; "
+            f"unknown={sorted(set(proposal) - allowed)}"
         )
-    # Strip unknown extra fields — json_object providers may add noise.
-    proposal = {k: v for k, v in proposal.items() if k in allowed}
     exact = {
         "schema_version": ONBOARDING_PROPOSAL_SCHEMA,
         "bundle_sha256": bundle.get("bundle_sha256"),
@@ -681,39 +747,32 @@ def validate_onboarding_proposal(
         raise OnboardingError("rationale must be 1-4000 characters")
     normalized["confidence"] = normalized_confidence
     normalized["rationale"] = rationale.strip()
-    raw_annotation_families = proposal.get("annotation_families")
-    if isinstance(raw_annotation_families, list):
-        families = []
-        for entry in raw_annotation_families:
-            if not isinstance(entry, dict):
-                continue
-            fid = str(entry.get("family_id", "")).strip()
-            pat = str(entry.get("text_pattern", "")).strip()
-            tc = str(entry.get("target_class", "")).strip()
-            dist = entry.get("max_distance_native_m")
-            if not fid or not pat or tc not in _FEATURE_CLASSES:
-                continue
-            if isinstance(dist, bool) or not isinstance(dist, (int, float)):
-                continue
-            dist = float(dist)
-            if not 0.1 <= dist <= 100.0:
-                continue
-            family: dict[str, Any] = {
-                "family_id": fid,
-                "text_pattern": pat,
-                "target_class": tc,
-                "max_distance_native_m": dist,
-            }
-            raw_color = entry.get("aci_color")
-            if isinstance(raw_color, int) and not isinstance(raw_color, bool) and 1 <= raw_color <= 255:
-                family["aci_color"] = raw_color
-            raw_layer = entry.get("source_layer")
-            if isinstance(raw_layer, str) and raw_layer.strip():
-                family["source_layer"] = raw_layer.strip()
-            families.append(family)
-        normalized["annotation_families"] = families
-    else:
-        normalized["annotation_families"] = []
+    observed_families = {
+        item["candidate_id"]: item
+        for item in bundle.get("annotation_family_candidates", ())
+    }
+    selections = proposal["annotation_family_selections"]
+    if not isinstance(selections, list):
+        raise OnboardingError("annotation_family_selections must be an array")
+    families: list[dict[str, Any]] = []
+    selected_ids: set[str] = set()
+    for entry in selections:
+        if not isinstance(entry, Mapping) or set(entry) != {"candidate_id", "policy_id"}:
+            raise OnboardingError("Annotation selections must contain only candidate_id and policy_id")
+        family_id, policy_id = entry["candidate_id"], entry["policy_id"]
+        if not isinstance(family_id, str) or family_id not in observed_families:
+            raise OnboardingError("Annotation selection must use an observed candidate ID")
+        if family_id in selected_ids:
+            raise OnboardingError("Annotation selection contains a duplicate candidate ID")
+        candidate = observed_families[family_id]
+        if policy_id not in candidate["policy_ids"]:
+            raise OnboardingError("Annotation selection must use the candidate's registered policy ID")
+        selected_ids.add(family_id)
+        families.append(dict(candidate["family"]))
+    normalized["annotation_family_selections"] = sorted(
+        (dict(item) for item in selections), key=lambda item: item["candidate_id"],
+    )
+    normalized["annotation_families"] = families
     normalized["proposal_sha256"] = _canonical_sha256(normalized)
     normalized["crs_candidate"] = candidates[candidate_id]
     return normalized
@@ -765,8 +824,8 @@ def _compile_annotation_families(
 ) -> list[dict[str, Any]]:
     """Expand AI-onboarding annotation families to the full registry format.
 
-    The model provides the core fields (family_id, text_pattern, target_class,
-    max_distance_native_m, optional source_layer).  ``source_layer`` is the
+    Fields come from source-bound deterministic candidates; reviewed registry
+    configuration continues to use this same representation. ``source_layer`` is the
     layer that carries the annotation text; ``target_layer_pattern`` must be
     derived from the reviewed INSERT-layer mapping for ``target_class``, never
     from the label layer.  ``require_same_layer`` is only true when the label
@@ -839,146 +898,6 @@ def _compile_annotation_families(
             family["aci_color"] = int(entry["aci_color"])
         result.append(family)
     return result
-
-
-def _family_matches_samples(
-    pattern: str, samples: Sequence[Any], *, min_fraction: float = 0.8,
-) -> bool:
-    """True when the pattern full-matches most of the layer's text samples."""
-    try:
-        compiled = re.compile(pattern)
-    except re.error:
-        return False
-    texts = [
-        str(sample.get("text", "")).strip()
-        for sample in samples
-        if str(sample.get("text", "")).strip()
-    ]
-    if not texts:
-        return False
-    matched = sum(1 for text in texts if compiled.fullmatch(text))
-    return matched / len(texts) >= min_fraction
-
-
-def _repair_annotation_families(
-    *,
-    project_dir: str | Path,
-    failing_families: list[dict[str, Any]],
-    provider_id: str | None = None,
-    provider: ReviewProvider | None = None,
-    missing_only: bool = False,
-) -> list[dict[str, Any]]:
-    """Ask the model to fix structurally failing — or propose missing — families.
-
-    With ``missing_only``, entries carry ``layer`` + ``samples`` and the model
-    proposes brand-new families (target_class inferred from the layer); with
-    ``missing_only=False`` the entries carry an existing family to repair.
-    """
-    selected_provider = provider
-    if selected_provider is None:
-        selected_provider = OpenAICompatibleProvider(
-            load_provider_config(provider=provider_id)
-        )
-    if missing_only:
-        system_prompt = (
-            "You are proposing annotation label families for a CAD2GIS project. "
-            "Each entry lists an asset label LAYER whose text samples have no "
-            "family yet. Propose ONE family per layer: choose family_id "
-            "(lowercase snake), text_pattern that preserves EVERY observed field "
-            "token of the samples (separator/case variants tolerated), "
-            "target_class (BOITE/PTECH/SITE — POLE layers→PTECH, FAT/closure "
-            "layers→BOITE, FDT/splitter→SITE), and max_distance_native_m (15.0). "
-            "Return a JSON object with a 'decisions' array. Respond in JSON."
-        )
-    else:
-        # OVERFIT-RISK (prompt example): ``EXT, MR, MF, LBB, S\\d{2}, P\\d+``
-        # is a baseline label hierarchy shown only as an example.  The model
-        # must follow the actual samples in ``failing_families``, not copy
-        # these tokens into new projects.
-        system_prompt = (
-            "You are repairing annotation label patterns for a CAD2GIS project. "
-            "Each entry lists a family whose text_pattern failed structural "
-            "validation, along with the samples it must cover. Rewrite the "
-            "text_pattern so that it preserves EVERY observed field token of the "
-            "label hierarchy (e.g. EXT, MR, MF, LBB, S\\d{2}, P\\d+) — never "
-            "collapse middle fields with .*, never invent placeholder tokens. "
-            "Separator variants (space vs dot) and case differences are "
-            "tolerated. Return a JSON object with a 'decisions' array, one item "
-            "per failing family: {\"family_id\", \"text_pattern\", "
-            "\"target_class\", \"max_distance_native_m\"}. Keep the family_id "
-            "and target_class unchanged. Respond in JSON."
-        )
-    request = ReviewRequest(
-        system_prompt=system_prompt,
-        context={
-            "schema_version": (
-                "cad2gis-family-propose-v1"
-                if missing_only
-                else "cad2gis-family-repair-v1"
-            ),
-            "failing_families": failing_families,
-        },
-        json_schema={
-            "type": "object",
-            "properties": {
-                "decisions": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "family_id": {"type": "string"},
-                            "text_pattern": {"type": "string", "minLength": 1},
-                            "target_class": {
-                                "type": "string",
-                                "enum": list(_FEATURE_CLASSES),
-                            },
-                            "max_distance_native_m": {
-                                "type": "number", "minimum": 0.1, "maximum": 100.0,
-                            },
-                            "layer": {"type": "string"},
-                        },
-                        "required": ["family_id", "text_pattern", "target_class", "max_distance_native_m"],
-                        "additionalProperties": False,
-                    },
-                }
-            },
-            "required": ["decisions"],
-            "additionalProperties": False,
-        },
-        schema_name="cad2gis_annotation_family_repair",
-    )
-    try:
-        response: ReviewResponse = selected_provider.review(request)
-        payload = json.loads(response.content)
-        decisions = list(payload.get("decisions", ()))
-    except Exception:
-        return []
-    repaired: list[dict[str, Any]] = []
-    for decision in decisions:
-        if not isinstance(decision, dict):
-            continue
-        fid = str(decision.get("family_id", "")).strip()
-        pat = str(decision.get("text_pattern", "")).strip()
-        tc = str(decision.get("target_class", "")).strip()
-        dist = decision.get("max_distance_native_m")
-        if not fid or not pat or tc not in _FEATURE_CLASSES:
-            continue
-        if isinstance(dist, bool) or not isinstance(dist, (int, float)):
-            continue
-        dist = float(dist)
-        if not 0.1 <= dist <= 100.0:
-            continue
-        repaired_entry: dict[str, Any] = {
-            "family_id": fid,
-            "text_pattern": pat,
-            "target_class": tc,
-            "max_distance_native_m": dist,
-        }
-        raw_layer = decision.get("layer")
-        if isinstance(raw_layer, str) and raw_layer.strip():
-            repaired_entry["source_layer"] = raw_layer.strip()
-        repaired.append(repaired_entry)
-    return repaired
 
 
 def _merge_reviewed_rules(
@@ -1133,204 +1052,44 @@ def compile_onboarding_proposal(
     bundle = prepare_onboarding_bundle(root)
     validated = validate_onboarding_proposal(bundle, proposal)
 
-    # ── L1/L2 annotation-family validation with structural repair loop ──
-    from .family_validation import (
-        derive_family_from_samples,
-        l1_validate_family,
-        l2_validate_family_group,
-        structural_failure_evidence,
-    )
+    # The model selected complete deterministic candidates. A failed selected
+    # family rejects the entire proposal; admission never silently substitutes
+    # or drops the model's choices and never starts a hidden provider request.
+    from .family_validation import l1_validate_family, l2_validate_family_group
 
     samples_by_layer = dict(bundle.get("text_samples_by_layer", {}))
     family_validation: dict[str, Any] = {
-        "schema_version": "cad2gis-family-validation-v1",
+        "schema_version": "cad2gis-family-validation-v2",
         "repair_attempts": 0,
-        # The caller is already the model that authored this proposal.  Never
-        # make a hidden second provider request during deterministic admission:
-        # it can hang an otherwise portable MCP server and makes runtime cost
-        # and data egress invisible to the host agent.  Invalid families are
-        # dropped and rebuilt only from source-bound samples below.
         "max_repair_attempts": 0,
         "repair_strategy": "deterministic_source_samples_only",
         "provider_calls": 0,
         "results": [],
         "repaired_families": [],
         "dropped_families": [],
+        "selected_candidates": validated["annotation_family_selections"],
     }
-    raw_families = list(validated.get("annotation_families", ()))
-    if raw_families and samples_by_layer:
-        _ASSET_LABEL_LAYER_HINTS = re.compile(
-            r"(?i)(pole|fat|fdt|closure|splice|splitter|odp|otb|sling)"
+    raw_families = validated["annotation_families"]
+    for family in raw_families:
+        layer = family["source_layer"]
+        siblings = [
+            other for other in raw_families
+            if other["source_layer"] == layer and other.get("aci_color") == family.get("aci_color")
+        ]
+        group_samples = [
+            sample for sample in samples_by_layer.get(layer, ())
+            if family.get("aci_color") is None or sample.get("aci_color") == family["aci_color"]
+        ]
+        l1 = l1_validate_family(family, samples_by_layer)
+        l2 = (
+            l2_validate_family_group(siblings, group_samples)
+            if len(siblings) > 1 else {"passed": True}
         )
-        for attempt in range(family_validation["max_repair_attempts"] + 1):
-            family_validation["repair_attempts"] = attempt
-            kept: list[dict[str, Any]] = []
-            dropped: list[dict[str, Any]] = []
-            repaired: list[dict[str, Any]] = []
-            results: list[dict[str, Any]] = []
-            need_repair: list[dict[str, Any]] = []
-            grouped_by_layer: dict[str, list[dict[str, Any]]] = defaultdict(list)
-            for family in raw_families:
-                source_layer = str(family.get("source_layer", "")).strip()
-                if source_layer:
-                    grouped_by_layer[source_layer].append(family)
-
-            # Missing-family detection: asset label layers whose text samples
-            # are structured but have no annotation family.  The model often
-            # proposes only one family (e.g. SLING WIRE) and skips POLE ID /
-            # FAT CODE — those must be enumerated, not silently dropped.
-            covered_layers = set(grouped_by_layer)
-            missing_layers = [
-                layer
-                for layer, samples in samples_by_layer.items()
-                if (
-                    _ASSET_LABEL_LAYER_HINTS.search(layer)
-                    and samples
-                    and layer not in covered_layers
-                )
-            ]
-            if missing_layers and attempt < family_validation["max_repair_attempts"]:
-                missing_evidence = [
-                    {
-                        "layer": layer,
-                        "samples": [
-                            str(s.get("text", "")) for s in samples_by_layer[layer]
-                        ][:20],
-                        "instruction": (
-                            "This asset label layer has structured text samples but "
-                            "no annotation family was proposed.  Propose one family "
-                            "with a text_pattern that preserves every observed field "
-                            "token (separator/case variants tolerated)."
-                        ),
-                    }
-                    for layer in missing_layers
-                ]
-                repaired_payload = _repair_annotation_families(
-                    project_dir=root,
-                    failing_families=missing_evidence,
-                    provider_id=os.environ.get("CAD2GIS_LLM_PROVIDER") or None,
-                    missing_only=True,
-                )
-                llm_accepted: list[dict[str, Any]] = []
-                for repaired_family in repaired_payload:
-                    if not repaired_family.get("family_id"):
-                        continue
-                    layer = str(repaired_family.get("source_layer", "")).strip()
-                    own = samples_by_layer.get(layer, ())
-                    if own and _family_matches_samples(
-                        str(repaired_family.get("text_pattern", "")), own
-                    ):
-                        llm_accepted.append(repaired_family)
-                for family in llm_accepted:
-                    repaired.append(family)
-                # Deterministic fallback for layers the LLM could not cover.
-                for layer in missing_layers:
-                    if any(
-                        str(f.get("source_layer", "")).strip() == layer
-                        for f in llm_accepted
-                    ):
-                        continue
-                    derived = derive_family_from_samples(
-                        layer, samples_by_layer.get(layer, ())
-                    )
-                    repaired.extend(derived)
-                family_validation["missing_layers"] = missing_layers
-                family_validation["repaired_families"].append(
-                    [f.get("family_id", "") for f in repaired]
-                )
-                raw_families = kept + repaired
-                continue
-
-            for family in raw_families:
-                source_layer = str(family.get("source_layer", "")).strip()
-                l1 = l1_validate_family(family, samples_by_layer)
-                l2 = {"passed": True, "sample_count": 0, "ambiguous_count": 0, "unassigned_count": 0}
-                if source_layer:
-                    siblings = [
-                        other for other in raw_families
-                        if str(other.get("source_layer", "")).strip() == source_layer
-                    ]
-                    if len(siblings) > 1:
-                        l2 = l2_validate_family_group(
-                            siblings,
-                            samples_by_layer.get(source_layer, ()),
-                        )
-                results.append({"l1": l1, "l2": l2})
-                if l1["passed"] and l2["passed"]:
-                    kept.append(family)
-                else:
-                    if attempt < family_validation["max_repair_attempts"]:
-                        need_repair.append(family)
-                    else:
-                        dropped.append(family)
-
-            if not need_repair:
-                family_validation["results"] = results
-                family_validation["dropped_families"] = [
-                    {"family_id": f.get("family_id", ""), "reason": "structural_validation_failed"}
-                    for f in dropped
-                ]
-                raw_families = kept
-                break
-
-            # Repair attempt: send evidence back to the model
-            evidence_items = [
-                structural_failure_evidence(
-                    family,
-                    samples_by_layer.get(str(family.get("source_layer", "")), ()),
-                    results[len(raw_families) - len(need_repair) + i]["l1"]
-                    if len(results) >= len(raw_families) else {},
-                    results[len(raw_families) - len(need_repair) + i]["l2"]
-                    if len(results) >= len(raw_families) else {},
-                )
-                for i, family in enumerate(need_repair)
-            ]
-            repaired_payload = _repair_annotation_families(
-                project_dir=root,
-                failing_families=evidence_items,
-                provider_id=os.environ.get("CAD2GIS_LLM_PROVIDER") or None,
+        family_validation["results"].append({"l1": l1, "l2": l2})
+        if not l1["passed"] or not l2["passed"]:
+            raise OnboardingError(
+                f"Selected annotation candidate failed structural validation: {family['family_id']}"
             )
-            for repaired_family in repaired_payload:
-                if repaired_family.get("family_id"):
-                    repaired.append(repaired_family)
-            family_validation["repaired_families"].append(
-                [f.get("family_id", "") for f in repaired]
-            )
-            raw_families = kept + repaired
-
-        # Deterministic cover for asset-label layers that still have no
-        # surviving family.  This catches both layers the model never
-        # proposed and layers whose proposed/repair families all failed
-        # validation and were dropped by ``raw_families = kept + repaired``.
-        surviving_layers = {
-            str(family.get("source_layer", "")).strip()
-            for family in raw_families
-            if str(family.get("source_layer", "")).strip()
-        }
-        fallback_families: list[dict[str, Any]] = []
-        for layer, samples in samples_by_layer.items():
-            if (
-                _ASSET_LABEL_LAYER_HINTS.search(layer)
-                and samples
-                and layer not in surviving_layers
-            ):
-                derived = derive_family_from_samples(layer, samples)
-                if derived:
-                    family_validation.setdefault(
-                        "deterministic_fallback_layers", []
-                    ).append(layer)
-                    fallback_families.extend(derived)
-        if fallback_families:
-            raw_families.extend(fallback_families)
-            family_validation["deterministic_fallback_families"] = [
-                family.get("family_id", "") for family in fallback_families
-            ]
-
-        # Apply validated families back into the proposal
-        validated = {
-            **dict(validated),
-            "annotation_families": raw_families,
-        }
 
     profile_path = root / "config" / "source_profile.json"
     registry_path = root / "config" / "mapping_registry.json"
@@ -1586,10 +1345,6 @@ def request_onboarding_proposal(
         selected_provider = OpenAICompatibleProvider(
             load_provider_config(provider=provider_id)
         )
-    # OVERFIT-RISK (prompt examples): ``EXT.MR.MF.LBB.S02.P001``, ``DMPH``,
-    # ``FAT CODE``/``FDT-Info`` and the layer-name examples are illustrative
-    # tokens from the four baseline drawings.  The JSON schema enum and the
-    # bundled text samples remain authoritative for every new project.
     request = ReviewRequest(
         system_prompt=(
             "You are the CAD2GIS onboarding planner. Return a JSON object matching "
@@ -1602,31 +1357,13 @@ def request_onboarding_proposal(
             "candidate. The CRS candidate is derived from DWG metadata (CGEOCS + "
             "INSUNITS), not inferred — when the crs_candidates list has exactly one "
             "entry, set confidence.crs to 1.0 and select that candidate_id. "
-            "Derive annotation_families STRICTLY from the observed text samples in "
-            "text_samples_by_layer — never invent formats that are not present in "
-            "the samples. Each sample entry includes text and, when available, "
-            "aci_color. "
-            "For every layer whose text values carry structure (e.g. identifiers "
-            "with a field hierarchy such as EXT.MR.MF.LBB.S02.P001), propose ONE "
-            "annotation_family per distinct field structure with a text_pattern "
-            "that preserves EVERY observed field token (no .* collapsing of "
-            "middle fields; keep the full hierarchy like EXT, MR, MF, LBB, S\\d{2}, "
-            "P\\d+). Treat separator variants (space vs dot vs slash) and case "
-            "differences as equivalent — the pattern must capture the field "
-            "structure, not a literal separator. "
-            "When a layer contains MULTIPLE distinct label families (e.g. DMPH "
-            "identifiers alongside plain numeric codes), propose SEPARATE families "
-            "per group, distinguishing them by their characteristic tokens. "
-            "When samples on the same layer share the same text pattern but carry "
-            "different aci_color values, add the aci_color field to the family so "
-            "the runtime can filter by colour. "
-            "COVERAGE: every layer whose text samples follow a structure must get "
-            "at least one annotation family — pole identifier layers (e.g. POLE ID, "
-            "EXISTING POLE, NEW POLE), closure layers (FAT CODE, FAT, FAT Info), "
-            "and splitter layers (FDT-Info) are all asset label layers.  Do not "
-            "stop after one family; enumerate every structured label layer. "
-            "Set target_class to BOITE/PTECH/SITE and max_distance_native_m to "
-            "15.0 unless the sample layout justifies otherwise. "
+            "Select annotation_family_selections from annotation_family_candidates. "
+            "Each selection contains only the observed candidate_id and one of its "
+            "registered policy_ids as policy_id. The service derives the regex, "
+            "source-layer binding, target class and distance policy before your "
+            "request. Never supply or modify regexes, numeric distances or colours. "
+            "Read the candidate evidence for every structured label layer; omit "
+            "ambiguous candidates and preserve them as unresolved. "
             "Do not invent coordinates, lengths, CRS identifiers, GCPs, "
             "layers, blocks, or expected counts. Prefer abstention over a weak "
             "semantic mapping."
@@ -1645,7 +1382,7 @@ def request_onboarding_proposal(
         raise OnboardingError("Provider onboarding response is not JSON") from exc
     if not isinstance(payload, dict):
         raise OnboardingError("Provider onboarding response root must be an object")
-    proposal = validate_onboarding_proposal(bundle, payload)
+    validate_onboarding_proposal(bundle, payload)
     provenance = {
         "provider": response.provider,
         "protocol": response.protocol,
@@ -1656,7 +1393,8 @@ def request_onboarding_proposal(
         "response_sha256": response.response_sha256,
         "response_id": response.response_id,
     }
-    return proposal, provenance
+    # Return the original schema-shaped proposal for deterministic revalidation.
+    return payload, provenance
 
 
 def auto_onboard_with_provider(

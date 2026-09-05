@@ -97,6 +97,7 @@ def _proposal(bundle: dict, *, route_layers: list[str] | None = None) -> dict:
         "insert_layer_families": {"BOITE": [], "PTECH": [], "SITE": []},
         "confidence": {"semantics": 0.9, "crs": 1.0},
         "rationale": "Observed route layer and direct DWG CRS metadata.",
+        "annotation_family_selections": [],
     }
 
 
@@ -426,3 +427,175 @@ def test_text_samples_use_drawing_space_and_prioritize_structured_labels() -> No
     # Multi-field identifiers are sampled before single-token stubs.
     assert fat_texts.index("KLDYA.011.B06") < fat_texts.index("A01")
     assert "KLDYA.012.A02" in fat_texts
+
+
+def _annotation_bundle(tmp_path: Path) -> tuple[Path, Path, dict]:
+    source, root, _ = _project(tmp_path)
+    bundle = onboarding.prepare_onboarding_bundle(root)
+    # Unit-level candidate evidence: production prepare uses these same source-
+    # and inventory-bound inputs from the immutable census.
+    bundle["text_samples_by_layer"] = {
+        "POLE ID": [{"text": "NET.014.P001"}, {"text": "NET.014.P002"}],
+    }
+    bundle["annotation_family_candidates"] = onboarding._annotation_candidates(
+        bundle["text_samples_by_layer"],
+        source_sha256=bundle["source"]["sha256"],
+        inventory_sha256=bundle["inventory_sha256"],
+    )
+    assert len(bundle["annotation_family_candidates"]) == 1
+    return source, root, bundle
+
+
+def _selected_annotation_proposal(bundle: dict) -> dict:
+    proposal = _proposal(bundle)
+    candidate = bundle["annotation_family_candidates"][0]
+    proposal["annotation_family_selections"] = [{
+        "candidate_id": candidate["candidate_id"],
+        "policy_id": candidate["policy_ids"][0],
+    }]
+    return proposal
+
+
+def test_annotation_candidates_are_deterministic_and_source_bound(tmp_path: Path) -> None:
+    _, _, bundle = _annotation_bundle(tmp_path)
+    candidate = bundle["annotation_family_candidates"][0]
+    normalized = onboarding.validate_onboarding_proposal(bundle, _selected_annotation_proposal(bundle))
+    assert normalized["annotation_families"] == [candidate["family"]]
+    assert candidate["family"]["max_distance_native_m"] == 15.0
+    assert all(re.fullmatch(candidate["family"]["text_pattern"], sample["text"])
+               for sample in bundle["text_samples_by_layer"]["POLE ID"])
+    altered_source = onboarding._annotation_candidates(
+        bundle["text_samples_by_layer"], source_sha256="f" * 64,
+        inventory_sha256=bundle["inventory_sha256"],
+    )
+    assert altered_source[0]["candidate_id"] != candidate["candidate_id"]
+    schema = onboarding.onboarding_proposal_json_schema(bundle)
+    assert "annotation_families" not in schema["properties"]
+    item_schema = schema["properties"]["annotation_family_selections"]["items"]
+    assert set(item_schema["properties"]) == {"candidate_id", "policy_id"}
+
+
+def test_prepare_bundle_publishes_observed_annotation_choices(tmp_path: Path) -> None:
+    source = tmp_path / "labels.dwg"
+    source.write_bytes(b"source-bound-labels")
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    records = [
+        _record(source, source_hash, entity_key="metadata", dwg_type="DOCUMENT_METADATA",
+                layout="Document", cad_role="metadata", text="CGEOCS=UTM84-49S;INSUNITS=6"),
+        *[
+            _record(source, source_hash, entity_key=f"label-{number}", dwg_type="TEXT",
+                    layer="POLE ID", text=f"NET.014.P00{number}", points=((100 + number, 200),))
+            for number in (1, 2)
+        ],
+    ]
+    root = tmp_path / "project"
+    bootstrap_project(source=source, project_dir=root, records=records)
+    bundle = onboarding.prepare_onboarding_bundle(root)
+    assert bundle["annotation_family_candidates"]
+    assert bundle == onboarding.prepare_onboarding_bundle(root)
+    candidate = bundle["annotation_family_candidates"][0]
+    assert candidate["family"]["source_layer"] == "POLE ID"
+    assert candidate["policy_ids"] == [onboarding.ANNOTATION_POLICY_ID]
+
+
+def test_annotation_candidates_preserve_observed_colour_disambiguation() -> None:
+    samples = {"POLE ID": [
+        {"text": "NET.014.P001", "aci_color": 1},
+        {"text": "NET.014.P002", "aci_color": 1},
+        {"text": "NET.014.P003", "aci_color": 5},
+        {"text": "NET.014.P004", "aci_color": 5},
+    ]}
+    candidates = onboarding._annotation_candidates(samples, source_sha256="1" * 64, inventory_sha256="2" * 64)
+    assert [candidate["family"]["aci_color"] for candidate in candidates] == [1, 5]
+    assert len({candidate["candidate_id"] for candidate in candidates}) == 2
+    families = onboarding._compile_annotation_families(
+        [candidate["family"] for candidate in candidates], {"PTECH": ["NEW POLE"]},
+    )
+    assert [family["aci_color"] for family in families] == [1, 5]
+
+
+def test_provider_proposal_round_trip_keeps_strict_model_schema(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, root, bundle = _annotation_bundle(tmp_path)
+    proposal = _selected_annotation_proposal(bundle)
+    monkeypatch.setattr(onboarding, "prepare_onboarding_bundle", lambda _root: bundle)
+    class Provider:
+        def review(self, request):
+            assert "annotation_family_selections" in request.system_prompt
+            assert "unless the sample layout justifies otherwise" not in request.system_prompt
+            return onboarding.ReviewResponse(
+                content=json.dumps(proposal), provider="test", protocol="fixture", model="test",
+                capability="json_schema", base_url_profile_sha256="1" * 64,
+                request_sha256="2" * 64, response_sha256="3" * 64, response_id="fixture",
+            )
+    returned, _ = onboarding.request_onboarding_proposal(root, provider=Provider())
+    assert returned == proposal
+    assert "proposal_sha256" not in returned
+    assert onboarding.validate_onboarding_proposal(bundle, returned)["annotation_families"]
+
+
+@pytest.mark.parametrize("mutation", [
+    "invented_candidate", "invented_policy", "regex", "distance", "missing_policy",
+    "duplicate", "wrong_type", "legacy_families", "unknown_top_level",
+])
+def test_annotation_invalid_proposal_rejects_entire_package(
+    tmp_path: Path, mutation: str,
+) -> None:
+    _, _, bundle = _annotation_bundle(tmp_path)
+    proposal = _selected_annotation_proposal(bundle)
+    selection = proposal["annotation_family_selections"][0]
+    if mutation == "invented_candidate":
+        selection["candidate_id"] = "annotation-family:" + "f" * 64
+    elif mutation == "invented_policy":
+        selection["policy_id"] = "large-radius-policy"
+    elif mutation == "regex":
+        selection["text_pattern"] = ".*"
+    elif mutation == "distance":
+        selection["max_distance_native_m"] = 100.0
+    elif mutation == "missing_policy":
+        del selection["policy_id"]
+    elif mutation == "duplicate":
+        proposal["annotation_family_selections"].append(dict(selection))
+    elif mutation == "wrong_type":
+        proposal["annotation_family_selections"].append(None)
+    elif mutation == "legacy_families":
+        proposal["annotation_families"] = [{"text_pattern": ".*", "max_distance_native_m": 100}]
+    else:
+        proposal["coordinates"] = [1, 2]
+    with pytest.raises(onboarding.OnboardingError):
+        onboarding.validate_onboarding_proposal(bundle, proposal)
+
+
+def test_structurally_invalid_selected_candidate_never_mutates_live_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source, root, bundle = _annotation_bundle(tmp_path)
+    proposal = _selected_annotation_proposal(bundle)
+    paths = [root / "config" / name for name in ("mapping_registry.json", "source_profile.json")]
+    before = [path.read_bytes() for path in paths]
+    monkeypatch.setattr(onboarding, "prepare_onboarding_bundle", lambda _root: bundle)
+    from cad2gis.cad2gis_v3 import family_validation
+    monkeypatch.setattr(family_validation, "l1_validate_family", lambda *_args: {"passed": False})
+    with pytest.raises(onboarding.OnboardingError, match="structural validation"):
+        onboarding.compile_onboarding_proposal(
+            source=source, project_dir=root, proposal=proposal,
+            proposer={"provider": "test", "model": "fixture"},
+        )
+    assert [path.read_bytes() for path in paths] == before
+    assert not list((root / "config").glob("*.staged"))
+
+
+def test_real_plugin_yaml_reference_and_skill_agree_on_prompt_contract() -> None:
+    import yaml
+    from cad2gis.contracts import AGENT_PROMPT_CONTRACT_VERSION
+    skill_root = Path(__file__).resolve().parents[1] / "plugins" / "cad2gis-agent" / "skills" / "convert-cad-to-gis"
+    yaml_payload = yaml.safe_load((skill_root / "agents" / "openai.yaml").read_text(encoding="utf-8"))
+    reference = (skill_root / "references" / "agent-prompt-contract.md").read_text(encoding="utf-8")
+    skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+    assert AGENT_PROMPT_CONTRACT_VERSION in yaml_payload["interface"]["default_prompt"]
+    assert AGENT_PROMPT_CONTRACT_VERSION in reference
+    assert AGENT_PROMPT_CONTRACT_VERSION in skill
+    assert reference.startswith("# CAD2GIS agent prompt contract v3\n")
+    assert onboarding.ONBOARDING_PROPOSAL_SCHEMA in reference
+    assert "annotation_family_selections" in reference
