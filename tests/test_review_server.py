@@ -383,3 +383,89 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
 
     traversal = client.get("/assets/../pyproject.toml")
     assert traversal.status_code == 404
+
+
+def _partition_fixture(tmp_path):
+    run, _, manifest_path = _run_fixture(tmp_path)
+    partition = run / "EMR28560"
+    partition.mkdir()
+    delivery = partition / "delivery.gpkg"
+    delivery.write_bytes(b"partition-specific-delivery")
+    evidence = run / "evidence.gpkg"
+    evidence.write_bytes(b"shared-parent-evidence")
+    counts = {"BOITE": 6, "PTECH": 6, "EMR": 1, "INFRASTRUCTURE": 1, "CABLE": 6}
+    parent = json.loads(manifest_path.read_text())
+    parent["artifacts"]["evidence"] = {
+        "path": str(evidence), "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest()}
+    parent["delivery_partitions"] = {"EMR28560": {
+        "path": str(delivery), "sha256": hashlib.sha256(delivery.read_bytes()).hexdigest(),
+        "delivery_counts": counts}}
+    manifest_path.write_text(json.dumps(parent), encoding="utf-8")
+    partition_manifest = partition / "partition_manifest.json"
+    partition_manifest.write_text(json.dumps({
+        "schema_version": "cad2gis-delivery-partition-v1", "region_id": "EMR28560",
+        "delivery_counts": counts}), encoding="utf-8")
+    return partition, parent, manifest_path, partition_manifest
+
+
+def test_partition_api_reports_its_own_counts_and_retains_parent_source_evidence(tmp_path, monkeypatch):
+    monkeypatch.delenv("CAD2GIS_REVIEW_POSTGIS_DSN", raising=False)
+    partition, parent, manifest_path, partition_manifest = _partition_fixture(tmp_path)
+    original = {path: path.read_bytes() for path in (
+        manifest_path, partition_manifest, partition / "delivery.gpkg")}
+    original_provider = review_server.GeoPackageProvider
+    assert original_provider(partition / "delivery.gpkg")._evidence_path() == partition.parent / "evidence.gpkg"
+    observed = []
+
+    class Provider:
+        def __init__(self, path):
+            observed.append(path)
+
+        def layers(self):
+            return [{"name": name, "feature_count": count}
+                    for name, count in parent["delivery_partitions"]["EMR28560"]["delivery_counts"].items()]
+
+    monkeypatch.setattr(review_server, "GeoPackageProvider", Provider)
+    client = TestClient(create_review_app(partition, workspace_dir=tmp_path / "review-partition"))
+    summary = client.get("/api/run").json()
+    counts = parent["delivery_partitions"]["EMR28560"]["delivery_counts"]
+    assert summary["delivery_counts"] == counts
+    assert sum(summary["delivery_counts"].values()) == 20
+    assert summary["delivery_counts"] != parent["delivery_counts"]
+    assert sum(layer["feature_count"] for layer in client.get("/api/layers").json()["layers"]) == 20
+    assert summary["run_dir"] == str(partition)
+    assert summary["source"] == parent["source"]
+    assert summary["source_available"] is True
+    assert summary["source_resolved_path"] == str(partition.parent / "fixture.dwg")
+    assert summary["parent_run_provenance"] == {
+        "run_dir": str(partition.parent), "manifest_path": str(manifest_path),
+        "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "run_status": "CONDITIONAL", "source_entity_count_scope": "parent_run",
+        "validation_scope": "parent_run"}
+    assert observed == [partition / "delivery.gpkg"]
+    assert all(path.read_bytes() == value for path, value in original.items())
+
+
+@pytest.mark.parametrize("mutation", ["count", "boolean_count", "missing_entry", "wrong_region", "wrong_path", "wrong_sha", "missing_sha"])
+def test_partition_review_rejects_unbound_or_inconsistent_manifest(tmp_path, mutation):
+    partition, parent, manifest_path, partition_manifest = _partition_fixture(tmp_path)
+    child = json.loads(partition_manifest.read_text())
+    entry = parent["delivery_partitions"]["EMR28560"]
+    if mutation == "count":
+        child["delivery_counts"]["CABLE"] = 99
+    elif mutation == "boolean_count":
+        child["delivery_counts"]["EMR"] = True
+    elif mutation == "missing_entry":
+        parent["delivery_partitions"] = {}
+    elif mutation == "wrong_region":
+        child["region_id"] = "OTHER"
+    elif mutation == "wrong_path":
+        entry["path"] = str(partition.parent / "OTHER/delivery.gpkg")
+    elif mutation == "wrong_sha":
+        entry["sha256"] = "a" * 64
+    elif mutation == "missing_sha":
+        entry["sha256"] = ""
+    manifest_path.write_text(json.dumps(parent), encoding="utf-8")
+    partition_manifest.write_text(json.dumps(child), encoding="utf-8")
+    with pytest.raises(ReviewServerError, match="(?i)partition"):
+        create_review_app(partition, workspace_dir=tmp_path / "review-invalid")

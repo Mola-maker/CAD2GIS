@@ -11,11 +11,20 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
 
+from .artifact_io import inherit_output_permissions as _inherit_output_permissions
 from .model import SourceEntity
 from .project_profile import _extract_records, _inspect_source_facts
 from .source_gpkg import _lossless_json_value, write_source_gpkg
 
 SOURCE_EXPORT_SCHEMA_VERSION = "cad2gis.source_export.v1"
+
+
+class _DiagnosedEntities(list[SourceEntity]):
+    """Retain reader authority while projecting rows into typed source facts."""
+
+    def __init__(self, entities: Iterable[SourceEntity], diagnostics: Mapping[str, Any]):
+        super().__init__(entities)
+        self.diagnostics = dict(diagnostics)
 
 
 def _json(value: Any) -> str:
@@ -89,7 +98,9 @@ def export_source(
         if entity.source_sha256 and entity.source_sha256 != source_hash:
             raise ValueError("Reader entity is bound to another source SHA-256")
         entities.append(replace(entity, source_sha256=source_hash))
-    inventory, graph, entities, plan_entities = _inspect_source_facts(source=source_path, records=entities)
+    inventory, graph, entities, plan_entities = _inspect_source_facts(
+        source=source_path, records=_DiagnosedEntities(entities, diagnostics),
+    )
     provenance = {
         "mode": "native_reader" if records is None else "injected_records",
         "authority": "reader_complete" if records is None else "simulation_or_caller_supplied",
@@ -150,6 +161,7 @@ def export_source(
             raise ValueError("Source DWG changed during export")
         manifest["snapshot_sha256"] = snapshot_digest(manifest)
         _write_json(staging / "source_manifest.json", manifest)
+        _inherit_output_permissions(staging)
         # No destination files are visible before all products and manifest
         # have been closed, hashed and validated. rmdir fails on a raced write.
         if root.exists():

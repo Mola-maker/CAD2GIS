@@ -13,19 +13,24 @@ or CRS algorithms inside the host agent or plugin.
 
 ## Required opening sequence
 
-1. Call `get_capabilities`, report its configured filesystem roots, and require
-   package/plugin/skill version agreement plus the returned tool-contract digest
-   before constructing any proposal. Require `prompt_contract.version` to be
-   `cad2gis.agent_prompt.v3`; stop on a stale cached plugin instead of guessing.
+1. Call `get_capabilities` and `debug_mcp`; record the interpreter, imported
+   package path, package version, protocol, tool-contract digest and filesystem
+   roots. Require `prompt_contract.version` to be `cad2gis.agent_prompt.v3`
+   before constructing proposals. Check the installed client plugin separately:
+   a wheel server cannot prove which skill the host loaded. If the injected
+   plugin is stale, use the verified current installation through its public
+   CLI/API and actual stdio probe while completing an authorized plugin update.
+   Do not dispatch current proposals through incompatible cached tools.
 2. Read the returned `runtime`. If the selected LibreDWG reader is unavailable,
    call `install_runtime`, then call `get_runtime_status` again. Do not require
    AutoCAD or Conda and do not silently select the AutoCAD fallback.
 3. Call `inspect_source` for a new DWG, or `inspect_run` for an existing run.
 4. Keep source facts, semantic interpretation, geometry/topology/length checks,
    and coordinate accuracy as separate claims.
-5. If a requested path is outside the configured roots, ask the user to open the
-   containing workspace or give the exact optional `CAD2GIS_PROJECT_ROOTS`
-   override. Do not broaden access silently.
+5. If a requested path is outside the configured roots, configure only the
+   task-authorized source and output directories through `CAD2GIS_PROJECT_ROOTS`
+   when installation/configuration is already authorized. Otherwise explain
+   the missing access and request that exact directory, not an entire drive.
 
 ## New drawing workflow
 
@@ -60,6 +65,8 @@ implementation even when tool names look similar.
    conservative bbox candidates alone. Context chunks must be reassembled before
    interpreting a long text or geometry field. MCP byte budgets include the
    protocol envelope (8–64 KiB); never request arbitrary SQL.
+   A cold index build can exceed a normal query RPC timeout. Record build time
+   separately from warm lookup time and explicitly budget the first probe.
 3. `prepare_semantic_batches` builds a separate immutable candidate index.
    `query_relationship_candidates` returns registered class, label or DIMENSION
    choices; a nearby label is advisory until explicitly selected.
@@ -117,6 +124,9 @@ agent needs to construct onboarding or repair arguments directly.
   registration. Prefer a shape-preserving similarity transform.
 - Keep uncertain entities unresolved and preserve `CONDITIONAL`/`UNSAFE`.
 - Do not reuse another DWG's source-bound registry, decision pack, or counts.
+- Even identical DWG bytes do not prove a copied inventory is current: basename,
+  reader metadata and annotation extraction can change its binding. Rebuild and
+  review the current proposal; never overwrite hashes to force admission.
 - Review edits stay in the separate review workspace. A corrected GeoPackage is
   created only by running the returned conversion command into a new run.
 
@@ -127,8 +137,17 @@ URL. Use the ToC to move through source, mapping, registration, validation, and
 delivery evidence. The console command is copyable; executing it creates a new
 immutable run rather than modifying the current delivery in place.
 
-Before delivery, call `audit_run`. Require `audit_status=PASS`; report artifact
-hash failures and layer-census mismatches separately. `source:not_replayable`
+For real-drawing simulation, reported offsets/missing objects, field review, or
+GCP work, read [onsite-verification.md](references/onsite-verification.md).
+Include full-source versus delivery overlays, close-ups of differences, source
+dispositions, field provenance and explicit derived-geometry movements. The
+web CAD pane traces delivered objects; it is not a complete DWG renderer.
+
+Before delivery, call `audit_run`. Require `audit_status=PASS` for artifact
+integrity, and report the independent run status, visual/geometry/field review
+and coordinate accuracy separately. An intact `CONDITIONAL` run is a review
+candidate, not an accepted precision result. Report artifact hash failures and
+layer-census mismatches separately. `source:not_replayable`
 is a portability warning: archived GeoPackages remain reviewable, but the agent
 must not claim it can create a calibrated rerun until the original DWG is
 reattached and verified against the manifest SHA-256.

@@ -689,8 +689,15 @@ def _reviewed_contract_state(
     # total set of reviewed CABLE geometry and the parent zone of reviewed
     # ZPM polygons.  They have no DWG mapping rules by design.
     generated_delivery_classes = {"INFRASTRUCTURE", "ZNRO"}
+    # The canonical classifier also has one built-in source-asset recognizer:
+    # EMR equipment is bound to its exact EMR-number CAD label, with identity
+    # geometry and explicit field provenance. It intentionally does not need
+    # a block/layer mapping rule. Keep this set exact; arbitrary new classes
+    # still require reviewed registry mappings.
+    builtin_semantic_classes = {"EMR"}
     unconfigured_classes = (
         expected_classes - configured_classes - generated_delivery_classes
+        - builtin_semantic_classes
     )
     if unconfigured_classes:
         raise ValueError(

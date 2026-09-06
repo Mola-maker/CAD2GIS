@@ -66,7 +66,7 @@ def derive_family_from_samples(
 ) -> list[dict[str, Any]]:
     """Deterministically derive regexes from aligned text samples.
 
-    Samples are grouped by token width (a layer like POLE ID often holds
+    Samples are grouped by token width and token kind (a layer like POLE ID often holds
     several label families: ``EXT.MR.IJY.KLDYA.P001`` alongside
     ``MR.DSBR.P060``).  Each group is aligned positionally: numeric columns
     become ``\\d+``, varying letter columns ``[A-Za-z]+``, stable letter
@@ -86,11 +86,27 @@ def derive_family_from_samples(
         texts.append(text)
     if not texts:
         return []
-    by_width: dict[int, list[str]] = {}
+    def token_kind(token: str) -> str:
+        if token.isdigit():
+            return "digits"
+        if token.isalpha():
+            return "alpha"
+        if re.fullmatch(r"[A-Za-z]+\d+", token):
+            return "alpha_digits"
+        return "unsupported"
+
+    # Equal width does not imply equal field structure: a numeric field in
+    # one family may occupy the same position as S02 in another. Aligning
+    # them together used to reject both complete, observed label families.
+    # Keep those shapes separate; the normal structural and L2 isolation
+    # checks still reject unsupported, overlapping or unassigned patterns.
+    by_shape: dict[tuple[int, tuple[str, ...]], list[str]] = {}
     for text in texts:
-        by_width.setdefault(len(_tokenize(text)), []).append(text)
+        tokens = _tokenize(text)
+        shape = len(tokens), tuple(token_kind(token) for token in tokens)
+        by_shape.setdefault(shape, []).append(text)
     result: list[dict[str, Any]] = []
-    for width, group in sorted(by_width.items()):
+    for (width, _shape), group in sorted(by_shape.items()):
         tokenized = [_tokenize(text) for text in group]
         parts: list[str] = []
         alignable = True

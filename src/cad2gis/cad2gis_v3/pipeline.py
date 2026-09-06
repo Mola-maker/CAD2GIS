@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from .calibration import GCPProfile, fit_profile
-from .artifact_io import write_json_object
+from .artifact_io import inherit_output_permissions, write_json_object
 from .cad_scene_graph import build_cad_scene_graph
 from .accounting import account_entities, summarize_accounting
 from .config import MappingRegistry, SourceProfile
@@ -36,7 +36,8 @@ from .georef import (
 from .ingest import ingest
 from .implementation import implementation_manifest_fields, production_conversion_provenance
 from .model import canonical_curve_fingerprint
-from .semantics import classify_entities
+from .curve_geometry import supports_endpoint_bridge
+from .semantics import classify_entities, _PTECH_CABLE_ENDPOINT_BRIDGE_M, _PTECH_CABLE_ENDPOINT_MIN_GAP_M
 from .spatial_coverage import evaluate_corridor_coverage, evaluate_spatial_coverage
 from .styles import write_styles
 from .stage_contract import StageRecorder, canonical_sha256
@@ -256,6 +257,9 @@ def _publish_run_bundle(staged_run_dir: Path, destination_run_dir: Path) -> None
     if not staged.is_dir():
         raise ValueError(f"Staged run directory does not exist: {staged}")
 
+    # Final snapshot verification has already completed. Prepare user-readable
+    # permissions before moving either the current bundle or its replacement.
+    inherit_output_permissions(staged)
     backup = destination.with_name(
         f".{destination.name}.backup.{os.getpid()}.{time.time_ns()}"
     )
@@ -314,6 +318,7 @@ def _validate_source_geometry(
     graph components, support proximity, crossings, or coordinate transforms.
     """
     source_by_key = {entity.entity_key: entity for entity in entities}
+    feature_by_key = {feature.feature_key: feature for feature in features}
     route_pattern = re.compile(registry.positive_route_layer_regex)
     reviewed_route_layers = {
         str(layer).upper()
@@ -341,15 +346,56 @@ def _validate_source_geometry(
         )
         if not is_reviewed_route:
             failures.append(f"{cable.feature_key}: source is not a reviewed model route")
-        if cable.geometry_role != "SOURCE_ROUTE":
+        bridges = [item for item in cable.lineage
+                   if item.get("operation") == "bridge_cable_endpoint_to_pole"]
+        expected_role = "DERIVED_ROUTE" if bridges else "SOURCE_ROUTE"
+        if cable.geometry_role != expected_role:
             failures.append(f"{cable.feature_key}: geometry role is {cable.geometry_role}")
-        endpoint_bridged = any(
-            item.get("operation") == "bridge_cable_endpoint_to_pole"
-            for item in cable.lineage
-        )
-        if tuple(cable.native_points) != tuple(source.points) and not endpoint_bridged:
+        replayed = [tuple(point) for point in source.points]
+        try:
+            if bridges and (len(bridges) != 1 or not supports_endpoint_bridge(source)):
+                raise ValueError("only one bridge on an open straight source route is supported")
+            if len(cable.lineage) != 1 + len(bridges) or cable.lineage[0] != {
+                "operation": "identity", "source_entity_key": source.entity_key,
+                "max_displacement_m": 0.0,
+            }:
+                raise ValueError("missing exact source identity lineage")
+            for bridge in bridges:
+                index = bridge["endpoint_index"]
+                if type(index) is not int or index not in (0, len(replayed) - 1) or len(replayed) < 2:
+                    raise ValueError("invalid endpoint index")
+                support = feature_by_key[bridge["support_feature_key"]]
+                support_source = source_by_key[support.source_entity_key]
+                support_point = (support_source.centroid if support.feature_class == "EMR"
+                                 else support_source.points[0] if support_source.points else support_source.centroid)
+                old = tuple(bridge["source_endpoint"])
+                target = tuple(bridge["target_endpoint"])
+                distance = math.dist(old, target)
+                if (
+                    bridge["route_source_entity_key"] != source.entity_key
+                    or support.feature_class not in {"PTECH", "EMR"}
+                    or bridge["source_entity_key"] != support.source_entity_key
+                    or bridge["support_handle"] != support.source_handle
+                    or support.source_entity_key not in source_by_key
+                    or len(target) != 2 or len(old) != 2
+                    or not all(math.isfinite(value) for value in (*old, *target))
+                    or old != replayed[index]
+                    or target != tuple(support.native_points[0])
+                    or target != tuple(support_point)
+                    or support.lineage != [{
+                        "operation": "identity", "source_entity_key": support_source.entity_key,
+                        "max_displacement_m": 0.0,
+                    }]
+                    or not _PTECH_CABLE_ENDPOINT_MIN_GAP_M <= distance <= _PTECH_CABLE_ENDPOINT_BRIDGE_M
+                    or not math.isclose(distance, float(bridge["max_displacement_m"]), rel_tol=1e-12, abs_tol=1e-9)
+                ):
+                    raise ValueError("bridge does not match its source, support or displacement")
+                replayed[index] = target
+        except (KeyError, IndexError, TypeError, ValueError, OverflowError) as exc:
+            failures.append(f"{cable.feature_key}: invalid endpoint bridge evidence: {exc}")
+        if [tuple(point) for point in cable.native_points] != replayed:
             failures.append(f"{cable.feature_key}: source geometry was displaced or re-vertexed")
-        if require_curve_facts and not endpoint_bridged:
+        if require_curve_facts:
             facts = source.curve_facts
             if not facts or not source.curve_fingerprint:
                 failures.append(f"{cable.feature_key}: missing canonical source curve facts")
@@ -1073,14 +1119,20 @@ def _validate_annotation_families(expectations, semantic_diagnostics, registry):
         metric_result = _validate_declared_counts(
             f"annotation family {family_id}", metrics, observed,
         )
-        if (
-            family_config.get(family_id) is not None
-            and family_config[family_id].require_same_layer
-            and int(observed.get("cross_layer_assignments", 0)) != 0
-        ):
-            raise RuntimeError(
-                f"Annotation family {family_id} violates reviewed same-layer isolation"
-            )
+        if family_config.get(family_id) is not None and family_config[family_id].require_same_layer:
+            cross_layer = int(observed.get("cross_layer_assignments", 0))
+            allowed_derived = int(observed.get("allowed_derived_cross_layer_assignments", 0))
+            violations = int(observed.get("same_layer_policy_violations", cross_layer - allowed_derived))
+            # Legacy diagnostics with cross-layer rows and no exception receipt
+            # remain fail-closed. Keep the total visible and validate the receipt.
+            if (
+                not 0 <= allowed_derived <= cross_layer
+                or violations != cross_layer - allowed_derived
+                or violations != 0
+            ):
+                raise RuntimeError(
+                    f"Annotation family {family_id} violates reviewed same-layer isolation"
+                )
         results[family_id] = metric_result
     return {"domain": "annotation_families", "passed": True, "families": results}
 

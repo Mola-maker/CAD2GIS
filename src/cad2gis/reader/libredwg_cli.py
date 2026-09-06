@@ -34,6 +34,8 @@ from .contracts import ReaderCapability, ReaderUnavailableError
 _RAW_PROPERTIES_SCHEMA = "cad2gis-raw-properties-v1"
 _CURVE_FACTS_SCHEMA = "cad2gis-curve-facts-v1"
 _MAX_GEODATA_JSON_BYTES = 256 * 1024 * 1024
+_SURROGATE_PATTERN = re.compile("[\ud800-\udfff]")
+_TEXT_PRESERVATION_SCHEMA = "cad2gis.reader-text-preservation.v1"
 
 _OBJECT_NAMES = {
     "LINE": "ACDBLINE",
@@ -62,6 +64,143 @@ class DWGRecordInventory(list):
     def __init__(self, values=(), *, diagnostics=None):
         super().__init__(values)
         self.diagnostics = dict(diagnostics or {})
+
+
+def _escaped_string_map(records: Iterable[dict[str, Any]]) -> dict[str, str]:
+    """Allocate collision-free display strings across the whole reader inventory."""
+    ordinary: set[str] = set()
+    undecodable: set[str] = set()
+
+    def collect(value: Any) -> None:
+        if isinstance(value, str):
+            (undecodable if _SURROGATE_PATTERN.search(value) else ordinary).add(value)
+        elif isinstance(value, dict):
+            for key, item in value.items():
+                collect(key)
+                collect(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                collect(item)
+
+    for record in records:
+        collect(record)
+    def normalized_keys(value: str) -> set[str]:
+        # Block/port consumers normalize identifiers this way before lookup.
+        # Exact-string uniqueness alone can still merge distinct definitions.
+        stripped = value.strip()
+        return {stripped.upper(), stripped.casefold()}
+
+    occupied = {key for value in ordinary for key in normalized_keys(value)}
+    replacements = {}
+    for value in sorted(undecodable, key=lambda item: (len(item), item)):
+        if value in replacements:
+            continue
+        escaped = _SURROGATE_PATTERN.sub(lambda match: f"\\u{ord(match[0]):04x}", value)
+        candidate = escaped
+        suffix = 0
+        # BLOCKDEF:<name> is a structured cross-record reference used by the
+        # scene/instance compiler. Its escaped name must match INSERT.name.
+        block_layout = f"BLOCKDEF:{value}"
+        has_layout_alias = block_layout in undecodable
+        while (normalized_keys(candidate) & occupied
+               or (has_layout_alias and normalized_keys(f"BLOCKDEF:{candidate}") & occupied)):
+            suffix += 1
+            candidate = f"{escaped}~cad2gis-string-{suffix}"
+        replacements[value] = candidate
+        ordinary.add(candidate)
+        occupied.update(normalized_keys(candidate))
+        if has_layout_alias:
+            replacements[block_layout] = f"BLOCKDEF:{candidate}"
+            ordinary.add(f"BLOCKDEF:{candidate}")
+            occupied.update(normalized_keys(f"BLOCKDEF:{candidate}"))
+    return replacements
+
+
+def _preserve_undecodable_strings(
+    record: dict[str, Any], document: Any, replacements: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Make reader strings UTF-8 safe without interpreting undecodable units.
+
+    ezdxf can retain undecodable DXF bytes as lone surrogate code units. They
+    cannot enter SQLite/GDAL/UTF-8 JSON directly. Escape only those units for
+    display, and retain exact reader-string recovery evidence separately. The
+    hex value encodes the *reader string*, not original DWG bytes; surrogatepass
+    also preserves explicit surrogate pairs that JSON decoders may combine.
+    """
+    changes: list[dict[str, Any]] = []
+    key_collisions = 0
+    replacements = _escaped_string_map([record]) if replacements is None else replacements
+    if not replacements:
+        return record
+
+    def escaped(value: str) -> str:
+        return replacements[value]
+
+    def preserve(value: str, path: list[str | int], kind: str) -> None:
+        changes.append({
+            "path": path, "kind": kind,
+            "original_json": json.dumps(value, ensure_ascii=True),
+            "original_utf8_surrogatepass_hex": value.encode("utf-8", errors="surrogatepass").hex(),
+            "surrogate_code_units": [
+                {"index": index, "code_unit": ord(char)}
+                for index, char in enumerate(value) if 0xD800 <= ord(char) <= 0xDFFF
+            ],
+        })
+
+    def visit(value: Any, path: list[str | int]) -> Any:
+        nonlocal key_collisions
+        if isinstance(value, str):
+            if not _SURROGATE_PATTERN.search(value):
+                return value
+            preserve(value, path, "value")
+            return escaped(value)
+        if isinstance(value, dict):
+            result = {}
+            # Reserve ordinary keys first so a literal "\\udcb0" key cannot
+            # be overwritten by the escaped spelling of a surrogate key.
+            reserved = set(value)
+            for key, item in value.items():
+                safe_key = key
+                if isinstance(key, str) and _SURROGATE_PATTERN.search(key):
+                    safe_key = escaped(key)
+                    suffix = 0
+                    while safe_key in reserved:
+                        suffix += 1
+                        safe_key = f"{escaped(key)}~cad2gis-key-{suffix}"
+                    plain_escape = _SURROGATE_PATTERN.sub(lambda match: f"\\u{ord(match[0]):04x}", key)
+                    key_collisions += int(safe_key != plain_escape)
+                    reserved.add(safe_key)
+                    preserve(key, [*path, safe_key], "key")
+                result[safe_key] = visit(item, [*path, safe_key])
+            return result
+        if isinstance(value, (list, tuple)):
+            values = [visit(item, [*path, index]) for index, item in enumerate(value)]
+            return tuple(values) if isinstance(value, tuple) else values
+        return value
+
+    safe_record = visit(record, [])
+    if not changes:
+        return record
+    raw = safe_record["raw_properties"]
+    if "text_encoding_preservation" in raw:
+        raise ValueError("Reader text preservation evidence would overwrite existing facts")
+    raw["text_encoding_preservation"] = {
+        "schema_version": _TEXT_PRESERVATION_SCHEMA,
+        "status": "escaped_undecodable_code_units",
+        "display_encoding": "literal_backslash_u_four_hex_digits; collision suffix when needed; original_json is authoritative",
+        "recovery_encoding": "bytes.fromhex(original_utf8_surrogatepass_hex).decode('utf-8', 'surrogatepass')",
+        "authority": "LibreDWG transient DXF / ezdxf reader strings; no codepage inferred",
+        "encoding_hints_json": json.dumps({
+            "dxf_version": str(getattr(document, "dxfversion", "")),
+            "declared_dxf_codepage": str(document.header.get("$DWGCODEPAGE", "")),
+            "ezdxf_encoding": str(getattr(document, "encoding", "")),
+        }, ensure_ascii=True, sort_keys=True),
+        "affected_fields": len(changes),
+        "surrogate_code_units": sum(len(change["surrogate_code_units"]) for change in changes),
+        "key_collisions": key_collisions,
+        "fields": changes,
+    }
+    return safe_record
 
 
 def libredwg_cli_capability() -> ReaderCapability:
@@ -418,7 +557,7 @@ def _record(
         reasons.append("geometry_unavailable")
     reasons = sorted(set(reasons))
     entity_key = hashlib.sha256(
-        f"{source_sha256}|{handle}|{layout}".encode("utf-8")
+        f"{source_sha256}|{handle}|{layout}".encode("utf-8", errors="surrogatepass")
     ).hexdigest()
     owner_handle = str(getattr(entity.dxf, "owner", "") or "")
     scale_x, scale_y, scale_z = geometry["scale"]
@@ -559,6 +698,7 @@ def _read_geodata_registration(
         diagnostics["detail"] = "dwgread is not installed beside dwg2dxf"
         return None, diagnostics
     try:
+        diagnostics["reader_sha256"] = hashlib.sha256(reader.read_bytes()).hexdigest()
         process = subprocess.run(
             [str(reader), "-O", "minJSON", str(source)],
             capture_output=True,
@@ -594,6 +734,7 @@ def _read_geodata_registration(
         if isinstance(item, dict)
         and str(item.get("object", item.get("dxfname", ""))).upper() == "GEODATA"
     ]
+    diagnostics["geodata_object_count"] = len(values)
     if len(values) != 1:
         diagnostics["detail"] = f"expected one GEODATA object, found {len(values)}"
         return None, diagnostics
@@ -800,7 +941,14 @@ def extract_dwg_records(
                             attribute_record["raw_properties"]["unsupported_reasons"]
                         )
 
+        replacements = _escaped_string_map(records)
+        if replacements:
+            records = [_preserve_undecodable_strings(record, document, replacements) for record in records]
         stderr_text = process.stderr.decode("utf-8", errors="replace")
+        text_preservation = [
+            record["raw_properties"]["text_encoding_preservation"] for record in records
+            if "text_encoding_preservation" in record["raw_properties"]
+        ]
         diagnostics = {
             "backend": "libredwg_cli_dxf",
             "extraction_backend": "libredwg_cli_dxf",
@@ -821,6 +969,17 @@ def extract_dwg_records(
             "libredwg_diagnostics_sha256": hashlib.sha256(process.stderr).hexdigest(),
             "intermediate_format": "DXF",
             "intermediate_persisted": False,
+            "text_encoding_preservation": {
+                "schema_version": _TEXT_PRESERVATION_SCHEMA,
+                "status": "escaped_undecodable_code_units" if text_preservation else "not_required",
+                "affected_records": len(text_preservation),
+                "affected_fields": sum(item["affected_fields"] for item in text_preservation),
+                "surrogate_code_units": sum(item["surrogate_code_units"] for item in text_preservation),
+                "key_collisions": sum(item["key_collisions"] for item in text_preservation),
+                "counting_scope": "all reader record fields including duplicated raw_properties values",
+                "intermediate_dxf_sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+                "recovery_evidence": "per-record raw_properties.text_encoding_preservation.fields",
+            },
         }
     return DWGRecordInventory(records, diagnostics=diagnostics)
 

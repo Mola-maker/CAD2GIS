@@ -3411,6 +3411,58 @@ def read_dwg_with_autocad(
     )
 
 
+def _attach_geodata_metadata(records, source, source_hash):
+    """Read only GEODATA through the companion native reader, retaining provenance.
+
+    AutoCAD owns every entity, text and geometry record. Its bulk protocol does
+    not expose GEODATA yet, so the existing dwgread metadata adapter may supply
+    that separate document fact. Both reads must see identical DWG bytes.
+    """
+    from .libredwg_cli import discover_libredwg_cli, _read_geodata_registration
+    from ..cad2gis_v3.geodata import normalize_geodata_registration
+
+    if hashlib.sha256(source.read_bytes()).hexdigest() != source_hash:
+        raise ValueError("DWG changed during AutoCAD entity extraction")
+    executable, origin = discover_libredwg_cli()
+    diagnostics = {
+        "backend": "libredwg_dwgread_metadata_only",
+        "entity_geometry_and_text_backend": "autocad",
+        "source_sha256": source_hash,
+        "executable_source": origin,
+    }
+    if executable is None:
+        diagnostics.update(status="unavailable", detail="No companion dwgread metadata runtime")
+        return diagnostics
+    registration, probe = _read_geodata_registration(Path(executable), source)
+    diagnostics.update(probe)
+    if hashlib.sha256(source.read_bytes()).hexdigest() != source_hash:
+        raise ValueError("DWG changed during companion GEODATA extraction")
+    if registration is None:
+        object_count = diagnostics.get("geodata_object_count")
+        if isinstance(object_count, int) and object_count > 1:
+            raise ValueError("Companion reader returned multiple DWG GEODATA objects")
+        return diagnostics
+    registration = normalize_geodata_registration(registration)
+    metadata = [record for record in records
+                if str(record.get("dwg_type_name", "")).upper() == "DOCUMENT_METADATA"]
+    if len(metadata) != 1:
+        raise ValueError("AutoCAD GEODATA requires exactly one document metadata record")
+    record = metadata[0]
+    cgeocs = re.search(r"(?:^|;)CGEOCS=([^;]*)", str(record.get("text", "")), re.IGNORECASE)
+    if cgeocs and cgeocs.group(1).strip() and (
+        cgeocs.group(1).strip().casefold() != registration["coordinate_system_id"].casefold()
+    ):
+        raise ValueError("AutoCAD CGEOCS conflicts with companion DWG GEODATA")
+    properties = dict(record.get("raw_properties", {}) or {})
+    previous = properties.get("geodata_registration")
+    if previous is not None and normalize_geodata_registration(previous) != registration:
+        raise ValueError("AutoCAD metadata contains conflicting GEODATA registrations")
+    properties["geodata_registration"] = registration
+    properties["geodata_provenance"] = dict(diagnostics)
+    record["raw_properties"] = properties
+    return diagnostics
+
+
 def extract_dwg_records(
     dwg_path,
     *,
@@ -3489,6 +3541,7 @@ def extract_dwg_records(
             item["source_sha256"] = source_hash
             item["source_file"] = source.name
             records.append(item)
+    protocol_diagnostics["geodata"] = _attach_geodata_metadata(records, source, source_hash)
     protocol_diagnostics["returned_records"] = len(records)
     protocol_diagnostics["inventory_complete"] = (
         protocol_diagnostics.get("skipped_rows", 0) == 0

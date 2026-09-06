@@ -7,12 +7,14 @@ import hashlib
 import math
 import re
 from collections import defaultdict
+from copy import deepcopy
 from dataclasses import replace
 from fnmatch import fnmatchcase
 from typing import Any, Iterable, Mapping, Sequence
 
 from .cable_legend import cable_spec_name, ptech_type_name
 from .config import MappingRegistry
+from .curve_geometry import supports_endpoint_bridge
 from .family_validation import annotation_pattern_specificity
 from .model import CadStyle, Feature, Relation, SourceEntity
 from .spatial_filter import is_placeholder_text, is_pole_identifier_shape
@@ -141,14 +143,18 @@ def _znro_boundary_features(rings: Sequence[Mapping[str, Any]]) -> list[Feature]
     features = []
     for ring in rings:
         entity = ring["entity"]
-        features.append(_znro_feature(
+        feature = _znro_feature(
             ring.get("points", entity.points),
             source_key=entity.entity_key,
             source_handle=entity.handle,
             source_layer=entity.layer,
             style=_znro_boundary_style(entity),
             operation="identity",
-        ))
+        )
+        if ring.get("repair_lineage"):
+            feature.geometry_role = "DERIVED_BOUNDARY_REPAIR"
+            feature.lineage = [deepcopy(ring["repair_lineage"])]
+        features.append(feature)
     return features
 
 
@@ -792,6 +798,25 @@ def _annotation_link_kind(annotation: SourceEntity, target: Feature) -> tuple[in
         if root_key and root_key == target.source_entity_key:
             return 1, "block_path"
     return 2, "family_contract"
+
+
+def _annotation_layer_diagnostics(assignments, *, require_same_layer, derived_target_keys):
+    """Account for the same explicit derived-target exception used by matching.
+
+    A derived target is an existing source POINT/frame materialized by this
+    classification run. This receipt does not authorize arbitrary cross-layer
+    targets; the caller supplies the exact keys already admitted by matching.
+    """
+    cross_layer = [
+        target for annotation, target, _ in assignments
+        if annotation.layer.strip().casefold() != target.source_layer.strip().casefold()
+    ]
+    allowed_derived = sum(target.feature_key in derived_target_keys for target in cross_layer)
+    return {
+        "cross_layer_assignments": len(cross_layer),
+        "allowed_derived_cross_layer_assignments": allowed_derived,
+        "same_layer_policy_violations": len(cross_layer) - allowed_derived if require_same_layer else 0,
+    }
 
 
 def _assign_family_annotations(
@@ -1471,7 +1496,7 @@ def classify_entities(
             for entity, tolerance in boite_label_evidence
         )
 
-    def _device_number_for_frame(frame: Any) -> tuple[str | None, str | None]:
+    def _device_number_for_frame(frame: Any) -> tuple[str | None, str | None, dict | None]:
         integer_nearby = sorted(
             (
                 math.dist(frame.centroid, item.centroid),
@@ -1487,9 +1512,21 @@ def classify_entities(
             used_integer_texts.add(number_entity.entity_key)
             return (
                 number_entity.text.strip(),
-                "DWG_DIRECT:nearby-integer-label",
+                "DWG_DERIVED:nearby-integer-label",
+                {
+                    "operation": "select_device_number_label",
+                    "source_entity_key": number_entity.entity_key,
+                    "source_handle": number_entity.handle,
+                    "target_source_entity_key": frame.entity_key,
+                    "field_name": "DEVICE_NUMBER",
+                    "selected_value": number_entity.text.strip(),
+                    "distance_native_m": integer_nearby[0][0],
+                    "method": "nearest_unused_integer_label_within_20_native_m",
+                    "review_status": "required",
+                    "geometry_changed": False,
+                },
             )
-        return None, None
+        return None, None, None
 
     # A small rectangular frame on a reviewed BOITE layer is promoted only
     # when a reviewed BOITE identifier label proves it is a deployed FAT
@@ -1516,7 +1553,7 @@ def classify_entities(
             for feature in by_class["BOITE"]
         ):
             continue
-        number_value, number_provenance = _device_number_for_frame(frame)
+        number_value, number_provenance, number_evidence = _device_number_for_frame(frame)
         attributes = {"CODE": _generated_code("BOITE", frame.handle)}
         provenance = {"CODE": _GENERATED_CODE_PROVENANCE}
         if number_value is not None:
@@ -1540,7 +1577,7 @@ def classify_entities(
                 "operation": "rectangular_frame_centroid",
                 "source_entity_key": frame.entity_key,
                 "max_displacement_m": 0.0,
-            }],
+            }] + ([number_evidence] if number_evidence else []),
         )
         features.append(frame_feature)
         by_class["BOITE"].append(frame_feature)
@@ -1713,9 +1750,9 @@ def classify_entities(
                 evidence_keys=(entity.entity_key, target.source_entity_key),
             ))
             mapped_entities.add(entity.entity_key)
-        cross_layer_assignments = sum(
-            entity.layer.strip().casefold() != target.source_layer.strip().casefold()
-            for entity, target, _ in assignments
+        layer_diagnostics = _annotation_layer_diagnostics(
+            assignments, require_same_layer=family.require_same_layer,
+            derived_target_keys=derived_target_keys,
         )
         family_diagnostics = {
             "target_class": family.target_class,
@@ -1724,7 +1761,7 @@ def classify_entities(
             "assigned": len(assignments),
             "missing": len(annotations) - len(assignments),
             "unresolved": len(failures),
-            "cross_layer_assignments": cross_layer_assignments,
+            **layer_diagnostics,
             "total_distance_native_m": sum(item[2] for item in assignments),
             "max_distance_native_m": family.max_distance_native_m,
             "require_same_layer": family.require_same_layer,
@@ -2001,6 +2038,11 @@ def classify_entities(
             continue
         endpoint_candidates = []
         for route in deployed_cables:
+            source_route = entity_by_key.get(route.source_entity_key)
+            if source_route is None or not supports_endpoint_bridge(source_route):
+                continue
+            if any(item.get("operation") == "bridge_cable_endpoint_to_pole" for item in route.lineage):
+                continue
             if len(route.native_points) < 2:
                 continue
             for index, endpoint in (
@@ -2019,11 +2061,18 @@ def classify_entities(
             and endpoint_candidates[1][0] - best_distance < 2.0
         ):
             continue
+        source_endpoint = list(best_route.native_points[best_index])
         best_route.native_points[best_index] = [float(support_point[0]), float(support_point[1])]
+        best_route.geometry_role = "DERIVED_ROUTE"
         best_route.lineage.append({
             "operation": "bridge_cable_endpoint_to_pole",
             "source_entity_key": support.source_entity_key,
+            "route_source_entity_key": best_route.source_entity_key,
+            "support_feature_key": support.feature_key,
             "support_handle": support.source_handle,
+            "endpoint_index": best_index % len(best_route.native_points),
+            "source_endpoint": source_endpoint,
+            "target_endpoint": list(best_route.native_points[best_index]),
             "max_displacement_m": best_distance,
         })
         bridged_endpoints.append({
@@ -2298,7 +2347,7 @@ def classify_entities(
             )
             feature.label_provenance = _append_label_provenance(
                 feature.label_provenance,
-                "DWG_DIRECT:block-attribute-text",
+                feature.field_provenance.get("DEVICE_NUMBER", "UNAVAILABLE:device-number-source"),
             )
 
     retained: list[Feature] = []
@@ -2351,7 +2400,8 @@ def classify_entities(
             )
         ]
     # INFRASTRUCTURE is the continuous single-colour total set of every CABLE
-    # coloured line.  It repeats the immutable cable geometry with a legend
+    # coloured line. It repeats the classified cable geometry, including any
+    # explicit endpoint bridge and its source lineage, with a legend
     # colour that is deliberately distinct from all cable-type colours.
     # Generation runs after the final noise filtering so the count always
     # equals the delivered CABLE count.
@@ -2370,11 +2420,11 @@ def classify_entities(
             ).hexdigest(),
             feature_class="INFRASTRUCTURE",
             geometry_kind="LineString",
-            native_points=list(cable_feature.native_points),
+            native_points=deepcopy(cable_feature.native_points),
             source_entity_key=cable_feature.source_entity_key,
             source_handle=cable_feature.source_handle,
             source_layer=cable_feature.source_layer,
-            geometry_role="SOURCE_ROUTE",
+            geometry_role=cable_feature.geometry_role,
             style=infrastructure_style,
             attributes={"CODE": f"INFRA-CAD-{cable_feature.source_handle}"},
             display_label="",
@@ -2382,11 +2432,7 @@ def classify_entities(
             field_provenance={
                 "CODE": "DWG_DERIVED:cable-collection-member",
             },
-            lineage=[{
-                "operation": "identity",
-                "source_entity_key": cable_feature.source_entity_key,
-                "max_displacement_m": 0.0,
-            }],
+            lineage=deepcopy(cable_feature.lineage),
         )
         features.append(infrastructure_feature)
 
@@ -2401,8 +2447,10 @@ def classify_entities(
         feature for feature in features if feature.feature_class == "ZPM"
     ]
     project_is_sf = str(project_slug or project_id or "").lower().endswith("_sf")
+    boundary_repairs = []
     if not project_is_sf:
-        from shapely.geometry import Point, Polygon as ShapelyPolygon
+        from shapely.geometry import LineString, Point, Polygon as ShapelyPolygon
+        from shapely.validation import explain_validity
 
         from .znro_shape import conservative_znro_polygons
 
@@ -2423,7 +2471,11 @@ def classify_entities(
             boundary_entities, key=lambda item: (item.layer, item.handle),
         ):
             raw_polygon = ShapelyPolygon(entity.points)
-            polygon = raw_polygon.buffer(0)
+            # Preserve valid source vertices and their ordering. An invalid
+            # boundary may yield a usable candidate, but buffer(0) can remove
+            # large spikes: that is a lossy derivation requiring review.
+            repaired = not raw_polygon.is_valid
+            polygon = raw_polygon.buffer(0) if repaired else raw_polygon
             if polygon.geom_type != "Polygon" or not polygon.is_valid:
                 continue
             if polygon.area <= 0.0:
@@ -2433,11 +2485,37 @@ def classify_entities(
                 for existing in boundary_rings
             ):
                 continue
+            points = list(polygon.exterior.coords) if repaired else list(entity.points)
+            repair_lineage = None
+            if repaired:
+                delivered_polygon = ShapelyPolygon(points)
+                repair_lineage = {
+                    "operation": "repair_boundary_polygon",
+                    "source_entity_key": entity.entity_key,
+                    "method": "shapely.Polygon.buffer(0).exterior",
+                    "geometry_changed": True,
+                    "lossy": True,
+                    "review_status": "required",
+                    "source_validity": explain_validity(raw_polygon),
+                    "result_is_valid": delivered_polygon.is_valid,
+                    "max_displacement_m": float(
+                        LineString(entity.points).hausdorff_distance(LineString(points))
+                    ),
+                    "displacement_metric": "boundary_hausdorff_native_m",
+                    "source_vertex_count": len(entity.points),
+                    "result_vertex_count": len(points),
+                    "source_shoelace_area_m2": float(raw_polygon.area),
+                    "result_area_m2": float(delivered_polygon.area),
+                    "area_delta_m2": float(delivered_polygon.area - raw_polygon.area),
+                    "discarded_interior_ring_count": len(polygon.interiors),
+                    "discarded_interior_area_m2": float(delivered_polygon.area - polygon.area),
+                }
             boundary_rings.append({
                 "entity": entity,
                 "polygon": polygon,
-                "points": list(polygon.exterior.coords),
+                "points": points,
                 "area": float(polygon.area),
+                "repair_lineage": repair_lineage,
             })
 
         delivered_cable_points = [
@@ -2489,7 +2567,31 @@ def classify_entities(
             ]
             boundary_features = _znro_boundary_features(large_outer_rings)
         features.extend(boundary_features)
+        for feature in boundary_features:
+            for item in feature.lineage:
+                if item.get("operation") == "repair_boundary_polygon":
+                    repair = {
+                        "kind": "source_boundary_repair",
+                        "status": "review_required",
+                        "entity_key": feature.source_entity_key,
+                        "feature_key": feature.feature_key,
+                        "source_handle": feature.source_handle,
+                        "source_layer": feature.source_layer,
+                        **deepcopy(item),
+                    }
+                    boundary_repairs.append(repair)
+                    unresolved.append(deepcopy(repair))
 
+    device_number_reviews = [
+        {
+            **deepcopy(item), "kind": "device_number_label_candidate",
+            "status": "review_required", "feature_key": feature.feature_key,
+            "entity_key": feature.source_entity_key,
+        }
+        for feature in features for item in feature.lineage
+        if item.get("operation") == "select_device_number_label"
+    ]
+    unresolved.extend(deepcopy(device_number_reviews))
     selected_policy = normalize_observability_policy(
         coverage_policy,
         default="warn" if bool(getattr(registry, "is_reviewed", False)) else "fail",
@@ -2525,6 +2627,8 @@ def classify_entities(
             1 for feature in features if feature.feature_class == "EMR"
         ),
         "ptech_cable_endpoint_bridges": bridged_endpoints,
+        "source_boundary_repairs": boundary_repairs,
+        "device_number_label_reviews": device_number_reviews,
         "coverage": coverage,
     }
     if not coverage["conversion_allowed"]:

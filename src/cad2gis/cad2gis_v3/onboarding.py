@@ -32,6 +32,7 @@ from .geodata import normalize_geodata_registration, registration_scale
 from .plan_domain import build_plan_domain
 from .project_profile import (
     _atomic_write_json,
+    _draft_profile,
     _read_json,
     bootstrap_project,
     inventory_sha256,
@@ -89,6 +90,23 @@ def _crs_candidates(profile: Mapping[str, Any]) -> list[dict[str, Any]]:
     if not cgeocs or isinstance(raw_insunits, bool) or not isinstance(raw_insunits, int):
         return []
     crs_token = _CGEOCS_CRS.get(cgeocs.upper())
+    crs_profile = profile.get("crs")
+    raw_geodata = (
+        crs_profile.get("geodata_registration")
+        if isinstance(crs_profile, Mapping) else None
+    )
+    geodata_registration = None
+    if raw_geodata is not None:
+        geodata_registration = normalize_geodata_registration(raw_geodata)
+        if (geodata_registration["authority"] != "DWG_DIRECT:GEODATA"
+                or geodata_registration["coordinate_system_id"].casefold() != cgeocs.casefold()):
+            return []
+        observed_crs = geodata_registration["target_crs"]
+        if crs_token is not None and not CRS.from_user_input(observed_crs).equals(CRS.from_user_input(crs_token)):
+            return []
+        # The native reader extracted this EPSG alias from the DWG GEODATA
+        # coordinate-system definition. It is not a model-supplied CRS guess.
+        crs_token = observed_crs
     if crs_token is None:
         return []
     unit = resolve_insunits(raw_insunits)
@@ -111,19 +129,9 @@ def _crs_candidates(profile: Mapping[str, Any]) -> list[dict[str, Any]]:
     canonical_crs = (
         f"{authority[0]}:{authority[1]}" if authority else crs.to_string()
     )
-    crs_profile = profile.get("crs")
-    raw_geodata = (
-        crs_profile.get("geodata_registration")
-        if isinstance(crs_profile, Mapping)
-        else None
-    )
-    geodata_registration = None
     source_scale_to_m = axis_scales[0]
     candidate_authority = "DWG_DIRECT"
-    if raw_geodata is not None:
-        geodata_registration = normalize_geodata_registration(raw_geodata)
-        if not CRS.from_user_input(geodata_registration["target_crs"]).equals(crs):
-            return []
+    if geodata_registration is not None:
         source_scale_to_m = registration_scale(geodata_registration) * axis_scales[0]
         candidate_authority = "DWG_DIRECT:GEODATA"
     candidate = {
@@ -471,6 +479,14 @@ def prepare_onboarding_bundle(project_dir: str | Path) -> dict[str, Any]:
 
     root = Path(project_dir).expanduser().resolve()
     profile, _, inventory = _read_project(root)
+    observed_profile = _draft_profile(inventory)
+    for key in ("dwg_cgeocs", "dwg_insunits"):
+        if profile.get("drawing", {}).get(key) != observed_profile["drawing"].get(key):
+            raise OnboardingError(f"Profile {key} differs from source inventory; re-bootstrap before onboarding")
+    def normalized_registration(value):
+        return None if value is None else normalize_geodata_registration(value)
+    if normalized_registration(profile.get("crs", {}).get("geodata_registration")) != normalized_registration(observed_profile["crs"].get("geodata_registration")):
+        raise OnboardingError("Profile GEODATA differs from source inventory; re-bootstrap before onboarding")
     layers = {
         str(key): int(value)
         for key, value in inventory.get("layers", {}).items()
@@ -496,7 +512,7 @@ def prepare_onboarding_bundle(project_dir: str | Path) -> dict[str, Any]:
         "text_samples_by_layer": _text_samples(
             inventory.get("annotation_carriers")
         ),
-        "crs_candidates": _crs_candidates(profile),
+        "crs_candidates": _crs_candidates(observed_profile),
         "deterministic_role_suggestions": _role_suggestions(
             layers,
             insert_census["by_layer"],

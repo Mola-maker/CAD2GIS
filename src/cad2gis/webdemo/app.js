@@ -273,7 +273,7 @@ const refreshPreview = () => {
     previewLayers.set(name, layer);
   }
   $("#fit-model").textContent = similarity
-    ? `相似变换 · 比例 ${similarity.scale.toFixed(6)} · 旋转 ${(similarity.rotation * 180 / Math.PI).toFixed(3)}°`
+    ? `探索预览：相似变换 · 比例 ${similarity.scale.toFixed(6)} · 旋转 ${(similarity.rotation * 180 / Math.PI).toFixed(3)}°（正式导出使用平移模型）`
     : geographicCollections.size > 0
       ? `名义 ${runSummary?.crs?.target_crs || "目标 CRS"} → EPSG:4326 预览（仍需独立 GCP 验证）`
     : runSummary?.demo?.map_anchor
@@ -593,7 +593,7 @@ const renderRun = (run) => {
     $("#demo-project-description").textContent = `${Object.keys(run.delivery_counts || {}).length} 个交付图层；源事实、坐标与审计工件均来自当前运行。`;
     $("#demo-project-source-count").textContent = Number(run.source_entity_count || 0).toLocaleString("en-US");
     $("#demo-project-delivery-count").textContent = deliveryCount.toLocaleString("en-US");
-    $("#demo-project-map-reference").textContent = `DWG declared ${run.crs?.target_crs || "CRS unavailable"}`;
+    $("#demo-project-map-reference").textContent = `源 ${run.crs?.source_crs || "CRS 未声明"} → 交付 ${run.crs?.target_crs || "CRS 未声明"}`;
     $("#demo-project-sha").textContent = run.source?.sha256 ? `${run.source.sha256.slice(0, 12)}…` : "—";
   }
   $("#project-name").textContent = sourceName;

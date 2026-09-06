@@ -52,6 +52,27 @@ def test_export_refuses_nonempty_destination_without_deleting_anything(tmp_path)
     assert manifest["conservation"]["passed"] is True
 
 
+def test_native_export_inventory_retains_reader_protocol_and_bootstrap_binding(tmp_path, monkeypatch):
+    from cad2gis.reader.libredwg_cli import DWGRecordInventory
+    from cad2gis.cad2gis_v3.project_profile import _inspect_source_facts
+
+    source = tmp_path / "native.dwg"
+    source.write_bytes(b"native-reader-fixture")
+    records = DWGRecordInventory([row(source_sha256=source_export._sha256(source))], diagnostics={
+        "backend": "libredwg_cli_dxf", "extraction_backend": "libredwg_cli_dxf",
+        "inventory_complete": True, "skipped_rows": 0, "completion_rows": 1,
+        "parsed_rows": 1, "total_rows": 1, "returned_records": 1,
+    })
+    monkeypatch.setattr(source_export, "_extract_records", lambda path: records)
+    manifest = source_export.export_source(source=source, run_dir=tmp_path / "native-run")
+    inventory = json.loads(Path(manifest["artifacts"]["source_inventory"]["path"]).read_text(encoding="utf-8"))
+    expected, _, _, _ = _inspect_source_facts(source=source, records=records)
+    assert inventory["reader_protocol"] == expected["reader_protocol"]
+    assert inventory["reader_protocol"]["inventory_complete"] is True
+    assert inventory["inventory_sha256"] == expected["inventory_sha256"]
+    assert manifest["reader_provenance"]["mode"] == "native_reader"
+
+
 def test_export_failure_never_publishes_partial_snapshot_and_keeps_audit(tmp_path, monkeypatch):
     source = tmp_path / "fail.dwg"
     source.write_bytes(b"failure fixture")
@@ -69,6 +90,44 @@ def test_export_failure_never_publishes_partial_snapshot_and_keeps_audit(tmp_pat
     audit = list(tmp_path.glob(".failed.staged-*/_failure.json"))
     assert len(audit) == 1
     assert json.loads(audit[0].read_text())["published"] is False
+
+
+def test_publication_permission_failure_keeps_snapshot_unpublished(tmp_path, monkeypatch):
+    source = tmp_path / "private.dwg"
+    source.write_bytes(b"permission failure fixture")
+
+    def deny_inheritance(path):
+        assert path.parent == tmp_path
+        assert (path / "source_manifest.json").is_file()
+        raise PermissionError("cannot inherit output ACL")
+
+    monkeypatch.setattr(source_export, "_inherit_output_permissions", deny_inheritance)
+    with pytest.raises(PermissionError, match="output ACL"):
+        source_export.export_source(source=source, run_dir=tmp_path / "private", records=[row()])
+    assert not (tmp_path / "private").exists()
+    failure = next(tmp_path.glob(".private.staged-*/_failure.json"))
+    assert json.loads(failure.read_text())["published"] is False
+    assert source.read_bytes() == b"permission failure fixture"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows DACL publication regression")
+def test_windows_published_files_inherit_explicit_parent_user_acl(tmp_path):
+    import ctypes
+    import subprocess
+
+    name = ctypes.create_unicode_buffer(256)
+    size = ctypes.c_ulong(len(name))
+    assert ctypes.windll.advapi32.GetUserNameW(name, ctypes.byref(size))
+    # Give only the current owner an explicit inheritable entry on this fixture
+    # parent; publication must inherit it instead of keeping mkdtemp's DACL.
+    subprocess.run(["icacls.exe", str(tmp_path), "/grant", f"{name.value}:(OI)(CI)(RX)"],
+                   capture_output=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    root, manifest = snapshot(tmp_path, name="inherited")
+    permissions = subprocess.run(["icacls.exe", str(root / "source.gpkg")], capture_output=True,
+                                 text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    assert any(name.value.casefold() in line.casefold() and "(I)" in line
+               for line in permissions.stdout.splitlines())
+    assert manifest["snapshot_sha256"] == source_export.snapshot_digest(manifest)
 
 
 def test_keyset_binds_filters_view_and_snapshot_and_handles_chinese_two_characters(tmp_path):

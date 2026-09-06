@@ -420,7 +420,7 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
           <div><span class="section-kicker">Source layers</span><h2>交付图层</h2></div>
           <button id="tool-fit" class="icon-button" title="缩放到全部数据" aria-label="缩放到全部数据">⌗</button>
         </div>
-        <p class="muted">左图始终保留原始 CAD 坐标，图层开关同步作用于右侧预览。</p>
+        <p class="muted">左图回溯交付要素对应的 CAD 源几何，不是完整 DWG。请结合“CAD 视觉证据”和全源实体清单检查遗漏；派生面可能没有对应源图形。图层开关同步作用于右侧预览。</p>
         <div id="layer-list" class="layer-list"></div>
       </section>
 
@@ -452,13 +452,14 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
         <div id="gcp-list" class="gcp-list"></div>
         <div class="metric-card">
           <span>模型</span><strong id="fit-model">尚未拟合</strong>
-          <span>训练 RMSE</span><strong id="fit-rmse">—</strong>
+          <span>预览训练 RMSE</span><strong id="fit-rmse">—</strong>
           <span>控制点</span><strong id="fit-coverage">0 / 4 训练；0 / 3 检查</strong>
           <span>目标坐标</span><strong id="target-coordinate">—</strong>
         </div>
         <button id="copy-coordinate" class="wide ghost" disabled>复制已传送的目标坐标</button>
         <button id="export-gcp" class="wide primary" disabled>生成配置与转换命令</button>
         <p class="warning">OSM 只能提供相对地图参考；绝对精度必须使用测量或权威控制点证明。</p>
+        <p class="warning">网页相似变换用于探索，当前导出配置使用平移模型。最终残差以新运行的独立检查点报告为准，不能用此预览代替验收。</p>
       </section>
     </aside>
 
