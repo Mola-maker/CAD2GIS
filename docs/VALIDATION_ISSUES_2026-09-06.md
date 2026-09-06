@@ -74,3 +74,14 @@ Linux 选择结果：主图数量 56、1000、375、715、673、515、28、263�
 证据：`validation/linux-delivery-20260906/` 的总览、baseline-comparison.json、label-differences.json、逐图视觉报告及 ZIP；`validation/autocad-attribute-fix-20260906/`；`validation/qgis-linux-delivery-final.json`；`validation/linux-runtime/linux-mcp-sqlite-release-verification.json`；`validation/final-fixes3-tests.log`。
 
 尚未关闭的架构项：H03（semantic compile 与正式候选交付的统一编排）、H06（历史自动修复拆分为独立待审候选）、一次源提取复用（当前 export-source 与 convert 会重复读取）。这些不能用测试通过替代实现，列为下一步优先改造。工程证据项 E01–E06 不自动关闭。
+
+## 发布后核验（提交 4d501c2）
+
+- GitHub Actions `34031332905`：Linux Python 3.11/3.12 和 macOS 回归全部通过；上一轮 macOS 19 个 SQLite enable_load_extension 失败已修复。
+- Pages `34031332941` 部署成功。实际线上 ERRATA、Lamteh ZIP、两个 Manado 分区 QGZ 的 SHA256 均与 publication.json 一致。
+- Docker `34031332929` 构建与验证成功。
+- 最终本机 Linux wheel SHA256：`c5892548560d346ed37323077c1cd7fe78ab8a54a7f7c6e92d3a3abe51e7075f`；94 个 Python 文件与安装内容一致；最终 MCP 实测及 20 项打包回归通过。
+- B23：分区 Web 长度摘要曾复用错误的主图摘要，显示 0 段；现按分区真实 CABLE/length_source 重建，分别 6 和 11 段，数据库原值不变。
+- B24：桌面浏览器截图/前台附着接口超时；页面 DOM 中的分区目录、图层数量与本机九图下载入口已验证，不能据此声明最终线上截图已完成。独立 PNG 审查及实际 QGIS 渲染证据不受此工具限制影响。
+
+新 Linux 交付总览：`http://127.0.0.1:8805/`；持久目录：`E:\branch_CAD2GIS\validation\linux-delivery-20260906`。公开历史演示：`https://mola-maker.github.io/CAD2GIS/deliveries/`。每个 Linux ZIP 包含视觉审查和旧版差异，19 个未认定设备的源块另列 `unclassified-source-blocks.csv`，不凭空补名称。
