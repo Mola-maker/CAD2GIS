@@ -1,0 +1,32 @@
+name: CAD2GIS Docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - .github/workflows/docker.yml
+      - pyproject.toml
+      - src/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build runtime image
+        run: docker build --build-arg VCS_REF="$GITHUB_SHA" -t cad2gis:0.4.0 -t cad2gis:latest .
+      - name: Verify installed runtime and MCP entrypoint
+        run: |
+          mkdir -p docker-artifacts
+          docker run --rm cad2gis:0.4.0 > docker-artifacts/doctor.json
+          docker run --rm --entrypoint cad2gis-agent-mcp cad2gis:0.4.0 --help
+          docker run --rm cad2gis:0.4.0 debug-mcp --scope identity --json > docker-artifacts/debug-mcp.json
+          docker run --rm --entrypoint pip cad2gis:0.4.0 freeze > docker-artifacts/requirements-resolved.txt
+          docker image inspect cad2gis:0.4.0 > docker-artifacts/image-inspect.json
