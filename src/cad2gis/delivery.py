@@ -139,6 +139,15 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
               "run_manifest_sha256": digest(run / "run_manifest.json"), "run_status": manifest.get("run_status", "UNKNOWN"),
               "absolute_accuracy_verified": False, "deliveries": deliveries,
               "source_dwg_included": False, "full_source_evidence_included": False}
+    if manifest.get("semantic_revision") is not None:
+        report["semantic_revision"] = manifest["semantic_revision"]
+    candidate_artifact = manifest.get("artifacts", {}).get("geometry_repair_candidates")
+    if candidate_artifact is not None:
+        candidate_path = run / "geometry_repair_candidates.json"
+        if candidate_artifact.get("sha256") != digest(candidate_path):
+            raise ValueError("Geometry repair candidates do not match the canonical manifest")
+        shutil.copy2(candidate_path, output / candidate_path.name)
+        report["geometry_repairs"] = "candidate-only"
     if audit_dir is not None:
         shutil.copytree(audit_dir, output / "visual")
         report["visual_audit_included"] = True

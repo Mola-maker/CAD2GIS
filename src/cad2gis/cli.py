@@ -128,6 +128,11 @@ def _parser() -> argparse.ArgumentParser:
     convert.add_argument("--source-profile", type=Path)
     convert.add_argument("--mapping-registry", type=Path)
     convert.add_argument("--gcp-profile", type=Path)
+    convert.add_argument("--source-run", type=Path, help="Reuse a verified native export-source snapshot.")
+    convert.add_argument("--semantic-store", type=Path, help="SQLite store owning the committed revision.")
+    convert.add_argument("--semantic-job", default="", help="Published compile job to project onto existing assets.")
+    convert.add_argument("--geometry-repairs", choices=("legacy", "candidate-only"), default="legacy",
+                         help="Keep historical behavior or withhold automatic moves/lossy boundary repairs for review.")
     convert.add_argument(
         "--layout", type=str, default=None,
         help="Named layout tab to convert (e.g. 'APD - SF', 'Layout2'). Default: Model.",
@@ -526,6 +531,9 @@ def _convert(args: argparse.Namespace) -> tuple[Any, int]:
             mapping_registry=args.mapping_registry,
             gcp_profile=args.gcp_profile,
             decision_pack=args.decision_pack,
+            **({"source_run": args.source_run} if args.source_run is not None else {}),
+            **({"semantic_store": args.semantic_store, "semantic_job": args.semantic_job} if args.semantic_store or args.semantic_job else {}),
+            **({"geometry_repairs": args.geometry_repairs} if args.geometry_repairs != "legacy" else {}),
             domain=args.domain,
             llm=args.llm,
         )

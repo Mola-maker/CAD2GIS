@@ -68,6 +68,10 @@ def test_portable_package_preserves_database_and_attributes(tmp_path):
     before = (run / "delivery.gpkg").read_bytes()
     manifest = json.loads((run / "run_manifest.json").read_text())
     manifest["artifacts"] = {"delivery": {"sha256": hashlib.sha256(before).hexdigest()}}
+    candidates = b'{"mode":"candidate-only","accepted":false}'
+    (run / "geometry_repair_candidates.json").write_bytes(candidates)
+    manifest["artifacts"]["geometry_repair_candidates"] = {"sha256": hashlib.sha256(candidates).hexdigest()}
+    manifest["semantic_revision"] = {"revision": 1, "accepted_run_id": None}
     (run / "run_manifest.json").write_text(json.dumps(manifest))
     visual = tmp_path / "visual"
     visual.mkdir()
@@ -78,10 +82,15 @@ def test_portable_package_preserves_database_and_attributes(tmp_path):
         assert b"12.5" in archive.read("CABLE.csv")
         assert "delivery.qgz" in archive.namelist()
         assert archive.read("visual/report.json") == (visual / "report.json").read_bytes()
+        assert archive.read("geometry_repair_candidates.json") == candidates
+        assert json.loads(archive.read("delivery-manifest.json"))["semantic_revision"]["revision"] == 1
     with zipfile.ZipFile(tmp_path / "delivery" / "delivery.qgz") as archive:
         xml = archive.read("delivery.qgs").decode()
         assert "./delivery.gpkg|layername=CABLE" in xml
         assert str(tmp_path) not in xml
+    (run / "geometry_repair_candidates.json").write_bytes(b"tampered")
+    with pytest.raises(ValueError, match="Geometry repair candidates"):
+        package_delivery(run, tmp_path / "tampered-package")
 
 
 def test_readonly_sqlite_without_extension_api(tmp_path, monkeypatch):
@@ -156,6 +165,7 @@ def test_batch_subprocesses_follow_real_cli_source_contract(tmp_path, monkeypatc
                 assert _source(args) == tmp_path / "one.dwg"
             if args.command == "convert":
                 assert str(output) in str(args.project_dir)
+                assert args.source_run == args.run_dir.parent / "source"
                 args.run_dir.mkdir(parents=True)
                 (args.run_dir / "run_manifest.json").write_text(json.dumps({"delivery_partitions": {"EMR28560": {}}}))
             seen.append(args.command)

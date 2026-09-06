@@ -362,6 +362,31 @@ def render_changes(path, source, delivered, comparisons, report):
     canvas.save(path)
 
 
+def verified_semantic_labels(properties, source_by_key, manifest, source_manifest, target_source_key):
+    """Independently bind a delivered label to the pinned revision and raw text."""
+    receipt = manifest.get("semantic_revision")
+    if not isinstance(receipt, dict) or receipt.get("snapshot_sha256") != source_manifest.get("snapshot_sha256"):
+        return []
+    required = {"schema_version", "job_id", "generation", "revision", "snapshot_sha256",
+                "manifest_sha256", "semantic_gpkg_sha256", "decisions_sha256", "authority"}
+    if not required <= receipt.keys():
+        return []
+    labels = []
+    for operation in json.loads(properties.get("lineage_json") or "[]"):
+        if operation.get("operation") != "apply_committed_semantic_revision":
+            continue
+        if any(operation.get(key) != value for key, value in receipt.items()):
+            continue
+        key = operation.get("label_entity_key")
+        text = source_by_key.get(key, {}).get("text")
+        expected_provenance = f"SEMANTIC_REVISION:{receipt['job_id']}:{receipt['revision']}:{key}"
+        if (operation.get("source_entity_key") == target_source_key and text
+                and operation.get("geometry_changed") is False
+                and properties.get("label_provenance") == expected_provenance):
+            labels.append({"entity_key": key, "text": text})
+    return labels
+
+
 def audit(source_run, run, output, partition=None):
     source_run, run, output = map(lambda p: Path(p).resolve(), (source_run, run, output))
     output.mkdir(parents=True, exist_ok=True)
@@ -453,6 +478,7 @@ def audit(source_run, run, output, partition=None):
         text_values = [source.get("text", "")] + [str(x) for x in (source.get("block_attributes") or {}).values()] + [str(x) for x in raw.get("owned_attribute_texts", [])]
         links = [link for key in set(candidates + [item["source_key"]]) for link in selected_annotations[key]]
         verified_link_texts = [link["text"] for link in links if all_source_by_key.get(link["annotation_key"], {}).get("text") == link["text"]]
+        semantic_labels = verified_semantic_labels(props, all_source_by_key, manifest, source_manifest, item["source_key"])
         integer_relations = [relation for key in candidates for relation in number_relations[key] if relation["target_source_entity_key"] == item["source_key"]]
         verified_integer_texts = [relation["value"] for relation in integer_relations if relation["source_relation_verified"]]
         for name, value in props.items():
@@ -464,6 +490,7 @@ def audit(source_run, run, output, partition=None):
             source_text_exact = str(value) in text_values if present else False
             matches = present and any(normalized(value) == normalized(t) for t in text_values if t)
             linked_match = normalized(value) in {normalized(t) for t in verified_link_texts} if present else False
+            linked_match = linked_match or (present and str(value) in {label["text"] for label in semantic_labels})
             parts = str(value).split(" \u00b7 ")
             compound_match = len(parts) > 1 and all(normalized(part) in {normalized(t) for t in text_values + verified_link_texts} for part in parts)
             heuristic_match = bool(verified_integer_texts) and all(normalized(part) in {normalized(t) for t in text_values + verified_link_texts + verified_integer_texts} for part in parts) and any(normalized(part) in {normalized(t) for t in verified_integer_texts} for part in parts)

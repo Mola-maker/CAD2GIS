@@ -56,6 +56,8 @@ CABLE 的显示表达式以 `length_value_m` 为值，显示 `m [CAD]` 或 `m [G
 
 ## 六项能力边界
 
+源快照复用已接入 batch：export-source 后的转换直接使用同一 source 快照。每图可增加 `"geometry_repairs":"candidate-only"`，把三类历史自动几何修复保留为未应用候选；失败仍有独立候选报告，成功 ZIP 包含其 SHA 绑定文件。默认 legacy 保持历史审定行为。语义 revision 的规范交付入口、具体支持范围和实图证据见 [源快照与语义交付](SOURCE_REPLAY_SEMANTIC_DELIVERY_2026-09-06.md)。
+
 | 能力 | 契约与边界 |
 | --- | --- |
 | 固定成果格式 | canonical run 格式保留，新增 batch 报告、相对路径 HTML、QGZ/CSV/ZIP；分区独立列出 |

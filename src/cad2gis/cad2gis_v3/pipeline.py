@@ -217,8 +217,18 @@ class ConversionRequest:
     decision_pack: Path | None = None
     domain: str = "auto"
     llm: str = "off"
+    source_run: Path | None = None
+    semantic_store: Path | None = None
+    semantic_job: str = ""
+    geometry_repairs: str = "legacy"
 
     def __post_init__(self) -> None:
+        if self.geometry_repairs not in {"legacy", "candidate-only"}:
+            raise ValueError("geometry_repairs must be legacy or candidate-only")
+        if bool(self.semantic_store) != bool(self.semantic_job) or (self.semantic_store and not self.source_run):
+            raise ValueError("semantic_store and semantic_job require each other and source_run")
+        if self.semantic_store and self.decision_pack:
+            raise ValueError("Use one semantic authority per conversion: revision or decision_pack")
         _validate_mode(self.domain, _VALID_DOMAINS, "domain")
         _validate_mode(self.llm, _VALID_LLM_MODES, "llm")
         if self.decision_pack is not None and self.llm == "off":
@@ -1570,11 +1580,42 @@ def convert(request: ConversionRequest) -> ConversionResult:
         )
     run_dir.parent.mkdir(parents=True, exist_ok=True)
 
+    geometry_candidates = []
+    geometry_report = None
+    geometry_review_path = None
+    if request.geometry_repairs == "candidate-only":
+        geometry_review_path = Path(tempfile.mkdtemp(prefix=f"{run_dir.name}.repair-review-", dir=run_dir.parent)) / "geometry_repair_candidates.json"
+        stage_inputs["geometry_repairs"] = "candidate-only"
+
+    def record_geometry_candidates(stage):
+        nonlocal geometry_report
+        if geometry_review_path is not None:
+            geometry_report = {"schema_version": "cad2gis.geometry_repair_candidates.v1",
+                               "source_sha256": source_hash, "stage": stage,
+                               "conversion_inputs": dict(stage_inputs), "mode": "candidate-only",
+                               "accepted": False, "candidate_count": len(geometry_candidates),
+                               "candidates": [{**item, "candidate_id": canonical_sha256({"source_sha256": source_hash, **item})}
+                                              for item in geometry_candidates]}
+            _write_manifest(geometry_review_path, geometry_report)
+
+    replay_records, replay_receipt = None, None
+    semantic_decisions, semantic_receipt = None, None
+    if request.source_run is not None:
+        from .source_replay import load_native_snapshot
+        replay_records, replay_receipt = load_native_snapshot(Path(request.source_run), source)
+        stage_inputs["source_snapshot_sha256"] = replay_receipt["snapshot_sha256"]
+    if request.semantic_store is not None:
+        from .semantic_delivery import load_published_revision
+        semantic_decisions, semantic_receipt = load_published_revision(
+            request.semantic_store, request.semantic_job, replay_receipt["snapshot_sha256"],
+        )
+        stage_inputs["semantic_revision"] = semantic_receipt
     entities, ingest_diagnostics = stage_recorder.run(
         "ingest",
         version="v3-reader-ir-2",
         inputs=stage_inputs,
-        operation=lambda: ingest(source, profile),
+        operation=lambda: ingest(source, profile) if replay_records is None else ingest(
+            source, profile, extract_records=lambda _: replay_records),
         summarize=lambda result: {
             "entity_count": len(result[0]),
             "entity_keys_sha256": canonical_sha256(sorted(
@@ -1584,6 +1625,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
         },
     )
     source_entity_count = len(entities)
+    if replay_receipt is not None:
+        ingest_diagnostics["source_replay"] = replay_receipt
     terminal_accounting, source_dependencies, inventory_gate = _validate_ingested_source(
         source, entities, ingest_diagnostics, profile,
     )
@@ -1720,6 +1763,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             catalog_roots=catalog_roots,
             project_id=profile.project_id,
             project_slug=profile.path.parent.parent.name,
+            **({"apply_geometry_repairs": False, "geometry_candidates": geometry_candidates}
+               if request.geometry_repairs == "candidate-only" else {}),
         ),
         summarize=lambda result: {
             "feature_count": len(result[0]),
@@ -1731,6 +1776,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "diagnostics_sha256": canonical_sha256(result[3]),
         },
     )
+    record_geometry_candidates("semantic_classification")
     if (
         osm_anchor is not None
         and "road_match" not in osm_anchor
@@ -1801,6 +1847,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
         },
         operation=lambda: build_topology(
             semantic_entities, features, registry, relations, unresolved,
+            **({"apply_geometry_repairs": False, "geometry_candidates": geometry_candidates}
+               if request.geometry_repairs == "candidate-only" else {}),
         ),
         # Topology mutates feature geometry, attributes and lineage in place.
         # Those changes are part of its output, not just the returned relations.
@@ -1814,6 +1862,19 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "diagnostics_sha256": canonical_sha256(result[2]),
         },
     )
+    record_geometry_candidates("topology")
+    if geometry_report is not None:
+        semantic_diagnostics["geometry_repair_candidates"] = geometry_report
+    if semantic_decisions is not None:
+        from .semantic_delivery import apply_revision
+        semantic_diagnostics["committed_revision"] = stage_recorder.run(
+            "semantic_revision_projection", version="v1-existing-assets",
+            inputs=lambda: {**stage_inputs, "feature_state_sha256": canonical_sha256(features)},
+            operation=lambda: apply_revision(features, entities, semantic_decisions, semantic_receipt),
+            fingerprint=lambda result: {"features": features, "receipt": result},
+            summarize=lambda result: {"affected_feature_count": len(result["affected_features"]),
+                                      "geometry_changed": False},
+        )
     # CABLE business labels retain reviewed route identity. DIMENSION evidence
     # belongs only in segment length fields; it never substitutes for identity.
     base_evidence_graph = build_stage_evidence_graph(
@@ -2204,6 +2265,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )).resolve()
     try:
         staged_source_path = staged_run_dir / source_path.name
+        if geometry_report is not None:
+            _write_manifest(staged_run_dir / "geometry_repair_candidates.json", geometry_report)
         staged_evidence_path = staged_run_dir / evidence_path.name
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
@@ -2443,6 +2506,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "run_status": run_status.value,
             "stage_contracts": stage_recorder.manifest(),
             "modes": {"domain": request.domain, "llm": request.llm},
+            **({"source_replay": replay_receipt} if replay_receipt is not None else {}),
+            **({"semantic_revision": semantic_receipt} if semantic_receipt is not None else {}),
+            **({"geometry_repairs": "candidate-only"} if geometry_report is not None else {}),
             "source": {"path": str(source), "sha256": source_hash},
             "profiles": {
                 "source_profile": {"path": str(profile.path), "sha256": _sha256(profile.path)},
@@ -2452,6 +2518,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "osm_anchor": osm_anchor,
             "legend_spatial": diagnostics.get("legend_spatial", {}),
             "artifacts": {
+                **({"geometry_repair_candidates": {
+                    "path": str(run_dir / "geometry_repair_candidates.json"),
+                    "sha256": _sha256(staged_run_dir / "geometry_repair_candidates.json"),
+                }} if geometry_report is not None else {}),
                 "source": {
                     "path": str(source_path), "sha256": _sha256(staged_source_path),
                 },
@@ -2531,6 +2601,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
             conversion_snapshot,
             decision_pack=request.decision_pack,
         )
+        if replay_receipt is not None:
+            from .source_query import validate_source_snapshot
+            _, final_snapshot = validate_source_snapshot(replay_receipt["source_run"])
+            if final_snapshot["snapshot_sha256"] != replay_receipt["snapshot_sha256"]:
+                raise ValueError("Source snapshot changed during conversion")
+        if semantic_receipt is not None:
+            _, final_revision = load_published_revision(
+                request.semantic_store, request.semantic_job, replay_receipt["snapshot_sha256"],
+            )
+            if final_revision != semantic_receipt:
+                raise ValueError("Semantic revision changed during conversion")
         _publish_run_bundle(staged_run_dir, run_dir)
         publish_verified_alias(
             run_dir.parent / "latest_verified.json",

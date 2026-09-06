@@ -108,6 +108,8 @@ def export_source(
         "records_schema": "cad2gis.reader_record_jsonl.v1",
         "record_representation": "reader_mapping_or_source_entity_dataclass",
     }
+    from .source_replay import REPLAY_SCHEMA, reader_identity
+    provenance.update(replay_schema=REPLAY_SCHEMA, reader_identity=reader_identity())
     root.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{root.name}.staged-", dir=root.parent))
     try:

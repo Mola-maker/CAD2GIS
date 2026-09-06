@@ -255,8 +255,15 @@ def convert_project(
     decision_pack: str | Path | None = None,
     domain: str = "auto",
     llm: str = "off",
+    source_run: str | Path | None = None,
+    semantic_store: str | Path | None = None,
+    semantic_job: str = "",
+    geometry_repairs: str = "legacy",
 ) -> Any:
     """Resolve project configuration and run the architecture-v3 conversion."""
+
+    if bool(semantic_store) != bool(semantic_job) or (semantic_store and not source_run):
+        raise ProjectConfigurationError("semantic_store and semantic_job require each other and source_run")
 
     _validate_mode(domain, _VALID_DOMAINS, "domain")
     _validate_mode(llm, _VALID_LLM_MODES, "llm")
@@ -287,6 +294,9 @@ def convert_project(
         decision_pack=resolved_decision_pack,
         domain=domain,
         llm=llm,
+        **({"source_run": Path(source_run).expanduser().resolve()} if source_run is not None else {}),
+        **({"semantic_store": Path(semantic_store).expanduser().resolve(), "semantic_job": semantic_job} if semantic_store is not None else {}),
+        **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
     )
 
 
