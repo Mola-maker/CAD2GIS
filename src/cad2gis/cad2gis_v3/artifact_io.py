@@ -5,9 +5,27 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import subprocess
 import time
 from pathlib import Path
 from typing import Any
+
+
+def inherit_output_permissions(staging: Path) -> None:
+    """Restore the output parent's Windows ACL before publishing a new tree.
+
+    Temporary directories can have an owner-only DACL. Renaming preserves it,
+    leaving outputs unreadable to the user when a sandbox account created them.
+    Reset only the new staging tree; failure must abort publication.
+    """
+    if os.name != "nt":
+        return
+    executable = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "icacls.exe"
+    subprocess.run(
+        [str(executable), str(staging), "/reset", "/T", "/Q"],
+        capture_output=True, check=True, timeout=60,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
 
 
 def file_cache_identity(path: str | Path) -> tuple[int, ...]:
@@ -106,4 +124,6 @@ def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
             temporary.unlink()
 
 
-__all__ = ["file_cache_identity", "read_json_object", "write_json_object"]
+__all__ = [
+    "file_cache_identity", "inherit_output_permissions", "read_json_object", "write_json_object",
+]

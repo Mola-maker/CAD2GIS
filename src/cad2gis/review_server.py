@@ -1233,6 +1233,7 @@ def create_review_app(
         )
 
     run_path = Path(run_dir).expanduser().resolve()
+    source_run_path = run_path
     manifest_path = run_path / "run_manifest.json"
     partition_manifest_path = run_path / "partition_manifest.json"
     if manifest_path.is_file():
@@ -1247,13 +1248,47 @@ def create_review_app(
             json.dumps(_json_object(parent_manifest_path))
         )
         partition = _json_object(partition_manifest_path)
+        region_id = partition.get("region_id")
+        entries = manifest.get("delivery_partitions", {})
+        entry = entries.get(region_id) if isinstance(entries, dict) and isinstance(region_id, str) else None
+        if not isinstance(entry, dict) or region_id != run_path.name:
+            raise ReviewServerError("Partition has no matching parent delivery_partitions entry")
+        declared_path = Path(str(entry.get("path", "")))
+        if declared_path.name != "delivery.gpkg" or declared_path.parent.name != region_id:
+            raise ReviewServerError("Parent partition delivery path does not match the selected region")
+        counts = entry.get("delivery_counts")
+        partition_counts = partition.get("delivery_counts")
+        if (not isinstance(counts, dict) or not counts
+                or any(not isinstance(key, str) or not key or not isinstance(value, int)
+                       or isinstance(value, bool) or value < 0 for key, value in counts.items())
+                or not isinstance(partition_counts, dict)
+                or any(not isinstance(value, int) or isinstance(value, bool)
+                       for value in partition_counts.values())
+                or partition_counts != counts):
+            raise ReviewServerError("Partition counts disagree with authoritative parent delivery counts")
+        expected_sha = str(entry.get("sha256", "")).strip().casefold()
+        partition_delivery = run_path / "delivery.gpkg"
+        if (re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None
+                or not partition_delivery.is_file()
+                or _sha256_file(partition_delivery) != expected_sha):
+            raise ReviewServerError("Partition delivery SHA-256 does not match the parent manifest")
+        source_run_path = run_path.parent
+        manifest["parent_run_provenance"] = {
+            "run_dir": str(source_run_path),
+            "manifest_path": str(parent_manifest_path),
+            "manifest_sha256": _sha256_file(parent_manifest_path),
+            "run_status": manifest.get("run_status"),
+            "source_entity_count_scope": "parent_run",
+            "validation_scope": "parent_run",
+        }
+        manifest["delivery_counts"] = dict(counts)
         artifacts = manifest.get("artifacts")
         if not isinstance(artifacts, dict):
             artifacts = {}
             manifest["artifacts"] = artifacts
         artifacts["delivery"] = {
-            "path": str(run_path / "delivery.gpkg"),
-            "sha256": "",
+            "path": str(partition_delivery),
+            "sha256": expected_sha,
         }
         manifest["delivery_partition"] = partition
         manifest["run_dir"] = str(run_path)
@@ -1332,7 +1367,7 @@ def create_review_app(
     @app.get("/api/run")
     async def run_summary():
         resolved_source, source_blocker = _source_path(
-            manifest, run_dir=run_path,
+            manifest, run_dir=source_run_path,
         )
         return {
             "schema_version": manifest.get("schema_version"),
@@ -1347,6 +1382,8 @@ def create_review_app(
             "source_blocker": source_blocker,
             "source_entity_count": manifest.get("source_entity_count"),
             "delivery_counts": manifest.get("delivery_counts"),
+            "delivery_partition": manifest.get("delivery_partition"),
+            "parent_run_provenance": manifest.get("parent_run_provenance"),
             "crs": manifest.get("crs"),
             "validation": manifest.get("validation"),
             "reasoning": manifest.get("reasoning"),
@@ -1451,7 +1488,7 @@ def create_review_app(
                 ) from exc
 
         source_path, source_blocker = _source_path(
-            manifest, run_dir=run_path,
+            manifest, run_dir=source_run_path,
         )
         next_run = workspace / "registered-run"
         command_parts = (

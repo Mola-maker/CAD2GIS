@@ -11,6 +11,7 @@ import platform
 import re
 import shutil
 import sys
+import sysconfig
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -167,6 +168,68 @@ def _timeout_check() -> Check:
     )
 
 
+def _mcp_entrypoint_checks() -> tuple[Check, ...]:
+    """Separate this interpreter's installation from client PATH resolution."""
+    scripts_directory = sysconfig.get_path("scripts")
+    command_name = "cad2gis-agent-mcp.exe" if os.name == "nt" else "cad2gis-agent-mcp"
+    local_candidate = Path(scripts_directory) / command_name
+    local_entrypoint = (
+        str(local_candidate.resolve())
+        if local_candidate.is_file() and os.access(local_candidate, os.X_OK)
+        else None
+    )
+    path_entrypoint = shutil.which("cad2gis-agent-mcp")
+    if path_entrypoint:
+        path_entrypoint = str(Path(path_entrypoint).resolve())
+    checks = [Check(
+        name="cad2gis_agent_mcp_entrypoint",
+        status="ok" if local_entrypoint else "missing",
+        detail=(
+            f"current interpreter entrypoint: {local_entrypoint}; interpreter: {sys.executable}"
+            if local_entrypoint
+            else f"cad2gis-agent-mcp is missing from current interpreter scripts directory: "
+            f"{scripts_directory}; interpreter: {sys.executable}"
+        ),
+        required_for_conversion=False,
+        required_for_profiles=("agent", "full"),
+        remediation=(
+            None
+            if local_entrypoint
+            else "Reinstall a non-editable `cad2gis[agent]` wheel in the agent environment."
+        ),
+    )]
+    same_entrypoint = bool(
+        local_entrypoint
+        and path_entrypoint
+        and os.path.normcase(str(Path(local_entrypoint).resolve()))
+        == os.path.normcase(str(Path(path_entrypoint).resolve()))
+    )
+    if path_entrypoint or local_entrypoint:
+        checks.append(Check(
+            name="cad2gis_agent_mcp_path",
+            status="ok" if same_entrypoint else "warning",
+            detail=(
+                f"PATH resolves to the current interpreter entrypoint: {path_entrypoint}"
+                if same_entrypoint
+                else f"PATH resolves to a different or unverified environment: {path_entrypoint}"
+                if path_entrypoint
+                else "cad2gis-agent-mcp is not available on PATH; the current interpreter "
+                "entrypoint is available by absolute path"
+            ),
+            required_for_conversion=False,
+            remediation=(
+                None
+                if same_entrypoint
+                else f"Configure the MCP client command with the absolute path {local_entrypoint}, "
+                "or put its scripts directory first on the client PATH."
+                if local_entrypoint
+                else "Install the entrypoint in this interpreter environment before configuring "
+                "the MCP client; the PATH entrypoint does not verify this installation."
+            ),
+        ))
+    return tuple(checks)
+
+
 def collect_checks(
     *, deep: bool = False, _contract: dict[str, Any] | None = None
 ) -> tuple[Check, ...]:
@@ -260,23 +323,7 @@ def collect_checks(
             extra="agent",
         ),
     ))
-    mcp_entrypoint = shutil.which("cad2gis-agent-mcp")
-    checks.append(Check(
-        name="cad2gis_agent_mcp_entrypoint",
-        status="ok" if mcp_entrypoint else "missing",
-        detail=(
-            f"cad2gis-agent-mcp is available at {mcp_entrypoint}"
-            if mcp_entrypoint
-            else "cad2gis-agent-mcp is not available on PATH"
-        ),
-        required_for_conversion=False,
-        required_for_profiles=("agent", "full"),
-        remediation=(
-            None
-            if mcp_entrypoint
-            else "Reinstall a non-editable `cad2gis[agent]` wheel in the agent environment."
-        ),
-    ))
+    checks.extend(_mcp_entrypoint_checks())
 
     try:
         from .reader.resolver import (

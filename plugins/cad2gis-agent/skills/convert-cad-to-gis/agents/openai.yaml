@@ -1,4 +1,4 @@
 interface:
   display_name: "Convert CAD to GIS"
   short_description: "Evidence-first DWG conversion and registration"
-  default_prompt: "Call get_capabilities first, require prompt contract cad2gis.agent_prompt.v3, inspect this exact CAD source, submit only typed source-observed IDs (including onboarding annotation candidate and policy IDs), and report geometry, topology, length, and coordinate accuracy separately."
+  default_prompt: "Use $convert-cad-to-gis to verify get_capabilities and debug_mcp runtime identity with prompt contract cad2gis.agent_prompt.v3, inspect this exact CAD source, submit only typed source-observed IDs including onboarding annotation candidate and policy IDs, and return full-source visual/field comparisons with geometry, topology, length and coordinate accuracy reported separately."

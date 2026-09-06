@@ -476,6 +476,18 @@ def _accumulate(diagnostics: dict[str, Any], payload: Mapping[str, Any]) -> None
     )
 
 
+def supports_endpoint_bridge(source: SourceEntity) -> bool:
+    """The current bridge materializer only supports open straight CAD routes."""
+    facts = source.curve_facts
+    return (
+        source.dwg_type in {"LINE", "LWPOLYLINE", "POLYLINE"}
+        and not source.closed
+        and not facts.get("closed", False)
+        and facts.get("primitive_type", source.dwg_type).upper() in {"LINE", "LWPOLYLINE", "POLYLINE"}
+        and all(float(bulge) == 0.0 for bulge in facts.get("bulges", ()))
+    )
+
+
 def _bridge_materialization(
     feature: Feature,
     source: SourceEntity,
@@ -487,6 +499,10 @@ def _bridge_materialization(
     curve facts intentionally no longer match that endpoint.  Every other
     vertex is immutable, and all source segments are straight CAD segments.
     """
+    if not supports_endpoint_bridge(source):
+        raise ValueError("endpoint bridge cannot flatten curved or closed source geometry")
+    if len(feature.native_points) != len(source.points):
+        raise ValueError("endpoint bridge cannot change source vertex cardinality")
     points = [
         (float(point[0]), float(point[1]))
         for point in feature.native_points

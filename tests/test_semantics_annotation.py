@@ -1,18 +1,67 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+
 from cad2gis.cad2gis_v3.model import CadStyle, Feature, SourceEntity
 from cad2gis.cad2gis_v3.semantics import (
     _GENERATED_CODE_PROVENANCE,
     _annotation_target_eligible,
+    _annotation_layer_diagnostics,
     _append_label_provenance,
     _assign_family_annotations,
     _attributed_block_style,
     _device_number_attribute,
 )
+from cad2gis.cad2gis_v3.pipeline import _validate_annotation_families
 from cad2gis.cad2gis_v3.spatial_filter import is_pole_identifier_shape
 
 
 SOURCE_SHA = "a" * 64
+
+
+def test_same_layer_gate_admits_only_recorded_derived_target_exception() -> None:
+    annotation = _annotation("entity:label", "10B", "MR.DMPH.P104", (10.0, 0.0))
+    derived = _target(feature_key="feature:point", handle="10A", source_layer="POINT GEOMETRY")
+    ordinary = _target(feature_key="feature:other", handle="10C", source_layer="WRONG LAYER")
+    assignments, failures, _ = _assign_family_annotations(
+        [annotation], [derived, ordinary], 15.0, family_id="same-layer",
+        require_same_layer=True, cross_layer_target_keys={derived.feature_key},
+    )
+    assert not failures
+    assert len(assignments) == 1 and assignments[0][1] is derived
+    diagnostics = _annotation_layer_diagnostics(
+        assignments, require_same_layer=True, derived_target_keys={derived.feature_key},
+    )
+    assert diagnostics == {
+        "cross_layer_assignments": 1, "allowed_derived_cross_layer_assignments": 1,
+        "same_layer_policy_violations": 0,
+    }
+    registry = SimpleNamespace(annotation_families=[SimpleNamespace(family_id="same-layer", require_same_layer=True)])
+    expected = [SimpleNamespace(family_id="same-layer", metrics={"assigned": 1})]
+    assert _validate_annotation_families(
+        expected, {"annotation_assignments_by_family": {"same-layer": {"assigned": 1, **diagnostics}}}, registry,
+    )["passed"]
+    # The same geometry without the source-derived key is not an exception.
+    denied, _, candidates = _assign_family_annotations(
+        [annotation], [ordinary], 15.0, family_id="same-layer", require_same_layer=True,
+    )
+    assert denied == [] and candidates == []
+
+
+@pytest.mark.parametrize("receipt", [
+    {"cross_layer_assignments": 1},
+    {"cross_layer_assignments": 1, "allowed_derived_cross_layer_assignments": 0, "same_layer_policy_violations": 0},
+    {"cross_layer_assignments": 1, "allowed_derived_cross_layer_assignments": 2, "same_layer_policy_violations": 0},
+])
+def test_same_layer_gate_rejects_missing_or_inconsistent_exception_receipt(receipt) -> None:
+    registry = SimpleNamespace(annotation_families=[SimpleNamespace(family_id="same-layer", require_same_layer=True)])
+    expected = [SimpleNamespace(family_id="same-layer", metrics={"assigned": 1})]
+    with pytest.raises(RuntimeError, match="same-layer isolation"):
+        _validate_annotation_families(
+            expected, {"annotation_assignments_by_family": {"same-layer": {"assigned": 1, **receipt}}}, registry,
+        )
 
 
 def _annotation(entity_key: str, handle: str, text: str, centroid: tuple[float, float]) -> SourceEntity:

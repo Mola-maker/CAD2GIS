@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import re
+
+import pytest
+
 from cad2gis.cad2gis_v3.family_validation import (
     derive_family_from_samples,
     l1_validate_family,
@@ -34,6 +38,34 @@ def test_derive_family_separates_width_families() -> None:
     assert families[0]["text_pattern"] == (
         r"^KLDYA[^A-Za-z0-9]+\d+[^A-Za-z0-9]+[A-Za-z]+\d+$"
     )
+
+
+@pytest.mark.parametrize("layer,texts", [
+    ("POLE ID", ["EXT.MR.MF.TMH.S02.P077", "EXT.MR.MF.TMH.S02.P079",
+                 "MR.UP.TMH.EMR-46478.P001", "MR.UP.TMH.EMR-46478.P002"]),
+    ("EXT POLE", ["EXT.MR.BLOR-05.P001", "EXT.MR.BLOR-06.P002",
+                  "EXT.MR.GJM.S08.P026", "EXT.MR.GJM.S08.P027"]),
+])
+def test_equal_width_numeric_and_alphanumeric_fields_form_complete_disjoint_families(layer, texts):
+    samples = [{"text": text, "aci_color": 1} for text in texts]
+    families = derive_family_from_samples(layer, samples)
+    assert len(families) == 2
+    for text in texts:
+        assert sum(re.fullmatch(family["text_pattern"], text) is not None for family in families) == 1
+    assert all(l1_validate_family(family, {layer: samples})["passed"] for family in families)
+    result = l2_validate_family_group(families, samples)
+    assert result["passed"] is True
+    assert result["unassigned_count"] == result["ambiguous_count"] == 0
+    # Removing either observed family still fails closed; no catch-all pattern
+    # or weaker L2 threshold is used to admit the previously rejected labels.
+    incomplete = l2_validate_family_group(families[:1], samples)
+    assert incomplete["passed"] is False
+    assert incomplete["unassigned_count"] == 2
+
+
+def test_shape_grouping_does_not_accept_unsupported_mixed_field_syntax():
+    samples = [{"text": "REGION.12Q.P001"}, {"text": "REGION.15Q.P002"}]
+    assert derive_family_from_samples("POLE ID", samples) == []
 
 
 def test_derive_family_ignores_prose_with_numeric_tokens() -> None:
