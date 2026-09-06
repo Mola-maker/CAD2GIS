@@ -41,6 +41,8 @@ image ID and `pip freeze` output when archiving a production run.
 No registry publication occurs during local build. Registry tags and access
 policy are separate from building and testing the local image.
 
-The `CAD2GIS Docker` GitHub Actions workflow builds the image and checks full
-runtime readiness and the MCP entrypoint. The image remains on the ephemeral
-runner; the workflow does not upload an image archive or publish to a registry.
+The `CAD2GIS Docker` GitHub Actions workflow builds the image, checks full
+runtime readiness and the MCP entrypoint, and saves an image archive with its
+SHA-256 and resolved dependencies as a seven-day workflow artifact. Download
+and extract the artifact, then run `docker load -i cad2gis-image.tar.gz`.
+The workflow does not publish to a container registry.

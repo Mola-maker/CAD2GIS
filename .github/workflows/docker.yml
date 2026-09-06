@@ -30,3 +30,13 @@ jobs:
           docker run --rm cad2gis:0.4.0 debug-mcp --scope identity --json > docker-artifacts/debug-mcp.json
           docker run --rm --entrypoint pip cad2gis:0.4.0 freeze > docker-artifacts/requirements-resolved.txt
           docker image inspect cad2gis:0.4.0 > docker-artifacts/image-inspect.json
+      - name: Export tested image
+        run: |
+          docker save cad2gis:0.4.0 cad2gis:latest | gzip > docker-artifacts/cad2gis-image.tar.gz
+          cd docker-artifacts && sha256sum cad2gis-image.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cad2gis-docker-${{ github.sha }}
+          path: docker-artifacts/
+          compression-level: 0
+          retention-days: 7
