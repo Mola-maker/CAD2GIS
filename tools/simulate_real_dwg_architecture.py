@@ -83,8 +83,12 @@ def main() -> None:
                     for candidate in chosen])
         write("patch", patch)
         preview = step("preview_patch", lambda: preview_semantic_patch(source_run=source_run, prepare_manifest=prepared_path, semantic_store=store, patch=patch))
-        commit_call = lambda: commit_semantic_patch(source_run=source_run, prepare_manifest=prepared_path,
-             semantic_store=store, patch=patch, preview_hash=preview["preview_hash"], idempotency_key="real-dwg-replay-patch-v1")
+        def commit_call():
+            return commit_semantic_patch(
+                source_run=source_run, prepare_manifest=prepared_path,
+                semantic_store=store, patch=patch, preview_hash=preview["preview_hash"],
+                idempotency_key="real-dwg-replay-patch-v1",
+            )
         committed = step("commit_patch", commit_call)
         replay = step("commit_idempotent_replay", commit_call)
         assert replay == committed
