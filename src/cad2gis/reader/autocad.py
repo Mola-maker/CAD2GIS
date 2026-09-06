@@ -556,14 +556,17 @@ _AUTOLISP_EXTRACTOR = r'''
       (if (= result "") (setq result (c2g-get 1 data ""))))
     (T (setq result (c2g-get 1 data "")))) result)
 (defun c2g-attributes (entity / result next data kind tag value)
-  (setq result "" next (entnext entity))
+  ; entnext also visits later main entities: enter only this INSERT's sequence.
+  (setq result "" next nil)
+  (if (= (c2g-get 66 (entget entity) 0) 1)
+    (setq next (entnext entity)))
   (while next
     (setq data (entget next) kind (c2g-get 0 data ""))
     (cond
       ((= kind "ATTRIB")
         (setq tag (c2g-escape (c2g-get 2 data "")) value (c2g-escape (c2g-get 1 data "")))
         (setq result (if (= result "") (strcat tag "=" value) (strcat result "|" tag "=" value))))
-      ((= kind "SEQEND") (setq next nil)))
+      (T (setq next nil)))
     (if next (setq next (entnext next)))) result)
 (defun c2g-supported (kind)
   (wcmatch kind "LINE,LWPOLYLINE,POLYLINE,CIRCLE,ARC,SPLINE,ELLIPSE,POINT,INSERT,TEXT,MTEXT,ATTRIB,ATTDEF,MULTILEADER,MLEADER,TABLE,DIMENSION"))

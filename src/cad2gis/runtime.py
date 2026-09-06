@@ -28,6 +28,12 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+
+def configure_numeric_threads() -> None:
+    """Bound native worker pools for CLI/MCP processes; respect operator overrides."""
+    for name in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(name, "1")
+
 BACKEND_PATH_ENV = "CAD2GIS_BACKEND_PATH"
 BACKEND_PACKAGE = "cad2gis.cad2gis_v3"
 PROJECT_BACKEND_MODULES = (
@@ -118,6 +124,9 @@ def backend_deployment() -> dict[str, str | None]:
 
     importable = _importable_backend_location()
     if importable is not None:
+        editable = _editable_backend_root()
+        if editable is not None and Path(importable).is_relative_to(editable):
+            return {"mode": "editable_checkout", "location": importable}
         return {"mode": "installed_package", "location": importable}
 
     editable = _editable_backend_root()

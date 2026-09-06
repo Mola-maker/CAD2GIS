@@ -4,7 +4,7 @@
   if (!active) return;
 
   const FIXTURE_KIND = "CAD2GIS_DERIVED_FIXTURE";
-  const PUBLICATION_BOUNDARY = "公开页面仅含真实转换的筛选派生证据，不包含任何 DWG/GPKG 原始文件";
+  const PUBLICATION_BOUNDARY = "浏览器地图使用派生数据；DWG 不公开，交付下载以发布清单为准。";
   const pageConfig = JSON.parse(document.getElementById("cad2gis-page-config")?.textContent || "{}");
   // The standalone public page shares this script but keeps its own catalog.
   const baseUrl = pageConfig.fixtureBaseUrl
@@ -99,6 +99,11 @@
     }));
     if (url === "/api/run") return clone(fixture.run);
     if (url === "/api/layers") return clone({ layers: layerDescriptors });
+    const geographicMatch = url.match(/^\/api\/layers\/([^/]+)\/geojson$/);
+    if (geographicMatch && fixture.geographic_layers) {
+      return clone(fixture.geographic_layers[decodeURIComponent(geographicMatch[1])]
+        || { type: "FeatureCollection", features: [] });
+    }
     const layerMatch = url.match(/^\/api\/layers\/([^/]+)\/local-geojson$/);
     if (layerMatch) {
       const name = decodeURIComponent(layerMatch[1]);

@@ -85,7 +85,8 @@ const gcpMapSource = new ol.source.Vector();
 let controls = [];
 let pendingCad = null;
 let pendingCadEvidence = null;
-let similarity = null;
+let registrationPreview = null;
+let previewEpoch = 0;
 let runSummary = null;
 let lastTargetCoordinate = "";
 
@@ -186,56 +187,43 @@ const worldMap = new ol.Map({
   }),
 });
 
-const fitSimilarity = (pairs) => {
-  const train = pairs.filter((pair) => pair.role === "train");
-  if (train.length < 2) return null;
-  const mx = train.reduce((sum, p) => sum + p.cad[0], 0) / train.length;
-  const my = train.reduce((sum, p) => sum + p.cad[1], 0) / train.length;
-  const mu = train.reduce((sum, p) => sum + p.map[0], 0) / train.length;
-  const mv = train.reduce((sum, p) => sum + p.map[1], 0) / train.length;
-  let denominator = 0;
-  let numeratorA = 0;
-  let numeratorB = 0;
-  for (const pair of train) {
-    const x = pair.cad[0] - mx;
-    const y = pair.cad[1] - my;
-    const u = pair.map[0] - mu;
-    const v = pair.map[1] - mv;
-    denominator += x * x + y * y;
-    numeratorA += x * u + y * v;
-    numeratorB += x * v - y * u;
-  }
-  if (denominator <= Number.EPSILON) return null;
-  const a = numeratorA / denominator;
-  const b = numeratorB / denominator;
-  const tx = mu - a * mx + b * my;
-  const ty = mv - b * mx - a * my;
-  const apply = ([x, y]) => [a * x - b * y + tx, b * x + a * y + ty];
-  const residuals = pairs.map((pair) => {
-    const predicted = apply(pair.cad);
-    return Math.hypot(predicted[0] - pair.map[0], predicted[1] - pair.map[1]);
-  });
-  const trainResiduals = residuals.filter((_, index) => pairs[index].role === "train");
-  const rmse = Math.sqrt(trainResiduals.reduce((sum, value) => sum + value * value, 0) / trainResiduals.length);
-  return { a, b, tx, ty, apply, residuals, rmse, scale: Math.hypot(a, b), rotation: Math.atan2(b, a) };
-};
-
-const refreshPreview = () => {
-  similarity = fitSimilarity(controls);
+const refreshPreview = async () => {
+  const epoch = ++previewEpoch;
   for (const layer of previewLayers.values()) worldMap.removeLayer(layer);
   previewLayers.clear();
-  const nominalPreview = !similarity && (
+  const fittedCollections = new Map();
+  const fit = registrationPreview?.preview_fit;
+  if (controls.length && !window.CAD2GIS_DEMO?.active) {
+    if (!fit) {
+      $("#fit-model").textContent = registrationPreview?.preview_error || "正式拟合尚不可用，请补充训练点";
+      $("#fit-rmse").textContent = "—";
+      return;
+    }
+    try {
+      const collections = await Promise.all([...layerCollections.keys()].map(async (name) => [name,
+        await fetchJSON(`/api/registration/preview/${encodeURIComponent(name)}?expected_controls_sha256=${registrationPreview.controls_sha256}`),
+      ]));
+      if (epoch !== previewEpoch) return;
+      for (const [name, collection] of collections) fittedCollections.set(name, collection);
+    } catch (error) {
+      if (epoch !== previewEpoch) return;
+      $("#fit-model").textContent = `拟合预览失败：${error.message}`;
+      $("#fit-rmse").textContent = "—";
+      return;
+    }
+  }
+  const nominalPreview = (
     geographicCollections.size > 0 || runSummary?.demo?.nominal_map_preview
   );
   const nominalTransform = runSummary?.demo?.nominal_transform
     || { a: 1, b: 0, tx: 0, ty: 0 };
-  if (!similarity && !nominalPreview) {
-    $("#fit-model").textContent = "至少需要 2 个训练点进行预览";
+  if (!fittedCollections.size && !nominalPreview) {
+    $("#fit-model").textContent = "添加控制点后由正式拟合引擎生成预览";
     $("#fit-rmse").textContent = "—";
     return;
   }
   for (const [name, collection] of layerCollections) {
-    const geographicCollection = !similarity ? geographicCollections.get(name) : null;
+    const geographicCollection = fittedCollections.get(name) || geographicCollections.get(name);
     const features = geographicCollection
       ? format.readFeatures(geographicCollection, {
         dataProjection: "EPSG:4326",
@@ -248,9 +236,7 @@ const refreshPreview = () => {
       feature.getGeometry()?.applyTransform((input, output, stride) => {
         const target = output || input;
         for (let i = 0; i < input.length; i += stride) {
-          const [x, y] = similarity
-            ? similarity.apply([input[i], input[i + 1]])
-            : [
+          const [x, y] = [
               nominalTransform.a * input[i] - nominalTransform.b * input[i + 1]
                 + nominalTransform.tx,
               nominalTransform.b * input[i] + nominalTransform.a * input[i + 1]
@@ -272,16 +258,19 @@ const refreshPreview = () => {
     worldMap.addLayer(layer);
     previewLayers.set(name, layer);
   }
-  $("#fit-model").textContent = similarity
-    ? `探索预览：相似变换 · 比例 ${similarity.scale.toFixed(6)} · 旋转 ${(similarity.rotation * 180 / Math.PI).toFixed(3)}°（正式导出使用平移模型）`
+  $("#fit-model").textContent = fittedCollections.size
+    ? `正式引擎：平移拟合 · ${fit.target_crs}（预览；最终转换仍须验收）`
     : geographicCollections.size > 0
       ? `名义 ${runSummary?.crs?.target_crs || "目标 CRS"} → EPSG:4326 预览（仍需独立 GCP 验证）`
     : runSummary?.demo?.map_anchor
       ? `地图锚点预览 · ${runSummary.demo.map_anchor.place_name || "位置已知"}（仍需 GCP）`
       : "名义 EPSG:3857 预览（未证明绝对精度）";
-  $("#fit-rmse").textContent = similarity
-    ? `${similarity.rmse.toFixed(3)} m（Web Mercator 预览）`
+  $("#fit-rmse").textContent = fittedCollections.size
+    ? `训练 ${fit.train_metrics.rmse_m?.toFixed(3) ?? "—"} m；独立检查 ${fit.check_metrics.rmse_m?.toFixed(3) ?? "—"} m`
     : "—（请使用控制点验证）";
+  if (controls.length && window.CAD2GIS_DEMO?.active) {
+    $("#fit-model").textContent += "；静态演示仅记录选点，请在本地正式拟合";
+  }
   const extents = [...previewLayers.values()].map((layer) => layer.getSource().getExtent());
   if (extents.length) {
     const extent = extents.reduce((acc, value) => ol.extent.extend(acc, value), ol.extent.createEmpty());
@@ -290,6 +279,7 @@ const refreshPreview = () => {
 };
 
 const renderControls = (registration = null) => {
+  registrationPreview = registration;
   gcpLocalSource.clear();
   gcpMapSource.clear();
   controls.forEach((pair, index) => {
@@ -467,7 +457,7 @@ const loadLayer = async (descriptor) => {
   if (descriptor.feature_count === 0) return;
   const collection = await fetchJSON(`/api/layers/${encodeURIComponent(descriptor.name)}/local-geojson`);
   layerCollections.set(descriptor.name, collection);
-  if (!window.CAD2GIS_DEMO?.active) {
+  if (!window.CAD2GIS_DEMO?.active || runSummary?.demo?.has_geographic_layers) {
     const geographic = await fetchJSON(`/api/layers/${encodeURIComponent(descriptor.name)}/geojson`);
     geographicCollections.set(descriptor.name, geographic);
   }
@@ -524,7 +514,8 @@ const clearProjectState = () => {
   controls = [];
   pendingCad = null;
   pendingCadEvidence = null;
-  similarity = null;
+  registrationPreview = null;
+  previewEpoch += 1;
   runSummary = null;
   lastTargetCoordinate = "";
   $("#layer-list").innerHTML = "";

@@ -66,7 +66,7 @@ def _assert_source_boundary() -> tuple[str, ...]:
     required_markers = (
         "window.CAD2GIS_DEMO",
         "CAD2GIS_DERIVED_FIXTURE",
-        "公开页面仅含真实转换的筛选派生证据",
+        "浏览器地图使用派生数据；DWG 不公开，交付下载以发布清单为准。",
         "RELATIVE_OSM_REFERENCE_ONLY",
         "selectProject",
     )

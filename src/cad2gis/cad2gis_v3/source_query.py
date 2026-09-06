@@ -212,7 +212,8 @@ def _readonly(path: Path) -> sqlite3.Connection:
     connection = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=2)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA query_only=ON")
-    connection.enable_load_extension(False)
+    if hasattr(connection, "enable_load_extension"):
+        connection.enable_load_extension(False)
     return connection
 
 

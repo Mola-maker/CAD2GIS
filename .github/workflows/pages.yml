@@ -11,6 +11,8 @@ on:
       - "plugins/cad2gis-agent/**"
       - "src/cad2gis/webdemo/**"
       - "scripts/build_pages.py"
+      - "scripts/verify_derived_release.py"
+      - "pages-delivery/**"
       - "tests/test_ci_contracts.py"
       - "tests/test_plugin_contracts.py"
       - "tests/test_webdemo_plugin_guide.py"

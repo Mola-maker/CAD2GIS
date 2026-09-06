@@ -960,6 +960,49 @@ def _source_path(
     )
 
 
+def _registration_transformer(manifest: dict[str, Any]):
+    """Reconstruct the exact reviewed nominal transform, including CAD units."""
+    from .cad2gis_v3.config import SourceProfile
+    from .cad2gis_v3.georef import DirectTransformer, GeoDataTransformer
+    from .cad2gis_v3.units import build_unit_crs_contract
+
+    record = manifest.get("profiles", {}).get("source_profile", {})
+    path = Path(str(record.get("path", "")))
+    if not path.is_file() or not record.get("sha256"):
+        raise ReviewServerError("Canonical preview requires the bound source profile")
+    if hashlib.sha256(path.read_bytes()).hexdigest() != record["sha256"]:
+        raise ReviewServerError("Canonical preview source profile hash mismatch")
+    profile = SourceProfile.load(path)
+    if profile.source_sha256 != manifest.get("source", {}).get("sha256"):
+        raise ReviewServerError("Canonical preview source binding mismatch")
+    units = build_unit_crs_contract(
+        dwg_insunits=profile.dwg_insunits, source_crs=profile.source_crs, target_crs=profile.target_crs,
+        source_coordinate_scale_to_m=profile.source_coordinate_scale_to_m,
+        source_coordinate_scale_reviewed=profile.source_coordinate_scale_reviewed,
+        local_registration_strategy=profile.local_registration_strategy,
+        local_registration_reviewed=profile.local_registration_reviewed,
+    )
+    if profile.geodata_registration is not None:
+        return GeoDataTransformer(profile.source_crs, profile.target_crs,
+            geodata_registration=profile.geodata_registration, unit_contract=units)
+    return DirectTransformer(profile.source_crs, profile.target_crs, unit_contract=units)
+
+
+def _registration_fit(capture: dict[str, Any], manifest: dict[str, Any]):
+    from .cad2gis_v3.calibration import GroundControlPoint, fit_calibration
+
+    nominal = _registration_transformer(manifest)
+    controls = tuple(GroundControlPoint(
+        point_id=item["point_id"], cad_point=(item["cad_x"], item["cad_y"]),
+        target_point=(item["target_easting"], item["target_northing"]), target_crs=item["target_crs"],
+        role=item["role"], source=item["source"], accuracy_m=item["accuracy_m"],
+        weight=item["weight"], enabled=item["enabled"],
+    ) for item in capture["controls"])
+    result = fit_calibration(controls, nominal, model="translation",
+        expected_source_crs=capture["source_crs"], expected_target_crs=capture["target_crs"])
+    return result, nominal
+
+
 def _registration_controls(
     store: Any,
     manifest: dict[str, Any],
@@ -1068,6 +1111,7 @@ def _registration_controls(
         "source_crs": source_crs,
         "target_crs": target_crs,
         "controls": compiled,
+        "controls_sha256": hashlib.sha256(json.dumps(compiled, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
         "train_count": len(train),
         "check_count": len(check),
         "minimum_train_count": 4,
@@ -1398,7 +1442,50 @@ def create_review_app(
 
     @app.get("/api/registration")
     async def registration_summary():
-        return _registration_controls(store, manifest)
+        capture = _registration_controls(store, manifest)
+        if capture["train_count"]:
+            try:
+                result, _ = _registration_fit(capture, manifest)
+                capture["preview_fit"] = {**result.to_dict(), "authority": "canonical_fit_engine",
+                    "acceptance": "preview_only; final run still enforces profile and spatial coverage gates"}
+            except (ValueError, OSError, ReviewServerError) as exc:
+                capture["preview_error"] = str(exc)
+        return capture
+
+    @app.get("/api/registration/preview/{layer_name}")
+    async def registration_preview(layer_name: str, expected_controls_sha256: str, limit: int = 100_000):
+        from pyproj import Transformer
+
+        capture = _registration_controls(store, manifest)
+        if capture["controls_sha256"] != expected_controls_sha256:
+            raise HTTPException(409, "Control points changed; refresh the registration before previewing")
+        try:
+            result, nominal = _registration_fit(capture, manifest)
+        except (ValueError, OSError) as exc:
+            raise ReviewServerError(str(exc)) from exc
+        geographic = Transformer.from_crs(result.target_crs, "EPSG:4326", always_xy=True)
+        collection = delivery.geojson(layer_name, limit=limit, native_coordinates=True)
+
+        def project(coordinates):
+            if coordinates and isinstance(coordinates[0], (int, float)):
+                x, y = result.project_native(coordinates, nominal)
+                return [*geographic.transform(x, y), *coordinates[2:]]
+            return [project(child) for child in coordinates]
+
+        def geometry(value):
+            if value.get("type") == "GeometryCollection":
+                for child in value.get("geometries", []):
+                    geometry(child)
+            elif "coordinates" in value:
+                value["coordinates"] = project(value["coordinates"])
+
+        for feature in collection["features"]:
+            if feature.get("geometry"):
+                geometry(feature["geometry"])
+        collection["coordinate_reference"] = "EPSG:4326"
+        collection["preview_only"] = True
+        collection["fit"] = result.to_dict()
+        return collection
 
     @app.post("/api/registration/export")
     async def export_registration(request: Request):

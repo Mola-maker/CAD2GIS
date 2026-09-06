@@ -59,7 +59,7 @@ const ol = {
 const context = { ol, document: { getElementById: () => ({
   textContent: JSON.stringify(input.config),
 }) } };
-const script = fs.readFileSync(input.app, "utf8").split("const fitSimilarity =")[0];
+const script = fs.readFileSync(input.app, "utf8").split("const refreshPreview =")[0];
 const maps = vm.runInNewContext(script + "\n({local: localMap, world: worldMap})", context);
 process.stdout.write(JSON.stringify(maps));
 """, {"config": config, "app": str(WEBDEMO / "app.js")})
@@ -153,7 +153,7 @@ vm.runInNewContext(fs.readFileSync(input.script, "utf8"), context);
     }
 
 
-def test_pages_copies_shared_assets_without_expanding_public_fixtures(tmp_path: Path) -> None:
+def test_pages_copies_shared_assets_and_authorized_derived_release(tmp_path: Path) -> None:
     destination = ROOT / f".pytest-pages-shared-{tmp_path.name}"
     try:
         build_pages.build(destination)
@@ -164,13 +164,17 @@ def test_pages_copies_shared_assets_without_expanding_public_fixtures(tmp_path: 
         for name in build_pages.SHARED_DEMO_SCRIPTS:
             assert (assets / name).read_bytes() == (WEBDEMO / name).read_bytes()
         assert sorted(path.name for path in assets.glob("demo-data*.json")) == ["demo-data.json"]
-        assert (assets / "demo-catalog.json").read_bytes() == (
-            WEBDEMO / "original-demo/assets/demo-catalog.json"
-        ).read_bytes()
+        catalog = json.loads((assets / "demo-catalog.json").read_text(encoding="utf-8"))
+        assert catalog["projects"][0]["id"] == "hutabohu"
+        assert {p["id"] for p in catalog["projects"][1:] if not p.get("parent_project_id")} == {f"drawing-{i:02}" for i in range(1, 10)}
+        assert {p["id"] for p in catalog["projects"] if p.get("parent_project_id")} == {"drawing-03-emr28560", "drawing-03-emr29619"}
+        assert (destination / "deliveries" / "publication.json").is_file()
         assert len(list((assets / "font-licenses").glob("*.txt"))) == 4
         original_page = (WEBDEMO / "original-demo/index.html").read_text(encoding="utf-8")
         built_page = (destination / "workspace/index.html").read_text(encoding="utf-8")
-        assert _page_config(built_page) == _page_config(original_page)
+        expected_config = _page_config(original_page)
+        expected_config["fixtureCacheVersion"] = "nine-delivery-20260906"
+        assert _page_config(built_page) == expected_config
         assert 'id="hero-page"' in original_page
         assert 'id="hero-page"' not in built_page
         # Follow URLs from both the source page and generated page, including

@@ -452,14 +452,14 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
         <div id="gcp-list" class="gcp-list"></div>
         <div class="metric-card">
           <span>模型</span><strong id="fit-model">尚未拟合</strong>
-          <span>预览训练 RMSE</span><strong id="fit-rmse">—</strong>
+          <span>预览残差 RMSE</span><strong id="fit-rmse">—</strong>
           <span>控制点</span><strong id="fit-coverage">0 / 4 训练；0 / 3 检查</strong>
           <span>目标坐标</span><strong id="target-coordinate">—</strong>
         </div>
         <button id="copy-coordinate" class="wide ghost" disabled>复制已传送的目标坐标</button>
         <button id="export-gcp" class="wide primary" disabled>生成配置与转换命令</button>
         <p class="warning">OSM 只能提供相对地图参考；绝对精度必须使用测量或权威控制点证明。</p>
-        <p class="warning">网页相似变换用于探索，当前导出配置使用平移模型。最终残差以新运行的独立检查点报告为准，不能用此预览代替验收。</p>
+        <p class="warning">本地预览和导出共用正式平移拟合引擎与目标坐标系；独立检查点不参与拟合。最终转换仍须通过覆盖度与精度门槛，预览不代替验收。静态演示仅记录选点。</p>
       </section>
     </aside>
 

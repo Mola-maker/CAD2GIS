@@ -327,7 +327,8 @@ def main():
         command = [sys.executable, str(Path(__file__).resolve()), "--corpus", str(args.corpus),
                    "--baselines", str(args.baselines), "--output", str(args.output), "--drawing", item["id"]]
         with (args.output / (item["id"] + ".stdout.log")).open("w", encoding="utf-8") as stdout, (args.output / (item["id"] + ".stderr.log")).open("w", encoding="utf-8") as stderr:
-            result = subprocess.run(command, env=env, stdout=stdout, stderr=stderr, creationflags=subprocess.CREATE_NO_WINDOW)
+            result = subprocess.run(command, env=env, stdout=stdout, stderr=stderr,
+                                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         path = args.output / item["id"] / "report.json"
         report = read(path) if path.exists() else {"id": item["id"], "status": "PROCESS_FAILED", "exit_code": result.returncode}
         print(json.dumps({k: report.get(k) for k in ("id", "status", "run_status", "failed_stage", "error", "delivery_counts", "elapsed_seconds")}), flush=True)

@@ -52,6 +52,8 @@ def _parser() -> argparse.ArgumentParser:
     _add_json(debug_mcp)
     debug_mcp.set_defaults(handler=_debug_mcp)
     _add_database_commands(commands)
+    from .batch import register as register_batch
+    register_batch(commands)
     #若用户选择了doctor命令，则调用_doctor函数处理
     doctor.add_argument(
             "--profile",
@@ -238,6 +240,11 @@ def _add_database_commands(commands: argparse._SubParsersAction[Any]) -> None:
     _add_json(export)
     export.set_defaults(handler=_export_source)
 
+    index = commands.add_parser("index-source", help="Explicitly prewarm the source SQLite index before AI queries.")
+    index.add_argument("run_dir")
+    index.add_argument("--rebuild", action="store_true")
+    _add_json(index)
+    index.set_defaults(handler=_index_source)
     query = commands.add_parser("query-source", help="Query source facts with bounded SQL templates.")
     query.add_argument("run_dir")
     for name in ("layer", "dwg-type", "layout", "terminal-state", "text-query", "cursor"):
@@ -427,6 +434,11 @@ def _runtime_status(args: argparse.Namespace) -> tuple[Any, int]:
     from .native_runtime import portable_runtime_status
 
     return portable_runtime_status(), 0
+
+
+def _index_source(args: argparse.Namespace) -> tuple[Any, int]:
+    from .cad2gis_v3.source_query import build_source_index
+    return build_source_index(args.run_dir, rebuild=args.rebuild), 0
 
 
 def _debug_mcp(args: argparse.Namespace) -> tuple[Any, int]:
@@ -789,7 +801,7 @@ def _conversion_payload(result: Any) -> Any:
 _COMMANDS = frozenset(
     {
         "doctor", "runtime", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
-        "review", "verify", "debug-mcp", "export-source", "query-source", "semantic",
+        "review", "verify", "debug-mcp", "export-source", "index-source", "query-source", "semantic", "batch",
     }
 )
 
@@ -888,7 +900,8 @@ def _extract_debug(argv: Sequence[str]) -> tuple[list[str], bool]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI; ordinary failures never print a traceback by default."""
-
+    from .runtime import configure_numeric_threads
+    configure_numeric_threads()
     raw = list(sys.argv[1:] if argv is None else argv)
     filtered, debug = _extract_debug(raw)
     parser = _parser()

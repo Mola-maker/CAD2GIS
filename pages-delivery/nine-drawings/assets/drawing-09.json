@@ -1,0 +1,2960 @@
+{
+  "layers": {
+    "BOITE": {
+      "features": [
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              433912.868946065,
+              9229149.447368402
+            ]
+          },
+          "id": "193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56",
+          "properties": {
+            "CODE": "BOITE-CAD-21D70",
+            "display_label": "",
+            "feature_class": "BOITE",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "UNAVAILABLE",
+            "source_entity_key": "193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56",
+            "source_handle": "21D70",
+            "source_layer": "CLOSURE"
+          },
+          "type": "Feature"
+        }
+      ],
+      "type": "FeatureCollection"
+    },
+    "CABLE": {
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        }
+      ],
+      "type": "FeatureCollection"
+    },
+    "IMB": {
+      "features": [],
+      "type": "FeatureCollection"
+    },
+    "INFRASTRUCTURE": {
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                433912.868946065,
+                9229149.447368402
+              ],
+              [
+                433912.868946065,
+                9229149.447368402
+              ],
+              [
+                433912.8591256586,
+                9229206.387258295
+              ],
+              [
+                433911.03832313995,
+                9229246.935076347
+              ],
+              [
+                433911.03832313995,
+                9229246.935076347
+              ],
+              [
+                433908.709365127,
+                9229292.894873064
+              ],
+              [
+                433939.16142171173,
+                9229293.479942728
+              ],
+              [
+                433983.773275455,
+                9229294.080765786
+              ],
+              [
+                434017.01153233106,
+                9229294.301911801
+              ],
+              [
+                434015.88182267384,
+                9229302.338994022
+              ],
+              [
+                434064.0414725531,
+                9229304.781273723
+              ],
+              [
+                434099.6516867352,
+                9229305.348233534
+              ],
+              [
+                434152.9372170462,
+                9229307.182262179
+              ],
+              [
+                434181.5236043151,
+                9229308.270766826
+              ],
+              [
+                434201.5092038337,
+                9229300.37344769
+              ],
+              [
+                434236.3403929384,
+                9229300.8516378
+              ],
+              [
+                434280.2145452057,
+                9229301.130314808
+              ],
+              [
+                434307.4051838833,
+                9229302.628847968
+              ],
+              [
+                434321.41265144333,
+                9229293.569656499
+              ],
+              [
+                434327.53570660617,
+                9229253.849778315
+              ],
+              [
+                434332.95090621745,
+                9229212.8231101
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "INFRA-CAD-21B6C",
+            "LONGUEUR": 651.4204366644043,
+            "delivery_grid_length_m": 651.4204366644043,
+            "display_label": "",
+            "feature_class": "INFRASTRUCTURE",
+            "geodesic_length_m": 651.6460664291084,
+            "geometry_role": "SOURCE_ROUTE",
+            "label_provenance": "UNAVAILABLE",
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE"
+          },
+          "type": "Feature"
+        }
+      ],
+      "type": "FeatureCollection"
+    },
+    "PTECH": {
+      "features": [
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              433911.3138551061,
+              9229204.841987742
+            ]
+          },
+          "id": "3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed",
+          "properties": {
+            "CODE": "EXT.MR.GJM.S08.P026",
+            "display_label": "EXT.MR.GJM.S08.P026",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_998792492966DD00BE5B20380AEE8BF6-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed",
+            "source_handle": "21A64",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434280.2145452057,
+              9229301.130314808
+            ]
+          },
+          "id": "6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b",
+          "properties": {
+            "CODE": "EXT.LN.P008",
+            "display_label": "EXT.LN.P008",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b",
+            "source_handle": "21AC6",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434152.9372170462,
+              9229307.182262179
+            ]
+          },
+          "id": "fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84",
+          "properties": {
+            "CODE": "EXT.LN.P004",
+            "display_label": "EXT.LN.P004",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84",
+            "source_handle": "21AAA",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434203.6383871202,
+              9229299.881207207
+            ]
+          },
+          "id": "24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558",
+          "properties": {
+            "CODE": "EXT.LN.P006",
+            "display_label": "EXT.LN.P006",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558",
+            "source_handle": "21AB8",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434015.88182267384,
+              9229302.338994022
+            ]
+          },
+          "id": "1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25",
+          "properties": {
+            "CODE": "EXT.LN.P001",
+            "display_label": "EXT.LN.P001",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25",
+            "source_handle": "21A95",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434064.0414725531,
+              9229304.781273723
+            ]
+          },
+          "id": "328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8",
+          "properties": {
+            "CODE": "EXT.LN.P002",
+            "display_label": "EXT.LN.P002",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8",
+            "source_handle": "21A9C",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              433912.868946065,
+              9229149.447368402
+            ]
+          },
+          "id": "27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859",
+          "properties": {
+            "CODE": "EXT.MR.GJM.S08.P025",
+            "display_label": "EXT.MR.GJM.S08.P025",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_998792492966DD00BE5B20380AEE8BF6-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859",
+            "source_handle": "21A56",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434181.5236043151,
+              9229308.270766826
+            ]
+          },
+          "id": "bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef",
+          "properties": {
+            "CODE": "EXT.LN.P005",
+            "display_label": "EXT.LN.P005",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef",
+            "source_handle": "21AB1",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              433983.773275455,
+              9229294.080765786
+            ]
+          },
+          "id": "2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P037",
+            "display_label": "MQM.GJM.BLOR3.P037",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108",
+            "source_handle": "21A87",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434321.41265144333,
+              9229293.569656499
+            ]
+          },
+          "id": "2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc",
+          "properties": {
+            "CODE": "EXT.LN.P038",
+            "display_label": "EXT.LN.P038",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc",
+            "source_handle": "20958",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434327.53570660617,
+              9229253.849778315
+            ]
+          },
+          "id": "f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704",
+          "properties": {
+            "CODE": "EXT.LN.P033",
+            "display_label": "EXT.LN.P033",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704",
+            "source_handle": "20912",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434333.03756340424,
+              9229212.748773301
+            ]
+          },
+          "id": "5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af",
+          "properties": {
+            "CODE": "EXT.MR.BLOR-05.P001",
+            "display_label": "EXT.MR.BLOR-05.P001",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7B244D5A7EB73B63AC11A684DBF77901-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af",
+            "source_handle": "2090B",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              433908.709365127,
+              9229292.894873064
+            ]
+          },
+          "id": "8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P035",
+            "display_label": "MQM.GJM.BLOR3.P035",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2",
+            "source_handle": "21A79",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              433911.03832313995,
+              9229246.935076347
+            ]
+          },
+          "id": "7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738",
+          "properties": {
+            "CODE": "EXT.MR.GJM.S08.P027",
+            "display_label": "EXT.MR.GJM.S08.P027",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_998792492966DD00BE5B20380AEE8BF6-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738",
+            "source_handle": "21A6B",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              433939.16142171173,
+              9229293.479942728
+            ]
+          },
+          "id": "7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P036",
+            "display_label": "MQM.GJM.BLOR3.P036",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66",
+            "source_handle": "21A80",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434236.3403929384,
+              9229300.8516378
+            ]
+          },
+          "id": "2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a",
+          "properties": {
+            "CODE": "EXT.LN.P007",
+            "display_label": "EXT.LN.P007",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a",
+            "source_handle": "21ABF",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434017.01153233106,
+              9229294.301911801
+            ]
+          },
+          "id": "262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P038",
+            "display_label": "MQM.GJM.BLOR3.P038",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7",
+            "source_handle": "21A8E",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434307.4051838833,
+              9229302.628847968
+            ]
+          },
+          "id": "07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c",
+          "properties": {
+            "CODE": "EXT.LN.P009",
+            "display_label": "EXT.LN.P009",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c",
+            "source_handle": "21ACD",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434099.6516867352,
+              9229305.348233534
+            ]
+          },
+          "id": "d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9",
+          "properties": {
+            "CODE": "EXT.LN.P003",
+            "display_label": "EXT.LN.P003",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9",
+            "source_handle": "21AA3",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        }
+      ],
+      "type": "FeatureCollection"
+    },
+    "SITE": {
+      "features": [
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              434333.64584364014,
+              9229209.323578613
+            ]
+          },
+          "id": "1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f",
+          "properties": {
+            "CODE": "SITE-CAD-2104E",
+            "display_label": "",
+            "feature_class": "SITE",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "UNAVAILABLE",
+            "source_entity_key": "1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f",
+            "source_handle": "2104E",
+            "source_layer": "FDT"
+          },
+          "type": "Feature"
+        }
+      ],
+      "type": "FeatureCollection"
+    },
+    "ZNRO": {
+      "features": [],
+      "type": "FeatureCollection"
+    },
+    "ZPM": {
+      "features": [],
+      "type": "FeatureCollection"
+    }
+  },
+  "provenance": {
+    "fixture_kind": "CAD2GIS_DERIVED_FIXTURE",
+    "project_id": "drawing-09",
+    "project_name": "SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG",
+    "publication_boundary": "授权发布九图派生成果；不含 DWG；绝对 GCP 精度未验收。",
+    "run_schema_version": "cad2gis-run-manifest-v4",
+    "source_name": "SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG.dwg",
+    "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289"
+  },
+  "run": {
+    "artifacts": {
+      "delivery": "drawing-09-derived-delivery"
+    },
+    "crs": {
+      "coordinate_domain": {
+        "expected_extent": {
+          "basis": "declared_crs_area_of_use",
+          "max_x": 847337.6991962435,
+          "max_y": 10177661.699118966,
+          "min_x": 152662.30080376493,
+          "min_y": 939253.3449327315
+        },
+        "failures": [],
+        "inside_fraction": 1.0,
+        "inside_point_count": 259,
+        "max_abs_coordinate": 9229350.040509485,
+        "minimum_inside_fraction": 0.95,
+        "observed_extent": {
+          "max_x": 434353.4804155425,
+          "max_y": 9229350.040509485,
+          "min_x": 433897.17056183127,
+          "min_y": 9229081.074175483
+        },
+        "passed": true,
+        "point_count": 259,
+        "schema_version": "cad2gis-coordinate-domain-v1",
+        "source_crs": "EPSG:32749",
+        "status": "PLAUSIBLE_DECLARED_CRS_DOMAIN"
+      },
+      "lineage": {
+        "feature_count": 23,
+        "model": "dwg_geodata_nominal"
+      },
+      "operation": "DWG GEODATA local-to-source registration followed by direct source-to-target; no EPSG:4326 intermediate geometry",
+      "source_crs": "EPSG:32749",
+      "target_crs": "EPSG:32749"
+    },
+    "delivery_contract_gate": {
+      "counts": {},
+      "domain": "delivery",
+      "passed": true
+    },
+    "delivery_counts": {
+      "BOITE": 1,
+      "CABLE": 18,
+      "IMB": 0,
+      "INFRASTRUCTURE": 1,
+      "PTECH": 19,
+      "SITE": 1,
+      "ZNRO": 0,
+      "ZPM": 0
+    },
+    "demo": {
+      "fixture_kind": "CAD2GIS_DERIVED_FIXTURE",
+      "layer_count": 8,
+      "map_anchor": null,
+      "map_center_lonlat": [
+        110.403592,
+        -6.972687
+      ],
+      "nominal_map_preview": true,
+      "nominal_transform": {
+        "a": 1.0,
+        "b": 0.0,
+        "tx": 0.0,
+        "ty": 0.0
+      },
+      "project_id": "drawing-09",
+      "project_name": "SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG",
+      "publication_boundary": "授权发布九图派生成果；不含 DWG；绝对 GCP 精度未验收。",
+      "has_geographic_layers": true
+    },
+    "pipeline": "cad2gis-reviewed-project-evidence-first-v4",
+    "reasoning": {
+      "architecture": "content-addressed-evidence-graph",
+      "edge_count": 987,
+      "graph_schema_version": "cad2gis.evidence_graph.v1",
+      "graph_sha256": "cb7632198635a0d7fdc2e25e0338ff0158072cfbe4fed5db0a089f65f67600ca",
+      "node_count": 1874,
+      "visual_evidence": {
+        "authority": "secondary_visual_evidence_only",
+        "manifest_path": "reasoning/visual/manifest.json",
+        "region_count": 5,
+        "schema_version": "cad2gis.visual_evidence.v1"
+      }
+    },
+    "review_store": "browser-memory",
+    "run_status": "CONDITIONAL",
+    "schema_version": "cad2gis-run-manifest-v4",
+    "source": {
+      "path": "SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG.dwg",
+      "sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289"
+    },
+    "source_available": false,
+    "source_blocker": "静态演示不运行 DWG 转换；完整 QGIS 派生成果可从九图交付总览下载。",
+    "source_entity_count": 1491,
+    "source_route_components": 1,
+    "unresolved_count": 3,
+    "validation": {
+      "coordinate_accuracy": {
+        "absolute_accuracy_validation": "DWG GEODATA registration applied; not independently verified by surveyed GCP",
+        "calibration_status": "not_provided",
+        "coordinate_domain_passed": true,
+        "coordinate_domain_status": "PLAUSIBLE_DECLARED_CRS_DOMAIN",
+        "lineage_feature_count": 23,
+        "lineage_model": "dwg_geodata_nominal",
+        "passed": null,
+        "spatial_coverage_passed": null,
+        "verification_status": "not_independently_verified"
+      },
+      "measurements": {
+        "passed": true,
+        "route_segments_with_span_dimension": 18,
+        "route_segments_without_span_dimension": 0,
+        "span_measurement_max_abs_error_m": 3.055333763768431e-12
+      },
+      "segment_delivery": {
+        "count": 18,
+        "measured": 18,
+        "unmeasured": 0
+      },
+      "source_geometry": {
+        "cable_curve_fingerprint_count": 1,
+        "cable_curve_fingerprint_set_sha256": "e80cfd6ac031b05f3d2a8198fdacecfd58b17d32a267988b6dc467fc4d8670c8",
+        "cable_sources_checked": 1,
+        "curve_facts_checked": 1,
+        "passed": true,
+        "source_geometry_immutable": true,
+        "source_route_native_length_max_abs_delta_m": 3.069544618483633e-12,
+        "source_route_native_lengths": 1
+      },
+      "topology": {
+        "crossing_connections": 0,
+        "passed": true,
+        "route_segment_intersection_counts": {
+          "collinear_endpoint_on_segment": 0,
+          "collinear_overlap": 0,
+          "proper_interior_crossing": 0,
+          "shared_source_segment_endpoint": 0,
+          "source_endpoint_on_segment": 0
+        },
+        "source_route_component_diagnostics": {
+          "route_group_components": 1,
+          "source_segment_graph_components": 1,
+          "status": "consistent"
+        },
+        "source_route_components": 1,
+        "source_route_edges": 18,
+        "source_route_nodes": 19,
+        "source_routes": 1,
+        "support_optical_promotions": 0,
+        "synthetic_route_vertices": 0
+      }
+    }
+  },
+  "schema_version": "cad2gis.webdemo_fixture.v1",
+  "geographic_layers": {
+    "BOITE": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40170567341792,
+              -6.973402985769241
+            ]
+          },
+          "id": "193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56",
+          "properties": {
+            "CODE": "BOITE-CAD-21D70",
+            "display_label": "",
+            "feature_class": "BOITE",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "UNAVAILABLE",
+            "source_entity_key": "193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56",
+            "source_handle": "21D70",
+            "source_layer": "CLOSURE"
+          },
+          "type": "Feature"
+        }
+      ]
+    },
+    "CABLE": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40170567341792,
+                -6.973402985769241
+              ],
+              [
+                110.40170623800735,
+                -6.972887937118252
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40170623800735,
+                -6.972887937118252
+              ],
+              [
+                110.40169022004909,
+                -6.972521141824464
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40169022004909,
+                -6.972521141824464
+              ],
+              [
+                110.401669663992,
+                -6.972105386762417
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.401669663992,
+                -6.972105386762417
+              ],
+              [
+                110.40194534565387,
+                -6.972100443628411
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40194534565387,
+                -6.972100443628411
+              ],
+              [
+                110.40234921266097,
+                -6.972095520033632
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40234921266097,
+                -6.972095520033632
+              ],
+              [
+                110.40265011296079,
+                -6.972093900262616
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40265011296079,
+                -6.972093900262616
+              ],
+              [
+                110.40263997805882,
+                -6.972021188061205
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40263997805882,
+                -6.972021188061205
+              ],
+              [
+                110.40307598344752,
+                -6.971999647591162
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40307598344752,
+                -6.971999647591162
+              ],
+              [
+                110.40339836042531,
+                -6.971994926419236
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40339836042531,
+                -6.971994926419236
+              ],
+              [
+                110.40388076219494,
+                -6.97197894572876
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40388076219494,
+                -6.97197894572876
+              ],
+              [
+                110.40413956017667,
+                -6.971969426179601
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40413956017667,
+                -6.971969426179601
+              ],
+              [
+                110.404320394678,
+                -6.972041089428127
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.404320394678,
+                -6.972041089428127
+              ],
+              [
+                110.40463571840598,
+                -6.972037161484772
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40463571840598,
+                -6.972037161484772
+              ],
+              [
+                110.4050329036182,
+                -6.972035141138391
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.4050329036182,
+                -6.972035141138391
+              ],
+              [
+                110.40527907096491,
+                -6.97202189614443
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40527907096491,
+                -6.97202189614443
+              ],
+              [
+                110.40540577385836,
+                -6.972104000553813
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40540577385836,
+                -6.972104000553813
+              ],
+              [
+                110.40546075145966,
+                -6.97246335587878
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40546075145966,
+                -6.97246335587878
+              ],
+              [
+                110.40550930616459,
+                -6.972834523682871
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "CABLE-CAD-21B6C",
+            "LONGUEUR": 41.38250707325095,
+            "delivery_grid_length_m": 41.38250707325095,
+            "display_label": "",
+            "feature_class": "CABLE",
+            "geodesic_length_m": 41.39685633830295,
+            "geometry_role": "SOURCE_ROUTE_SEGMENT",
+            "label_provenance": "UNAVAILABLE",
+            "length_label": "41.3825m",
+            "length_source": "dwg_dimension",
+            "length_value_m": 41.38250707314227,
+            "measurement_delta_m": -2.4868995751603507e-13,
+            "measurement_native_m": 41.38250707314227,
+            "measurement_state": "dimension_measured",
+            "native_length_source": "ordered_wcs_vertices",
+            "parent_cable_code": "CABLE-CAD-21B6C",
+            "parent_display_label": "",
+            "route_key": "79f9ca2c3d8be22ac541963d9d1f8ddba2ee79651787e1a4afcc01f296a55931",
+            "segment_index": 17,
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE",
+            "source_native_length_m": 41.38250707314252,
+            "source_segment_key": "499e8719b74d9735b93cf52d5e8c033e8cecf9eea28fbf18169718b1e31dff63",
+            "source_segment_kind": "line",
+            "unit": "m"
+          },
+          "type": "Feature"
+        }
+      ]
+    },
+    "IMB": {
+      "type": "FeatureCollection",
+      "features": []
+    },
+    "INFRASTRUCTURE": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [
+                110.40170567341792,
+                -6.973402985769241
+              ],
+              [
+                110.40170567341792,
+                -6.973402985769241
+              ],
+              [
+                110.40170623800735,
+                -6.972887937118252
+              ],
+              [
+                110.40169022004909,
+                -6.972521141824464
+              ],
+              [
+                110.40169022004909,
+                -6.972521141824464
+              ],
+              [
+                110.401669663992,
+                -6.972105386762417
+              ],
+              [
+                110.40194534565387,
+                -6.972100443628411
+              ],
+              [
+                110.40234921266097,
+                -6.972095520033632
+              ],
+              [
+                110.40265011296079,
+                -6.972093900262616
+              ],
+              [
+                110.40263997805882,
+                -6.972021188061205
+              ],
+              [
+                110.40307598344752,
+                -6.971999647591162
+              ],
+              [
+                110.40339836042531,
+                -6.971994926419236
+              ],
+              [
+                110.40388076219494,
+                -6.97197894572876
+              ],
+              [
+                110.40413956017667,
+                -6.971969426179601
+              ],
+              [
+                110.404320394678,
+                -6.972041089428127
+              ],
+              [
+                110.40463571840598,
+                -6.972037161484772
+              ],
+              [
+                110.4050329036182,
+                -6.972035141138391
+              ],
+              [
+                110.40527907096491,
+                -6.97202189614443
+              ],
+              [
+                110.40540577385836,
+                -6.972104000553813
+              ],
+              [
+                110.40546075145966,
+                -6.97246335587878
+              ],
+              [
+                110.40550930616459,
+                -6.972834523682871
+              ]
+            ]
+          },
+          "id": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+          "properties": {
+            "CODE": "INFRA-CAD-21B6C",
+            "LONGUEUR": 651.4204366644043,
+            "delivery_grid_length_m": 651.4204366644043,
+            "display_label": "",
+            "feature_class": "INFRASTRUCTURE",
+            "geodesic_length_m": 651.6460664291084,
+            "geometry_role": "SOURCE_ROUTE",
+            "label_provenance": "UNAVAILABLE",
+            "source_entity_key": "7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104",
+            "source_handle": "21B6C",
+            "source_layer": "FO 48 CORE"
+          },
+          "type": "Feature"
+        }
+      ]
+    },
+    "PTECH": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40169223129695,
+              -6.972901897109499
+            ]
+          },
+          "id": "3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed",
+          "properties": {
+            "CODE": "EXT.MR.GJM.S08.P026",
+            "display_label": "EXT.MR.GJM.S08.P026",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_998792492966DD00BE5B20380AEE8BF6-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed",
+            "source_handle": "21A64",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.4050329036182,
+              -6.972035141138391
+            ]
+          },
+          "id": "6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b",
+          "properties": {
+            "CODE": "EXT.LN.P008",
+            "display_label": "EXT.LN.P008",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b",
+            "source_handle": "21AC6",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40388076219494,
+              -6.97197894572876
+            ]
+          },
+          "id": "fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84",
+          "properties": {
+            "CODE": "EXT.LN.P004",
+            "display_label": "EXT.LN.P004",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84",
+            "source_handle": "21AAA",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40433966403133,
+              -6.972045566286825
+            ]
+          },
+          "id": "24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558",
+          "properties": {
+            "CODE": "EXT.LN.P006",
+            "display_label": "EXT.LN.P006",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558",
+            "source_handle": "21AB8",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40263997805882,
+              -6.972021188061205
+            ]
+          },
+          "id": "1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25",
+          "properties": {
+            "CODE": "EXT.LN.P001",
+            "display_label": "EXT.LN.P001",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25",
+            "source_handle": "21A95",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40307598344752,
+              -6.971999647591162
+            ]
+          },
+          "id": "328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8",
+          "properties": {
+            "CODE": "EXT.LN.P002",
+            "display_label": "EXT.LN.P002",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8",
+            "source_handle": "21A9C",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40170567341792,
+              -6.973402985769241
+            ]
+          },
+          "id": "27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859",
+          "properties": {
+            "CODE": "EXT.MR.GJM.S08.P025",
+            "display_label": "EXT.MR.GJM.S08.P025",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_998792492966DD00BE5B20380AEE8BF6-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859",
+            "source_handle": "21A56",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40413956017667,
+              -6.971969426179601
+            ]
+          },
+          "id": "bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef",
+          "properties": {
+            "CODE": "EXT.LN.P005",
+            "display_label": "EXT.LN.P005",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef",
+            "source_handle": "21AB1",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40234921266097,
+              -6.972095520033632
+            ]
+          },
+          "id": "2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P037",
+            "display_label": "MQM.GJM.BLOR3.P037",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108",
+            "source_handle": "21A87",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40540577385836,
+              -6.972104000553813
+            ]
+          },
+          "id": "2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc",
+          "properties": {
+            "CODE": "EXT.LN.P038",
+            "display_label": "EXT.LN.P038",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc",
+            "source_handle": "20958",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40546075145966,
+              -6.97246335587878
+            ]
+          },
+          "id": "f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704",
+          "properties": {
+            "CODE": "EXT.LN.P033",
+            "display_label": "EXT.LN.P033",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704",
+            "source_handle": "20912",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40551008980476,
+              -6.972835197082639
+            ]
+          },
+          "id": "5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af",
+          "properties": {
+            "CODE": "EXT.MR.BLOR-05.P001",
+            "display_label": "EXT.MR.BLOR-05.P001",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7B244D5A7EB73B63AC11A684DBF77901-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af",
+            "source_handle": "2090B",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.401669663992,
+              -6.972105386762417
+            ]
+          },
+          "id": "8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P035",
+            "display_label": "MQM.GJM.BLOR3.P035",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2",
+            "source_handle": "21A79",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40169022004909,
+              -6.972521141824464
+            ]
+          },
+          "id": "7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738",
+          "properties": {
+            "CODE": "EXT.MR.GJM.S08.P027",
+            "display_label": "EXT.MR.GJM.S08.P027",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_998792492966DD00BE5B20380AEE8BF6-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738",
+            "source_handle": "21A6B",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40194534565387,
+              -6.972100443628411
+            ]
+          },
+          "id": "7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P036",
+            "display_label": "MQM.GJM.BLOR3.P036",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66",
+            "source_handle": "21A80",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40463571840598,
+              -6.972037161484772
+            ]
+          },
+          "id": "2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a",
+          "properties": {
+            "CODE": "EXT.LN.P007",
+            "display_label": "EXT.LN.P007",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a",
+            "source_handle": "21ABF",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40265011296079,
+              -6.972093900262616
+            ]
+          },
+          "id": "262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7",
+          "properties": {
+            "CODE": "MQM.GJM.BLOR3.P038",
+            "display_label": "MQM.GJM.BLOR3.P038",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_C2017E8E0EEB856E2C302914FB5C0F41-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7",
+            "source_handle": "21A8E",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40527907096491,
+              -6.97202189614443
+            ]
+          },
+          "id": "07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c",
+          "properties": {
+            "CODE": "EXT.LN.P009",
+            "display_label": "EXT.LN.P009",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c",
+            "source_handle": "21ACD",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.40339836042531,
+              -6.971994926419236
+            ]
+          },
+          "id": "d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9",
+          "properties": {
+            "CODE": "EXT.LN.P003",
+            "display_label": "EXT.LN.P003",
+            "feature_class": "PTECH",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_7EC4E203FE23693033AAE4DE90D649BB-001|RULE:AI-ANNOTATION-ASSIGN-001",
+            "source_entity_key": "d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9",
+            "source_handle": "21AA3",
+            "source_layer": "EXT POLE"
+          },
+          "type": "Feature"
+        }
+      ]
+    },
+    "SITE": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              110.4055155573693,
+              -6.972866186559664
+            ]
+          },
+          "id": "1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f",
+          "properties": {
+            "CODE": "SITE-CAD-2104E",
+            "display_label": "",
+            "feature_class": "SITE",
+            "geometry_role": "SOURCE_ASSET",
+            "label_provenance": "UNAVAILABLE",
+            "source_entity_key": "1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f",
+            "source_handle": "2104E",
+            "source_layer": "FDT"
+          },
+          "type": "Feature"
+        }
+      ]
+    },
+    "ZNRO": {
+      "type": "FeatureCollection",
+      "features": []
+    },
+    "ZPM": {
+      "type": "FeatureCollection",
+      "features": []
+    }
+  }
+}

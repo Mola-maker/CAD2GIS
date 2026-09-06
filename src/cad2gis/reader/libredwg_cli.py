@@ -293,6 +293,11 @@ def _curve_facts(
     }
 
 
+def _true_color_hex(value: Any) -> str:
+    """DXF 420 contains 24-bit RGB; discard signed/packed reader high bits."""
+    return f"#{int(value) & 0xFFFFFF:06X}" if value is not None else ""
+
+
 def _layer_style(document: Any, name: str) -> dict[str, Any]:
     try:
         layer = document.layers.get(name)
@@ -301,7 +306,7 @@ def _layer_style(document: Any, name: str) -> dict[str, Any]:
     true_color = getattr(layer.dxf, "true_color", None)
     return {
         "aci": int(getattr(layer.dxf, "color", 7) or 7),
-        "truecolor": f"#{int(true_color):06X}" if true_color is not None else "",
+        "truecolor": _true_color_hex(true_color),
         "linetype": str(getattr(layer.dxf, "linetype", "Continuous") or "Continuous"),
         "lineweight": int(getattr(layer.dxf, "lineweight", -1) or -1),
     }
@@ -543,11 +548,7 @@ def _record(
     layer_style = _layer_style(document, layer)
     entity_aci = int(getattr(entity.dxf, "color", 256) or 256)
     entity_true_color_value = getattr(entity.dxf, "true_color", None)
-    entity_true_color = (
-        f"#{int(entity_true_color_value):06X}"
-        if entity_true_color_value is not None
-        else ""
-    )
+    entity_true_color = _true_color_hex(entity_true_color_value)
     effective_aci = layer_style["aci"] if entity_aci in {0, 256} else entity_aci
     effective_true_color = entity_true_color or str(layer_style["truecolor"])
     entity_linetype = str(getattr(entity.dxf, "linetype", "ByLayer") or "ByLayer")

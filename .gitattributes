@@ -1,0 +1,2 @@
+# Published delivery hashes bind exact bytes, including CSV line endings.
+pages-delivery/** -text whitespace=cr-at-eol

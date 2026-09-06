@@ -1,0 +1,583 @@
+﻿entity_key,source_handle,dwg_type,source_layer,text,canonical_disposition,delivery_feature_count,delivery_layers,meaning,definition_entity_key,definition_retained_in_canonical_ledger,instance_parent_keys,all_instance_parents_retained_in_canonical_ledger,instance_parent_dispositions
+005dc69da62273fad335846c06aef0b302f23c8b58fb58b9b67d1b9e72742115,21CA4,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+05d4d075cd6a248c2054f9514fae153f3f9cc5b07a93a615cbedbf0118ad4937,21A12,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+06040dc8321b913b7a299aea3403d3fd527b4474ee35a02b5abcb7b161084e8a,21B3B,TEXT,EXT POLE,MQM.GJM.BLOR3.P037,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+07d54163f933a9472efe5dc3fee1f9ed5b293b3f762a8a2f76fedddcd4524805,21BC1,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,21ACD,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+0896cff86d523ffd3eb265d921a914a9917cef76beb99f8c6bddec09447335c6,21A26,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+10cb40e543bc9fd7161fe137302cfa1175a41ee82393f1b2ace4003cbc6b778b,21C23,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+11101c4f329a534074669baa6b811fe9c9b7f3032bfbdee885379f8728f3153b,1FDA9,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+132abb9259666ac7879a7e34038d7570decfac021a431b24025ca9967e67a074,21B41,TEXT,EXT POLE,EXT.LN.P005,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,21D70,INSERT,CLOSURE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""BOITE"": 1}",delivered,,False,,False,
+195dd86120e596eb2389182eb0ac5f43b90373ed7a25621772caa369d536af4c,21CB4,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+1b9b4d2f776918fd872cd8695199efdf133e153f1b09d3a49fba5e4730cdf83a,21A21,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+1caa4f128e4728670de1ed8ff5dfe2a72955d9529f5e0b4a8d7221f5c3f81590,21A22,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,21A95,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+1cdf4731ea73f316cb097ad219a1d8967bb2f661a54ff2f4df3bb55d58c621af,1FDA3,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,2104E,INSERT,FDT,FDT=48,mapped,1,"{""SITE"": 1}",delivered,,False,,False,
+2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,21A87,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,21AB8,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,21A8E,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,21A56,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+2b1bb3dad9f6e70c3e166cf7a7c50aae044de227713a5588702950d3f36c8408,21CA7,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,20958,INSERT,EXT POLE,"DISTANCE_TO=Distance to FDT
+DISTANCE_TO_OLT=0 m
+FAT_SEQUENCE=SMG.100.0204.BLOR-05.286
+LOSS_@1490NM=00 dB",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+2c63321fe0004044d875485e0d0094bcda9cecd9431f5175caff59ea8f3fb676,21A4E,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,21ABF,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+302bf85edfaf62f7680c05965fa254acbcd182e513c5a5e5482607e783c11470,21B45,TEXT,EXT POLE,EXT.LN.P009,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+3231de0a61ddef9f6adfe477c3b3d79300881a0c019ca8fdc4f075c7e839c3d9,21D69,MTEXT,a,"Closure ID: NEW JC 288C
+Coordinate:      -6.973509°,110.401790°
+Splice Configuration  : 
+(T00)C0-C0/288Core ~ (T01)C1-5C/48Core(BLOR-05.286)",annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,21A9C,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+3a0dc5dca1d9929ce585718a8f9b3834898e85aaa2384a639a2852f0a7e1699f,21E19,LWPOLYLINE,DESIGN SUMMARY,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+3a9779240846146f959a56991db9f1d230a9b8835f0c716d51e93d0d9e77c901,21B39,TEXT,EXT POLE,MQM.GJM.BLOR3.P035,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+3c1be950bdcd5f48ae21ebb7f671da210f71c06fd0d0ac6e60312b591715fd65,20CF9,TEXT,EXT POLE,EXT.LN.P033,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,21A64,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+414c8fc65c5fa7bfa8ff7eb28116cd8abfbff6623bab5987d107207f1ca3b698,1FDA5,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+447b0d0bb8c69680aad156d7ade056dfbda76e044e7acbbb79bd1bb66b357690,21E02,INSERT,COIL,"COORDINAT= -6.972840°,110.405514°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+49689230cc9beb4db9c7ddf446503b1c1e3dd7348008c2243210181c53b9d15c,21A27,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+54220f15c23cb0efecef65d76dd6daf771ffc96cfd92ba94bf49e5f7bd870369,1FDA6,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,2090B,INSERT,EXT POLE,"DISTANCE_TO=Distance to FDT
+DISTANCE_TO_OLT=0 m
+FAT_SEQUENCE=SMG.100.0204.BLOR-05.286
+LOSS_@1490NM=00 dB",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+583cff3000d84f3911a4ca1cc84b9dc0922da1732a88d7db57db800599914acd,21A29,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+5a0bc58d964b0ffad8f83311eed32be093a6c6bbad796874ad8e7036778e7181,21C85,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+5f4ad5e51a13967d5639960047ec12b72e2dced8e2e1770b96b0b1bf96d721f7,21B44,TEXT,EXT POLE,EXT.LN.P008,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+623bcca93ffffb4eb9f5f884f07e76f23986d18fd2749cb64d0288feae8e619c,21C3F,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+629d0101b596ba8f997b50d5f827c72ec889f32901df9541a5e2b9a9808d6539,1FD6D,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,21D78,INSERT,TEXT INFO,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+65dce10a54872bfe297d15e490dc00e11440c41f8d3840fadd2f662b85ad269e,21A25,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,21AC6,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+67d1f2e7a7da7b01d312995f8b220f156b782066ad881feddac692231bf4a7e1,21D6E,LWPOLYLINE,FO 48 CORE,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+67dc163df35cec511d1d964bdf4f34350a642358e7264d056eb31723676912ef,21BF9,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+6d43a42de77e0b7dc93f990c62473ec5b6c40489bf715d1f813e98d8eb809b42,21A09,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+6d706dbcf15d998396af816f9ad82e6b3cb803d6269f4d4b0b51203e89091450,1FD9D,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+6e4c6abcb87fefc1e623d84b9de608337797e198228e4fe6782192b743806536,21B42,TEXT,EXT POLE,EXT.LN.P006,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+7048495dbbd622800bcf0c23ffa0d44779f4c9e3bfa416eaad9047c14db1f104,21B6C,LWPOLYLINE,FO 48 CORE,,mapped,19,"{""CABLE"": 18, ""INFRASTRUCTURE"": 1}",delivered,,False,,False,
+716484ad62588c7c46ea57df9858aaeeb2e4df6883ba38a0913e5916188b6fe9,21BDD,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,21A80,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+7435c1d6ef579657a4d9d5f5127cf5e83f0a162018d125a492ca806b05b7dbb0,21C5B,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+75c3ec42af7995176137333cb49673073c99f2e8cfaa6a1e794e57720a6fe11a,21B36,TEXT,EXT POLE,EXT.MR.GJM.S08.P026,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,21A6B,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+77ac89b49b2dc88f1b59d5cb906fc9452a8a7b3f25c3783c3e64df8179df280c,21A13,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+7a618c2697dd2b363a4bf5cdaf917b4e59caed2de8544db929ca3e9437a6dca1,21A17,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+7bbfd58699d09619298e05c08e5e27ddfabb4c43449161620ea5b32fc1e256af,1FD65,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+828f272e32b9c5467a542a21bcc376008be451898a9f9662b5307e739011325b,21DE5,LWPOLYLINE,DESIGN SUMMARY,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+85e68ed619c6538f7974df6be2830db767a149b2deda2d211f06b377793067f7,21A24,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+85e9ed90ec960e52579e8a3e112a5a07076dda80976a735c415dbe4f3b8f93ad,21A14,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+85ee0242d258c7f8cf325d75cd51accc378b511b5a0cfb893d55f9d637221bac,21B3D,TEXT,EXT POLE,EXT.LN.P001,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+86d2b3ddee51bcfa59302295f027dd7813fea08c1bd1df0a29cbd4b44d92fd7d,21B3E,TEXT,EXT POLE,EXT.LN.P002,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+890ac9875cef56956e611006c0a481cacd097495cad3429efc2027aad07d6bd7,21A19,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+89c66bc1062bb5eb9b2f6528fa37aeaf2b9f85bae38ec790b15a0fd641da9616,21C07,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,21A79,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+90b8442fcd2d9ea0e5be93512f17d16501c43b91b7b0992de84b2ae2b01afd1d,21B3F,TEXT,EXT POLE,EXT.LN.P003,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+94dd3312da177964bc592684778ab44f6b4b71b5daebcd0d659c0b350e4c38ef,21D6F,LWPOLYLINE,FO 48 CORE,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+98052232445584b5366dd72da5a72698c20c16356e5a366d57fc637e9cfcc67e,216D1,TEXT,EXT POLE,EXT.MR.BLOR-05.P001,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+98aa4053ed52716e3a0971a8886d3990a97a32dc3310f29bf1adc3974fad3259,20CFE,TEXT,EXT POLE,EXT.LN.P038,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+9c1cf06817ef89bfef1a2bd98c6caf59067893c95970e48a0b9249e8cf511f6c,21D68,LWPOLYLINE,FO 48 CORE,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+a015257b557ded8fa6a9346fb43155f470beddf26beb4a331938b25d16403268,21B37,TEXT,EXT POLE,EXT.MR.GJM.S08.P027,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+a0a896e0b3c38efc56e7dfa10a49977c87cc80b034c14dddab8b4fd3422e814a,1FDA8,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,21047,INSERT,FDT-Info,"DISTANCE_TO=Distance to FDT
+DISTANCE_TO_OLT=0 m
+FAT_SEQUENCE=SMG.100.0204.BLOR-05.286
+LOSS_@1490NM=00 dB",graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+a6c211eba4bb0c3f5f9939ee0e2b374af372274fadd472a4c16e0ffc047e8efc,21BEB,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+a70e7bc79aeba25bee99cf1b210811988c9aab772c81cc7479149f4d6d0d479d,21BCF,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+aadec6c3ec2fdcf2d6ef550fd92fe44aae974c9457e9f086603e47bd85e2d5ff,21046,LINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+adc4b8b361d200242cae9b3a2050a79f91e1ed6471fcf76b7677ccb1f3f590db,1FD66,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+ade01848dc9783d5ac63b3d576a120d818c3e45b8e24b5a19df805624f704511,21D6C,MTEXT,0,"Coordinate : -6.972840°,110.405514°
+BULU LOR RW 05 SEMARANG
+HomePass: 300, FAT : 20
+Distance to OLT : XX m
+Splice Configuration :
+(T01)	: C01/24C ~ Service Core
+            C02/24C ~ Service Core
+            C03/24C ~ Service Core
+            C04/24C ~ Monitoring
+            C05/24C ~ Monitoring",annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+ae4cdc78b497f669c90ef39bb64ffec853df7d540a589c4c9badd4fc7b907f3c,21C31,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+ae5236d09d8e1345ad5241db357c53a71a93bcef20d89923d399828f7a67f473,21D6B,LWPOLYLINE,FO 48 CORE,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+b26b5fe984c179cbbc19daed8a6f79ebcf905c96f37606d16efda969b2dc4220,21B40,TEXT,EXT POLE,EXT.LN.P004,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+b599e26fbebd3d4d3f337d8086f8363abff6189d344bd1902bfddf75208d8513,21CB5,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+b898921b9e4841c29c802032415559256e8d9f23dab30c2ab8f7588be6d8c385,21C15,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,21E0A,INSERT,TEXT INFO,"COORDINAT= -6.972840°,110.405514°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+bdaf78dcf9fc21a6c11ffba9f4df038ed8daf48cf002f202b8fcd95ddfa086b6,21B89,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+be201abc218ed55b7f3f1a1fcbde6eb88fde58f12be3be03751bb574c5a2a2fa,21B3A,TEXT,EXT POLE,MQM.GJM.BLOR3.P036,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,21AB1,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+c33cb37a8536c3a9c1c4e7b68db37f3ad6df400f87bc63ccc73873413d64d5d6,21C77,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+c760d095b5b7a9fb0cce048974997f26d7da5aa4cbe093b0c8d051ba7b41dd32,21A23,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+cc6552aa9e461fec3243fa8f9a9367f627258ec21ac8831838e89cc4c333e104,21C4D,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+ccbc3b91502af2a8c1afaccc1630bdc3b1ec07d4ccacdb856357c833d83de201,21A2A,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+d0a0366d0f7604c84a783de686edc514679a5b98e42b8e87428107f474ca6035,21A15,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+d1e288f33c38da20cb50ac2ff2d7dc774a03ff1109ff4ee0d739279450b8776e,21A28,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+d33a4a791d0a0330d7f9c5eb55083b3479c6022a9ef82c48cce05f8d8f18568a,21DD5,INSERT,COIL,"COORDINAT=-6.972060°,110.404241°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+d42175363845619fd2763834a49fee9ad1da5b56c8ee167858b691d5b1f5cdfa,21B3C,TEXT,EXT POLE,MQM.GJM.BLOR3.P038,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+d61cfe06f73d34e80fc0ccfcc982c2290b64f49b7dfddbc11545bf1cbbe44424,1FD6C,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,21AA3,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+db314962ead00ea31b8e37376053a5da117380df0560dd93ab658fb5e383c396,1FD6B,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+dc15bf1c780829d4c2c5fe5789a20166accf362bb905eedb697f9b0257705055,1FD6F,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+dc8c53b423acd9189e40a6ce95bc5db4863568f0d2a5f245a6a408dd46d6e7c0,21A16,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+dd976807a85eb535b593e23f9dd49717f67bcdc335ca99ab3e09d4e6bedc8aca,21A08,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+e40a200517c2b967b4835a2cd2ee992d0f2b58abfde8549bb3dcfe1950533dd7,21A11,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+e7f7136006cb55d6fbf0210a58a93dcc684efaba92406988dd7625c2ef2c4652,21D77,INSERT,COIL,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+e9ef0de3b5e29752581b24c1f578ddc02c416b244f0a56c7cdc6cfeb0768e111,21D87,LWPOLYLINE,DESIGN SUMMARY,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,21DD6,INSERT,TEXT INFO,"COORDINAT=-6.972060°,110.404241°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+eb5da9d497e4e97d7d83ac2ff64e78f0991513f9485412b44f0c2cddff4a36c6,1FDCE,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+ee43e0ba1cdd1c375368d188b1833d6b949f6279826c3610d4943e0bbbac24d9,21B34,TEXT,EXT POLE,EXT.MR.GJM.S08.P025,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+f10a9cec3b57447a6376ce61a0632243647703b4cee813cee171f6e176c7e096,1FD63,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+f4a24b1d96b29cf88034839e3b22dccff46e6e705e2a61c273485361d89edc5d,21A18,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+f5da95f1e7f54866eef0fea745d961d5b490722c160a9e8d43a48d2c918a564c,21BB3,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+f75bf4244d99eaf4d5a3095b7f5a41dda2bb9189f16c402b431b253ce5cffc59,21B43,TEXT,EXT POLE,EXT.LN.P007,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,20912,INSERT,EXT POLE,"DISTANCE_TO=Distance to FDT
+DISTANCE_TO_OLT=0 m
+FAT_SEQUENCE=SMG.100.0204.BLOR-05.286
+LOSS_@1490NM=00 dB",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+f91dad3ffbe278ddb19c5b1a588c1489bbb4105edd093f24dd7b0905ba9180d5,1FD64,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+fb6814c172d353fa0e679fa4ffc68871f640cc3c46891005d9ed6bf63b3d207f,21C69,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+fb9a785e12d5c9a4caab3f1837d34d75a4739c2f91b7df5bac26b2cd3a01f02a,21B97,DIMENSION,SPAN KU,,annotation,0,{},not_delivered_not_automatically_missing,,False,,False,
+fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,21AAA,INSERT,EXT POLE,"COORDINAT=-6.973509°,110.401790°
+ID=Slack Cable 48C
+IDENTITY=Cable From FDT BLOR-05.286
+IDENTITY2=To NEW JC 288C
+MARKING=XXX
+PLACE=EXT.MR
+SLACK=20",mapped,1,"{""PTECH"": 1}",delivered,,False,,False,
+fd3f9cea3242dfa8806c0300de7d660c34f2868db30a479e7bd93eaf61c48fe9,1FDA7,LWPOLYLINE,JALAN,,graphic_only,0,{},not_delivered_not_automatically_missing,,False,,False,
+plan:00452e5ca15be1fb1854477237fe5c4ff124077b65cf5a62638cb914c0c1254d,21E0A/21D26,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,fbdbe5a53b26c594b620a55bff7435ae815ee688be0074d49ae3426ac2adef3c,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:01e1d04714b8417a17638c810d5ad8b6e4dabd6b7de8f3c08078ad32865948b5,21DD6/21D1F,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,57cd20880b363b534d482047d5c97fc75cc17b0f3b3411f2927c0b526db9f5bf,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:0219d784077b875ec11d8e3fd867fffcf4682ccdf1460f74e894327272afb253,21A6B/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:024d6fecf73013b0d13d2f5b86c6961a1035675b9deaa13a570d7eff04faa66a,21ACD/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:056cf2648c7315cef5d53494a3e80f908f1cec9e7be84cf4febf9327a817051e,21A64/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:05ae1baa873cda96f8bdfc408f652428b1bc102601edaa474d9ef719f676df4e,21AC6/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:05f45cbf3c98c30f76e03006bdc6149fa52fbdd06dc79ab7a2ea151b6b50f604,21DD6/21D14,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,4b451ff6eb0bcb4e8991fc767aab477813556fa517bed9f39bcdaf06d6005e9d,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:060b379e2dbc2c08f2802035923493bafdc690253d2a3dadfe0c3c1d8eec8b78,21E02/B0E,ELLIPSE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,6ad5732c0131b5770407ed5714479097328e22fe7460e03755dd6c60de5222f4,True,447b0d0bb8c69680aad156d7ade056dfbda76e044e7acbbb79bd1bb66b357690,True,graphic_only
+plan:06c572c3506741dd4b2e4264691e4b6a089ce7406047179fa9860b30ea27578f,21A79/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:07d31ccd185d8dcec56fcb3f4a10f0617b12e4c8053b71e6b2e292fe9377e1e3,21E0A/21D19,TEXT,0,SLACK CABLE,annotation,0,{},not_delivered_not_automatically_missing,bf7b7557ef8b2689daf0596bc646bc49a8781d57da2400de085d489f89727728,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:08003ce7a42d04064a66250777519a2c9649dfcad7f74e4c2deb360e6f696544,21D70/E0C,HATCH,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f14acb8aacb3b937f625d755ca10025bb7ed6992e3e84086195a7dbdd3658316,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:0827063fbce57e0906e39165b321ad58b634735024f1b41bde833832d5fd673f,21AB1/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:09a9a7f2156779c525884dc5296421f61fa39a853c46012da644194c816d14e7,21DD6/21D1A,TEXT,0,:,annotation,0,{},not_delivered_not_automatically_missing,04416dd301326f1e069deb5c8c22a30d638ffa60379a8fdc2103dd7646e4e29e,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:0ae08c7e19b79b943940f3b8b575c80441f44f8b29ca5f8eae4387196c12af0a,21A56/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:0b21855b762f010ce5ae309dadb41d584b6d59a7c98829e80ec64427582c37d2,21E0A/21D1B,TEXT,0,M,annotation,0,{},not_delivered_not_automatically_missing,4e8363d9479e31ed778706dd06eb7d2e12135b2888fccfc28ddbe197d4829235,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:0b276b71c4f40c583ab29b8ba4913ec0968b5ee3cefb98c453f92d0b32f2732a,21A9C/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:0ecbd83166140138d9d0ac9330d1c5985372c70a16576bc2d75b223592fae2f1,21D70/E06,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,897bbf105ef46a3c9f9f9819fa545d43d71cdf3e6cfa0a84f3435082a4c2d4ca,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:10ad98b2d6ebdef72fcdaff2f17945714ab1babbc01d6a2acb31a81397aac04f,21AB1/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:10d1a351545a6444a592fd457ae6875fcc81393c6ae3caeef494338aaf1dd0c4,21A8E/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:11823a2e956201b7e21c1e263e2265a0d6dc8f285f51832ad99e2a4ee9e8d888,21D78/21D26,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,fbdbe5a53b26c594b620a55bff7435ae815ee688be0074d49ae3426ac2adef3c,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:11beadfdf9f51cdc8fba60c4ad111bf5c61fbf52702ffe0c0a28e942a7b81fcb,21E0A/21D13,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,9fd86ee381d7636735a9b75fc6a695a494a05c2b1f3a26515bd513cd4d8e8ec9,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:126c5a110216793b16267b790825ec964e5a5da92af19be9d4760d67f4e62974,21E0A/21D29,WIPEOUT,0,,graphic_only,0,{},not_delivered_not_automatically_missing,92bf2d09607b3f14b2a8ccb61f3146af2f4a4250d07cc1ab4d1cc2cbb47717be,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:13d6fc5e984b1844204c7723125d197d4303803ab5b5a6b8e70a8549b8d18aaa,21D78/21D1C,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,efff4ec43694423c64ab526864f1c0d9b0a75a411e9a5ba279ce28f92ad63abd,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:1442f703bbf7b0ace4ef9270095ed4c9d56cd6b777771690c59bbbdee5ea6df0,21A9C/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:14687dc017a9c5f8daccbfdd8e84b3221bc00bf4ea0921c2a1186036158214a6,21AB1/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:14a5ff56dea3f756edbeaeac69bdd27be0c957a8fe5e75f6d4551d587e8071ea,21D78/21D29,WIPEOUT,0,,graphic_only,0,{},not_delivered_not_automatically_missing,92bf2d09607b3f14b2a8ccb61f3146af2f4a4250d07cc1ab4d1cc2cbb47717be,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:15beda39c615e95902e1cb39ed5697a7fabdf1b6c5a5568685485827f1674253,21A95/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:15d9b9165c3304eb539bbe07088ed87712118bbe07b2cf6db47004da614e6c31,21047/DA6,ATTDEF,FDT-Info,XXX+Xm,annotation,0,{},not_delivered_not_automatically_missing,f2ddb6b85bc0d6d504d4d04a1809af4bc5f33189d34adc76d9219f272929c1c7,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:16fc029a96f7ec3d0c710e330bc4e44d1d263b9198147d1add42100f70c98b63,21AB8/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:182499dc053fdefa2c21befa62634482a4423138a47ada39ccc5340214cdfd7f,21E0A/21D15,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,6dfaec79c2fed7ccded6109946db3897f92257e4a9494382140ccfedc67ab85a,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:18f798af5be9acfa5c05e9061654ecf62c46e3d2e0ea2f6cf18cfb77914eaf61,21D78/21D16,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,e627fbd646e8246957c519910d827f263e8bd588c5e2d7f6c5fc07ad02240ed5,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:1b55bc228085146d7592341dcff9c1c464e82e34e199a893f8cf7fab9f82e2ce,21D78/21D21,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,1940df8da2fe0283f5394760d9d01fca68aa709588dc9c92d74b62580ee1d3c3,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:1c1a5b2243199d222466c97d2875c1c8a8dee0f34a8230e96df96360a6f69967,21E0A/21D24,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,54984ed24d920e366a31471dfa7ee1655bd224f6d173faddab20562e753777cf,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:1c2cfb6938094a1f2da059567bd82e0ee5382e4d8146cc072819f17abf6c7635,21AA3/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:1dc2fed90c25b34f29b69b607e236ba8b3537d6bda27315a3457c0b8044b440b,21AAA/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:1f69170b2d8d2d06465e1ae74c1d506186cfc275610d9f29243829e7b9a02d71,21ACD/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:1fd70451690e76de278ec89f43c4bf5cf31fca79033b458c750c7702d2d7de4c,21AB8/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:20479251e676e9be35e4567bd2dea937e1c8ac9cd304af3e56393a52e884fec0,21A56/F94,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:21b3b8a7e3ed54e8743776a3c67ea763cf90344f08c2dc50ececf51a9d862b8e,21E0A/21D22,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,6e9703487f1e34acaf73e050e62eea1c60867cd53ac400bde6efbe5d83a5bd63,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:22cffd0fb5f5868710c85b826fe1a80394114767c7af4329ae65de76d3a5db93,21A56/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:230f4fe3f0827763254e531bbe1a2ebb8fb0715fb7c24947b244e7e1dc26d584,21A87/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:2394e6892608d7b1c5848e8e7f23104f7877a9c759478b959000967d32069d18,21AC6/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:240c7e0691ee06c4e278ac776bdb75be037e7bea3e2f9b71368cdd86a2282dcb,2104E/2103A,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,7cfdd5d6f3663ebe10565d4f1405afb37226863ba2f81a0b6921530e94c701fe,True,1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,True,mapped
+plan:24605c24e7bdd453fb5c7ab4cb4b793c118d9516583c94c24ad88ede59f055ba,21DD6/21D23,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,d6e669dad7f71e96c0fec59abd9f5bbd27a7765046358a224fc41d376a3994b7,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:26e2c506ccb59f763e4d7601a39fd39a6cfee86ed609186e954c35fc3094b5cf,21ACD/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:275be064d5552a65d3c5cff5305ab76ae50330c6a496a2c16f4d17e2bbd89346,21047/D9F,LWPOLYLINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,6c9fe4d6f02b84ad5c35db39e65c9b8db2046b18f163ffe29d6169f673c9cc3b,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:2837e5da769e2cd5a7179101df40b71a8ae13cfb93b71410074cd4315f8b1e79,21D78/21D1B,TEXT,0,M,annotation,0,{},not_delivered_not_automatically_missing,4e8363d9479e31ed778706dd06eb7d2e12135b2888fccfc28ddbe197d4829235,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:29303c8960978da5957e3017386029bf910d19a31a34086406234db69d7284d4,21A56/F95,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:2a17a4eb47f28ad6a148b06558e527a1654d34565f81cd4b1f95789c8461f69c,20958/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:2af10d037c3973caa8218aedd2346a6cc75a76a42cb1843a7aa6606b941fde5a,21ABF/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:2b33bf8ac5d146e77777798572967a01b870b704d10655b874efc3918b1e550e,21DD5/B0F,ELLIPSE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,2d13340ca076b8e6ef61b2fe50e59b3fd084c4a4912e534987ff616d9969b1aa,True,d33a4a791d0a0330d7f9c5eb55083b3479c6022a9ef82c48cce05f8d8f18568a,True,graphic_only
+plan:2b88a7d35a3eb6166f6d01ce83849275dba6243808664cd4077009ee4b7d8b33,21A80/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:2caff98032e773570ce68450572fe36b50075f0d4c6bfc42b89741acac984d2e,21D78/21D22,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,6e9703487f1e34acaf73e050e62eea1c60867cd53ac400bde6efbe5d83a5bd63,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:2ccb6fcce3751999f3be5c52939ccd1c0bd9df7742a18f1da0027a2080c42ad2,21A64/F98,TEXT,0,FM,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:2db29a1be19ecf8e374665f4d8b0278d2272dc8fab91496c467989e9319d26f0,21AB8/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:2e9f3e37a5d68f22462eb8b1a5036cf0dd6b99b825f13a695f6d7cf6a61482ed,21A79/F95,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:2fbcdf051e61c146c35d979143d257d0665b2d091f162e88db19118ce4a49bc6,21AAA/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:3131e85150c837c223e8cbadc6e98e1bfdca04820a5d1fe2199867eeec254925,21047/D9A,LINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,d80a2ee030ad3b58cda8585195309694f34901e7d2208e1e9cc421f3c19d051b,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:3223e11c98da4641ab879e24e0fb0051ecea7fc3b8ab552df120dd7daf97a322,21ABF/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:3229e6918129d2cd81c34f1c2dca23ec767b0daa7b161cd00dc169c4aab64aac,21AB8/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:32aa9145adc5647faceee4055263e310070b67fea4286661a614274b92881015,21AB8/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:34f2105f6019fa6ff9928a98f788c4d40929c07045ae62b37ce7878ed900a29f,21A79/F97,TEXT,0,3',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:34f8906c820d06c4cff5bd9b8b3d8d2146bf2ff211007e8c7531530d3ba5d01b,21AAA/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:35a27957182f66447d71c1359a7dcaea343282f8d21a18572f1c783bf3f7936f,21AC6/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:35ab9a6b6ab9c470c94f4b312690aa24bb1d83beb31e6188b8ece0bb27d41915,21AAA/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:36be5787babc11a8e1aed3941a923cc01fa716b8c3ee5002a03b971156f6360e,21047/DA2,LWPOLYLINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,01f79fccbf07ab7a944f251c8161e1951e1972ffefbedaa526a821ee263d7fff,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:3710ead7b36e201635df21a06937dec32e98e96c634bffebc9563f0b3a12414e,21A56/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:378f220731461e7ce426635ec0b659349fba3cd192c952d9ef78ac377d58d13d,21A79/F9A,TEXT,0,4',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:379766a730027b195eb1fafe6623699527895393cb4523a37ae7f8a9d7456657,21A9C/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:3829d9935541e4caca64e29f3873d8f986e31b7e34f9b23bb1c715ff534da2a1,21D70/E07,HATCH,0,,graphic_only,0,{},not_delivered_not_automatically_missing,b2b496896e00b701844e8c7b54d04912c264b45d0c227ddfb518544b196fcdfd,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:38cc9a3b88fcd737b658dcdea5b302c0972d22d36756166c0dae78f505097094,21A80/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:394967b4e2bd11e2cd3bcc02b0d4f95704f8cf68e7acf53d78bd34f151cae17c,21A9C/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:3c26957362cd2a53d14a1f5e40e23311900bf33e1e621a312d0ae7d7dcbe9217,21DD6/21D29,WIPEOUT,0,,graphic_only,0,{},not_delivered_not_automatically_missing,92bf2d09607b3f14b2a8ccb61f3146af2f4a4250d07cc1ab4d1cc2cbb47717be,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:3c2ab1905288f39cd735dd645b88f75a11fe1556cd5a10a75d6e0ca55e8f139c,2104E/2103F,HATCH,0,,graphic_only,0,{},not_delivered_not_automatically_missing,82d894269c878081cc02ef3a829e5ea42f67fa1a6b0ea0e374d2f1ec59ac368d,True,1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,True,mapped
+plan:3c3ed6a8de247b11e5ece906d9535a9a1da8d812ba2fbeedf6ad51a092ca1390,21D78/21D28,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,a3f994ff87ce9d1570517c146cf4d5a21bc56b6e05fff5c32bbaa660f1b49f83,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:3c52a2c186b16a4537d73208967731e3cc8526978991e53b46945bfb80016727,21A87/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:3d68db92c6353fb3a6ee3383246f687a65f32681468a0deaec4ecd4e738ef058,21E02/B0F,ELLIPSE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,2d13340ca076b8e6ef61b2fe50e59b3fd084c4a4912e534987ff616d9969b1aa,True,447b0d0bb8c69680aad156d7ade056dfbda76e044e7acbbb79bd1bb66b357690,True,graphic_only
+plan:3ed5ebddae80c73618689dcb8fa5977f68376fffecbe26f18a137e959afbef58,21AB8/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:3f3f61e5eb51b27339d8287fb759a6e71e2f4c41540e95fe1b0adca140b65cbc,2090B/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:402d748bef6ede4320473e9f10b2676dc33bbaf0679a554c78e4464d771db6ad,21AA3/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:4036b7373ac2ba4c1d6795558b5c6d45a24ffdafd62b17555506124d28b81477,21A56/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:4296793c34757f56512233c7b676a518d1b17b274da6db750d164451fa7d5273,21ABF/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:42fcb159640be71cee2e2600566752a9389712524b7e6575783e3c2105b7ff75,21A80/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:43b463eb70a9cc791575e375d9ad75b9b47d012d03d86ee52607e1ff55d41f45,21A6B/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:43ea359f7fa05800f52ba19e2653c0594693508d23bd8f0a027f895b043a3b58,21DD6/21D20,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,c4fb5dbd94c22d2e56894193665c5c426f81090ef838a14a727d942ccf5edf9a,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:448706474075c7712fb0f351ee5655fa368daffa1cc6a7ffdbbbacfb1a711770,21A95/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:45648e20dc23493e5b60d346813910c7e4d6d08c3162e5baf48e46c2ac44cdff,21A8E/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:49008836f1bb618fea3d43da397aaae835c66315d2e1ee80107d84a4d6845e51,21DD6/21D1D,TEXT,0,MARKING CABLE,annotation,0,{},not_delivered_not_automatically_missing,1c3174d2d4b064b9951183d79b190de4ca88526b7c1234091aa36c59529cdc44,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:49449cf6689652fa11ecf737f9dbcf71ddd21b7a3762560f4fc4e4225c574eb0,20958/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:4988bcf7bae621c38745d167da8a0d6f7d90ea85b743acdd571d514f2bf721a4,21A80/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:49cbc4ff0242cddf6fd0d38a617e9a358a277ceae980443751b79a21ea6aedc2,21047/D9D,TEXT,FDT-Info,:,annotation,0,{},not_delivered_not_automatically_missing,6cc2622c2c5aaadca9d752cca53d8b70ebce09de51a6fbc771b4edc89285355b,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:4a1c10e2bdb3df022bee0465e5e8a8b9b6d95b2c1c71691d4fd4920d7f5a5586,21A64/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:4a458e79019f55c391ea2585543b60eca310bb04b34027c770a1894179f6d2ea,21A64/F9A,TEXT,0,4',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:4a763e17feed1e9f9f3f9fab0b398266d22e4a62b89192f5ae9e56a3bd5cce13,21A8E/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:4b79e7803771c33fc70907ca644c4c6743b105a3ce279e3f8774a70c41915442,21047/DA5,ATTDEF,FDT-Info,,annotation,0,{},not_delivered_not_automatically_missing,f55fe2dd87d3c59cf7e0685bcb0ec712418e512af625f2f81fde85fc96a774cf,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:4c54363be4b37456ce7873a7cc487e434b8b35d2eb78937e692f3d798988ad18,21ABF/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:4cfa70777565c8c19db90114604958b4bd69665665f0945c0610196fe3fc8379,21A8E/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:4e86a6da631e67c5992cc2481ab01b5bda7be010586137de6412bb18c3aee238,20912/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:5113ae002638b0906ced6539a63c45b1293e291ac3e2eb741f26e167ac049b9a,21A95/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:5236ea519bdb76b81f17bddbaf9d02d9086f959369cd9eaa26545c5c57603ab2,21A6B/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:551af4ae1360c1313890d0edcc3fc2a4c0ba6844ffd9a4ae3933305c67085234,21AB1/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:560ea30d9e17bdc5f935cdeb0f610d0ef4003673a4ac20bf9f85fcfdb5206dd3,21AA3/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:56454fd3e674989cfb338683b7dd9c9253b4d65c9e90d5d132ea9118df210c9b,21A9C/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:56cf6e1512a54008878f0b060da10e13da9c1d32b7ed3462426bd76218c918ee,20912/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:58bf4ececde02f58283c7bf212c0c310777f29fc1c33941b97708f544a04a389,21A9C/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:5976f5722067af74941ab7389b508f7130003f5d0fb3b1916de1f1c5425b0a2d,21A80/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:628db3935e3f54cb7d3092fb099cad6c38e1efa4d9896fe8c93faa5d52a367b3,21A95/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:62c89a5d0b527bbd839a37132544a3a6e63bf6da0c8fd520198b14eec3d7fc9d,21D78/21D14,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,4b451ff6eb0bcb4e8991fc767aab477813556fa517bed9f39bcdaf06d6005e9d,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:62e90e84eafab8c529b258b59baede6adfef160086f0bea2f4a0f41359a22baa,20958/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:63d9350f2caf9e1e4b0795520712890d12f07c1f49a953d0b8846c45266c4fcf,21A79/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:63fb4e757bf6ae65ad940e8229c308f8956670d5a76ca44b6f534f2e8fc0cdd7,20958/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:641955fd5cda36b9245fd3db9ec9e5246778a022af45180d308ff42f28de1b26,21A9C/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:642d8834a1539a0e2e91feeb589e8dc89e80978ee62032550eb45a083eb41d0b,21A8E/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:64ac1adb7c724324218f6df996314bc072a18415ebfc412fa6146fff8f022c78,21A9C/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:6780ed82b8fd0324201fa78872d2b05f6cd9cf5985afd70c1e5fa401d15c9e83,21A64/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:6980f4aaf6b2c075215e466eba935c7a1f3bd2b8a2c3cb394b6d205fba3f5c9f,21D78/21D13,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,9fd86ee381d7636735a9b75fc6a695a494a05c2b1f3a26515bd513cd4d8e8ec9,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:69cce0564d4b66a8d88a1338039623312323f8cd0083427eb8db96321047f50e,21AC6/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:6a79dfcb861902a20d75846fb39f5a281835bb714d95f31d34da26f8d0704a1c,21A6B/F98,TEXT,0,FM,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:6b04d96c0205c5cf9d3f2e638d6fa8c76e379e0b0e4effc16aad909a3c566789,21A64/F96,TEXT,0,5',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:6bf568a34355d0071e33eb5eb3323afbbf5d578244f76f53d1613a67c435901b,21E0A/21D1E,TEXT,0,:,annotation,0,{},not_delivered_not_automatically_missing,ad0a0845307ffc84a1ca9aabba34215cb1cec8263d48e0e4514428f0d23ed0a7,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:6c91dede69ad10812a3cff0a113a28d3ede83934aae4347a4e7fa64f090dcebf,21D78/21D1F,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,57cd20880b363b534d482047d5c97fc75cc17b0f3b3411f2927c0b526db9f5bf,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:6cbd7cdd807229c2a79edcb72e5c4ad750598e305866552791d3aff379e292df,21A9C/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:6d9bb355d28e8c4357fe49911d0a49fe839c1e4e551d18d771e20abfc0ec9cf7,21A80/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:6e2d0d53f0ffbe8abeedf0a6fa907ba291622125b3c4175df2c94b4a77033d92,20912/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:6ee1362876ea3697e982cf301b24d5581f62db82b06a12523faf133b7a66bb25,21D77/B0F,ELLIPSE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,2d13340ca076b8e6ef61b2fe50e59b3fd084c4a4912e534987ff616d9969b1aa,True,e7f7136006cb55d6fbf0210a58a93dcc684efaba92406988dd7625c2ef2c4652,True,graphic_only
+plan:712442628d25465eb88d307f0894b45dbddac925a88f9e5abc06ffd90e49dc6a,21AC6/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:73a9f7a389edf1d54a3d01ae470d1f8cb27dfb9b5c177bf0c6017ff6a06b7240,21D70/E0D,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,747d1ee2c7d105f9825e6ac3c720f64545598daac0146495b280faa144f182bb,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:7414ee19d6c9498407f6c82c6baaad456f80e1a9a5c17131c9a8365f5768c782,20958/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:74484ac33d8b7d668d25ef1df62814fedf876cd6747ff397cf6db8051175d7ef,21DD6/21D27,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,b46dcf90ec72d7f6ae0edaa18838ea2b6e974d95256f47304349d2dbfbf53ffc,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:756f3b237205e5db810450d622f16d01855d646a0b22cbe213deada9d4f218e8,21047/DA3,ATTDEF,FDT-Info,XXX.XXX.XXXX,annotation,0,{},not_delivered_not_automatically_missing,3b06cd949ea9f545a8c5bf24d2ba3c49962368298c9798bb557973381d8dd28f,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:757aa028b82e9940a6cab4e33c38149f30ad69e4c310846b736920d8046163ca,21ABF/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:75e2a6dac748be9bfbbd09e19b9823e60018d8dcca759a8793c62d7b4bc0b04e,21AB1/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:785d7a002452346bc3ab32a32963baffb4bb9abf84b2a563e28007167bf0aa30,21DD6/21D26,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,fbdbe5a53b26c594b620a55bff7435ae815ee688be0074d49ae3426ac2adef3c,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:7980dcc7d4032f75911b5f87e98d9aaf8ed94f23a6150bd683909992e8144d29,2104E/2103E,ATTDEF,0,XX,annotation,0,{},not_delivered_not_automatically_missing,fbb04dc54b78ca9a2a213ce3aceab3838d50e9cef7e83afba971e0e7413d2bc8,True,1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,True,mapped
+plan:79ac905262227d1abec5d6262f7898fe95b125c5cca25189215b759b00af4a47,21A56/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:79dc8bf0107d53c22aa3e915c8340fe349d0f9a122eb0835a92439492e7d6c23,20958/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:7ae48f2ad8b1f96b854fa6c6d5b7fbad9d6d73b2d2ecc9c0507d00623ae88a7b,21E0A/21D1A,TEXT,0,:,annotation,0,{},not_delivered_not_automatically_missing,04416dd301326f1e069deb5c8c22a30d638ffa60379a8fdc2103dd7646e4e29e,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:7d00cbbcca29b7edc22fa5c506cc0d6aa685d19bbec40876df8fe45689a87929,2090B/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:7e65417cc1c8245d0f2c6c85ce51193c25adc834584e926bdf2c05a8de9d9ea2,21A79/F94,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:7eb07711c22b4f11b56e3a51be962365e781779e366c401385edfd0b94a3f49e,21A6B/F97,TEXT,0,3',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:7eebd30c9c3b5c1acc9560d440c5c9b961af37e45807fb7a1ff9302bdb9d1c16,21D78/21D15,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,6dfaec79c2fed7ccded6109946db3897f92257e4a9494382140ccfedc67ab85a,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:806ef05c966e3ce687329897a111bed275c21af8ec5952cef8f78e84267b32ad,2104E/2103D,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,60bea45a660338b5525f2a26f83c1dc339ec06204e81815a6c248be94e5c6c05,True,1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,True,mapped
+plan:80b3cc3acfb1020f9c0164df1aa2b59bc59f333d5cc73f4068d552562dac3349,21047/D95,WIPEOUT,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,ad4e1f482fb0ffe5fe761aaedfde62cf697a09da687b623e8a77a510ac0a6836,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:81f29698de38ad31d0e3c1d8a4643057df865c69abca98c0a6e36b8111b542d5,21D77/B0E,ELLIPSE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,6ad5732c0131b5770407ed5714479097328e22fe7460e03755dd6c60de5222f4,True,e7f7136006cb55d6fbf0210a58a93dcc684efaba92406988dd7625c2ef2c4652,True,graphic_only
+plan:8209a322b7349bae670bb5f9ba3cc105678d58d7323e30aa12f55d571cb0ef81,21A95/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:82160621a3aee1ee2a95b1f4ab8a961422d882f4226af729703c8702b11e8acf,21DD6/21D1E,TEXT,0,:,annotation,0,{},not_delivered_not_automatically_missing,ad0a0845307ffc84a1ca9aabba34215cb1cec8263d48e0e4514428f0d23ed0a7,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:825423c34e754c6ca1f346b570f34816940b4c69d512b485d09bd1554b798014,21047/DA0,LWPOLYLINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,3c3fcfbe1ab50973a46b07137844cf963c80b0df83c09167774ada58eda3f67e,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:831a8e1909195fb7f66d5e3b54ec056471fd513810269083ab58d5147dc856ec,21047/D98,LINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,12c78108fe0e393fb49600a5d01d899afcf84b319de5d6c0995ca280c8709222,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:8370548130546d6afd614bcf885bdd1c5379d96ebaa628e505120bfaca785bfe,21ACD/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:84479d6e93b0ea2a61b435130e8743f93fe53247a5f13f5001c1807d3cfd9203,21E0A/21D20,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,c4fb5dbd94c22d2e56894193665c5c426f81090ef838a14a727d942ccf5edf9a,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:848d04aad0b41854969aad4bbe6aa51acd714230bbb10db4a6e34f811120da89,21DD6/21D13,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,9fd86ee381d7636735a9b75fc6a695a494a05c2b1f3a26515bd513cd4d8e8ec9,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:8570f7bdaa5d176a5a89a2f70c1ec79ba304d4095d74f1a535fca9fc2a9d37a2,21AB8/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:86283e8cdbb82f2468f7c76c7afcb79853447097469e7813f33a9e7172935a96,21A80/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:87b103c34b501e117925c2bf7cdb524fb62c2197c8fd523efb6e5a1c46e6a8b9,21A6B/F9A,TEXT,0,4',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:885484a0cc4b4903431f9528c20c193e7eb18c7104201298f55aebf385041cb6,20912/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:8892a1b9a56dd7c60613705176e4f5a9ec8e41cf97678de32354f638de1ac9e1,21A87/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:8ae0b772e2f92b8c7f47eee4d02a4a980522accbb316a0aea7f681bd29963b70,21A8E/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:8cd89d4530c93ffdfb4c94b26da69bb04359a41488aa19474784f209bd0bf756,21AB1/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:8cf37af282e641c1bf352a5453db61531cafbb17bfdb3a9c916ada46b9827f3f,21A87/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:8f2a2c8c6d4b5a6dc0f50f05fbfbc5f9b41ba1dcc92c9b80d63b0fea82986d73,2090B/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:8fc6cb05b474704468ff50545bcfeccf489af10250a95df7ce6e4ba470dcbcaf,21A80/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:8fe4597f72325f64a9c03ba9d97068db8b23b0168d14b2a24f5d7ded9def32eb,2090B/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:9092351f6b25b88cd3124fff5f2451d8138bd36d420cf6fef225f1e7e611c3c9,21A79/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:9254a2b11c3cfd72021ad95f272a8c7c3df3bd90336ca5addc2e856640eb97c3,21AC6/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:92cdb0521307c1b19ad70d21940f8eae4747ffb137a330d9e7ae0b2cb6509fc8,21D78/21D20,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,c4fb5dbd94c22d2e56894193665c5c426f81090ef838a14a727d942ccf5edf9a,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:9311c5a99d3ae2ffbd452297b96bd09a8fc34e164073fb45479c2e4c96157d20,21A87/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:931b355045d0ab662519ba913e0735c14b7db8d5eadb2e53d021f035cd1b7a12,2104E/2103C,HATCH,0,,graphic_only,0,{},not_delivered_not_automatically_missing,5e42b8512e4a371b5dd8a78551d8aeebd5453a3e501943cc01196f4fec8a46ac,True,1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,True,mapped
+plan:93983fa87bb501cb59abad91f37a682d8d42a8bddbb40d7327585e13c8bf8126,21047/D9B,TEXT,FDT-Info,Power @1490 nm,annotation,0,{},not_delivered_not_automatically_missing,2736ba075c6e516f6dd3d9cf65690bec78cd45d8e70abed86910be74a099b3bf,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:939f3b3c7062ed1f338181ea3a00e39a9974f6104afb649e9fb8c4ca5643f8ff,21AA3/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:953ad1ce06a8c31d5d6ff6dcd8b6c041de1a2fabee13f66463a092e4de06c13b,21047/D99,LINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,bee8a0346144f84826dec72b69f9b478ba130aae1e20daa232cd192165b0139a,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:9587bb5b6d0970261742c456362e8f2ec2574f643022ad968159f63ce9e41517,21DD6/21D19,TEXT,0,SLACK CABLE,annotation,0,{},not_delivered_not_automatically_missing,bf7b7557ef8b2689daf0596bc646bc49a8781d57da2400de085d489f89727728,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:960ce0d19a99190c7b146b56d828d2636e0fe9bccd24c345517ecdfc573302a5,20912/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:97d151f85315f9c71f967a6cac83d53f2d5524bd4610e72fdb07b23b0a5cc623,2090B/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:9a4bb08974193e55f238398e86ab549abd143865f5d698b4884cd5d35e4656a8,21D78/21D23,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,d6e669dad7f71e96c0fec59abd9f5bbd27a7765046358a224fc41d376a3994b7,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:9b03f487795dfa2afd206c7f8a54c38a78f43364a2c52d6a7c0fd9f85d72d4ee,21D78/21D1D,TEXT,0,MARKING CABLE,annotation,0,{},not_delivered_not_automatically_missing,1c3174d2d4b064b9951183d79b190de4ca88526b7c1234091aa36c59529cdc44,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:9bbf021b5f7457fd5bf9519c92daa0a811ed92ae013680c8a958560516e21f27,21A6B/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:9bfc02989e9669b82e161ee938bbacc8a87c644634e2a9bbf203e6f2d42a36f3,21AB1/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:9c0b3184160455ffd0edf560c21431ad638349021ab2ff905aacd5dff034f9f8,21D78/21D19,TEXT,0,SLACK CABLE,annotation,0,{},not_delivered_not_automatically_missing,bf7b7557ef8b2689daf0596bc646bc49a8781d57da2400de085d489f89727728,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:9c1f4674132f784ce4aa1de05a637edd1afd215622f30469cd63712052671a5b,21E0A/21D16,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,e627fbd646e8246957c519910d827f263e8bd588c5e2d7f6c5fc07ad02240ed5,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:9c4193daa5e06bdedb3c5181433cc36fe72ecb4af23083fcbeba5193fb30b2a3,21A6B/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:9da3919e50111c03011e12a0074daeacd9cc305f3311b9fdc5f26f35aefa7f37,21DD6/21D1C,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,efff4ec43694423c64ab526864f1c0d9b0a75a411e9a5ba279ce28f92ad63abd,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:9df37b7157d46c974e54bacdecd4215a2acd48dbe6dad6db55d6f33c0e8f4251,21A87/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:9e7d84eda0e77fed517b9cd5d57a800fa34ca9277fb08e30aedb782b95229e9e,21A8E/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:9ea3cd9d298ea8202b8a72d050aebd4ef9a0ff7a86bebc016f45d97c8bef5421,2104E/21040,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,7e09f691ee321823468850090b9af2424e7a5bfaffc388d222c03df899cec5cb,True,1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,True,mapped
+plan:9fa82e28e0e89796e21c6c60a19753f1d2b9ed18489215ffbfd3285508da3169,20912/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:a0b716ef780b139b2f55a50ebcc6a307700222741b803f31d44ca6761551aaca,21A87/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:a218eec7980e421c7a6bf4a5635b3c5b7e548574b72873bb7ed6ff213739f8a8,21D78/21D1A,TEXT,0,:,annotation,0,{},not_delivered_not_automatically_missing,04416dd301326f1e069deb5c8c22a30d638ffa60379a8fdc2103dd7646e4e29e,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:a275140df7e25548473933668d56da6c2deb83550200016bac62b7e6c6b59f4c,2104E/2103B,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,e0c24cf0f69acb1457a7c610a0514e7456fafdb1c06abedd4f111c04c7010048,True,1ea6fdf366109a6622b706affe1f90c09fda4cd94d37be3636119b8db76a632f,True,mapped
+plan:a4018d05da609025b4aad51ae4aa443cdf38ee4f631aaee568b83faa4b2d45ef,21DD6/21D22,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,6e9703487f1e34acaf73e050e62eea1c60867cd53ac400bde6efbe5d83a5bd63,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:a44f166c6c09f08f3516abdba6573dddf24a50b1f654876627a7a6b6668899fa,2090B/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:a57479d8cd85657918f42a3ec5e53a3cbd933c87a2fcae60d9c0714c8fc5fccd,21E0A/21D17,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,51f2142269786f8d4ac840ad73dc850ca7f16b5a9741cd90b6ad1dd22421f9f8,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:a647d33e611413b764589c96bd34f642afb7f6ccdec799f8aed6d875eb6fb30c,21D70/E08,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,bbddc6d9b1de00cc29ebc54d6ca78aaf4a342fc5a1f662108a3b073b89b8218d,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:a65970e11e822d41953acd843dcaa3a7110ad1a6c28824fc2acdb655271fef0b,21D70/E0E,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,064d4052ec64c9658b9f747bf4c2a2f3d52c3d8e7eb5566a3054635d5d540c2b,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:a67b4f1c3f3f1c91ac39b992d58bb458079935674f15ac204dd57948fb4d32a9,21A79/F96,TEXT,0,5',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:a71a176a725e511dd2e9f7f9d5b236ae56a52174283f2f8e873eacac87337f28,21ABF/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:a85d3e71f2098fa901c01f38c5a103d2a8e9a794b0ebf7bdb691c82d6d8d9cc9,21AAA/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:a89fec42f16ffcfc4928c0fa4c149e2462879896ccc25778199e067228821825,21A95/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:a8a3f30fa67b62269f90887aa9385f6484ab6032af861f552ce07b447e8da6de,21A56/F98,TEXT,0,FM,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:a963bdf582ce19e2a14fbe5e57203ec02b0ac5b6cf4333dd09347d6af067bf91,21A8E/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:ac443af3466f4b2e8d0b6f8ac2ecd36d18e1518a10e83517b8935ae796e94f54,21ACD/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:ad498a761253fcba8ea3b75c07f72bc258f82407984e39d9222e69cbbc9a99a6,20912/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:aecc0af1197b6054a21abb586b945d36c0c87b5e876f7108a62f0aa87633cd31,21D70/E0B,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,1adcd0f19517430809d93067ba0022d26b244f4cf26e6a8db2e2ae7640af8a09,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:afc0956d0daca3e9e193fc73e52ae0fe907f0e257e0c60d30a3c28db56429522,21E0A/21D23,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,d6e669dad7f71e96c0fec59abd9f5bbd27a7765046358a224fc41d376a3994b7,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:afd5f30ec77b5530d6505c867180dab9280f551985cc6e24556f57c2d7cbdecf,21AB1/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:b007d761e713b6ae2b0ba5fbd0c5f9beeee362987c3339352426f278df510ebf,21E0A/21D25,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,af87b80c8bbed3eb858b63d589371916264ff9e59e245a57ce7942f8a3077fca,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:b03a89b04ae653bb3863c21680693c57ff6338def3ab5e64c6fecf3f244bfa31,21AA3/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:b14bb060415b51b109a6869c0ee3452d600ab88676cbd1ca0741f4254634301f,20912/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:b283c3f7701a50257c8ce680452b99473eac3cd6357bd1c39cd357c1434650ec,21A87/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:b3849476876ee2c827dc270188c99540d0f10d508568efd70a6425840a664ad4,20958/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:b4d1b7e86d025c5e3028d18265257594bf53746a268ab9ffaed8e1ebc2fa08dc,21AB1/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:b4edb36c403be454dc6c8ca22b37bff92cf5af6fee26b934c781da005e2dd899,20912/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:b689bf07e50b9791407f90d640212692665e12772eed0fe2acde927bfa0ebfb7,21AA3/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:b696650f97044225c9754864e517a7e4406bd32829b00251d5a09417d8038a7a,21A79/F98,TEXT,0,FM,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:b804bcf4ebb6d00d6e4de118cb4315426c783e7655dc4f178af5f3eee12e195f,21D78/21D24,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,54984ed24d920e366a31471dfa7ee1655bd224f6d173faddab20562e753777cf,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:b8ebd1d3501f59d564432d647a21366c211305b0806cca8619243aea0d9e74ef,21A56/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:b8febb35433d2a4f5734e22a042e1fd75376328f48a436652f2b8167de10121c,20912/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,f85a35c8a7a084d49dc0a9204d8c967c59a365f104a206307f7319a3819d4704,True,mapped
+plan:ba4f203d38335e6eaabc5a835b877ecdd49ad4e8cf04414dcb48821549ee5651,21D70/E0F,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,9245010b39207d67ca17d20eeb297106faec6e0cabea3a3cba00cc7a58ec0afa,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:bacd2ac04e70e2d836415aa2eebd635f8ae51ad74fd935516dae79f16c1c3239,21ACD/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:bad995fab8813f0e82c00b3edef46842d591bb83335860a40d4354343cbdfa71,21A95/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:bb6755f46d51b15f11e9b4108bfb6f39cddfbbcb81c6b62fd9c662ae69a426d0,21AB8/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:bb74ee881da4583a95581bf4fddf33f51746135f1af792f6fbc21f8983aaca4a,21A87/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:bc8200464ae048a4db6cf9dc7cf7bd0c64e85c5360883c7dab521f9e391fa03c,21AC6/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:bc8ac8520147659d41339058700880a9089334abf40a9b08ffd3b2c598a44689,21AAA/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:bde6408f252acc5fcb3904f9a0557c20d2472b216ce233e1fb4923bd9dbe2dbb,21A87/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,2011325aacae06d3a48757f3e0a02984b28d00177c05716e435ef6d28f6ba108,True,mapped
+plan:be4253298619f30c58b624d86fbc3d99a34503d55476f7c0d8633144ee6ed677,21DD6/21D25,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,af87b80c8bbed3eb858b63d589371916264ff9e59e245a57ce7942f8a3077fca,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:be67d9072e4ab418f08161c8143d34be7b0ad436eb8ccc7b713690a26f80d9b7,21D78/21D18,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,3c5016bfd9c5ea4e48614c8b7dba165964691bb200f48b8402a5ab3105e7db2f,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:becf7a4bf6446490beb68b2c06d1b10716c51367b5b37d2ec56ef9815d079d01,20958/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:bfd7433a147ecb5eb6f7f97a69b6b20c500b6920ab4dcc1d04505bdfcd984b3d,21A95/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:bfe07915f935be63efb09d8d780bad927ba15341623f82a726e22c6ed486da95,21A6B/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:c062784712254584717ff5b697bfa263832f0c5aaacbbebed32c67ad67ae9d87,21A6B/F96,TEXT,0,5',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,7797a4597fa6309afd2424595d8dd9e2dfd6849118c2fd1f1d842dc1d227b738,True,mapped
+plan:c103f18cd0f2bc9bc4fd8bf6acca0ab1b9ea9d16761d1df11a3b6cadd89d240a,21AAA/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:c191f1b911399bba0942efd6c27485a9effa7946f280511e5bec246149c10241,21A95/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:c1aa48759766ab5230dcf86f720b80b7c554d105121d80db306faa31eef7a7b2,21DD6/21D16,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,e627fbd646e8246957c519910d827f263e8bd588c5e2d7f6c5fc07ad02240ed5,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:c2d36c2b673bd22d2666a65d077964fb3fb4859ee40346b7e9e81c584d60eeb1,21AB8/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:c32cb45890dc362510a3f2c086da51eac8cbba9de77a35b94e824eea8001d696,21DD6/21D24,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,54984ed24d920e366a31471dfa7ee1655bd224f6d173faddab20562e753777cf,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:c45e4294b8c4a217320b18fee8878cd0025c47974581392bd886342c8a185e17,21AAA/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:c47b103beee3d6f2351f9b33027e195e61db1ae1fa40fd75fd9b1293786c8f4f,21ACD/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:c54803f711cd9a5166122aa7c19deee7ff7b9851fe82e0afa310dea25fd71678,21AC6/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:c8531d77e48c24136c512e289c3877883582e99c1b0a4033a4a43e97a68b56c3,21AA3/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:c856775c8cc16659d093479e45fd544476738862f9620d261bd404a75b65db38,21047/DA4,ATTDEF,FDT-Info,Distance to FDT,annotation,0,{},not_delivered_not_automatically_missing,1613c7c58f766291b6c93e11499fc2c96b3a2e19b45b080c58f650041a012bf7,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:c85be1a7c5f7fa449b818778e479976edbefb3025168323f91e81012908dfef0,21ACD/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:c9f8852c8d7acbbac8ea0445ebb5cdc16fef087dd655957254fcccbc82c37a1f,21ABF/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:ca90c5b8e64537eb37b9ed9399d60b4a1ea86dc3641cdc700d8da48a394fc332,21A64/F97,TEXT,0,3',absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:caac6ec38ac8fc94cc4f80c4fa32e42008740eb4a845fee5e0cf238932fbd071,21E0A/21D14,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,4b451ff6eb0bcb4e8991fc767aab477813556fa517bed9f39bcdaf06d6005e9d,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:cd05493ad4b4da3b269df8ff2eb62cece962665ea2de72f3d30a0c936f2ac0ac,21AA3/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:cd6a1d547b9056bde530e2cc91bc0a7acd33dc6d1f153317e618fbbdb98f02f6,20958/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:cd735e4fcffbd7b8bf3a3aa2c4e3d3540c8d6930a9a33c7049950ee66e5ceabf,21A8E/F93,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,0649bc986a726f2c1676b706d2f8504a8be400de8b9c73cf4d631cfce2c0a479,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:cea859b3ce695b2c7ae0eacd0a14442c7941a1194bbe21a18221e1012a36fd66,21A95/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,1cb1431b51412a991ac8d8d9bede102e38211226b6ce71f072aeed15321d4e25,True,mapped
+plan:cf160929a122aed2b9a0f289b2eee4def04e1b3bdcca458d307264c8c97427ec,21ACD/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:d0b9cee48afa6f2bba5d7b19c7983e667cf93b3853f51669ee9d3f8e7b814e63,21A8E/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,262cdea78bed26d42cb17df27ea9e8cc0b4ab818922be93348ae8f7f7ab11fc7,True,mapped
+plan:d0eee820a774baab825397b1e90892efe5a5dfa5c63470870d2e4a7aa9f31ef1,21AC6/F9A,TEXT,0,4',annotation,0,{},not_delivered_not_automatically_missing,8dfef176529d33f6668d582a701f8253831aa55031af5890af1671a6db599632,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:d0f77fe8d32c088dc22c1c98f483d84be81706fa24856f779851759a95d07ae5,21AB8/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,24c67ade49c9f3855d2d7a71601790cc6d05671d8be105f25e8bf208b16c1558,True,mapped
+plan:d307b8b18059bdc0e9f56ab07da3457f145739af5b38c4fb561e739d472c3d07,21D70/E0A,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,4245f31e68a7ecb70e41f068b54bfd3d5a6d208c57092b740c0cc8c33fbdcd9a,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:d3a09d7180db33071ec51dafd31fe0d5af2f4106a3789eee299fc7b709e20de8,21D78/21D27,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,b46dcf90ec72d7f6ae0edaa18838ea2b6e974d95256f47304349d2dbfbf53ffc,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:d499d8a5fdc67d1fdd0440315b5c4d0e7e8ef8b57255efedaaa01271362f2ba6,21AB1/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,bfecfe5f225963fd7ba4a50983af4154680bcaca6ec67d15678c393daa93c5ef,True,mapped
+plan:d641f1e9f47edf63fffc1219d964a73156fb968ca54360c5238a2841af5c95d8,21D78/21D1E,TEXT,0,:,annotation,0,{},not_delivered_not_automatically_missing,ad0a0845307ffc84a1ca9aabba34215cb1cec8263d48e0e4514428f0d23ed0a7,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:d668e34803715dac5fd53fb1785d9c213898b2422918ba6ed44c3a137105e0df,21E0A/21D1D,TEXT,0,MARKING CABLE,annotation,0,{},not_delivered_not_automatically_missing,1c3174d2d4b064b9951183d79b190de4ca88526b7c1234091aa36c59529cdc44,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:d6e612a909cf7fb1603f0c7391d082662acd8b90f983519f2574449a48c67f53,21047/DA1,LWPOLYLINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,bf2641125f1b5b9a2a31657c807657a9729d797d6412299dd1b32f4b77c85b9b,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:d6f318ff88ae8ad7f0c027d8bd6b38eb1aaacf449e757b25876e71c763353bb1,2090B/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:d78569ee19febd79bf26d1b073add7c4551d0197f4cf8339d202d016017ee8b1,21E0A/21D21,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,1940df8da2fe0283f5394760d9d01fca68aa709588dc9c92d74b62580ee1d3c3,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:d7a330b911630526fd62996c6ddfb6415966997478ccfc7f9ea110da95f2af55,21A64/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:d8f4910908efb67134b5fd82c8fcd4e71fdba46b7907b1dc093abcfc2c6f6933,21047/D97,LINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,a370e21699fa98528eb856e0a2434ff23b0610725c15ca83e6da344d462fe2ff,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:d8f9318d40086cc48763ae07b1c78d0ee0252510570fd7fe6f9bbb99135a8b6d,2090B/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:d9b54d3c6a9ff4f86f7610b46e18edfc33a1e6a00f66a464284bd6406bd8a253,21E0A/21D1C,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,efff4ec43694423c64ab526864f1c0d9b0a75a411e9a5ba279ce28f92ad63abd,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:d9fccd8aea9875cbb11772faaed4277d8d5b70412ebdd9f8258346f2778846b6,2090B/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:dad59d415d1d41a331525e3afe0391832c83a63ddccd9840341d2c3ec2f53341,21ABF/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:df2338a25b5d8d405f82fbaccfbbf6b527bac07d491fd9d3576f7ec3e6cfd492,21D78/21D25,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,af87b80c8bbed3eb858b63d589371916264ff9e59e245a57ce7942f8a3077fca,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:e00a5aadb3808796c4c89bcb0aff781c309274f5fcec87636ede1e83d618e69f,21047/D9E,LINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,c010e9934795bfe771809edc1b6f0dfd2e3a40070ab0daaf652a635d1879099a,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:e05122ce30c69b45de22d572b11e5a6f0f1b4af30ca88fd39d565a297c46d4ff,21047/DA7,ATTDEF,FDT-Info,XXX.XXX.XXXX,annotation,0,{},not_delivered_not_automatically_missing,659a274ea6dd53f426951af0f8d9fda8c620d3ea3a4f9ebd85fb56a2397d3849,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:e21bea6630c06d674ce284479d4677a5e9f1b87e8d0c9c587b8a832afb490b19,21AAA/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped
+plan:e34937894dcfe9bd09a8537fda32c64371f20c9a7e4d697b3ce8b3940abc55a9,21ACD/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,07d8738d4948512f0ec1d1c8c4ce516e09d2a5d28bf05c787f7ecdec6f2b901c,True,mapped
+plan:e36b4674fb969b0c4ba499895050d74cb8028b051679537f19aa3aaf8b3ba45c,21A80/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:e4c52eb65944518f0dac149ca8a7d7399b16f6ab3519ac3f6b084c85842e8cb1,21D70/E10,ATTDEF,0,144,annotation,0,{},not_delivered_not_automatically_missing,d7a3108a946ab80817806b05e21ac186d4c78b1aa8f7fbd8dacb56c261110952,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:e503d357bc8cff10a5205efc13f0629d19fa31b04c4e22419ca46bca5da6b62f,21E0A/21D1F,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,57cd20880b363b534d482047d5c97fc75cc17b0f3b3411f2927c0b526db9f5bf,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:e584bef95a56d8b74d9243219f27719f0059e049e33289fe45af21bf5fb0eaad,21AA3/F97,TEXT,0,3',annotation,0,{},not_delivered_not_automatically_missing,047ee32d8b2131a5cab94f20038ba7d28745635017fc12df0d4e3f5f34182d5b,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:e5968177e83e2fded07c703ebab01e6a8fec59a7fdf98f03bc83cf2e1596aebe,21DD6/21D17,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,51f2142269786f8d4ac840ad73dc850ca7f16b5a9741cd90b6ad1dd22421f9f8,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:e5c8f8ee21ffa0304eb1b7d4d25b85b2f1e214f0af97321977737239cfa8fd63,21E0A/21D27,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,b46dcf90ec72d7f6ae0edaa18838ea2b6e974d95256f47304349d2dbfbf53ffc,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:e64bbd1ec291892cae4bbcfa510b854260687242c092de9784e12ddfafca950b,21E0A/21D28,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,a3f994ff87ce9d1570517c146cf4d5a21bc56b6e05fff5c32bbaa660f1b49f83,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:e6cef12f14403cdaabc9ddba95808282055ece80faf5c5fef46d27d0741e25c9,21AA3/F92,CIRCLE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,323582359ec3284648b6ddf1b3d62741fffb25cc83153a2824960ba69ea2e165,True,d6bbf4b1e7e9363917f6c155b7b7bce22882fd026f077c825114b1409ba09ee9,True,mapped
+plan:e70ae5dbc4b8a3815a9e721c0066a8c1a9b1b73789d2204537b815177847a364,21A79/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,8d79df3f90780af390898e3824c1d4aa4775985cea355f06ec3fc6e929e5cdc2,True,mapped
+plan:e966c1312f774d1e5e68a7f6ed0d6698229d1465c885b9340a2eb80a82ce635b,21DD6/21D21,ATTDEF,0,XXX,annotation,0,{},not_delivered_not_automatically_missing,1940df8da2fe0283f5394760d9d01fca68aa709588dc9c92d74b62580ee1d3c3,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:e98be3ca0f653dc00ad62d2ce2d628026742504ff3a1fa3f5bdcd540ed9a94d6,21047/D96,LINE,FDT-Info,,graphic_only,0,{},not_delivered_not_automatically_missing,d3e98aa42b799c6f315bff0f3e71774680108325e923b65341e3e6d263ba774a,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:eafc9c0e57ac2609381a3be0661a38fae4dc5d32db6c3e8bbc437fbe16e71c38,21A9C/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,328d67f9f9983c71802e4b67497faef4f6f53b4041da4bc957e21218f6fed2a8,True,mapped
+plan:eb3eba0b12a436f4af2a2200142fa4a12e390c2b4a46c577588e3c0074480661,21A64/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:edb662c832f0b5a5dd053f2c4eb0d3da5cb280b3a91f13481e971588dbc902d8,21047/D9C,TEXT,FDT-Info,:,annotation,0,{},not_delivered_not_automatically_missing,7c47e2ee10921756addb5104a56f4a6faaf5aabd3fb7981e3385244c01d00fbd,True,a3eeec5545e128ea78a85aff2c35967d9197a0cfacdb1b41695d3e30bb865489,True,graphic_only
+plan:eef1b20842e2fb931f55de4ba51c14bf4b14507646ffbb52d85a89e1ef7c2579,2090B/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,5829638d482992573da7152323fe2da3663bd05729d2528457afaaf22d8709af,True,mapped
+plan:ef7badd4e75712e8d3b597f6c0cac52d33f48e4c3b35881222da0095bc912c5d,21DD6/21D15,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,6dfaec79c2fed7ccded6109946db3897f92257e4a9494382140ccfedc67ab85a,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:f04a9b35e639a38ab8bd14507e39ef6d842220a10b61661a8ca1cf8760a11022,21ABF/F91,TEXT,0,NP7,annotation,0,{},not_delivered_not_automatically_missing,5b18429655423433c040c3d3e53b7cd41640de710c60cd4b2c21d52ea24e1aa4,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:f08702e210c907a2ae1a4146b4d630d49ca2c28c75ca56f9b25d1b4c532c0b2e,21AC6/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,6763e8e891fd4265bdec7c752d2972aed31189566558248893fb0820f194e03b,True,mapped
+plan:f0a98f133cc571ae8b5c268ca82fd3c619456a2087e799b929d20c870a2b85a0,21DD6/21D18,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,3c5016bfd9c5ea4e48614c8b7dba165964691bb200f48b8402a5ab3105e7db2f,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:f27de032b23a0f29e5b051aba25b2a18a70e8aa94a923572b3e95f6da72d6e92,21ABF/F96,TEXT,0,5',annotation,0,{},not_delivered_not_automatically_missing,4082f198b0a4b5828cb73606c0fa34da1dda7c03b83da19b618d84b4927a462d,True,2dd41ff54c5d9294fdd95f7a73c29f88019549b9efdabc0a2b3001521c3daf2a,True,mapped
+plan:f4cf07e2952fa9b29f31bfa90606c3102f815c7947af177fac11aeeb1db42cbb,21E0A/21D18,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,3c5016bfd9c5ea4e48614c8b7dba165964691bb200f48b8402a5ab3105e7db2f,True,b8fcfa7f5b8f6ad2f13dd663d6560dd3d8bd43ae93588b815b537132811385ab,True,graphic_only
+plan:f64881655d96e921702889756aed49018313c3b00c75d8a8eb7d1e71b6695dc4,21DD5/B0E,ELLIPSE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,6ad5732c0131b5770407ed5714479097328e22fe7460e03755dd6c60de5222f4,True,d33a4a791d0a0330d7f9c5eb55083b3479c6022a9ef82c48cce05f8d8f18568a,True,graphic_only
+plan:f6eba707bd9e854299003c5957dc6c4b20649d472ec4f3e7eb94eb5ebae75d88,21DD6/21D28,LINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,a3f994ff87ce9d1570517c146cf4d5a21bc56b6e05fff5c32bbaa660f1b49f83,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:f88d5e983a4fca256b1d008e97937bc089b4fab3c471ab3022445b4a08f24853,21D70/E09,LWPOLYLINE,0,,absent_from_canonical_evidence,0,{},expanded_instance_with_definition_and_parents_in_ledger,05b0f58d866f4544b5286d7cdf262611ed60e14b275174c5f1a8429e41928b70,True,193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56,True,mapped
+plan:f94676a726baf31052a6d0dbd89543365079a01638b46bd45c27a1e90593e18a,21D78/21D17,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,51f2142269786f8d4ac840ad73dc850ca7f16b5a9741cd90b6ad1dd22421f9f8,True,636d6a174c8fd8e57ae774739242f76bea9593f14c0fd5662b2e8b4e8cf293e0,True,graphic_only
+plan:fa73123ef0a6eadba3f886c4cc57f28d7206744b6aff0551193fbc139bb9636b,20958/F98,TEXT,0,FM,annotation,0,{},not_delivered_not_automatically_missing,5b0c244522e01415a4d196ddefae7ad549f055920402b28ab4ed5c8788f76650,True,2b2e40d74c15c347318cb19b167636351afb3f48fc36d4a0a0bb295b0f5899fc,True,mapped
+plan:faadc1ebe2e596d2af759dc52a7337cec7afa3a83d8c50b188e13c0474ea329a,21DD6/21D1B,TEXT,0,M,annotation,0,{},not_delivered_not_automatically_missing,4e8363d9479e31ed778706dd06eb7d2e12135b2888fccfc28ddbe197d4829235,True,ea46231fefcc7f59e708f20b2512c2d615d2239c7a33f175d80a4fbd9d8e913b,True,graphic_only
+plan:fd594cc28d9d2db9e8347cc3227c1eb295c279b38624de2e4bb0d431a806d57c,21A64/F94,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,230bc07b663751884c4115f86d6e7370755849112e2577b939b860ef30f4ba36,True,3d263e3e7daad2d017c19c10f9795b7e11855d28454bba5b020d0383d29db0ed,True,mapped
+plan:fe51a0e486c4c83b7e46654263ba03c3577ded55719107fb6fe7975bd41c7707,21A56/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,27f16908f6aa84bbafb637b9236d8081b61296b88ee9238a99ceff49be1e5859,True,mapped
+plan:fed3da2b9858f24b78e591f8273bff4c5f88bdac9c9980f6b76a096256a19bdd,21A80/F99,TEXT,0,NP9,annotation,0,{},not_delivered_not_automatically_missing,06c745106824d5e129cf60a4f0b653f8630e57a99086166962a19e92645fae0d,True,7370cfbcbadd09fe75aa3858940d5478ac8b3de93427701f48216fa75633ae66,True,mapped
+plan:ffe4c264d102c48179e94a8df3eb7ef62ddfa8a95218e57af5703bb4eff11a6c,21AAA/F95,LWPOLYLINE,0,,graphic_only,0,{},not_delivered_not_automatically_missing,f89fde43b80459e4cda6c306e83afcf1a7e3953804086419a64669c8d3c85394,True,fc23a1a3f71dbbac2cf6ef7755990f39f220ba316227320af2b56178a4b05a84,True,mapped

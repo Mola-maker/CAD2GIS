@@ -401,7 +401,10 @@ def _qml(layer_name, geometry_kind, styles, *, label_field="display_label"):
         placement="2" if geometry_kind == "LineString" else "0",
         dist=label_style["dist"], offsetUnits="MM", rotationUnit="AngleDegrees",
     )
-    ET.SubElement(settings, "rendering", drawLabels="1", obstacle="1", scaleVisibility="0")
+    # Coverage polygons must not suppress every label inside their footprint.
+    ET.SubElement(settings, "rendering", drawLabels="1", obstacle="0" if geometry_kind == "Polygon" else "1", scaleVisibility="0")
+    if geometry_kind == "LineString":
+        settings.find("placement").set("placementFlags", "10")
     # Line labels follow their source LineString placement.  Applying the
     # parent CAD rotation as a data-defined angle would override QGIS's line
     # orientation (and turn diagonal segment labels horizontal), so reserve

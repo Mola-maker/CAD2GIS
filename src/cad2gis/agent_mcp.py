@@ -1,4 +1,5 @@
 """MCP adapter over the canonical CAD2GIS evidence and conversion services."""
+# ruff: noqa: E402 -- native thread limits must be set before GIS imports.
 
 from __future__ import annotations
 
@@ -10,6 +11,10 @@ from pathlib import Path
 from typing import Any, cast
 
 from . import __version__
+from .runtime import configure_numeric_threads
+
+configure_numeric_threads()
+
 from .contracts import (
     AGENT_PROMPT_CONTRACT_VERSION,
     MCP_TOOL_NAMES,
