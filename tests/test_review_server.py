@@ -63,6 +63,51 @@ def _run_fixture(tmp_path) -> tuple:
     return run_dir, delivery, manifest_path
 
 
+def test_canonical_registration_preview_uses_target_crs_and_excludes_checks(tmp_path, monkeypatch):
+    from cad2gis.native_runtime import ensure_osgeo_runtime
+    ensure_osgeo_runtime()
+    from cad2gis.cad2gis_v3.georef import DirectTransformer
+    from pyproj import Transformer
+
+    run, _, _ = _run_fixture(tmp_path)
+    nominal = DirectTransformer("EPSG:32749", "EPSG:32749")
+    monkeypatch.setattr(review_server, "_registration_transformer", lambda _: nominal)
+    monkeypatch.setattr(review_server.GeoPackageProvider, "geojson", lambda *a, **k: {
+        "type": "FeatureCollection", "features": [{"type": "Feature", "properties": {},
+        "geometry": {"type": "Point", "coordinates": [500000., 9200000.]}}]})
+    client = TestClient(create_review_app(run, workspace_dir=tmp_path / "web"))
+    to_lonlat = Transformer.from_crs(32749, 4326, always_xy=True)
+    for i, (x, y, role, dx) in enumerate([(500000, 9200000, "train", 10),
+            (500100, 9200010, "train", 10), (500020, 9200100, "train", 10),
+            (500050, 9200050, "check", 110)]):
+        lon, lat = to_lonlat.transform(x+dx, y-5)
+        response = client.post("/api/review/features", json={"expected_revision": 0, "actor": "test",
+            "feature": {"type": "Feature", "id": f"gcp:{i}",
+            "geometry": {"type": "Point", "coordinates": [lon,lat]},
+            "properties": {"_kind": "cad_map_gcp", "cad_x": x, "cad_y": y, "role": role}}})
+        assert response.status_code == 200, response.text
+    capture = client.get("/api/registration").json()
+    fit = capture["preview_fit"]
+    assert fit["selected_model"] == "translation"
+    assert fit["target_crs"] == "EPSG:32749"
+    assert fit["train_metrics"]["rmse_m"] < 1e-6
+    assert fit["check_metrics"]["rmse_m"] == pytest.approx(100, abs=1e-6)
+    assert fit["validation"]["passed"] is None  # preview is not engineering acceptance
+    endpoint = "/api/registration/preview/CABLE"
+    response = client.get(endpoint, params={"expected_controls_sha256": capture["controls_sha256"]})
+    assert response.status_code == 200, response.text
+    point = response.json()["features"][0]["geometry"]["coordinates"]
+    assert point == pytest.approx(to_lonlat.transform(500010, 9199995), abs=1e-8)
+    assert client.get(endpoint, params={"expected_controls_sha256": "stale"}).status_code == 409
+
+
+def test_registration_preview_rejects_modified_profile(tmp_path):
+    profile = tmp_path / "profile.json"
+    profile.write_text("{}")
+    with pytest.raises(ReviewServerError, match="hash mismatch"):
+        review_server._registration_transformer({"profiles": {"source_profile": {"path": str(profile), "sha256": "0"*64}}})
+
+
 def test_sqlite_review_store_is_revisioned_and_conflict_safe(tmp_path) -> None:
     store = SQLiteReviewStore(
         tmp_path / "review.sqlite3", session_id="run:source",

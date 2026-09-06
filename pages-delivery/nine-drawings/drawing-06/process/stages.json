@@ -1,0 +1,14 @@
+{
+  "source_sha256": "f71526ec36d503d07f883d22fdadaa9c3ccdc30be804402df4c533309f664a5b",
+  "canonical_version": "v6-final",
+  "stages": [
+    "DWG source extraction",
+    "source-bound semantic review",
+    "canonical conversion",
+    "independent visual audit",
+    "portable QGIS packaging"
+  ],
+  "status": "CONDITIONAL",
+  "absolute_accuracy_verified": false,
+  "note": "Historical recorded results; not a live or newly executed Linux conversion."
+}

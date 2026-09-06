@@ -195,6 +195,14 @@ def _demo_redirect() -> str:
 
 def build(output: Path) -> None:
     _validate_demo()
+    release_root = PROJECT_ROOT / "pages-delivery" / "nine-drawings"
+    release_catalog = None
+    if release_root.exists():
+        try:
+            from scripts.verify_derived_release import verify
+        except ModuleNotFoundError:
+            from verify_derived_release import verify
+        release_catalog = verify(release_root)
     output = output.resolve()
     if output == PROJECT_ROOT or PROJECT_ROOT not in output.parents:
         raise ValueError("Pages output must be a child directory of the project root")
@@ -217,6 +225,15 @@ def build(output: Path) -> None:
     workspace_dir = output / "workspace"
     workspace_assets = workspace_dir / "assets"
     shutil.copytree(DEMO_ROOT / "assets", workspace_assets)
+    if release_catalog is not None:
+        shutil.copytree(release_root, output / "deliveries")
+        catalog_path = workspace_assets / "demo-catalog.json"
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        catalog["projects"].extend(release_catalog["projects"])
+        catalog["publication_boundary"] = "含授权九图完整派生成果；不含 DWG；CONDITIONAL，绝对 GCP 精度未验收。"
+        catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
+        for project in release_catalog["projects"]:
+            shutil.copy2(release_root / "assets" / project["fixture"], workspace_assets / project["fixture"])
     for filename in SHARED_DEMO_SCRIPTS:
         shutil.copy2(WEB_ROOT / filename, workspace_assets / filename)
     for filename in SHARED_DEMO_ASSETS:
@@ -229,8 +246,13 @@ def build(output: Path) -> None:
         stylesheet.replace('url("../../assets/', 'url("./'), encoding="utf-8",
     )
     demo_source = (DEMO_ROOT / "index.html").read_text(encoding="utf-8")
+    if release_catalog is not None:
+        demo_source = demo_source.replace('multi-demo-20260829', 'nine-delivery-20260906')
+        demo_source = demo_source.replace('左图始终保留原始 CAD 坐标，图层开关同步作用于右侧预览。', '左图显示交付坐标几何，右图按声明 CRS 投影。原 CAD 对比见九图审查叠图。')
+        demo_source = demo_source.replace('<b>CAD</b> 原始坐标', '<b>GIS</b> 交付坐标')
+        demo_source = demo_source.replace('源几何 ↔ 地理预览', '交付几何 ↔ 地理预览')
     (workspace_dir / "index.html").write_text(
-        _workspace_page(demo_source), encoding="utf-8",
+        _workspace_page(demo_source).replace('<a href="../install.html">安装</a>', '<a href="../install.html">安装</a><a href="../deliveries/">九图交付与过程</a>'), encoding="utf-8",
     )
     demo_redirect_dir = output / "demo"
     demo_redirect_dir.mkdir()
@@ -247,7 +269,8 @@ def build(output: Path) -> None:
                 "workspace/index.html",
             ],
             "mode": "static-github-pages",
-            "workspace": "data-free-original-console",
+            "workspace": "authorized-derived-delivery-console" if release_catalog else "data-free-original-console",
+            "contains_derived_qgis_deliveries": release_catalog is not None,
             "contains_source_binaries": False,
         }, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

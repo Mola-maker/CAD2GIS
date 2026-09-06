@@ -1,0 +1,152 @@
+{
+  "schema_version": "cad2gis.batch-report.v1",
+  "status": "HISTORICAL_CONDITIONAL",
+  "drawings": [
+    {
+      "id": "drawing-01",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-01.zip",
+        "QGIS 项目": "drawing-01/delivery.qgz",
+        "审查叠图": "drawing-01/process/source-delivery-overlay.png",
+        "审查报告": "drawing-01/process/audit.json",
+        "转换阶段": "drawing-01/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-01",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "APD - KELURAHAN LAMTEH DAYAH ACEH - SF",
+      "preview": "drawing-01/process/source-delivery-overlay.png"
+    },
+    {
+      "id": "drawing-02",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-02.zip",
+        "QGIS 项目": "drawing-02/delivery.qgz",
+        "审查叠图": "drawing-02/process/source-delivery-overlay.png",
+        "审查报告": "drawing-02/process/audit.json",
+        "转换阶段": "drawing-02/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-02",
+        "QGIS 标签实测图": "drawing-02/process/qgis-labels-detail.png",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "APD - KELURAHAN LAMTEH DAYAH ACEH",
+      "preview": "drawing-02/process/source-delivery-overlay.png"
+    },
+    {
+      "id": "drawing-03",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-03.zip",
+        "QGIS 项目": "drawing-03/delivery.qgz",
+        "审查叠图": "drawing-03/process/source-delivery-overlay.png",
+        "审查报告": "drawing-03/process/audit.json",
+        "转换阶段": "drawing-03/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-03",
+        "EMR28560 QGIS": "drawing-03/EMR28560/delivery.qgz",
+        "EMR29619 QGIS": "drawing-03/EMR29619/delivery.qgz",
+        "EMR28560 Web 转化台": "../workspace/?demo=1&project=drawing-03-emr28560",
+        "EMR28560 源图叠加": "drawing-03/EMR28560/process/source-delivery-overlay.png",
+        "EMR28560 审计报告": "drawing-03/EMR28560/process/audit.json",
+        "EMR29619 Web 转化台": "../workspace/?demo=1&project=drawing-03-emr29619",
+        "EMR29619 源图叠加": "drawing-03/EMR29619/process/source-delivery-overlay.png",
+        "EMR29619 审计报告": "drawing-03/EMR29619/process/audit.json",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "APD - MANADO-UPLINK_FWA_OLT_TOMOHON_TO_EMR- 46478_FO_24C",
+      "preview": "drawing-03/process/source-delivery-overlay.png",
+      "error": "历史 AutoCAD 属性串读影响部分 BOITE；请先阅读勘误。"
+    },
+    {
+      "id": "drawing-04",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-04.zip",
+        "QGIS 项目": "drawing-04/delivery.qgz",
+        "审查叠图": "drawing-04/process/source-delivery-overlay.png",
+        "审查报告": "drawing-04/process/audit.json",
+        "转换阶段": "drawing-04/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-04",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "APD - TINGGAR RW 04 SERANG",
+      "preview": "drawing-04/process/source-delivery-overlay.png"
+    },
+    {
+      "id": "drawing-05",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-05.zip",
+        "QGIS 项目": "drawing-05/delivery.qgz",
+        "审查叠图": "drawing-05/process/source-delivery-overlay.png",
+        "审查报告": "drawing-05/process/audit.json",
+        "转换阶段": "drawing-05/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-05",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "as_plan_drawing_dwg_PAL000406_20260728171751_APD  TAIPA RW 05 PALU",
+      "preview": "drawing-05/process/source-delivery-overlay.png"
+    },
+    {
+      "id": "drawing-06",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-06.zip",
+        "QGIS 项目": "drawing-06/delivery.qgz",
+        "审查叠图": "drawing-06/process/source-delivery-overlay.png",
+        "审查报告": "drawing-06/process/audit.json",
+        "转换阶段": "drawing-06/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-06",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "as_plan_drawing_dwg_PAL000465_20260728102504_APD   PERUMAHAN TINGGEDE VIEW PALU",
+      "preview": "drawing-06/process/source-delivery-overlay.png"
+    },
+    {
+      "id": "drawing-07",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-07.zip",
+        "QGIS 项目": "drawing-07/delivery.qgz",
+        "审查叠图": "drawing-07/process/source-delivery-overlay.png",
+        "审查报告": "drawing-07/process/audit.json",
+        "转换阶段": "drawing-07/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-07",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "as_plan_drawing_subfeeder_dwg_PTK000022_20260808191628_PTK000022 APD DWG SUB FEEDER DARAT SEKIP RW 12 PONTIANAK",
+      "preview": "drawing-07/process/source-delivery-overlay.png"
+    },
+    {
+      "id": "drawing-08",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-08.zip",
+        "QGIS 项目": "drawing-08/delivery.qgz",
+        "审查叠图": "drawing-08/process/source-delivery-overlay.png",
+        "审查报告": "drawing-08/process/audit.json",
+        "转换阶段": "drawing-08/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-08",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "APD - KLETEK RW 05 SIDOARJO",
+      "preview": "drawing-08/process/source-delivery-overlay.png"
+    },
+    {
+      "id": "drawing-09",
+      "status": "CONDITIONAL",
+      "links": {
+        "交付 ZIP": "drawing-09.zip",
+        "QGIS 项目": "drawing-09/delivery.qgz",
+        "审查叠图": "drawing-09/process/source-delivery-overlay.png",
+        "审查报告": "drawing-09/process/audit.json",
+        "转换阶段": "drawing-09/process/stages.json",
+        "Web 转化台": "../workspace/?demo=1&project=drawing-09",
+        "Linux 复跑与历史勘误": "ERRATA.md"
+      },
+      "name": "SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG",
+      "preview": "drawing-09/process/source-delivery-overlay.png",
+      "error": "历史 AutoCAD 属性串读影响部分 BOITE；请先阅读勘误。"
+    }
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "schema_version": "cad2gis.independent-visual-audit.v1",
+  "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
+  "source_snapshot_schema": "cad2gis.source_export.v1",
+  "coordinate_frame": "native CAD coordinates; reported distances scaled to metres by reviewed coordinate scale",
+  "comparison_basis": "Independent pyproj inverse CRS plus manifest GEODATA inverse; source snapshot plan; analytic bulges sampled at <= 0.001 native-unit chord error. No production geometry/transformer reuse.",
+  "absolute_accuracy_verified": false,
+  "source_plan_count": 420,
+  "delivery_feature_count": 40,
+  "delivery_layer_counts": {
+    "SITE": 1,
+    "BOITE": 1,
+    "PTECH": 19,
+    "INFRASTRUCTURE": 1,
+    "CABLE": 18
+  },
+  "geometry_status_counts": {
+    "explicit_derived_displacement": 1,
+    "within_numeric_and_curve_sampling_tolerance": 22
+  },
+  "cable_group_count": 1,
+  "cable_max_hausdorff_native_m": 8.84697267849738e-10,
+  "cable_max_length_difference_native_m": 4.5440629037329927e-10,
+  "explicit_relocation_count": 1,
+  "derived_without_source_count": 0,
+  "present_fields_without_provenance": 0,
+  "blank_delivery_field_count": 258,
+  "labels_with_replacement_characters": 0,
+  "labels_replacement_already_in_source": 0,
+  "source_disposition_counts": {
+    "graphic_only": 170,
+    "annotation": 205,
+    "mapped": 22,
+    "absent_from_canonical_evidence": 23
+  },
+  "source_not_directly_delivered_count": 398,
+  "immutable_artifacts_before": {
+    "delivery.gpkg": "114f7f0144a5ced0a93b9a8f5b8239da54ac64463ac1ef7db108b53ec6cf3a03",
+    "evidence.gpkg": "f02d35d13fef9480b1b6cf6213152563713f2c65d3ee64cb55448428cf133114",
+    "run_manifest.json": "5dd4c0409e31f061c2f23c9f471c9f3d479d52bf5df3fd732b97bc1580457106"
+  },
+  "drawing_name": "SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG",
+  "source_crs": "EPSG:32749",
+  "target_crs": "EPSG:32749",
+  "reviewed_coordinate_unit_m": 1.0,
+  "dwg_insertion_unit_m": 1.0,
+  "source_reader_record_count": 1491,
+  "field_audit_scope": "Business/source-derived fields represented in evidence.field_provenance plus CODE/display_label; parent cable lengths and exported segment lengths are explicitly distinct",
+  "unexpected_field_value_mismatches": 0,
+  "label_source_check_counts": {
+    "not_a_text_check": 21,
+    "verified_selected_annotation": 19
+  },
+  "source_plan_entities_absent_from_canonical_ledger": 23,
+  "cable_coordinate_vertex_graph": {
+    "scope": "Coordinate vertex graph at 1e-6 native-unit quantization; no crossing nodes inserted; not equipment connectivity",
+    "status": "equal",
+    "source": {
+      "vertex_count": 19,
+      "edge_count": 18,
+      "edge_multiplicity_total": 18,
+      "component_count": 1,
+      "degree_histogram": {
+        "1": 2,
+        "2": 17
+      },
+      "edge_multiset_sha256": "01344c9f2d85f5904f8669e10882b813f3d2f3037e355dd5a509c7a7a4920c7f"
+    },
+    "delivery": {
+      "vertex_count": 19,
+      "edge_count": 18,
+      "edge_multiplicity_total": 18,
+      "component_count": 1,
+      "degree_histogram": {
+        "1": 2,
+        "2": 17
+      },
+      "edge_multiset_sha256": "01344c9f2d85f5904f8669e10882b813f3d2f3037e355dd5a509c7a7a4920c7f"
+    }
+  },
+  "verifier_implementation_sha256": "a43df1d0d7d16332f62448bf8e2054d8a48cc05e534d06ef5ee4a89c0c2308fb",
+  "verifier_implementation_path": "onsite_visual_audit.py",
+  "canonical_run_status": "CONDITIONAL",
+  "delivery_null_geometry_features": [],
+  "delivery_nonspatial_tables_excluded_from_feature_geometry_audit": [
+    {
+      "table": "layer_styles",
+      "row_count": 8
+    }
+  ],
+  "source_disposition_meaning_counts": {
+    "not_delivered_not_automatically_missing": 375,
+    "delivered": 22,
+    "expanded_instance_with_definition_and_parents_in_ledger": 23
+  },
+  "unexplained_geometry_changes": [],
+  "explicit_geometry_changes": [
+    {
+      "layer": "BOITE",
+      "source_entity_key": "193d91597ffa158965935af5cae86bc019b97865326464f357e813f066c93d56",
+      "source_handle": "21D70",
+      "delivery_count": 1,
+      "source_in_independent_plan": true,
+      "source_type": "INSERT",
+      "operations": "collocate_with_support|identity",
+      "hausdorff_native_m": 0.0866557972749924,
+      "delivery_union_length_native_m": null,
+      "source_curve_length_native_m": null,
+      "length_difference_native_m": null,
+      "status": "explicit_derived_displacement",
+      "distance_basis": "source_Point_to_delivery_Point",
+      "point_anchor_displacement_m": 0.0866557972749924
+    }
+  ],
+  "derived_without_direct_source": [],
+  "source_coverage_limit": "All independent source plan entities are censused. Unexported graphic/annotation entities and expanded instances are not automatically missing business assets; exact definitions and parent retention are reported separately. No automatic claim of complete semantic coverage.",
+  "geometry_comparison_tolerance_m": 0.01,
+  "geometry_comparison_limit": "The 0.01 m threshold distinguishes numerical/sampling differences from material changes in source-relative geometry; it is not a survey accuracy tolerance or acceptance threshold for intentional changes.",
+  "labels_without_verified_direct_or_selected_text": 0,
+  "labels_with_verified_heuristic_relation_requiring_review": 0,
+  "device_number_source_relation_checks": [],
+  "source_artifacts_sha256_verified": {
+    "plan_entities": "aeede4a794e4e8eb0540292ed8a36803a14d011c4e8f02c7e486e41db5ee4ffc",
+    "reader_records": "f2948fa5be2e83c26ef7a3b99e82465a35f3ce3c84d3b54d60db61635ae14dd8"
+  },
+  "source_plan_geometries_rendered": 386,
+  "source_plan_geometries_unavailable": [
+    "plan:060b379e2dbc2c08f2802035923493bafdc690253d2a3dadfe0c3c1d8eec8b78",
+    "plan:08003ce7a42d04064a66250777519a2c9649dfcad7f74e4c2deb360e6f696544",
+    "plan:10ad98b2d6ebdef72fcdaff2f17945714ab1babbc01d6a2acb31a81397aac04f",
+    "plan:10d1a351545a6444a592fd457ae6875fcc81393c6ae3caeef494338aaf1dd0c4",
+    "plan:126c5a110216793b16267b790825ec964e5a5da92af19be9d4760d67f4e62974",
+    "plan:14a5ff56dea3f756edbeaeac69bdd27be0c957a8fe5e75f6d4551d587e8071ea",
+    "plan:1f69170b2d8d2d06465e1ae74c1d506186cfc275610d9f29243829e7b9a02d71",
+    "plan:2b33bf8ac5d146e77777798572967a01b870b704d10655b874efc3918b1e550e",
+    "plan:3829d9935541e4caca64e29f3873d8f986e31b7e34f9b23bb1c715ff534da2a1",
+    "plan:38cc9a3b88fcd737b658dcdea5b302c0972d22d36756166c0dae78f505097094",
+    "plan:394967b4e2bd11e2cd3bcc02b0d4f95704f8cf68e7acf53d78bd34f151cae17c",
+    "plan:3c26957362cd2a53d14a1f5e40e23311900bf33e1e621a312d0ae7d7dcbe9217",
+    "plan:3c2ab1905288f39cd735dd645b88f75a11fe1556cd5a10a75d6e0ca55e8f139c",
+    "plan:3c52a2c186b16a4537d73208967731e3cc8526978991e53b46945bfb80016727",
+    "plan:3d68db92c6353fb3a6ee3383246f687a65f32681468a0deaec4ecd4e738ef058",
+    "plan:4036b7373ac2ba4c1d6795558b5c6d45a24ffdafd62b17555506124d28b81477",
+    "plan:4e86a6da631e67c5992cc2481ab01b5bda7be010586137de6412bb18c3aee238",
+    "plan:63d9350f2caf9e1e4b0795520712890d12f07c1f49a953d0b8846c45266c4fcf",
+    "plan:6ee1362876ea3697e982cf301b24d5581f62db82b06a12523faf133b7a66bb25",
+    "plan:79dc8bf0107d53c22aa3e915c8340fe349d0f9a122eb0835a92439492e7d6c23",
+    "plan:806ef05c966e3ce687329897a111bed275c21af8ec5952cef8f78e84267b32ad",
+    "plan:80b3cc3acfb1020f9c0164df1aa2b59bc59f333d5cc73f4068d552562dac3349",
+    "plan:81f29698de38ad31d0e3c1d8a4643057df865c69abca98c0a6e36b8111b542d5",
+    "plan:931b355045d0ab662519ba913e0735c14b7db8d5eadb2e53d021f035cd1b7a12",
+    "plan:9c4193daa5e06bdedb3c5181433cc36fe72ecb4af23083fcbeba5193fb30b2a3",
+    "plan:bad995fab8813f0e82c00b3edef46842d591bb83335860a40d4354343cbdfa71",
+    "plan:bc8200464ae048a4db6cf9dc7cf7bd0c64e85c5360883c7dab521f9e391fa03c",
+    "plan:d0f77fe8d32c088dc22c1c98f483d84be81706fa24856f779851759a95d07ae5",
+    "plan:d6f318ff88ae8ad7f0c027d8bd6b38eb1aaacf449e757b25876e71c763353bb1",
+    "plan:d7a330b911630526fd62996c6ddfb6415966997478ccfc7f9ea110da95f2af55",
+    "plan:dad59d415d1d41a331525e3afe0391832c83a63ddccd9840341d2c3ec2f53341",
+    "plan:e21bea6630c06d674ce284479d4677a5e9f1b87e8d0c9c587b8a832afb490b19",
+    "plan:e6cef12f14403cdaabc9ddba95808282055ece80faf5c5fef46d27d0741e25c9",
+    "plan:f64881655d96e921702889756aed49018313c3b00c75d8a8eb7d1e71b6695dc4"
+  ],
+  "immutable_artifacts_after": {
+    "delivery.gpkg": "114f7f0144a5ced0a93b9a8f5b8239da54ac64463ac1ef7db108b53ec6cf3a03",
+    "evidence.gpkg": "f02d35d13fef9480b1b6cf6213152563713f2c65d3ee64cb55448428cf133114",
+    "run_manifest.json": "5dd4c0409e31f061c2f23c9f471c9f3d479d52bf5df3fd732b97bc1580457106"
+  },
+  "immutable_artifacts_unchanged": true,
+  "source_artifacts_unchanged": true
+}
