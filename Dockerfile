@@ -1,7 +1,7 @@
 FROM python:3.12-slim-bookworm AS builder
 ENV PIP_NO_CACHE_DIR=1 \
     CAD2GIS_CACHE_DIR=/opt/cad2gis-cache
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /build
