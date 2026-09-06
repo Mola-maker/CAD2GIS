@@ -24,6 +24,8 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 
 ## 快速开始
 
+容器部署与本地镜像构建见 [Docker 运行说明](docs/DOCKER.md)。
+
 1. 按下方“安装”创建固定运行环境并执行 `cad2gis doctor`；
 2. 安装 [`plugins/cad2gis-agent`](plugins/cad2gis-agent)，或把对应
    [`clients`](plugins/cad2gis-agent/clients) 模板加入现有智能体；
