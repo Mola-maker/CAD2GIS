@@ -72,6 +72,62 @@ def compile_revision(fixture, **extra):
     return compile_semantic_revision(**fixture["context"], revision=1, output_dir=fixture["output"], idempotency_key="compile-1", **extra)
 
 
+def test_canonical_projection_uses_pinned_revision_and_exact_source_label(semantic_fixture):
+    from cad2gis.cad2gis_v3.semantic_delivery import load_published_revision, apply_revision
+    from cad2gis.cad2gis_v3.model import Feature, CadStyle
+    f = semantic_fixture
+    commit(f)
+    compiled = compile_revision(f)
+    decisions, receipt = load_published_revision(f["context"]["semantic_store"], compiled["job_id"], f["initialized"]["snapshot_sha256"])
+    feature = Feature("route", "CABLE", "LineString", [(0., 0.), (10., 0.)], "line-1", "line-1", "NETWORK", "SOURCE_ROUTE", CadStyle(), display_label="old")
+    label = SourceEntity.from_record({"entity_key": "text-1", "dwg_type_name": "TEXT", "text": "管线-Ａ１２", "points": [(5., .5)]})
+    result = apply_revision([feature], [label], decisions, receipt)
+    assert feature.display_label == "管线-Ａ１２"
+    assert feature.native_points == [(0., 0.), (10., 0.)]
+    assert result["geometry_changed"] is False
+    assert feature.lineage[-1]["revision"] == 1
+    commit(f, patch(f, [operation(candidate(f, "class", target="NETWORK_SEGMENT"))], revision=1), key="patch-2")
+    assert load_published_revision(f["context"]["semantic_store"], compiled["job_id"], f["initialized"]["snapshot_sha256"]) == (decisions, receipt)
+    with pytest.raises(SemanticContractError, match="different source snapshot"):
+        load_published_revision(f["context"]["semantic_store"], compiled["job_id"], "other")
+
+
+@pytest.mark.parametrize("change", ["class", "dimension", "terminal", "missing_asset", "missing_label"])
+def test_canonical_projection_rejects_unsupported_changes_atomically(change):
+    from cad2gis.cad2gis_v3.semantic_delivery import apply_revision
+    from cad2gis.cad2gis_v3.model import Feature, CadStyle
+    feature = Feature("route", "CABLE", "LineString", [(0., 0.), (10., 0.)], "line-1", "line-1", "NETWORK", "SOURCE_ROUTE", CadStyle(), display_label="old")
+    label = SourceEntity.from_record({"entity_key": "text-1", "dwg_type_name": "TEXT", "text": "exact", "points": [(5., .5)]})
+    good = {"entity_key": "line-1", "terminal_state": "CONSUMED_BY_FEATURE", "label_entity_key": "text-1"}
+    bad = {**good, **{"class": {"class_id": "SUPPORT"}, "dimension": {"dimension_entity_key": "new"}, "terminal": {"terminal_state": "EXCLUDED"}, "missing_asset": {"entity_key": "new"}, "missing_label": {"label_entity_key": "missing"}}[change]}
+    with pytest.raises(SemanticContractError):
+        apply_revision([feature], [label], [good, bad], {"job_id": "job", "revision": 1})
+    assert feature.display_label == "old"
+    assert feature.lineage == []
+
+
+@pytest.mark.parametrize("tamper", ["artifact", "history", "job_state"])
+def test_canonical_projection_rejects_changed_compilation(semantic_fixture, tamper):
+    import json
+    from cad2gis.cad2gis_v3.semantic_delivery import load_published_revision
+    f = semantic_fixture
+    commit(f)
+    compiled = compile_revision(f)
+    if tamper == "artifact":
+        with sqlite3.connect(compiled["semantic_gpkg"]) as db:
+            db.execute("UPDATE semantic_features SET display_label='forged'")
+    else:
+        with sqlite3.connect(f["context"]["semantic_store"]) as db:
+            if tamper == "job_state":
+                db.execute("UPDATE compile_jobs SET state='cancelled'")
+            else:
+                decision = json.loads(db.execute("SELECT decision_json FROM decision_history LIMIT 1").fetchone()[0])
+                decision["label_entity_key"] = "forged"
+                db.execute("UPDATE decision_history SET decision_json=?", (json.dumps(decision),))
+    with pytest.raises(SemanticContractError):
+        load_published_revision(f["context"]["semantic_store"], compiled["job_id"], f["initialized"]["snapshot_sha256"])
+
+
 def test_full_label_class_dimension_compile_preserves_every_source_field(semantic_fixture):
     f = semantic_fixture
     original_hash = _sha256_path(f["source"] / "source.gpkg")

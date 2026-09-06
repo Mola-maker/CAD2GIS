@@ -225,6 +225,10 @@ def call_conversion_backend(
     decision_pack: Path | None = None,
     domain: str = "auto",
     llm: str = "off",
+    source_run: Path | None = None,
+    semantic_store: Path | None = None,
+    semantic_job: str = "",
+    geometry_repairs: str = "legacy",
 ) -> Any:
     """Construct the v3 request and invoke its canonical ``convert`` function."""
 
@@ -246,6 +250,9 @@ def call_conversion_backend(
         ),
         domain=domain,
         llm=llm,
+        **({"source_run": Path(source_run)} if source_run is not None else {}),
+        **({"semantic_store": Path(semantic_store), "semantic_job": semantic_job} if semantic_store is not None else {}),
+        **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
     )
     return convert(request)
 

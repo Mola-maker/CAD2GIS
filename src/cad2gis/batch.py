@@ -34,6 +34,8 @@ def load_contract(path: Path) -> dict:
         if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", identifier) or identifier in seen:
             raise ValueError(f"Invalid or duplicate drawing id: {identifier!r}")
         seen.add(identifier)
+        if item.get("geometry_repairs", "legacy") not in {"legacy", "candidate-only"}:
+            raise ValueError(f"Invalid geometry_repairs mode: {identifier}")
         if not re.fullmatch(r"[a-f0-9]{64}", item.get("source_sha256", "")):
             raise ValueError(f"Missing source SHA256: {identifier}")
         for key in ("source", "project"):
@@ -147,9 +149,14 @@ def run_batch(contract_path: Path, output: Path, *, timeout: int = 1800) -> dict
             if indexing.returncode:
                 raise RuntimeError(f"Source indexing exit {indexing.returncode}; inspect source-index.log")
             command = [sys.executable, "-m", "cad2gis", "convert", str(source),
-                       "--project", str(project), "--run-dir", str(folder / "run"), "--json"]
+                       "--project", str(project), "--source-run", str(folder / "source"),
+                       "--run-dir", str(folder / "run"), "--json"]
+            if item.get("geometry_repairs", "legacy") != "legacy":
+                command.extend(["--geometry-repairs", item["geometry_repairs"]])
             process = execute("conversion", command, "conversion.log")
             record["links"]["转换日志"] = f'{item["id"]}/conversion.log'
+            for review in sorted(folder.glob("run.repair-review-*/geometry_repair_candidates.json")):
+                record["links"]["未应用的几何修复候选"] = review.relative_to(output).as_posix()
             if process.returncode:
                 raise RuntimeError(f"Conversion exit {process.returncode}; inspect conversion.log")
             audit = execute("visual-audit", [sys.executable, "-m", "cad2gis.visual_audit", "--source-run", str(folder / "source"),

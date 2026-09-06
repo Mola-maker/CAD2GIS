@@ -43,6 +43,10 @@ def test_public_convert_signature_is_stable() -> None:
         "decision_pack",
         "domain",
         "llm",
+        "source_run",
+        "semantic_store",
+        "semantic_job",
+        "geometry_repairs",
     )
     assert all(
         parameter.kind is inspect.Parameter.KEYWORD_ONLY

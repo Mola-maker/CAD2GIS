@@ -1032,6 +1032,8 @@ def classify_entities(
     catalog_roots: frozenset[str] = frozenset(),
     project_id: str = "",
     project_slug: str = "",
+    apply_geometry_repairs: bool = True,
+    geometry_candidates: list | None = None,
 ):
     """Classify only reviewed semantic mappings and account for every abstention.
 
@@ -2062,6 +2064,18 @@ def classify_entities(
         ):
             continue
         source_endpoint = list(best_route.native_points[best_index])
+        if not apply_geometry_repairs:
+            if geometry_candidates is not None:
+                geometry_candidates.append({
+                    "operation": "bridge_cable_endpoint_to_pole", "feature_key": best_route.feature_key,
+                    "source_entity_key": best_route.source_entity_key,
+                    "support_source_entity_key": support.source_entity_key,
+                    "endpoint_index": best_index % len(best_route.native_points),
+                    "source_points": deepcopy(best_route.native_points),
+                    "source_endpoint": source_endpoint, "target_endpoint": list(support_point),
+                    "max_displacement_native": best_distance, "applied": False, "review_status": "required",
+                })
+            continue
         best_route.native_points[best_index] = [float(support_point[0]), float(support_point[1])]
         best_route.geometry_role = "DERIVED_ROUTE"
         best_route.lineage.append({
@@ -2510,6 +2524,15 @@ def classify_entities(
                     "discarded_interior_ring_count": len(polygon.interiors),
                     "discarded_interior_area_m2": float(delivered_polygon.area - polygon.area),
                 }
+            if repaired and not apply_geometry_repairs:
+                if geometry_candidates is not None:
+                    geometry_candidates.append({
+                        **repair_lineage, "source_points": list(entity.points), "candidate_points": points,
+                        "applied": False, "delivery_disposition": "invalid_source_boundary_withheld",
+                    })
+                unresolved.append({"kind": "source_boundary_repair", "entity_key": entity.entity_key,
+                                   "status": "withheld_pending_review", "applied": False})
+                continue
             boundary_rings.append({
                 "entity": entity,
                 "polygon": polygon,

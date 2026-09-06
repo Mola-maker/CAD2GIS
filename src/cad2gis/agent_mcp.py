@@ -1223,6 +1223,10 @@ def run_conversion(
     *,
     llm: str = "off",
     decision_pack: str = "",
+    source_run: str = "",
+    semantic_store: str = "",
+    semantic_job: str = "",
+    geometry_repairs: str = "legacy",
 ) -> dict[str, Any]:
     """Run the canonical pipeline; no conversion logic is duplicated here."""
 
@@ -1234,6 +1238,9 @@ def run_conversion(
         project_dir=_path(project_dir),
         llm=llm,
         decision_pack=None if not decision_pack else _path(decision_pack),
+        **({"source_run": _path(source_run)} if source_run else {}),
+        **({"semantic_store": _path(semantic_store) if semantic_store else None, "semantic_job": semantic_job} if semantic_store or semantic_job else {}),
+        **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
     )
     return {
         "run_status": result.run_status,

@@ -23,7 +23,7 @@ def _entity(handle, points, *, layer, kind="LWPOLYLINE", block_name="", red=Fals
     )
 
 
-def _classify(entities):
+def _classify(entities, **options):
     return classify_entities(
         entities,
         SimpleNamespace(
@@ -32,7 +32,57 @@ def _classify(entities):
             block_families={"PTECH": ("POLE",)},
         ),
         coverage_policy="abstain",
+        **options,
     )
+
+
+def test_candidate_only_keeps_route_and_infrastructure_at_source_vertices():
+    points = ((0.0, 0.0), (50.0, 0.0), (100.0, 0.0))
+    route = _entity("route", points, layer="CABLE")
+    pole = _entity("pole", ((0.0, 2.2),), layer="POLES", kind="INSERT", block_name="POLE")
+    candidates = []
+    features, _, _, _ = _classify([route, pole], apply_geometry_repairs=False, geometry_candidates=candidates)
+    for feature in features:
+        if feature.feature_class in {"CABLE", "INFRASTRUCTURE"}:
+            assert feature.native_points == list(points)
+            assert feature.geometry_role == "SOURCE_ROUTE"
+    candidate, = candidates
+    assert candidate["operation"] == "bridge_cable_endpoint_to_pole"
+    assert candidate["source_endpoint"] == [0.0, 0.0]
+    assert candidate["target_endpoint"] == [0.0, 2.2]
+    assert candidate["applied"] is False
+
+
+def test_candidate_only_retains_box_insertion_point_in_topology():
+    from cad2gis.cad2gis_v3.model import Feature
+    from cad2gis.cad2gis_v3.topology import build_topology
+    box = Feature("box", "BOITE", "Point", [(0., 12.)], "box-source", "b", "BOX", "SOURCE_INSERT", CadStyle())
+    pole = Feature("pole", "PTECH", "Point", [(0., 0.)], "pole-source", "p", "POLE", "SOURCE_INSERT", CadStyle())
+    registry = SimpleNamespace(thresholds={"exact": .01, "device_to_support_candidate": 8., "dimension_to_support": .2},
+                               layers={}, labels={}, decision_rules={}, policy={})
+    candidates = []
+    build_topology([], [box, pole], registry, [], [], apply_geometry_repairs=False, geometry_candidates=candidates)
+    assert box.native_points == [(0., 12.)]
+    assert not box.lineage
+    candidate, = candidates
+    assert candidate["source_points"] == [(0., 12.)]
+    assert candidate["candidate_points"] == [(0., 0.)]
+    assert candidate["max_displacement_native"] == 12.
+
+
+def test_candidate_only_withholds_invalid_boundary_and_preserves_repair_comparison():
+    points = ((0., 0.), (100., 0.), (100., 100.), (50., 100.),
+              (50., 200.), (50., 100.), (0., 100.), (0., 0.))
+    boundary = _entity("boundary", points, layer="RED BOUNDARY", red=True)
+    cable = _entity("route", ((10., 10.), (60., 10.)), layer="CABLE")
+    candidates = []
+    features, _, unresolved, _ = _classify([boundary, cable], apply_geometry_repairs=False, geometry_candidates=candidates)
+    assert not any(f.geometry_role == "DERIVED_BOUNDARY_REPAIR" for f in features)
+    candidate, = [item for item in candidates if item["operation"] == "repair_boundary_polygon"]
+    assert candidate["source_points"] == list(points)
+    assert candidate["candidate_points"] != list(points)
+    assert candidate["applied"] is False
+    assert any(item.get("status") == "withheld_pending_review" for item in unresolved)
 
 
 @pytest.mark.parametrize("spike,area_delta", [

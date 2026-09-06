@@ -73,7 +73,23 @@ Linux 选择结果：主图数量 56、1000、375、715、673、515、28、263�
 
 证据：`validation/linux-delivery-20260906/` 的总览、baseline-comparison.json、label-differences.json、逐图视觉报告及 ZIP；`validation/autocad-attribute-fix-20260906/`；`validation/qgis-linux-delivery-final.json`；`validation/linux-runtime/linux-mcp-sqlite-release-verification.json`；`validation/final-fixes3-tests.log`。
 
-尚未关闭的架构项：H03（semantic compile 与正式候选交付的统一编排）、H06（历史自动修复拆分为独立待审候选）、一次源提取复用（当前 export-source 与 convert 会重复读取）。这些不能用测试通过替代实现，列为下一步优先改造。工程证据项 E01–E06 不自动关闭。
+截至该轮的架构遗留为 H03、H06 与一次源提取复用；后续实施进展见下文。工程证据项 E01–E06 不自动关闭。
+
+## 后续架构实施：源复用、事务交付、修复候选
+
+| ID | 处理与证据 | 剩余边界 |
+|---|---|---|
+| B25 | 原生 source 快照通过代码/源/产物 SHA 校验后供 convert 重放；batch 自动使用。Kletek 263 要素全字段与几何相同，26.95 s → 16.49 s，禁用 reader 后仍完成 | 单图计时；旧快照需重导出；原始 DWG 仍需可读 |
+| H03 | published semantic job 的 pinned revision 接入规范流水线；实际 preview/commit/compile/convert 标签仿真通过，几何不变 | 仅已有资产标签、兼容类别与既有尺寸确认；新增尺寸绑定、增删资产仍未接入 |
+| H06 | 新增 candidate-only，暂停点位吸附、端点桥接、有损边界修复；run、失败审查目录及 ZIP 保留候选 | 默认 legacy 保持历史行为；九图新模式与逐候选接受执行仍待完成 |
+| B26 | 实图候选模式产生 9 个未应用候选，独立审计点位移动从 9 降为 0，线路顶点图不变 | 派生覆盖面和独立 GCP 验收继续保留边界 |
+| B27 | 视觉核验器不识别新 revision 标签来源，误列 1 个待核实标签；新增 snapshot、job、revision、目标、原文和 provenance 联合校验 | 修复后未验证标签 0、字段不一致 0；不等于标签业务含义已确认 |
+
+最终 Windows：628 passed / 7 skipped。Linux installed wheel 115 项相关回归通过；真实安装包三种候选已转换、独立审计和打包。最后核验修复的 wheel SHA 为 `c4e57406099ad65dbe6e7edafe16cbfa5a5c3dc488c39f6dbaf3ff2a00be9358`，96 个 Python 文件相同。标准 MCP 握手为 2025-11-25，46 个工具，新增 run_conversion 参数可见。
+
+过程失败也保留：首次 Linux 测试脚本误用位置参数，修正后新目录复跑；新增可选 API 参数要求更新旧签名测试；新建 wheel 的 ACL 需由创建该目录的正常沙箱上下文重置继承，再在 WSL 安装。没有放宽项目配置门槛。
+
+产物与收据在 `E:\branch_CAD2GIS\validation\architecture-next-20260906`。架构说明见 [源快照与语义交付](SOURCE_REPLAY_SEMANTIC_DELIVERY_2026-09-06.md)。
 
 ## 发布后核验（提交 4d501c2）
 

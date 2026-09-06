@@ -696,7 +696,8 @@ def _assign_branch_labels(group, facts, route_assets, measures, unresolved, rule
     return assigned
 
 
-def build_topology(entities, features, registry, existing_relations, unresolved):
+def build_topology(entities, features, registry, existing_relations, unresolved, *,
+                   apply_geometry_repairs=True, geometry_candidates=None):
     relations = list(existing_relations)
     source_route_native_lengths = 0
     source_route_native_length_max_abs_delta = 0.0
@@ -851,7 +852,20 @@ def build_topology(entities, features, registry, existing_relations, unresolved)
             distance,
             (asset.source_entity_key, support.source_entity_key),
         ))
-        if collocated is not None:
+        if collocated is not None and not apply_geometry_repairs:
+            original_distance, collocation_support = collocated
+            if geometry_candidates is not None:
+                geometry_candidates.append({
+                    "operation": "collocate_with_support", "feature_key": asset.feature_key,
+                    "source_entity_key": asset.source_entity_key,
+                    "support_source_entity_key": collocation_support.source_entity_key,
+                    "source_points": list(asset.native_points),
+                    "candidate_points": [collocation_support.native_centroid],
+                    "max_displacement_native": original_distance, "applied": False, "review_status": "required",
+                })
+            unresolved.append({"kind": "geometry_repair_candidate", "feature_key": asset.feature_key,
+                               "operation": "collocate_with_support", "status": "review_required"})
+        if collocated is not None and apply_geometry_repairs:
             original_distance, collocation_support = collocated
             asset.native_points = [collocation_support.native_centroid]
             asset.lineage.append({
