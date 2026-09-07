@@ -55,7 +55,7 @@ def test_windows_canonical_bundle_inherits_parent_acl_recursively(tmp_path):
 
     def inherited_owner(path):
         permissions = subprocess.run(
-            ["icacls.exe", str(path)], capture_output=True, text=True, check=True,
+            ["icacls.exe", str(path)], capture_output=True, text=True, encoding="oem", check=True,
             creationflags=subprocess.CREATE_NO_WINDOW,
         )
         return any(name.value.casefold() in line.casefold() and "(I)" in line

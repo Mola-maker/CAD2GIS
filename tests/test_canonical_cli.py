@@ -47,6 +47,8 @@ def test_public_convert_signature_is_stable() -> None:
         "semantic_store",
         "semantic_job",
         "geometry_repairs",
+        "svg_mode",
+        "svg_font_dirs",
     )
     assert all(
         parameter.kind is inspect.Parameter.KEYWORD_ONLY

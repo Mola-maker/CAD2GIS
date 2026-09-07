@@ -11,11 +11,7 @@ import zipfile
 from pathlib import Path
 
 from .batch import digest, write_json
-
-LENGTH_EXPRESSION = ('CASE WHEN "length_value_m" IS NOT NULL THEN '
-                     'format_number("length_value_m", 2) || \' m [\' || '
-                     'CASE WHEN "length_source" = \'dwg_dimension\' THEN \'CAD\' '
-                     'WHEN "length_source" = \'dwg_curve_geometry\' THEN \'GEOM\' ELSE \'?\' END || \']\' END')
+from .presentation import LENGTH_EXPRESSION, configure_numeric_fields, csv_value
 
 
 def _quote(name):
@@ -35,6 +31,7 @@ def qgis_project(gpkg: Path, styles: Path, destination: Path) -> list[dict]:
             qml_path = styles / (name + ".qml")
             style = ET.parse(qml_path).getroot() if qml_path.exists() else ET.Element("qgis")
             field_names = [row[1] for row in db.execute(f"PRAGMA table_info({_quote(name)})")]
+            configure_numeric_fields(style, list(db.execute(f"PRAGMA table_info({_quote(name)})")))
             text = style.find(".//labeling/settings/text-style")
             if name == "CABLE" and text is not None and "length_value_m" in field_names:
                 text.set("fieldName", LENGTH_EXPRESSION)
@@ -74,7 +71,7 @@ def qgis_project(gpkg: Path, styles: Path, destination: Path) -> list[dict]:
             with (destination.parent / (name + ".csv")).open("w", encoding="utf-8-sig", newline="") as stream:
                 writer = csv.writer(stream)
                 writer.writerow(columns)
-                writer.writerows(db.execute(f'SELECT {",".join(map(_quote, columns))} FROM {_quote(name)}'))
+                writer.writerows([csv_value(value) for value in row] for row in db.execute(f'SELECT {",".join(map(_quote, columns))} FROM {_quote(name)}'))
             bounds = db.execute("SELECT min_x,min_y,max_x,max_y FROM gpkg_contents WHERE table_name=?", (name,)).fetchone()
             if count and bounds and all(v is not None for v in bounds):
                 extent = list(bounds) if extent is None else [min(extent[0], bounds[0]), min(extent[1], bounds[1]), max(extent[2], bounds[2]), max(extent[3], bounds[3])]
@@ -101,7 +98,7 @@ def qgis_project(gpkg: Path, styles: Path, destination: Path) -> list[dict]:
             ET.SubElement(default_extent, key).text = str(value)
         crs_node = root.find("projectCrs/spatialrefsys")
         if crs_node is not None:
-            ET.SubElement(default_extent, "crs").append(copy.deepcopy(crs_node))
+            default_extent.append(copy.deepcopy(crs_node))
     properties = ET.SubElement(root, "properties")
     ET.SubElement(ET.SubElement(properties, "SpatialRefSys"), "ProjectionsEnabled", type="int").text = "1"
     ET.SubElement(ET.SubElement(properties, "Paths"), "Absolute", type="bool").text = "false"
@@ -139,6 +136,9 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
               "run_manifest_sha256": digest(run / "run_manifest.json"), "run_status": manifest.get("run_status", "UNKNOWN"),
               "absolute_accuracy_verified": False, "deliveries": deliveries,
               "source_dwg_included": False, "full_source_evidence_included": False}
+    report["numeric_presentation"] = {"decimal_places": 2, "csv": "presentation_not_lossless_reimport",
+                                      "database_values": "unchanged", "geometry": "unchanged_full_precision",
+                                      "business_length_sources": ["dwg_dimension", "dwg_curve_geometry"]}
     if manifest.get("semantic_revision") is not None:
         report["semantic_revision"] = manifest["semantic_revision"]
     candidate_artifact = manifest.get("artifacts", {}).get("geometry_repair_candidates")
@@ -153,7 +153,7 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
         report["visual_audit_included"] = True
     write_json(output / "delivery-manifest.json", report)
     (output / "README.md").write_text("# CAD2GIS QGIS delivery\n\nUnzip the entire package; open delivery.qgz. Keep delivery.gpkg and styles beside it.\n\n"
-        "GeoPackage is SQLite. CSV files contain every non-geometry attribute. CABLE labels display selected length in metres and its source; grid/geodesic/CAD measurements remain distinct. Empty labels are not invented.\n\n"
+        "GeoPackage is SQLite. CSV files contain every non-geometry attribute; floating-point values are formatted to two decimals for viewing, so CSV is not a lossless re-import format. Use GeoPackage for full-precision values. CABLE labels use original CAD dimension length without a suffix; source CAD curve length is used only when no dimension is bound and is marked [CAD curve]. Empty labels are not invented.\n\n"
         "CONDITIONAL: no independent surveyed GCP acceptance. A QGIS project and visual overlay do not certify absolute accuracy. Partitions are separate projects and may share assets with the main project.\n\n"
         "Original GeoPackage bytes are preserved. QML label settings are presentation overrides. This portable delivery excludes raw DWG and full source/evidence databases; AI source-bound edits require the original reviewed run and project.\n", encoding="utf-8")
     seal_delivery(output)

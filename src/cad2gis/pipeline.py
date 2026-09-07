@@ -259,9 +259,15 @@ def convert_project(
     semantic_store: str | Path | None = None,
     semantic_job: str = "",
     geometry_repairs: str = "legacy",
+    svg_mode: str = "off",
+    svg_font_dirs: tuple[str | Path, ...] = (),
 ) -> Any:
     """Resolve project configuration and run the architecture-v3 conversion."""
 
+    if svg_mode not in {"off", "candidate"}:
+        raise ProjectConfigurationError("svg_mode must be off or candidate; legend review is explicit")
+    if svg_font_dirs and svg_mode == "off":
+        raise ProjectConfigurationError("svg_font_dirs requires SVG candidate mode")
     if bool(semantic_store) != bool(semantic_job) or (semantic_store and not source_run):
         raise ProjectConfigurationError("semantic_store and semantic_job require each other and source_run")
 
@@ -275,6 +281,9 @@ def convert_project(
     run_path = Path(run_dir).expanduser().resolve()
     if run_path.exists() and not run_path.is_dir():
         raise NotADirectoryError(f"run directory path is not a directory: {run_path}")
+    if svg_mode == "candidate":
+        from .symbol_workflow import preflight
+        preflight(run_path.parent / (run_path.name + "-svg-candidates"), font_dirs=svg_font_dirs)
 
     configuration = resolve_project_configuration(
         project_dir=project_dir,
@@ -285,7 +294,7 @@ def convert_project(
     resolved_decision_pack = (
         None if decision_pack is None else _existing_file(decision_pack, "decision pack")
     )
-    return runtime.call_conversion_backend(
+    result = runtime.call_conversion_backend(
         source=source_path,
         run_dir=run_path,
         source_profile=configuration.source_profile,
@@ -298,6 +307,22 @@ def convert_project(
         **({"semantic_store": Path(semantic_store).expanduser().resolve(), "semantic_job": semantic_job} if semantic_store is not None else {}),
         **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
     )
+    if svg_mode == "candidate":
+        from .symbol_workflow import prepare
+        candidate_path = run_path.parent / (run_path.name + "-svg-candidates")
+        try:
+            prepare(source_path, sorted(run_path.rglob("delivery.gpkg")),
+                    candidate_path, font_dirs=svg_font_dirs)
+        except Exception as exc:
+            # The optional presentation store has its own atomic publication boundary.
+            # Keep the valid conversion and expose its location when the optional phase fails.
+            failure = RuntimeError(f"SVG candidate stage failed; canonical run retained at {run_path}: {exc}")
+            failure.artifact_status = str(run_path)
+            raise failure from exc
+        result.diagnostics["svg_candidates"] = {"mode": "candidate", "auto_applied": False,
+                                                "report": str(candidate_path / "correspondence.json"),
+                                                "html": str(candidate_path / "correspondence.html")}
+    return result
 
 
 # Compatibility for callers that used the old experiment-oriented verb.

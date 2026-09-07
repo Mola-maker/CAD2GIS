@@ -32,6 +32,12 @@ def test_duplicate_ids_rejected_before_output(tmp_path):
     assert not (tmp_path / "output").exists()
 
 
+@pytest.mark.parametrize('fonts', ['fonts', ['../outside'], ['/outside'], ['C:/fonts']])
+def test_svg_fonts_cannot_escape_input_bundle(tmp_path, fonts):
+    with pytest.raises(ValueError):
+        load_contract(contract(tmp_path, [{**item(), 'svg_mode': 'candidate', 'svg_font_dirs': fonts}]))
+
+
 def test_failures_remain_visible_and_batch_is_append_only(tmp_path):
     path = contract(tmp_path, [item(), item("drawing-02", "two.dwg")])
     output = tmp_path / "output"
@@ -88,6 +94,9 @@ def test_portable_package_preserves_database_and_attributes(tmp_path):
         xml = archive.read("delivery.qgs").decode()
         assert "./delivery.gpkg|layername=CABLE" in xml
         assert str(tmp_path) not in xml
+        root = ET.fromstring(xml)
+        assert root.find('ProjectViewSettings/DefaultViewExtent/spatialrefsys') is not None
+        assert root.find('ProjectViewSettings/DefaultViewExtent/crs') is None
     (run / "geometry_repair_candidates.json").write_bytes(b"tampered")
     with pytest.raises(ValueError, match="Geometry repair candidates"):
         package_delivery(run, tmp_path / "tampered-package")

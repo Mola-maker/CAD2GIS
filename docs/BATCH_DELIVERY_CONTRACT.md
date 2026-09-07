@@ -69,9 +69,17 @@ CABLE 的显示表达式以 `length_value_m` 为值，显示 `m [CAD]` 或 `m [G
 
 原读者为 AutoCAD 的图纸在 Linux LibreDWG 下可能有实体集合、MTEXT 或 inventory hash 差异；应保留失败和新事实，重新审查绑定。禁止直接删除库存哈希门禁或把 Windows 成果冒充 Linux 复跑。
 
+## 两位小数与可选符号资产
+
+GeoPackage 的 REAL 和几何坐标继续保留全精度。交付 QML/QGZ 的数值字段显示两位，CSV 浮点值也显示两位，
+因此 CSV 是查看和汇总产物，不适合作为无损回导来源。CABLE 标签使用原 CAD 尺寸或原 CAD 曲线长度，明确标出来源。
+
+SVG 提取、SQLite 符号资产库和单符号 QML 导出是[独立可选入口](OPTIONAL_SYMBOL_ASSETS.md)，不由 batch 自动调用，
+不静默替换任何历史符号。默认交付不依赖 `symbols.sqlite3`。
+
 ## 九图历史 Pages
 
-`pages-delivery/nine-drawings` 保存用户明确授权发布的派生成果和过程；不包含原 DWG。`publication.json` 对每个发布文件绑定哈希，Pages 构建器先验证清单及压缩包成员，再合并九图与旧 Hutabohu 演示。`.gitattributes` 保留发布目录的原始字节，避免跨平台换行转换破坏哈希。
+`pages-delivery/nine-drawings` 现在是被 Git 忽略的下载缓存。用户授权的派生成果与过程保存在独立 GitHub Release，`docs/derived-release.json` 固定 URL、大小和 SHA256；`scripts/fetch_derived_release.py` 先下载校验再发布完整缓存。`publication.json` 对每个文件绑定哈希，Pages 构建器再次验证后合并九图与旧 Hutabohu 演示。不包含原 DWG。
 
 公开图始终保留 CONDITIONAL 与“绝对 GCP 精度未验收”。左视图是交付坐标几何；右视图通过原目标 CRS 真正重投影为 EPSG:4326，再由地图渲染器显示。不能将非 3857 坐标直接当作 Web Mercator。原图与成果的差异通过独立叠图和 CSV 查看。
 

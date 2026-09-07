@@ -34,6 +34,15 @@ def load_contract(path: Path) -> dict:
         if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", identifier) or identifier in seen:
             raise ValueError(f"Invalid or duplicate drawing id: {identifier!r}")
         seen.add(identifier)
+        if item.get("svg_mode", "off") not in {"off", "candidate"}:
+            raise ValueError(f"Invalid svg_mode: {identifier}")
+        font_dirs = item.get("svg_font_dirs", [])
+        if not isinstance(font_dirs, list) or (font_dirs and item.get("svg_mode", "off") == "off"):
+            raise ValueError(f"{identifier}: svg_font_dirs requires candidate mode and a list")
+        for value in font_dirs:
+            if (not isinstance(value, str) or not value or "\\" in value or ":" in value
+                    or not (path.parent / value).resolve().is_relative_to(path.parent.resolve())):
+                raise ValueError(f"{identifier}: SVG fonts must stay inside the portable input bundle")
         if item.get("geometry_repairs", "legacy") not in {"legacy", "candidate-only"}:
             raise ValueError(f"Invalid geometry_repairs mode: {identifier}")
         if not re.fullmatch(r"[a-f0-9]{64}", item.get("source_sha256", "")):
@@ -153,8 +162,14 @@ def run_batch(contract_path: Path, output: Path, *, timeout: int = 1800) -> dict
                        "--run-dir", str(folder / "run"), "--json"]
             if item.get("geometry_repairs", "legacy") != "legacy":
                 command.extend(["--geometry-repairs", item["geometry_repairs"]])
+            if item.get("svg_mode", "off") != "off":
+                command.extend(["--svg-mode", item["svg_mode"]])
+                for directory in item.get("svg_font_dirs", []):
+                    command.extend(["--svg-font-dir", str((contract_path.parent / directory).resolve())])
             process = execute("conversion", command, "conversion.log")
             record["links"]["转换日志"] = f'{item["id"]}/conversion.log'
+            if (folder / "run-svg-candidates" / "correspondence.html").exists():
+                record["links"]["SVG 图例对应候选"] = f'{item["id"]}/run-svg-candidates/correspondence.html'
             for review in sorted(folder.glob("run.repair-review-*/geometry_repair_candidates.json")):
                 record["links"]["未应用的几何修复候选"] = review.relative_to(output).as_posix()
             if process.returncode:

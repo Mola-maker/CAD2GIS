@@ -101,3 +101,71 @@ Linux 选择结果：主图数量 56、1000、375、715、673、515、28、263�
 - B24：桌面浏览器截图/前台附着接口超时；页面 DOM 中的分区目录、图层数量与本机九图下载入口已验证，不能据此声明最终线上截图已完成。独立 PNG 审查及实际 QGIS 渲染证据不受此工具限制影响。
 
 新 Linux 交付总览：`http://127.0.0.1:8805/`；持久目录：`E:\branch_CAD2GIS\validation\linux-delivery-20260906`。公开历史演示：`https://mola-maker.github.io/CAD2GIS/deliveries/`。每个 Linux ZIP 包含视觉审查和旧版差异，19 个未认定设备的源块另列 `unclassified-source-blocks.csv`，不凭空补名称。
+
+## 可选符号入口及两位小数显示
+
+| ID | 暴露问题 | 处理与边界 |
+| --- | --- | --- |
+| B28 | 用户发现 Manado P005 到 EMR29619 的末端跳线遗漏 | 原图 `79BE`、`ONT-MDU`、21.14648990531311 原生长度已确认；v9 和 Linux 分区缺少该 handle。新项目副本恢复 v7/v8 的 patchcord 映射并精确增加 CABLE/INFRASTRUCTURE 各 1，保留原数量门槛；EMR29619 已交付 1 条，独立几何差异及长度差均 0。不能把 20 m SLACK 或引线 `79ED` 当长度；历史包不覆盖 |
+| B29 | 浮点属性出现过多小数，长度显示应忠于 CAD | QML Range formatter 和 CSV 展示两位；GeoPackage 和几何保持原值。真实 QGIS 4.0.3 显示 21.15 / 20.00；长度标签明确 CAD DIM / CAD CURVE，CSV 不作为无损回导格式 |
+| B30 | SVG 被要求拆出默认转换流程 | 独立 `symbol_assets` 模块、脚本与 `symbols.sqlite3`；仅显式提取和单候选 QML 导出，不调用语义写入或默认转换。详见 OPTIONAL_SYMBOL_ASSETS.md |
+| B31 | Linux 无字体，符号文字可能丢失 | 无字体时拒绝含文字提取；可选 `--font-dir` 只读已有字体。真实 Manado 的 dgn003.shx 缺失，保留替代提示，不能声称原字体一致 |
+| B32 | SVG 默认不透明背景和百万级渲染坐标导致 QGIS 显示异常 | 显式透明背景、渲染坐标缩至 10000 并加边距；实际 QGIS 与 Qt PNG 确认 P005 绿色环及 NP7 / 4' 字样显示；CAD 原坐标不变 |
+| B33 | PYTHONUTF8 模式让两个 Windows ACL 测试错解 icacls 输出 | 显式使用 Windows OEM 编码；未放宽权限断言，两个回归通过 |
+
+本轮代码全量 640 passed / 7 skipped；随后加入“显式选择了隐藏实体”的拒绝导出回归，Windows/Linux 专项均 13 passed。
+无 AutoCAD 的真实 DWG 最终提取输出 `validation/optional-symbols-manado-20260906-v4/`：数据库、HTML、2 个候选 QML
+及 `qgis-verification.json`；另 1 个显式选择隐藏文字的组合为 incomplete，不能导出 QML。前三次视觉样本保留。
+动态块显示、字体替代和手选组合仍为候选；不自动发布到九图历史交付。
+
+新跳线交付 `validation/manado-patchcord-delivery-20260906/` 的主图及两分区共 3 个 QGZ 均通过真实 QGIS 开启与渲染，
+EMR29619 属性表实际显示 21.15。使用 candidate-only，数据仍是 CONDITIONAL；未知数字标签与独立 GCP 等不随该跳线关闭。
+首次复跑触发旧精确数量门槛的失败日志保留。合并查看入口 `http://127.0.0.1:8808/`，持久目录
+`validation/svg-patchcord-review-20260906/`，含可选符号资产、默认交付、独立审计、PNG 与下载包。
+
+## EMR 图层不可用与 SVG 交付反馈
+
+- 用户实际打开 `validation/qgis-portable-20260906/drawing-03/EMR29619/delivery.qgz`。原文件在独立 QGIS
+  中 9 个图层均有效，EMR 为 1 个要素；用户当前会话的不可用状态未能复现，不能认定原库缺少 EMR。
+  该旧版本没有 SvgMarker，且仍是 11 条缆线的历史版本。
+- 另查明 Downloads 中的 `delivery.qgz` 与新 EMR29619 分区字节一致，但同目录的旧 `delivery.gpkg`
+  没有 EMR 表。网页裸 QGZ 下载确实会造成数据库错配。这是独立发现，不等同于用户所给路径的根因。
+- 新增可选 `tools/package_qgis_standalone.py`：按 QGIS 附件机制封装完整 GPKG；SVG 通过原 DWG SHA、
+  交付数据库 SHA 和单个 source_handle 精确绑定，默认不启用。保留标准与 SVG 两个单文件版本。
+- EMR29619 可选版本实际绑定 12 个 PTECH 和 1 个 BOITE，逐要素 `symbolForFeature` 均返回 SvgMarker，
+  SVG 为 base64 内嵌；EMR 仍使用原样式，数据库原字节不变，79BE 长度显示 21.15。
+- 验证覆盖：单文件移至空目录；旁边故意放错误的 delivery.gpkg；真实 HTTP 下载后独立打开；EMR=1、
+  全图层有效；13 个 SVG 全图和末端近景实际渲染。错误实例、重复目标和缺失图层 3 项负面测试均拒绝，
+  不生成输出。常规相关回归 33 passed，ruff 通过。
+- 测试中 QGIS 自动附加样式库导致初版附件哈希验证误报，改为只比较 GPKG 附件哈希，未放宽数据库检查。
+  WSL 再次内核崩溃，改用已有 Windows LibreDWG 完成这轮提取；没有把本轮宣称为 Linux 复跑通过。
+  可选提取入口补入已有的数值线程限制，避免 OpenBLAS 默认多线程内存失败。
+
+最终产物与验证记录：`validation/qgis-standalone-fix-20260906/`；网页
+`http://127.0.0.1:8808/standalone/EMR29619-with-SVG.qgz` 已取代页面中的裸分区 QGZ 下载。
+仍保留字体替代、工程 GCP、EMR 文字锚点和历史数字标签等工程语义边界。
+
+## 更正：QGZ 白屏、临时路径泄漏与九图 SVG 复核
+
+上一节对旧单文件交付的便携性结论撤回。真实下载 QGZ 内部仍引用 Windows 临时目录，生成进程未退出时
+同进程复制检查误用了原临时文件；独立渲染代码重设范围，又掩盖了空默认范围。用户截图比例尺 1:1 的白屏
+与这些缺陷一致，右侧 mask 提示不作为根因。
+
+修复：Qt 生成的附件路径保持正斜杠，避免 QgsPathResolver 的字面前缀匹配失败；QGS 保存为 `attachment:`
+数据源。DefaultViewExtent 的 spatialrefsys 直接位于范围节点下，不再套错误 crs 层。
+`tools/verify_qgis_standalone.py` 必须在生成进程结束后执行；检查 ZIP 资源闭包、真实图层、SVG 渲染器选择、
+保存的初始范围、非空实际画布、错误同名侧库干扰以及再次保存。旧 v3 已被最终英文后缀版本替代。
+
+补齐旧基线的显示精度：表格 REAL 字段使用两位格式，CSV 数值列两位，QML/QGZ 同步；所有 GPKG 字节不变。
+原图尺寸标注无后缀；未绑定尺寸时用原 CAD 曲线长度，用户最终指定英文 `[CAD curve]`。
+
+产物根目录 `validation/nine-svg-portable-20260906/`：9 张主图与 2 个 Manado 分区，751 个源实例 SVG，
+238 个具有匹配图例候选。11 工程独立进程加载、保存、画布和完整目录搬移/QML 加载通过。
+Manado 使用已恢复 79BE 的基线；其他图不重新分类或移动几何。每图有独立 SQLite、对应 HTML、CSV、QML、
+可编辑目录和自包含查看 QGZ。完整图例对应仍未验收，不能称为 final fidelity passed。
+
+本轮 WSL 已恢复启动。`validation/linux-svg-rerun-20260906/report.json` 记录 9/9 原生 Linux LibreDWG/ezdxf
+复跑，源绑定与 Windows 一致。字体通过显式本地目录提供，未用 AutoCAD；原 SHX 缺失仍有替代警告。
+Linux 未安装 PyQGIS，本轮 QGIS 渲染证据来自 Windows，验证边界不能混淆。
+
+代码回归：642 passed / 7 skipped；跳过项仍为独立真实 DWG 属性边界或外部基线输入门槛，不能计入通过。

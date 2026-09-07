@@ -1227,6 +1227,8 @@ def run_conversion(
     semantic_store: str = "",
     semantic_job: str = "",
     geometry_repairs: str = "legacy",
+    svg_mode: str = "off",
+    svg_font_dirs: list[str] | None = None,
 ) -> dict[str, Any]:
     """Run the canonical pipeline; no conversion logic is duplicated here."""
 
@@ -1241,6 +1243,8 @@ def run_conversion(
         **({"source_run": _path(source_run)} if source_run else {}),
         **({"semantic_store": _path(semantic_store) if semantic_store else None, "semantic_job": semantic_job} if semantic_store or semantic_job else {}),
         **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
+        **({"svg_mode": svg_mode, "svg_font_dirs": tuple(_path(p) for p in (svg_font_dirs or []))}
+           if svg_mode != "off" or svg_font_dirs else {}),
     )
     return {
         "run_status": result.run_status,
@@ -1250,6 +1254,8 @@ def run_conversion(
         "delivery": str(result.delivery_path),
         "styles": str(result.style_manifest_path),
         "counts": result.counts,
+        **({"svg_candidates": result.diagnostics["svg_candidates"]}
+           if "svg_candidates" in getattr(result, "diagnostics", {}) else {}),
     }
 
 

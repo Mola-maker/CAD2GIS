@@ -154,9 +154,32 @@ vm.runInNewContext(fs.readFileSync(input.script, "utf8"), context);
 
 
 def test_pages_copies_shared_assets_and_authorized_derived_release(tmp_path: Path) -> None:
+    # The source-only checkout no longer contains the engineering corpus.
+    # Exercise the publication gate with a small, explicitly synthetic release.
+    import hashlib
+    release = tmp_path / 'synthetic-release'
+    (release / 'assets').mkdir(parents=True)
+    projects = []
+    for identifier in [f'drawing-{i:02}' for i in range(1, 10)] + ['drawing-03-emr28560', 'drawing-03-emr29619']:
+        fixture = identifier + '.json'
+        project = {'id': identifier, 'fixture': fixture, 'source_sha256': '0' * 64, 'delivery_feature_count': 0}
+        if 'emr' in identifier:
+            project['parent_project_id'] = 'drawing-03'
+        projects.append(project)
+        (release / 'assets' / fixture).write_text(json.dumps({'provenance': {'source_sha256': '0' * 64},
+            'run': {'run_status': 'CONDITIONAL'}, 'layers': {}}), encoding='utf-8')
+    (release / 'assets/catalog.json').write_text(json.dumps({'projects': projects}), encoding='utf-8')
+    (release / 'index.html').write_text('<!doctype html><title>Synthetic delivery fixture</title>', encoding='utf-8')
+    (release / 'svg-review').mkdir()
+    (release / 'svg-review/index.html').write_text('<!doctype html><title>Synthetic SVG fixture</title>', encoding='utf-8')
+    (release / 'publication.json').write_text(json.dumps({
+        'authorization': 'user-request-2026-09-06-nine-drawing-qgis-pages', 'raw_dwg_included': False,
+        'absolute_accuracy_verified': False, 'drawing_count': 9,
+        'files': {p.relative_to(release).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                  for p in release.rglob('*') if p.is_file()}}), encoding='utf-8')
     destination = ROOT / f".pytest-pages-shared-{tmp_path.name}"
     try:
-        build_pages.build(destination)
+        build_pages.build(destination, release_root=release)
         assets = destination / "workspace/assets"
         for name in build_pages.SHARED_DEMO_ASSETS:
             assert (assets / name).read_bytes() == (WEBDEMO / "assets" / name).read_bytes()

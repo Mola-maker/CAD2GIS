@@ -46,3 +46,14 @@ runtime readiness and the MCP entrypoint, and saves an image archive with its
 SHA-256 and resolved dependencies as a seven-day workflow artifact. Download
 and extract the artifact, then run `docker load -i cad2gis-image.tar.gz`.
 The workflow does not publish to a container registry.
+
+The image also includes DejaVu fonts for optional SVG extraction. Original CAD
+SHX/TTF fonts remain external inputs; font substitution is recorded for review.
+The Docker workflow executes `tools/container_smoke.py` inside the image: a
+synthetic DWG is read through LibreDWG, exported to GeoPackage, indexed in SQLite,
+and an independent SVG/QML library is created. The JSON receipt is archived with
+the image. It does not certify QGIS rendering or full drawing accuracy.
+
+`cad2gis-symbols` is installed in the image. The package also ships optional
+`cad2gis-qgis-package`, `cad2gis-qgis-verify` and `cad2gis-svg-delivery` commands;
+these require a QGIS Python environment, which is not included in this base image.
