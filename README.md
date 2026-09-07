@@ -7,7 +7,7 @@ CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Py
 Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
 canonical 流水线，不为某张测试图维护硬编码分支。
 
-[最新架构与能力边界](https://mola-maker.github.io/CAD2GIS/architecture.html) ·
+[产品首页](https://mola-maker.github.io/CAD2GIS/) ·
 [九图交付与演示](https://mola-maker.github.io/CAD2GIS/deliveries/) ·
 [可选 SVG 与 QGZ](docs/OPTIONAL_SYMBOL_ASSETS.md) · [发布审查](docs/RELEASE_REVIEW_2026-09-06.md)
 
