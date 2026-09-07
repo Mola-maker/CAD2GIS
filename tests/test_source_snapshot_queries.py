@@ -124,7 +124,7 @@ def test_windows_published_files_inherit_explicit_parent_user_acl(tmp_path):
                    capture_output=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
     root, manifest = snapshot(tmp_path, name="inherited")
     permissions = subprocess.run(["icacls.exe", str(root / "source.gpkg")], capture_output=True,
-                                 text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
+                                 text=True, encoding="oem", check=True, creationflags=subprocess.CREATE_NO_WINDOW)
     assert any(name.value.casefold() in line.casefold() and "(I)" in line
                for line in permissions.stdout.splitlines())
     assert manifest["snapshot_sha256"] == source_export.snapshot_digest(manifest)

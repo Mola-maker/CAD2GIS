@@ -12,6 +12,8 @@ on:
       - "src/cad2gis/webdemo/**"
       - "scripts/build_pages.py"
       - "scripts/verify_derived_release.py"
+      - "scripts/fetch_derived_release.py"
+      - "docs/derived-release.json"
       - "pages-delivery/**"
       - "tests/test_ci_contracts.py"
       - "tests/test_plugin_contracts.py"
@@ -56,7 +58,10 @@ jobs:
           node --check src/cad2gis/webdemo/original-demo/assets/app.js
           python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py tests/test_webdemo_shared_assets.py -q
 
-      - name: Build data-free Pages artifact
+      - name: Fetch and verify authorized derived demonstration
+        run: python scripts/fetch_derived_release.py
+
+      - name: Build Pages with verified derived demonstrations
         run: python scripts/build_pages.py --output _site
 
       - name: Upload verified site

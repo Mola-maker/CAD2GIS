@@ -7,6 +7,10 @@ CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Py
 Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
 canonical 流水线，不为某张测试图维护硬编码分支。
 
+[最新架构与能力边界](https://mola-maker.github.io/CAD2GIS/architecture.html) ·
+[九图交付与演示](https://mola-maker.github.io/CAD2GIS/deliveries/) ·
+[可选 SVG 与 QGZ](docs/OPTIONAL_SYMBOL_ASSETS.md) · [发布审查](docs/RELEASE_REVIEW_2026-09-06.md)
+
 > DWG 中声明了 CRS，不代表实体已经正确落在该 CRS 的真实地面位置。
 > 源几何、拓扑、长度和坐标精度会分别验证。缺少可信控制点时，系统不会把
 > OSM 视觉重合宣传为测量级绝对精度。
@@ -17,7 +21,7 @@ canonical 流水线，不为某张测试图维护硬编码分支。
   **as-planned 设计**，不是 as-built 竣工实测；也不是“接入点设备”。
 - **SF = Subfeeder**：光缆/电缆网络中的副馈线 / 分支配电线；文件名中的
   `- SF` 表示该图是网络的 subfeeder 部分。
-- `raw/` 中 4 张 DWG 是建立算法流程的开发/基线集，后加入的 6 张是
+- 外部语料中 4 张 DWG 是建立算法流程的开发/基线集，后加入的 6 张是
   **验证集**，必须按新图各自 source-bound 处理，不得复用基线规则或数量门禁。
 
 完整定义与两份清单见 [docs/GLOSSARY.md](docs/GLOSSARY.md)。
@@ -398,7 +402,7 @@ $env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"
 坐标错误缩小 1000 倍。
 
 外部 `E:\branch_CAD2GIS\APD_test` 仅是兼容性压力输入，不是训练集、规则模板或
-准确率真值。同理，`raw/` 下新增的 6 张 APD（As Plan Drawing）验证图也必须
+准确率真值。同理，外部语料中新增的 6 张 APD（As Plan Drawing）验证图也必须
 各自建立 source-bound profile，不得沿用四张开发基线图的规则或数量门禁。
 没有 authoritative GCP 的结果必须保持 `CONDITIONAL` 或
 `not independently verified`。
@@ -406,7 +410,7 @@ $env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"
 ## 验证
 
 ```powershell
-conda activate cad2gis
+python -m pip install -e ".[agent,test]"
 python -m pytest -q
 
 $env:CAD2GIS_FULL_DWG_TESTS = "1"
@@ -414,19 +418,24 @@ python -m pytest tests/test_apd_test_compatibility.py -q
 ```
 
 仓库 CI 在 Ubuntu/Python 3.11、Ubuntu/Python 3.12、Windows/Python 3.12
-和 macOS/Python 3.12 上用 Micromamba 创建包含 GDAL/PROJ 的原生 GIS runtime，
+和 macOS/Python 3.12 上安装 agent 依赖与锁版 LibreDWG runtime，
 再分别执行安装、锁版 Ruff、Python 编译、WebDemo JavaScript 语法、MCP/插件
 契约和完整 pytest 回归。Pages CD 会重新验证浏览器契约，使用
-`tools/build_webdemo.py` 构建严格限定的 `_site`，只发布合成 HTML/CSS/JS，拒绝
-DWG、DXF、GeoPackage、QGIS 工程或审查数据库进入公开 artifact。
+`scripts/build_pages.py` 构建 `_site`。合成演示与用户授权的派生九图演示分开校验。
+九图、QGZ 和 SVG 复验包来自 `docs/derived-release.json` 指定的 Release，下载后检查
+大小、SHA256、目录边界和完整文件清单；原始 DWG/DXF 不进入公开站点。
 
 仓库目录：
 
 - `src/cad2gis/`：唯一生产实现、CLI、reader、MCP、review server
 - `tests/`：自动化契约与回归测试
 - `baselines/`：source-bound 基线配置；大型 GeoPackage/清单证据可作为外部语料挂载
-- `raw/`：开发基线 APD 4 张 + 验证集 APD 6 张
-- `experiment/`：APD reviewed 兼容项目
+- 原始 DWG 与生成输出放在仓库外，通过显式路径或批量输入契约挂载
+- `experiment/config/`：APD reviewed 兼容配置，不含原始图纸
 - `plugins/cad2gis-agent/`：智能体插件和 MCP 客户端模板
 - `docs/`：架构、鲁棒性、可移植性、术语与对账说明
 - `env/`：固定 GIS 运行环境
+
+本地重建包含九图的 Pages：先运行 `python scripts/fetch_derived_release.py`，再运行
+`python scripts/build_pages.py --output _site`。`pages-delivery/` 是忽略的下载缓存，
+只提交核心源码、必要测试配置、文档和小型发布清单。

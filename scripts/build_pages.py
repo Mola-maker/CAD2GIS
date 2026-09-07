@@ -19,6 +19,7 @@ ASSETS = (
     "pointer.css",
     "pointer.js",
     "workspace-shell.css",
+    "architecture.css",
 )
 
 DEMO_REQUIRED = (
@@ -193,9 +194,9 @@ def _demo_redirect() -> str:
 '''
 
 
-def build(output: Path) -> None:
+def build(output: Path, *, release_root: Path | None = None) -> None:
     _validate_demo()
-    release_root = PROJECT_ROOT / "pages-delivery" / "nine-drawings"
+    release_root = release_root or PROJECT_ROOT / "pages-delivery" / "nine-drawings"
     release_catalog = None
     if release_root.exists():
         try:
@@ -222,6 +223,10 @@ def build(output: Path) -> None:
     (output / "install.html").write_text(
         _rewrite_install(install), encoding="utf-8",
     )
+    architecture = (WEB_ROOT / "architecture.html").read_text(encoding="utf-8")
+    if release_catalog is None:
+        architecture = architecture.replace('href="./deliveries/', 'href="https://mola-maker.github.io/CAD2GIS/deliveries/')
+    (output / "architecture.html").write_text(architecture, encoding="utf-8")
     workspace_dir = output / "workspace"
     workspace_assets = workspace_dir / "assets"
     shutil.copytree(DEMO_ROOT / "assets", workspace_assets)
@@ -252,7 +257,7 @@ def build(output: Path) -> None:
         demo_source = demo_source.replace('<b>CAD</b> 原始坐标', '<b>GIS</b> 交付坐标')
         demo_source = demo_source.replace('源几何 ↔ 地理预览', '交付几何 ↔ 地理预览')
     (workspace_dir / "index.html").write_text(
-        _workspace_page(demo_source).replace('<a href="../install.html">安装</a>', '<a href="../install.html">安装</a><a href="../deliveries/">九图交付与过程</a>'), encoding="utf-8",
+        _workspace_page(demo_source).replace('<a href="../install.html">安装</a>', '<a href="../install.html">安装</a><a href="../architecture.html">架构</a>' + ('<a href="../deliveries/">九图交付与过程</a>' if release_catalog else '')), encoding="utf-8",
     )
     demo_redirect_dir = output / "demo"
     demo_redirect_dir.mkdir()
@@ -266,6 +271,7 @@ def build(output: Path) -> None:
             "pages": [
                 "index.html",
                 "install.html",
+                "architecture.html",
                 "workspace/index.html",
             ],
             "mode": "static-github-pages",

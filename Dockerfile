@@ -18,7 +18,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
     CAD2GIS_CACHE_DIR=/opt/cad2gis-cache \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libstdc++6 libgomp1 && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libstdc++6 libgomp1 fonts-dejavu-core && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 cad2gis \
     && mkdir /data && chown cad2gis:cad2gis /data
 COPY --from=builder /opt/venv /opt/venv

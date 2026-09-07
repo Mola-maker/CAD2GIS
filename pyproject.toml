@@ -23,6 +23,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+symbols = ["ezdxf>=1.4,<2"]
 test = ["pytest>=8,<10", "build>=1.2,<2", "ruff==0.12.12", "fonttools[woff]>=4.53,<5", "Pillow>=11,<13"]
 mcp = ["mcp>=1.0,<2"]
 review = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1"]
@@ -40,6 +41,10 @@ agent = [
 [project.scripts]
 cad2gis = "cad2gis.cli:main"
 cad2gis-agent-mcp = "cad2gis.agent_mcp:main"
+cad2gis-symbols = "cad2gis.symbol_assets:main"
+cad2gis-qgis-package = "cad2gis.qgis_package:main"
+cad2gis-qgis-verify = "cad2gis.qgis_verify:main"
+cad2gis-svg-delivery = "cad2gis.svg_delivery:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

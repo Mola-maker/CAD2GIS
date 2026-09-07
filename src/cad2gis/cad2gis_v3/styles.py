@@ -15,6 +15,7 @@ from ezdxf.colors import aci2rgb
 from .cable_legend import cable_spec_from_style, cable_spec_name, ptech_type_name
 from .gpkg_metadata import normalize_geopackage_metadata
 from .model import Feature
+from ..presentation import LENGTH_EXPRESSION, configure_numeric_fields
 from .semantics import CoverageGateError, build_coverage_report
 from .warehouse import (
     LAYER_CONFIGS,
@@ -597,6 +598,16 @@ def write_styles(
             styles,
             label_field="display_label",
         )
+        if delivery_path is not None:
+            with sqlite3.connect(Path(delivery_path).resolve().as_uri() + "?mode=ro", uri=True) as db:
+                fields = list(db.execute('PRAGMA table_info("' + layer_name.replace('"', '""') + '")'))
+            root = ET.fromstring(qml)
+            configure_numeric_fields(root, fields)
+            if layer_name in {"CABLE", "CABLE_SEGMENT"} and "length_value_m" in {field[1] for field in fields}:
+                text = root.find(".//labeling/settings/text-style")
+                text.set("fieldName", LENGTH_EXPRESSION)
+                text.set("isExpression", "1")
+            qml = ET.tostring(root, encoding="unicode")
         qml_path.write_text(qml, encoding="utf-8")
         qml_by_layer[layer_name] = qml
         manifest["layers"][layer_name] = {

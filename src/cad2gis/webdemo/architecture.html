@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071b67">
+  <meta name="description" content="CAD2GIS：以原图为依据的确定性转换、可审计的 AI 数据库修改，以及可移动的 QGIS 交付。查看九张图纸的过程与验证边界。">
+  <title>CAD2GIS — 从原图到交付的架构</title>
+  <link rel="stylesheet" href="./assets/architecture.css">
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<header><a class="brand" href="./">CAD2GIS<span>.AGENT</span></a><nav aria-label="主导航"><a href="./install.html">安装</a><a href="./workspace/">演示台 ↗</a></nav></header>
+<main id="main">
+  <section class="intro">
+    <p class="eyebrow">ARCHITECTURE / 0.4 / SEPTEMBER 2026</p>
+    <h1>让 AI 理解图纸。<br>让每次修改<span>有据可查。</span></h1>
+    <div class="intro-bottom"><p>原始实体保留在源快照里，语义修改进入独立数据库，确定性流水线负责生成 GIS。理解可以持续迭代，坐标和原图证据始终有迹可循。</p><a class="button" href="./deliveries/">查看九图交付与过程 ↗</a></div>
+    <div class="route" aria-label="数据流程"><span>DWG / DXF</span><i>→</i><span>SOURCE</span><i>→</i><span>SEMANTIC</span><i>→</i><strong>GIS</strong></div>
+  </section>
+  <section class="chapter" id="precision"><div class="number">01 / SOURCE</div><div><h2>精度从原图开始。</h2><p class="lead">保留双精度几何。只在数值呈现时保留两位小数。</p><div class="split"><p>长度优先使用 CAD 尺寸标注，不加来源后缀；没有标注时，才使用原始 CAD 曲线长度，并显示 <code>[CAD curve]</code>。交付投影长度、地理测量长度不会替代这个规则。</p><div class="specimen"><small>LENGTH / DISPLAY EXAMPLE</small><strong>24.00 m</strong><span>原图尺寸标注</span><strong>21.15 m <em>[CAD curve]</em></strong><span>无标注时的原始曲线长度</span></div></div><p class="note">保留坐标精度不等于绝对定位已验收。独立 GCP 与检查点仍是工程精度验收的依据。</p></div></section>
+  <section class="chapter" id="database"><div class="number">02 / DATABASE</div><div><h2>AI 少读一点，<br>每次改得更清楚。</h2><p class="lead">按实体、图层和空间范围检索，再提交有版本依据的修改。</p><div class="store-list"><article><b>01</b><div><h3>源快照 / SQLite</h3><p>冻结源句柄、属性与几何证据。索引和有界查询让客户端按需读取，复用已验证快照减少重复解码。</p></div><span>READ</span></article><article><b>02</b><div><h3>语义与审查 / SQLite</h3><p>修改提案绑定来源哈希和当前版本；校验、事务与审计记录约束提交。新的交付由已提交语义重新生成。</p></div><span>PROPOSE → COMMIT</span></article><article><b>03</b><div><h3>交付 / GeoPackage</h3><p><code>delivery.gpkg</code> 本身就是 SQLite 数据库，附带空间规范。几何、属性、来源与样式可以一起交付给 QGIS。</p></div><span>DELIVER</span></article></div><p class="note">Redis 不在本地确定性转换的必需链路中。服务器扩展可用它做临时缓存或队列；持久事实和修改记录仍落在数据库与运行产物中。这里不承诺未经基准测试的读取速度。</p></div></section>
+  <section class="chapter" id="symbols"><div class="number">03 / OPTIONAL SVG</div><div><h2>图例是一条<br>可选的复核支线。</h2><p class="lead">默认保留原样式；开启候选入口，再逐项对照源图。</p><div class="split"><p>独立提取脚本与 <code>symbols.sqlite3</code> 保存 SVG、源句柄和对应关系。检测覆盖模型空间与图纸布局，结合图例候选和原始块实例生成对照 HTML。</p><ol class="steps"><li>选择 <code>--svg-mode candidate</code></li><li>检查源实例与边缘图例候选</li><li>复核字体、动态块与遗漏项</li><li>将确认的来源绑定用于 QGIS 打包</li></ol></div><p class="note">候选匹配不是自动验收。九图 SVG 复跑已有记录，但完整图例一一对应仍未验收；缺失、嵌套句柄及渲染不完整项显式列出。</p></div></section>
+  <section class="chapter" id="portable"><div class="number">04 / DELIVERY</div><div><h2>从本机到服务器，<br>用同一条转换流程。</h2><p class="lead">CLI、MCP、批量契约共享转换内核，不绑定特定 AI 模型。</p><div class="split"><p>Linux 使用 LibreDWG，无需 AutoCAD。批量目录为每张图保留来源哈希、阶段日志、失败状态与 HTML 索引。服务器可以经 SSH 调用 CLI，或通过受控连接访问本地 MCP 服务。</p><p>便携 QGZ 将数据作为附件、SVG 作为内嵌矢量保存；完整交付包同时保留可编辑 GeoPackage、QML 和说明。QGIS 打包与实际渲染需要额外的 QGIS 环境，基础 Docker 镜像提供转换与 MCP 运行时。</p></div></div></section>
+  <section class="proof" id="evidence"><p class="eyebrow">OPEN THE EVIDENCE</p><h2>打开成果，<br>也打开验证过程。</h2><div class="proof-links"><a href="./deliveries/">九图历史交付与审查 <span>09 DRAWINGS ↗</span></a><a href="./deliveries/svg-review/index.html">最新 SVG 与便携 QGZ 复验 <span>11 PROJECTS ↗</span></a><a href="https://github.com/Mola-maker/CAD2GIS/actions">CI 与 Docker 构建记录 <span>LIVE STATUS ↗</span></a><a href="https://github.com/Mola-maker/CAD2GIS/blob/main/docs/RELEASE_REVIEW_2026-09-06.md">架构审查与剩余边界 <span>REVIEW ↗</span></a></div><p class="note">历史九图保留 CONDITIONAL 状态。打开、移动与渲染通过，并不替代完整图例和绝对 GCP 精度验收。CI 状态以对应提交的实际运行记录为准。</p></section>
+</main><footer><span>CAD2GIS / SOURCE → EVIDENCE → DELIVERY</span><a href="./install.html">开始使用 ↗</a></footer>
+</body></html>

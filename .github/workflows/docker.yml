@@ -9,6 +9,7 @@ on:
       - .github/workflows/docker.yml
       - pyproject.toml
       - src/**
+      - tools/container_smoke.py
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,8 @@ jobs:
           docker run --rm cad2gis:0.4.0 debug-mcp --scope identity --json > docker-artifacts/debug-mcp.json
           docker run --rm --entrypoint pip cad2gis:0.4.0 freeze > docker-artifacts/requirements-resolved.txt
           docker image inspect cad2gis:0.4.0 > docker-artifacts/image-inspect.json
+      - name: Exercise CAD export, indexed SQLite and optional SVG
+        run: docker run --rm --entrypoint python -v "$PWD/tools/container_smoke.py:/tmp/container_smoke.py:ro" cad2gis:0.4.0 /tmp/container_smoke.py > docker-artifacts/conversion-smoke.json
       - name: Export tested image
         run: |
           docker save cad2gis:0.4.0 cad2gis:latest | gzip > docker-artifacts/cad2gis-image.tar.gz

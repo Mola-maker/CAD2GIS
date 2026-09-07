@@ -131,6 +131,10 @@ def _parser() -> argparse.ArgumentParser:
     convert.add_argument("--source-run", type=Path, help="Reuse a verified native export-source snapshot.")
     convert.add_argument("--semantic-store", type=Path, help="SQLite store owning the committed revision.")
     convert.add_argument("--semantic-job", default="", help="Published compile job to project onto existing assets.")
+    convert.add_argument("--svg-mode", choices=("off", "candidate"), default="off",
+                         help="Optionally inventory source-bound SVG and legend correspondence for review.")
+    convert.add_argument("--svg-font-dir", action="append", default=[], type=Path,
+                         help="Optional local font folder for SVG extraction; repeatable.")
     convert.add_argument("--geometry-repairs", choices=("legacy", "candidate-only"), default="legacy",
                          help="Keep historical behavior or withhold automatic moves/lossy boundary repairs for review.")
     convert.add_argument(
@@ -534,6 +538,8 @@ def _convert(args: argparse.Namespace) -> tuple[Any, int]:
             **({"source_run": args.source_run} if args.source_run is not None else {}),
             **({"semantic_store": args.semantic_store, "semantic_job": args.semantic_job} if args.semantic_store or args.semantic_job else {}),
             **({"geometry_repairs": args.geometry_repairs} if args.geometry_repairs != "legacy" else {}),
+            **({"svg_mode": args.svg_mode, "svg_font_dirs": tuple(args.svg_font_dir)}
+               if args.svg_mode != "off" or args.svg_font_dir else {}),
             domain=args.domain,
             llm=args.llm,
         )
@@ -795,6 +801,8 @@ def _conversion_payload(result: Any) -> Any:
         found = True
     diagnostics = getattr(result, "diagnostics", None)
     if isinstance(diagnostics, Mapping):
+        if "svg_candidates" in diagnostics:
+            payload["svg_candidates"] = diagnostics["svg_candidates"]
         topology = diagnostics.get("topology")
         if isinstance(topology, Mapping):
             payload["topology"] = {

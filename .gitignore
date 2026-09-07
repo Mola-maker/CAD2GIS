@@ -70,7 +70,7 @@ baselines/*/run.review/
 baselines/*/review/
 
 # robustness: scripts directory stays out of version control
-scripts/
+/scripts/*
 
 # robustness: verification output artifacts
 baselines/apd_hutabohu/output/
@@ -89,3 +89,8 @@ tmp/
 tmp.screenshot/
 
 raw/
+
+# Derived demonstrations are fetched from a hash-pinned release, not source code.
+/pages-delivery/
+/experiment/*.dwg
+!scripts/fetch_derived_release.py
