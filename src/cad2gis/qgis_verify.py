@@ -22,7 +22,10 @@ def verify(path, output):
     from qgis.core import (QgsProject, QgsMapSettings, QgsMapRendererParallelJob,
                            QgsRenderContext, QgsExpressionContextUtils, QgsApplication)
     from qgis.PyQt.QtCore import QSize
-    from qgis.PyQt.QtGui import QColor
+    from qgis.PyQt.QtGui import QColor, QFontDatabase
+    available_fonts = QFontDatabase.families()
+    if not available_fonts:
+        raise RuntimeError('QGIS has no fonts: provide --font with a local TTF/OTF file before visual verification')
     path, output = Path(path).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     receipt = json.loads(path.with_suffix('.verification.json').read_text(encoding='utf-8'))
@@ -105,7 +108,7 @@ def verify(path, output):
                       layers=receipt['layers'], svg_features=svg_count,
                       internal_attachments_only=True, wrong_sidecar_ignored=True,
                       saved_extent=extent.toString(), default_view_nonwhite_samples=nonwhite,
-                      fresh_process_verified=True)
+                      fresh_process_verified=True, available_font_families=list(available_fonts))
         project.clear()
     (output / 'verification.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
     print(json.dumps(result))
@@ -122,7 +125,8 @@ def main():
     app = QgsApplication([], False)
     app.initQgis()
     if args.font:
-        QFontDatabase.addApplicationFont(str(args.font))
+        if QFontDatabase.addApplicationFont(str(args.font)) < 0:
+            raise RuntimeError(f'Cannot load verification font: {args.font}')
     verify(args.project, args.output)
 
 

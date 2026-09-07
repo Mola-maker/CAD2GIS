@@ -83,6 +83,8 @@ python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz
 未绑定对象沿用原渲染器，标准入口不启用 SVG。必须退出生成进程后运行
 `python tools/verify_qgis_standalone.py --project output.qgz --output verification`。
 此前同进程检查漏检 Windows 临时路径，不能单独作为发布门槛。
+无界面 QGIS 若没有字体，复验会明确失败，不再把方块标签的非空画布当作通过。
+可以添加 `--font /path/to/font.ttf`，加载失败也会拒绝复验；字体只用于当前验证进程。
 独立检查覆盖默认视图、搬移、错误同名数据库干扰、附件哈希、图层数量和逐要素实际 SvgMarker
 选择检查；数据库字节不变。内嵌数据库适合便携查看，业务编辑仍应使用完整交付包或规范数据库，而非把查看副本当权威库。
 附件接口依据 [QGIS 官方 API](https://api.qgis.org/api/3.44/classQgsProject.html)。
