@@ -128,13 +128,11 @@ def _parser() -> argparse.ArgumentParser:
     convert.add_argument("--source-profile", type=Path)
     convert.add_argument("--mapping-registry", type=Path)
     convert.add_argument("--gcp-profile", type=Path)
+    _add_matching_options(convert)
     convert.add_argument("--source-run", type=Path, help="Reuse a verified native export-source snapshot.")
     convert.add_argument("--semantic-store", type=Path, help="SQLite store owning the committed revision.")
     convert.add_argument("--semantic-job", default="", help="Published compile job to project onto existing assets.")
-    convert.add_argument("--svg-mode", choices=("off", "candidate"), default="off",
-                         help="Optionally inventory source-bound SVG and legend correspondence for review.")
-    convert.add_argument("--svg-font-dir", action="append", default=[], type=Path,
-                         help="Optional local font folder for SVG extraction; repeatable.")
+    _add_svg_options(convert)
     convert.add_argument("--geometry-repairs", choices=("legacy", "candidate-only"), default="legacy",
                          help="Keep historical behavior or withhold automatic moves/lossy boundary repairs for review.")
     convert.add_argument(
@@ -172,6 +170,8 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     _add_source(auto_convert)
+    _add_matching_options(auto_convert)
+    _add_svg_options(auto_convert)
     auto_convert.add_argument(
         "--project",
         dest="project_dir",
@@ -337,6 +337,32 @@ def _semantic(args: argparse.Namespace) -> tuple[Any, int]:
         values["patch"] = json.loads(path.read_text(encoding="utf-8"))
     result = handlers[args.semantic_action](**values)
     return result, 0
+
+
+def _add_svg_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--svg-mode", choices=("off", "candidate"), default="candidate",
+                        help="Extract source-bound SVG and legend candidates for review (default); off disables extraction.")
+    parser.add_argument("--svg-font-dir", action="append", default=[], type=Path,
+                        help="Local font folder for SVG extraction; repeatable.")
+
+
+def _add_matching_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--matching", choices=("osm", "nominal"), default="osm",
+                        help="Standard OSM relative matching, or the nominal CRS compatibility path.")
+    parser.add_argument("--osm-data", type=Path,
+                        help="Offline Overpass JSON snapshot for reproducible OSM matching.")
+    parser.add_argument("--osm-place", help="Explicit locality to locate a drawing without usable geographic coordinates.")
+    parser.add_argument("--match-profile", type=Path,
+                        help="Frozen OSM matching revision, including confirmed preview corrections.")
+
+
+def _matching_arguments(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        **({"matching": args.matching} if args.matching != "osm" else {}),
+        **({"osm_data": args.osm_data} if args.osm_data is not None else {}),
+        **({"osm_place": args.osm_place} if args.osm_place else {}),
+        **({"match_profile": args.match_profile} if args.match_profile is not None else {}),
+    }
 
 
 def _add_source(parser: argparse.ArgumentParser) -> None:
@@ -535,11 +561,12 @@ def _convert(args: argparse.Namespace) -> tuple[Any, int]:
             mapping_registry=args.mapping_registry,
             gcp_profile=args.gcp_profile,
             decision_pack=args.decision_pack,
+            **_matching_arguments(args),
             **({"source_run": args.source_run} if args.source_run is not None else {}),
             **({"semantic_store": args.semantic_store, "semantic_job": args.semantic_job} if args.semantic_store or args.semantic_job else {}),
             **({"geometry_repairs": args.geometry_repairs} if args.geometry_repairs != "legacy" else {}),
-            **({"svg_mode": args.svg_mode, "svg_font_dirs": tuple(args.svg_font_dir)}
-               if args.svg_mode != "off" or args.svg_font_dir else {}),
+            svg_mode=args.svg_mode,
+            svg_font_dirs=tuple(args.svg_font_dir),
             domain=args.domain,
             llm=args.llm,
         )
@@ -568,6 +595,9 @@ def _auto_convert(args: argparse.Namespace) -> tuple[Any, int]:
             run_dir=args.run_dir,
             project_dir=args.project_dir,
             llm=args.llm,
+            **_matching_arguments(args),
+            svg_mode=args.svg_mode,
+            svg_font_dirs=tuple(args.svg_font_dir),
         )
     finally:
         if args.layout:

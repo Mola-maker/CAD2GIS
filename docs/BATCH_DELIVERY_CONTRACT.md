@@ -25,7 +25,13 @@ cad2gis batch package --run-dir /data/results/attempt-001/drawing-id/run --outpu
 }
 ```
 
-每图顺序执行源事实提取、审查配置重放、独立视觉比较和交付打包。`batch-report.json` 持续记录当前图和阶段；各阶段有独立日志。单图错误不会阻止后续图纸尝试。子进程超时按阶段限制，默认 1800 秒。转换失败保留事实快照与日志，不以旧成果替代成功。
+每图顺序执行源事实提取、审查配置重放（包括标准 OSM 匹配和 SVG 候选提取）、独立视觉比较和交付打包。`batch-report.json` 持续记录当前图和阶段；各阶段有独立日志。单图错误不会阻止后续图纸尝试。子进程超时按阶段限制，默认 1800 秒。转换失败保留事实快照与日志，不以旧成果替代成功。
+
+每张图默认 `"svg_mode": "candidate"`，省略字段也会提取。显式设置 `"svg_mode": "off"`
+可关闭该图 SVG 提取。`"svg_font_dirs": ["fonts", "fonts/client"]` 可以提供相对输入契约的
+字体目录；只允许输入包内目录，`off` 不接受字体目录。候选保存在 `run/svg-candidates/`，
+批次 HTML 提供 `correspondence.html` 链接。候选与 GIS 同时完成后一起发布；SVG 失败时
+该图标记失败，不发布不完整的 run。详情见 [SVG 提取](OPTIONAL_SYMBOL_ASSETS.md)。
 
 ```text
 attempt-001/
@@ -35,6 +41,7 @@ attempt-001/
   drawing-01/
     source/                 # 原始读者事实、索引输入；供 AI 查询
     run/                    # source.gpkg / evidence.gpkg / delivery.gpkg / run_manifest.json
+      svg-candidates/       # 默认 SVG 数据库、对应报告与并排复核 HTML
     visual/                 # PNG、几何逐项 CSV、字段来源 CSV、report.json
     delivery/               # 可搬移 QGIS 项目、数据库、样式、字段与校验清单
     delivery.zip

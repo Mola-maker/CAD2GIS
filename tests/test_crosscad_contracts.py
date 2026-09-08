@@ -651,6 +651,9 @@ def _run_fake_conversion(
     monkeypatch: pytest.MonkeyPatch,
     *,
     alias_error: OSError | None = None,
+    configure=None,
+    source_bytes=None,
+    source_name="fixture.dwg",
 ):
     pipeline = _canonical_module("cad2gis.cad2gis_v3.pipeline")
     model = _canonical_module("cad2gis.cad2gis_v3.model")
@@ -659,8 +662,8 @@ def _run_fake_conversion(
     units = _canonical_module("cad2gis.cad2gis_v3.units")
     styles = _canonical_module("cad2gis.cad2gis_v3.styles")
 
-    source = tmp_path / "fixture.dwg"
-    source.write_bytes(b"pipeline integration fixture")
+    source = tmp_path / source_name
+    source.write_bytes(b"pipeline integration fixture" if source_bytes is None else source_bytes)
     run_dir = tmp_path / "runs" / "fixture"
     source_hash = _sha256_bytes(source.read_bytes())
     (tmp_path / "source_profile.json").write_text("{}", encoding="utf-8")
@@ -921,12 +924,14 @@ def _run_fake_conversion(
 
         monkeypatch.setattr(pipeline, "publish_verified_alias", fail_alias)
 
+    extra_request = configure(pipeline, model, source) if configure is not None else {}
     result = pipeline.convert(
         pipeline.ConversionRequest(
             source=source,
             run_dir=run_dir,
             source_profile=FakeProfile.path,
             mapping_registry=FakeRegistry.path,
+            **{"matching": "nominal", "svg_mode": "off", **extra_request},
         )
     )
     return result, run_dir
@@ -951,7 +956,7 @@ def test_conversion_publishes_source_artifact_accounting_status_and_modes(
         assert item["sha256"] == _sha256_bytes(artifact.read_bytes())
     assert manifest["run_status"] in {"VERIFIED", "CONDITIONAL", "UNSAFE", "FAILED"}
     assert manifest["terminal_accounting"]["total"] == manifest["source_entity_count"]
-    assert manifest["modes"] == {"domain": "auto", "llm": "off"}
+    assert manifest["modes"] == {"domain": "auto", "llm": "off", "matching": "nominal", "svg": "off"}
     assert (
         manifest["plan_domain"]["schema_version"]
         == "cad2gis-plan-domain-v1"

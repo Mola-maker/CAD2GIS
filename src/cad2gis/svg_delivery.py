@@ -27,7 +27,8 @@ def _project_bindings(correspondence, entry, statuses):
     else:
         # Extraction records the original run/partition directory names. The
         # portable package may have moved or renamed those directories.
-        scopes = {PureWindowsPath(path).parent.name for path, digest in inputs.items()
+        scope_names = correspondence.get('database_scopes', {})
+        scopes = {scope_names.get(path, PureWindowsPath(path).parent.name) for path, digest in inputs.items()
                   if digest == entry['gpkg_sha256']}
         if not scopes:
             raise ValueError('SVG inventory has no matching delivery database hash')

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,6 +15,297 @@ from cad2gis.review_server import (
     SQLiteReviewStore,
     create_review_app,
 )
+
+
+def _matching_fixture(tmp_path, monkeypatch):
+    from cad2gis.cad2gis_v3.georef import DirectTransformer
+    from cad2gis.cad2gis_v3.osm_matching import match_osm
+    from pyproj import Transformer
+
+    run, delivery, manifest_path = _run_fixture(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    nominal = DirectTransformer("EPSG:32749", "EPSG:32749")
+    monkeypatch.setattr(review_server, "_registration_transformer", lambda _: nominal)
+    monkeypatch.setattr(review_server.GeoPackageProvider, "layers", lambda _: [])
+    monkeypatch.setattr(review_server.GeoPackageProvider, "geojson", lambda *a, **k: {
+        "type": "FeatureCollection", "features": [{"type": "Feature", "properties": {},
+        "geometry": {"type": "Point", "coordinates": [500000., 9200000.]}}]})
+    manifest["profiles"] = {}
+    for name in ("source_profile", "mapping_registry"):
+        profile = tmp_path / f"{name}.json"
+        profile.write_text("{}")
+        manifest["profiles"][name] = {"path": str(profile), "sha256": hashlib.sha256(profile.read_bytes()).hexdigest()}
+    _, record = match_osm(source=run / "fixture.dwg", source_sha256=manifest["source"]["sha256"],
+        features=[], nominal=nominal, coordinate_domain={"passed": True})
+    manifest["osm_matching"] = record
+    manifest_path.write_text(json.dumps(manifest))
+    workspace = tmp_path / "matching-review"
+    client = TestClient(create_review_app(run, workspace_dir=workspace))
+    lonlat = Transformer.from_crs(32749, 4326, always_xy=True)
+    for index, (x, y, role, shift) in enumerate([
+            (500000, 9200000, "train", 10), (500100, 9200100, "train", 10),
+            (500050, 9200050, "check", 110)]):
+        response = client.post("/api/review/features", json={"expected_revision": 0,
+            "feature": {"type": "Feature", "id": f"gcp:{index}",
+                "geometry": {"type": "Point", "coordinates": list(lonlat.transform(x + shift, y - 5))},
+                "properties": {"_kind": "cad_map_gcp", "cad_x": x, "cad_y": y, "role": role}}})
+        assert response.status_code == 200, response.text
+    return client, run, workspace, manifest, nominal
+
+
+def _matching_request(client, **extra):
+    capture = client.get("/api/registration").json()
+    return {"expected_controls_sha256": capture["controls_sha256"],
+        "expected_match_sha256": capture["matching"]["match_sha256"],
+        "expected_match_revision": capture["matching"]["revision"], **extra}
+
+
+def test_osm_preview_and_rematch_share_original_native_transform(tmp_path, monkeypatch):
+    from cad2gis.cad2gis_v3.osm_matching import load_match_profile
+    from pyproj import Transformer
+
+    client, run, workspace, manifest, nominal = _matching_fixture(tmp_path, monkeypatch)
+    capture = client.get("/api/registration").json()
+    assert capture["matching_ready"] is True
+    assert capture["activation_ready"] is False  # OSM refinement does not activate surveyed GCP acceptance.
+    assert capture["preview_fit"]["check_metrics"]["rmse_m"] > 90
+    preview = client.get("/api/registration/preview/CABLE", params={"expected_controls_sha256": capture["controls_sha256"]})
+    assert preview.status_code == 200, preview.text
+    result = client.post("/api/matching/rematch", json=_matching_request(client)).json()
+    assert result["status"] == "prepared"
+    transform, _ = load_match_profile(result["profile"]["path"], manifest["source"]["sha256"], nominal)
+    point = transform.point([500000, 9200000])
+    expected = Transformer.from_crs(32749, 4326, always_xy=True).transform(*point)
+    assert preview.json()["features"][0]["geometry"]["coordinates"] == pytest.approx(expected)
+    assert "--match-profile" in result["conversion_command"]
+    assert "--gcp-profile" not in result["conversion_command"]
+    assert "--source-run" not in result["conversion_command"]  # A conversion run is not a native snapshot.
+    assert result["current_run_dir"] == str(run)
+    assert result["matching"]["absolute_accuracy_verified"] is False
+
+
+@pytest.mark.parametrize("key,value", [("expected_controls_sha256", "stale"),
+    ("expected_match_sha256", "stale"), ("expected_match_revision", 99)])
+def test_rematch_rejects_stale_preview_before_writing(tmp_path, monkeypatch, key, value):
+    client, _, workspace, _, _ = _matching_fixture(tmp_path, monkeypatch)
+    payload = _matching_request(client, execute=True)
+    payload[key] = value
+    response = client.post("/api/matching/rematch", json=payload)
+    assert response.status_code == 409
+    assert not (workspace / "matching").exists()
+
+
+def test_two_rematches_preserve_old_results_controls_and_restart(tmp_path, monkeypatch):
+    client, original, workspace, manifest, nominal = _matching_fixture(tmp_path, monkeypatch)
+    original_bytes = (original / "delivery.gpkg").read_bytes()
+    source = original / "fixture.dwg"
+
+    def convert(options):
+        new_run = options["run_dir"]
+        new_run.mkdir()
+        record = json.loads(options["match_profile"].read_text(encoding="utf-8"))
+        artifact = new_run / "delivery.gpkg"
+        artifact.write_bytes(f"matched-version-{record['revision']}".encode())
+        candidate = json.loads(json.dumps(manifest))
+        candidate["source"]["path"] = str(source)
+        candidate["osm_matching"] = record
+        candidate["artifacts"]["delivery"] = {"path": str(artifact), "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest()}
+        _add_svg_fixture(new_run, candidate, label=f"version-{record['revision']}")
+        (new_run / "run_manifest.json").write_text(json.dumps(candidate))
+        assert options["llm"] == "assist" and options["domain"] == "auto"
+        assert options["svg_mode"] == "candidate" and options["svg_font_dirs"] == ()
+
+    monkeypatch.setattr(review_server, "_execute_matching_conversion", convert)
+    first_payload = _matching_request(client, execute=True)
+    first = client.post("/api/matching/rematch", json=first_payload).json()
+    assert first["status"] == "completed", first
+    first_svg_url = client.get("/api/run").json()["svg_candidates"]["report_url"]
+    assert f"version-{first['matching']['revision']}" in client.get(first_svg_url).text
+    first_profile = Path(first["profile"]["path"]).read_bytes()
+    first_delivery = Path(first["next_run_dir"], "delivery.gpkg").read_bytes()
+    assert client.post("/api/matching/rematch", json=first_payload).status_code == 409
+    second = client.post("/api/matching/rematch", json=_matching_request(client, execute=True)).json()
+    assert second.get("status") == "completed", second
+    second_svg_url = client.get("/api/run").json()["svg_candidates"]["report_url"]
+    assert second_svg_url != first_svg_url
+    assert client.get(first_svg_url).status_code == 409
+    assert f"version-{second['matching']['revision']}" in client.get(second_svg_url).text
+    assert second["next_run_dir"] != first["next_run_dir"]
+    assert second["matching"]["revision"] == first["matching"]["revision"] + 1
+    assert second["matching"]["translation_3857"] == pytest.approx(first["matching"]["translation_3857"])
+    assert Path(first["profile"]["path"]).read_bytes() == first_profile
+    assert Path(first["next_run_dir"], "delivery.gpkg").read_bytes() == first_delivery
+    assert (original / "delivery.gpkg").read_bytes() == original_bytes
+    assert len(client.get("/api/review/features").json()["features"]) == 3
+    resumed = TestClient(create_review_app(original, workspace_dir=workspace))
+    assert resumed.get("/api/run").json()["run_dir"] == second["next_run_dir"]
+    assert resumed.get("/api/run").json()["svg_candidates"]["report_url"] == second_svg_url
+    assert len(resumed.get("/api/review/features").json()["features"]) == 3
+    same_workspace = TestClient(create_review_app(second["next_run_dir"], workspace_dir=workspace))
+    assert len(same_workspace.get("/api/review/features").json()["features"]) == 3
+    # Opening the generated run separately also recovers its frozen native picks.
+    separate = TestClient(create_review_app(second["next_run_dir"], workspace_dir=tmp_path / "separate"))
+    assert len(separate.get("/api/review/features").json()["features"]) == 3
+    for feature in separate.get("/api/review/features").json()["features"]:
+        separate.delete(f"/api/review/features/{feature['id']}", params={"expected_revision": 1})
+    reopened = TestClient(create_review_app(second["next_run_dir"], workspace_dir=tmp_path / "separate"))
+    assert reopened.get("/api/review/features").json()["features"] == []
+    Path(second["next_run_dir"], "delivery.gpkg").write_bytes(b"tampered")
+    with pytest.raises(ReviewServerError, match="delivery SHA-256"):
+        create_review_app(original, workspace_dir=workspace)
+
+
+def test_failed_rematch_keeps_active_result_and_retry_gets_new_version_directory(tmp_path, monkeypatch):
+    client, run, _, _, _ = _matching_fixture(tmp_path, monkeypatch)
+    def fail(_):
+        raise ValueError("fixture conversion failed")
+    monkeypatch.setattr(review_server, "_execute_matching_conversion", fail)
+    payload = _matching_request(client, execute=True)
+    first = client.post("/api/matching/rematch", json=payload).json()
+    second = client.post("/api/matching/rematch", json=payload).json()
+    assert first["status"] == second["status"] == "failed"
+    assert first["next_run_dir"] != second["next_run_dir"]
+    assert client.get("/api/run").json()["run_dir"] == str(run)
+    assert len(client.get("/api/review/features").json()["features"]) == 3
+
+
+def test_rematch_inherits_bound_decisions_and_refuses_unreproducible_semantics(tmp_path, monkeypatch):
+    _, run, _, manifest, _ = _matching_fixture(tmp_path, monkeypatch)
+    pack = tmp_path / "decision-pack.json"
+    pack.write_text("{\"operations\": []}")
+    manifest["artifacts"]["decision_pack"] = {"path": str(pack), "sha256": hashlib.sha256(pack.read_bytes()).hexdigest()}
+    options = review_server._matching_conversion_options(manifest, run, tmp_path / "match.json", tmp_path / "next")
+    assert options["decision_pack"] == pack
+    assert options["llm"] == "assist"
+    manifest["semantic_revision"] = {"job_id": "old-job", "revision": 3}
+    with pytest.raises(ReviewServerError, match="semantic"):
+        review_server._matching_conversion_options(manifest, run, tmp_path / "match.json", tmp_path / "next")
+
+
+@pytest.mark.parametrize("mode", ["candidate", "off", None])
+def test_rematch_inherits_svg_mode_and_repeats_each_font_directory(tmp_path, monkeypatch, mode):
+    _, run, _, manifest, _ = _matching_fixture(tmp_path, monkeypatch)
+    fonts = [tmp_path / "first font directory", tmp_path / "font's second directory"]
+    if mode:
+        manifest["svg_candidates"] = {"mode": mode,
+            "font_dirs": [str(path) for path in fonts] if mode == "candidate" else []}
+    options = review_server._matching_conversion_options(
+        manifest, run, tmp_path / "match.json", tmp_path / "next")
+    assert options["svg_mode"] == (mode or "candidate")
+    expected_fonts = tuple(fonts) if mode == "candidate" else ()
+    assert options["svg_font_dirs"] == expected_fonts
+    command = review_server._matching_command(options)
+    assert "--svg-mode" in command
+    assert "--svg-font-dirs" not in command
+    assert command.count("--svg-font-dir ") == len(expected_fonts)
+    assert "WindowsPath(" not in command and "PosixPath(" not in command
+    if expected_fonts:
+        assert "first font directory" in command
+
+
+@pytest.mark.parametrize("font_dirs", ["font-dir", [None], [""]])
+def test_rematch_rejects_invalid_svg_font_binding(tmp_path, monkeypatch, font_dirs):
+    _, run, _, manifest, _ = _matching_fixture(tmp_path, monkeypatch)
+    manifest["svg_candidates"] = {"mode": "candidate", "font_dirs": font_dirs}
+    with pytest.raises(ReviewServerError, match="SVG font directories"):
+        review_server._matching_conversion_options(manifest, run, tmp_path / "match.json", tmp_path / "next")
+
+
+@pytest.mark.parametrize("name", ["delivery_partitions", "spatial_regions", "osm_anchor"])
+@pytest.mark.parametrize("change", ["changed", "removed", "appeared"])
+def test_rematch_rejects_changed_optional_conversion_inputs(tmp_path, monkeypatch, name, change):
+    _, run, _, manifest, _ = _matching_fixture(tmp_path, monkeypatch)
+    auxiliary = tmp_path / f"{name}.json"
+    descriptor = {"path": str(auxiliary), "kind": name}
+    if change == "appeared":
+        descriptor["exists"] = False
+    else:
+        auxiliary.write_text('{"reviewed": true}', encoding="utf-8")
+        descriptor["sha256"] = hashlib.sha256(auxiliary.read_bytes()).hexdigest()
+    manifest["conversion_snapshot"] = {"artifacts": {name: descriptor}}
+    args = (manifest, run, tmp_path / "match.json", tmp_path / "next")
+    assert review_server._matching_conversion_options(*args)["mapping_registry"] == tmp_path / "mapping_registry.json"
+    if change == "removed":
+        auxiliary.unlink()
+    else:
+        auxiliary.write_text('{"reviewed": false}', encoding="utf-8")
+    with pytest.raises(ReviewServerError, match=name):
+        review_server._matching_conversion_options(*args)
+
+
+@pytest.mark.parametrize("scoped", [False, True])
+def test_partition_rematch_uses_parent_binding_and_keeps_selected_partition(tmp_path, monkeypatch, scoped):
+    original_client, original, workspace, manifest, _ = _matching_fixture(tmp_path, monkeypatch)
+    controls = original_client.get("/api/review/features").json()["features"]
+    source = original / "fixture.dwg"
+    region = "EMR28560"
+
+    def write_partition(root, parent):
+        part = root / region
+        part.mkdir()
+        delivery = part / "delivery.gpkg"
+        delivery.write_bytes(b"partition")
+        counts = {"CABLE": 1}
+        parent["delivery_partitions"] = {region: {"path": str(delivery),
+            "sha256": hashlib.sha256(delivery.read_bytes()).hexdigest(), "delivery_counts": counts}}
+        (part / "partition_manifest.json").write_text(json.dumps({"region_id": region, "delivery_counts": counts}))
+        _add_svg_fixture(root, parent)
+        (root / "run_manifest.json").write_text(json.dumps(parent), encoding="utf-8")
+        return part
+
+    original_part = write_partition(original, manifest)
+    client = TestClient(create_review_app(original_part, workspace_dir=tmp_path / "partition-review"))
+    svg_url = client.get("/api/run").json()["svg_candidates"]["report_url"]
+    assert client.get(svg_url).status_code == 200
+    for feature in controls:
+        assert client.post("/api/review/features", json={"expected_revision": 0, "feature": feature}).status_code == 200
+    capture = client.get("/api/registration").json()
+    assert capture["matching_ready"] is True
+    assert capture["preview_match"]["region_id"] == region
+    assert capture["preview_match"]["parent_run_sha256"] == hashlib.sha256((original / "run_manifest.json").read_bytes()).hexdigest()
+
+    def convert(options):
+        root = options["run_dir"]
+        root.mkdir()
+        candidate = json.loads(json.dumps(manifest))
+        candidate["source"]["path"] = str(source)
+        candidate["osm_matching"] = json.loads(options["match_profile"].read_text(encoding="utf-8"))
+        if scoped:
+            artifact = root / "delivery.gpkg"
+            artifact.write_bytes(b"scoped-matching-result")
+            candidate["delivery_partition"] = {"region_id": region}
+            candidate["delivery_partitions"] = {}
+            candidate["delivery_counts"] = {"CABLE": 1}
+            candidate["artifacts"]["delivery"] = {"path": str(artifact),
+                "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest()}
+            _add_svg_fixture(root, candidate)
+            (root / "run_manifest.json").write_text(json.dumps(candidate), encoding="utf-8")
+        else:
+            write_partition(root, candidate)
+
+    monkeypatch.setattr(review_server, "_execute_matching_conversion", convert)
+    result = client.post("/api/matching/rematch", json=_matching_request(client, execute=True)).json()
+    assert result["status"] == "completed", result
+    assert Path(result["current_run_dir"]) == Path(result["next_run_dir"]) / ("" if scoped else region)
+    assert client.get("/api/run").json()["delivery_counts"] == {"CABLE": 1}
+    next_svg_url = client.get("/api/run").json()["svg_candidates"]["report_url"]
+    assert next_svg_url != svg_url
+    assert client.get(next_svg_url).status_code == 200
+    for selected in (original_part, Path(result["current_run_dir"])):
+        reopened = TestClient(create_review_app(selected, workspace_dir=tmp_path / "partition-review"))
+        assert reopened.get("/api/run").json()["run_dir"] == result["current_run_dir"]
+        assert len(reopened.get("/api/review/features").json()["features"]) == 3
+
+
+def test_matching_record_uses_selected_partition_before_main_record():
+    main = {"region_id": "MAIN", "status": "matched"}
+    region = {"region_id": "EMR28560", "status": "coarse"}
+    manifest = {"osm_matching": main, "delivery_partition": {"region_id": "EMR28560"},
+        "delivery_partitions": {"EMR28560": {"osm_matching": region}}}
+    assert review_server._matching_record(manifest) is region
+    manifest["delivery_partitions"] = {}
+    manifest["delivery_partition"]["osm_matching"] = region
+    assert review_server._matching_record(manifest) is region
 
 
 def _feature(feature_id: str = "review:1") -> dict:
@@ -61,6 +353,109 @@ def _run_fixture(tmp_path) -> tuple:
     manifest_path = run_dir / "run_manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     return run_dir, delivery, manifest_path
+
+
+def _add_svg_fixture(run_dir, manifest, *, label="SVG fixture"):
+    root = run_dir / "svg-candidates"
+    root.mkdir()
+    (root / "symbols").mkdir()
+    report = {"source_sha256": manifest["source"]["sha256"],
+        "all_points_accounted_for": 2, "dispositions": {"SOURCE_INSTANCE_ONLY": 2}}
+    (root / "correspondence.json").write_text(json.dumps(report), encoding="utf-8")
+    (root / "correspondence.html").write_text(f'<h1>{label}</h1><img src="symbols/instance-a.svg">', encoding="utf-8")
+    (root / "symbols.sqlite3").write_bytes(b"bound-store-fixture")
+    (root / "symbols" / "instance-a.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
+    manifest["svg_candidates"] = {"mode": "candidate", "status": "completed",
+        "auto_applied": False, "font_dirs": [], "output_dir": str(root),
+        "report": str(root / "correspondence.json"), "html": str(root / "correspondence.html"),
+        "store": str(root / "symbols.sqlite3"), "files": {
+            path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in root.rglob("*") if path.is_file()}}
+    for name, filename in [("report", "correspondence.json"), ("html", "correspondence.html"),
+            ("store", "symbols.sqlite3")]:
+        manifest["artifacts"][f"svg_candidates_{name}"] = {"path": str(root / filename),
+            "sha256": manifest["svg_candidates"]["files"][filename]}
+    return root
+
+
+def test_review_serves_only_bound_svg_files_from_current_run(tmp_path):
+    run, _, manifest_path = _run_fixture(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    root = _add_svg_fixture(run, manifest)
+    # A copied run uses its adjacent files even if the original paths still exist.
+    other = tmp_path / "other-report.html"
+    other.write_text("other run")
+    manifest["svg_candidates"]["html"] = str(other)
+    manifest["artifacts"]["svg_candidates_html"]["path"] = str(other)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    client = TestClient(create_review_app(run, workspace_dir=tmp_path / "review"))
+    summary = client.get("/api/run").json()["svg_candidates"]
+    assert summary["status"] == "completed" and summary["auto_applied"] is False
+    assert summary["point_count"] == 2
+    assert "files" not in summary
+    url = summary["report_url"]
+    prefix = url.rsplit("/", 1)[0]
+    response = client.get(url)
+    assert response.status_code == 200 and "SVG fixture" in response.text
+    assert response.headers["cache-control"] == "no-store"
+    assert "sandbox" in response.headers["content-security-policy"]
+    for relative in ("correspondence.json", "symbols.sqlite3", "symbols/instance-a.svg"):
+        assert client.get(f"{prefix}/{relative}").status_code == 200
+    (root / "private.json").write_text('{"private": true}')
+    assert client.get(f"{prefix}/private.json").status_code == 404
+    assert client.get(url.replace(prefix, "/api/svg-candidates/" + "0" * 64)).status_code == 409
+    (root / "symbols" / "instance-a.svg").write_text("changed")
+    assert client.get(f"{prefix}/symbols/instance-a.svg").status_code == 404
+    (root / "correspondence.html").write_text("changed")
+    assert client.get(url).status_code == 404
+    unavailable = client.get("/api/run").json()["svg_candidates"]
+    assert unavailable["report_url"] is None and "SHA-256" in unavailable["report_blocker"]
+
+
+@pytest.mark.parametrize("relative", ["../fixture.dwg", "symbols/../../fixture.dwg", "/fixture.dwg",
+    "symbols\\instance-a.svg", "C:/secret.json", "private.txt"])
+def test_svg_artifact_rejects_unsafe_paths_and_unapproved_suffixes(tmp_path, relative):
+    run, _, manifest_path = _run_fixture(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    _add_svg_fixture(run, manifest)
+    with pytest.raises(ReviewServerError, match="SVG candidate artifact"):
+        review_server._svg_candidate_path(manifest, run, relative)
+
+
+@pytest.mark.parametrize("record", [None, {"mode": "off", "status": "disabled", "font_dirs": []}])
+def test_review_svg_status_handles_legacy_and_disabled_runs(tmp_path, record):
+    run, _, manifest_path = _run_fixture(tmp_path)
+    if record:
+        manifest = json.loads(manifest_path.read_text())
+        manifest["svg_candidates"] = record
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    client = TestClient(create_review_app(run, workspace_dir=tmp_path / "review"))
+    svg = client.get("/api/run").json()["svg_candidates"]
+    assert svg["status"] == ("disabled" if record else "not_recorded")
+    assert svg["report_url"] is None
+    run_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    assert client.get(f"/api/svg-candidates/{run_hash}/correspondence.html").status_code == 404
+
+
+def test_svg_report_rejects_changed_manifest_and_foreign_source_receipt(tmp_path):
+    run, _, manifest_path = _run_fixture(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    root = _add_svg_fixture(run, manifest)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    client = TestClient(create_review_app(run, workspace_dir=tmp_path / "review"))
+    original_url = client.get("/api/run").json()["svg_candidates"]["report_url"]
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    assert client.get(original_url).status_code == 409
+    receipt = root / "correspondence.json"
+    receipt.write_text(json.dumps({"source_sha256": "different-source"}), encoding="utf-8")
+    digest = hashlib.sha256(receipt.read_bytes()).hexdigest()
+    manifest["svg_candidates"]["files"]["correspondence.json"] = digest
+    manifest["artifacts"]["svg_candidates_report"]["sha256"] = digest
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    reopened = TestClient(create_review_app(run, workspace_dir=tmp_path / "review-2"))
+    summary = reopened.get("/api/run").json()["svg_candidates"]
+    assert summary["report_url"] is None
+    assert "different CAD source" in summary["report_blocker"]
 
 
 def test_canonical_registration_preview_uses_target_crs_and_excludes_checks(tmp_path, monkeypatch):

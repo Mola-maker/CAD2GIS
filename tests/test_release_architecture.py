@@ -40,7 +40,7 @@ def test_svg_preflight_prevents_conversion_when_output_exists(tmp_path, monkeypa
     from cad2gis import pipeline, runtime
     source = tmp_path / 'source.dwg'
     source.write_bytes(b'source')
-    (tmp_path / 'run-svg-candidates').mkdir()
+    (tmp_path / 'run' / 'svg-candidates').mkdir(parents=True)
     monkeypatch.setattr(runtime, 'call_conversion_backend', lambda **k: pytest.fail('Backend must not run'))
     with pytest.raises(FileExistsError):
         pipeline.convert_project(source=source, run_dir=tmp_path / 'run', svg_mode='candidate')
