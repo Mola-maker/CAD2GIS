@@ -17,7 +17,7 @@ from typing import Any
 
 IMPLEMENTATION_SCHEMA_VERSION = "cad2gis-implementation-provenance-v1"
 PRODUCTION_CONVERSION_SCOPE = "production-conversion"
-PRODUCTION_CONVERSION_SCOPE_VERSION = 9
+PRODUCTION_CONVERSION_SCOPE_VERSION = 11
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
 # Paths are relative to src/cad2gis.  Keep this list explicit: adding
@@ -27,6 +27,8 @@ PRODUCTION_CONVERSION_FILES = (
     "coordinate_runtime.py",
     "native_runtime.py",
     "presentation.py",
+    "symbol_assets.py",
+    "symbol_workflow.py",
     "reader/autocad.py",
     "reader/contracts.py",
     "reader/libredwg.py",
@@ -54,6 +56,8 @@ PRODUCTION_CONVERSION_FILES = (
     "cad2gis_v3/ingest.py",
     "cad2gis_v3/legend_detector.py",
     "cad2gis_v3/model.py",
+    "cad2gis_v3/osm_anchor.py",
+    "cad2gis_v3/osm_matching.py",
     "cad2gis_v3/pipeline.py",
     "cad2gis_v3/plan_domain.py",
     "cad2gis_v3/ports.py",
@@ -228,6 +232,8 @@ def freeze_conversion_snapshot(
     gcp_profile: str | os.PathLike[str] | None = None,
     *,
     decision_pack: str | os.PathLike[str] | None = None,
+    osm_data: str | os.PathLike[str] | None = None,
+    match_profile: str | os.PathLike[str] | None = None,
     code_root: str | os.PathLike[str] | None = None,
     code_paths: Iterable[str] | None = None,
     runtime: Mapping[str, Any] | None = None,
@@ -263,11 +269,13 @@ def freeze_conversion_snapshot(
             None if decision_pack is None
             else _artifact_record(decision_pack, kind="decision_pack")
         ),
+        "osm_data": None if osm_data is None else _artifact_record(osm_data, kind="osm_data"),
+        "match_profile": None if match_profile is None else _artifact_record(match_profile, kind="match_profile"),
     }
     # These optional project inputs also change geometry admission, delivery
     # membership and GCP coverage. Bind absence as well as existing bytes.
     config_dir = Path(mapping_registry).expanduser().resolve().parent
-    for name in ("delivery_partitions", "spatial_regions"):
+    for name in ("delivery_partitions", "spatial_regions", "osm_anchor"):
         path = config_dir / f"{name}.json"
         artifacts[name] = (
             _artifact_record(path, kind=name) if path.exists()
@@ -417,7 +425,15 @@ def verify_conversion_snapshot(
         if not ok:
             mismatches.append(detail)
 
-    for name in ("delivery_partitions", "spatial_regions"):
+    for name in ("osm_data", "match_profile"):
+        expected = artifacts.get(name)
+        if expected is not None:
+            checked.append(name)
+            ok, detail = _verify_artifact(name, expected)
+            if not ok:
+                mismatches.append(detail)
+
+    for name in ("delivery_partitions", "spatial_regions", "osm_anchor"):
         # Older snapshots did not bind auxiliary configuration. Keep them
         # inspectable; all newly frozen snapshots include both descriptors.
         if name not in artifacts:

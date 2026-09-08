@@ -12,12 +12,16 @@ absolute coordinate transformation.
 from __future__ import annotations
 
 import json
+import os
 import re
+import threading
+import time
 import urllib.parse
 import urllib.request
 import math
 from collections import Counter
 from collections.abc import Mapping, Sequence
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +29,8 @@ _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 _OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 _NOMINATIM_TIMEOUT_S = 15.0
 _OSM_ANCHOR_SCHEMA = "cad2gis-osm-anchor-v2"
+_NOMINATIM_REQUEST_LOCK = threading.Lock()
+_NOMINATIM_LAST_REQUEST_AT: float | None = None
 
 # OVERFIT-RISK (region): these administrative-level keywords are Indonesian
 # naming conventions (kelurahan/kecamatan/kabupaten/desa/dusun/RW/RT).  They
@@ -98,21 +104,41 @@ def query_osm_place(place_name: str) -> dict[str, Any] | None:
         "limit": 1,
         "addressdetails": 0,
     })
-    url = f"{_NOMINATIM_URL}?{params}"
+    endpoint = os.environ.get("CAD2GIS_NOMINATIM_URL", _NOMINATIM_URL).strip()
+    url = f"{endpoint}{'&' if '?' in endpoint else '?'}{params}"
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "cad2gis-osm-anchor/1.0"},
+        headers={"User-Agent": os.environ.get("CAD2GIS_OSM_USER_AGENT", "cad2gis-osm-anchor/1.0")},
     )
     try:
-        with urllib.request.urlopen(request, timeout=_NOMINATIM_TIMEOUT_S) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        global _NOMINATIM_LAST_REQUEST_AT
+        public_service = urllib.parse.urlsplit(endpoint).hostname == "nominatim.openstreetmap.org"
+        # Serialize public-service requests from concurrent local jobs and
+        # leave at least one second between starts. Explicit place queries in
+        # standard matching additionally use a persistent provider-bound cache.
+        with _NOMINATIM_REQUEST_LOCK if public_service else nullcontext():
+            if public_service:
+                if _NOMINATIM_LAST_REQUEST_AT is not None:
+                    delay = 1.0 - (time.monotonic() - _NOMINATIM_LAST_REQUEST_AT)
+                    if delay > 0:
+                        time.sleep(delay)
+                _NOMINATIM_LAST_REQUEST_AT = time.monotonic()
+            with urllib.request.urlopen(request, timeout=_NOMINATIM_TIMEOUT_S) as response:
+                payload = json.loads(response.read().decode("utf-8"))
     except Exception:
         return None
     if not isinstance(payload, list) or not payload:
         return None
     first = payload[0]
-    lat = float(first.get("lat"))
-    lon = float(first.get("lon"))
+    if not isinstance(first, Mapping):
+        return None
+    try:
+        lat = float(first.get("lat"))
+        lon = float(first.get("lon"))
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(lat) or not math.isfinite(lon) or not (-85 <= lat <= 85 and -180 <= lon <= 180):
+        return None
     bbox = first.get("boundingbox")
     result: dict[str, Any] = {
         "display_name": str(first.get("display_name", place_name)),
@@ -121,7 +147,12 @@ def query_osm_place(place_name: str) -> dict[str, Any] | None:
         "epsg3857_centre": _wgs84_to_3857(lon, lat),
     }
     if isinstance(bbox, list) and len(bbox) == 4:
-        south, north, west, east = (float(v) for v in bbox)
+        try:
+            south, north, west, east = (float(v) for v in bbox)
+        except (TypeError, ValueError, OverflowError):
+            return result
+        if not (-85 <= south <= north <= 85 and -180 <= west <= east <= 180):
+            return result
         result["bbox"] = {
             "south": south, "north": north, "west": west, "east": east,
         }
@@ -167,10 +198,10 @@ def query_osm_roads(
         f"out tags geom {int(max_roads)};"
     )
     request = urllib.request.Request(
-        _OVERPASS_URL,
+        os.environ.get("CAD2GIS_OVERPASS_URL", _OVERPASS_URL).strip(),
         data=urllib.parse.urlencode({"data": query}).encode("utf-8"),
         headers={
-            "User-Agent": "cad2gis-osm-road-review/1.0",
+            "User-Agent": os.environ.get("CAD2GIS_OSM_USER_AGENT", "cad2gis-osm-road-review/1.0"),
             "Content-Type": "application/x-www-form-urlencoded",
         },
         method="POST",

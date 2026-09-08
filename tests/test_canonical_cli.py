@@ -49,11 +49,59 @@ def test_public_convert_signature_is_stable() -> None:
         "geometry_repairs",
         "svg_mode",
         "svg_font_dirs",
+        "matching",
+        "osm_data",
+        "osm_place",
+        "match_profile",
     )
     assert all(
         parameter.kind is inspect.Parameter.KEYWORD_ONLY
         for parameter in signature.parameters.values()
     )
+    assert signature.parameters["matching"].default == "osm"
+
+
+def test_standard_matching_keeps_discovered_gcp_for_preview(tmp_path, monkeypatch):
+    project, source_profile, _ = _minimal_project(tmp_path)
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"dwg")
+    gcp = source_profile.parent / "gcp_profile.json"
+    gcp.write_text("{}", encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(runtime, "call_conversion_backend", lambda **kwargs: calls.append(kwargs))
+    pipeline.convert_project(source=source, run_dir=tmp_path / "osm", project_dir=project)
+    pipeline.convert_project(source=source, run_dir=tmp_path / "nominal", project_dir=project, matching="nominal")
+    assert calls[0]["gcp_profile"] is None
+    assert calls[1]["gcp_profile"] == gcp.resolve()
+    # Unused legacy GCP choices must not prevent the standard OSM path.
+    (source_profile.parent / "old_gcp_profile.json").write_text("{}", encoding="utf-8")
+    pipeline.convert_project(source=source, run_dir=tmp_path / "osm2", project_dir=project)
+    assert calls[2]["gcp_profile"] is None
+    with pytest.raises(pipeline.ProjectConfigurationError, match="ambiguous"):
+        pipeline.convert_project(source=source, run_dir=tmp_path / "nominal2", project_dir=project, matching="nominal")
+
+
+def test_cli_forwards_offline_osm_and_frozen_revision(tmp_path, monkeypatch, capsys):
+    project, _, _ = _minimal_project(tmp_path)
+    source = tmp_path / "drawing.dwg"
+    source.write_bytes(b"dwg")
+    snapshot = tmp_path / "osm.json"
+    snapshot.write_text('{"elements":[]}', encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(pipeline, "convert_project", lambda **kwargs: calls.append(kwargs) or {})
+    assert cli.main(["convert", str(source), "--project", str(project), "--run-dir", str(tmp_path / "run"),
+                     "--osm-data", str(snapshot), "--osm-place", "Kletek", "--json"]) == 0
+    assert calls[0]["osm_data"] == snapshot
+    assert calls[0]["osm_place"] == "Kletek"
+    assert cli.main(["convert", str(source), "--project", str(project), "--run-dir", str(tmp_path / "run2"),
+                     "--match-profile", str(snapshot), "--json"]) == 0
+    assert calls[1]["match_profile"] == snapshot
+
+
+def test_frozen_match_rejects_conflicting_registration_inputs(tmp_path):
+    with pytest.raises(pipeline.ProjectConfigurationError, match="frozen registration"):
+        pipeline.convert_project(source=tmp_path / "x.dwg", run_dir=tmp_path / "run",
+                                 match_profile=tmp_path / "match.json", osm_place="new place")
 
 
 def test_generic_project_discovery_has_no_customer_name(tmp_path: Path) -> None:
@@ -126,6 +174,8 @@ def test_convert_resolves_inputs_before_calling_backend(
                 "decision_pack": None,
                 "domain": "auto",
             "llm": "off",
+            "svg_mode": "candidate",
+            "svg_font_dirs": (),
         }
     ]
 

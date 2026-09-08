@@ -14,6 +14,7 @@ from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from .calibration import GCPProfile, fit_profile
@@ -221,8 +222,24 @@ class ConversionRequest:
     semantic_store: Path | None = None
     semantic_job: str = ""
     geometry_repairs: str = "legacy"
+    matching: str = "osm"
+    osm_data: Path | None = None
+    osm_place: str | None = None
+    match_profile: Path | None = None
+    svg_mode: str = "candidate"
+    svg_font_dirs: tuple[Path, ...] = ()
 
     def __post_init__(self) -> None:
+        if self.svg_mode not in {"candidate", "off"}:
+            raise ValueError("svg_mode must be candidate or off")
+        if self.svg_mode == "off" and self.svg_font_dirs:
+            raise ValueError("svg_font_dirs requires candidate mode")
+        if self.matching not in {"osm", "nominal"}:
+            raise ValueError("matching must be osm or nominal")
+        if self.matching == "nominal" and (self.osm_data is not None or self.osm_place or self.match_profile is not None):
+            raise ValueError("OSM inputs require matching=osm")
+        if self.match_profile is not None and (self.osm_data is not None or self.osm_place or self.gcp_profile is not None):
+            raise ValueError("A frozen match profile cannot be combined with new OSM inputs or GCP calibration")
         if self.geometry_repairs not in {"legacy", "candidate-only"}:
             raise ValueError("geometry_repairs must be legacy or candidate-only")
         if bool(self.semantic_store) != bool(self.semantic_job) or (self.semantic_store and not self.source_run):
@@ -939,6 +956,17 @@ def _segment_delivery_summary(features, delivery_counts=None):
     }
 
 
+def _has_osm_registration(georeference_diagnostics):
+    """An empty MAIN panel must not negate registered independent panels.
+
+    Admission already rejects every populated, unregistered local partition.
+    This aggregate describes the run; individual matching records remain intact.
+    """
+    records = [georeference_diagnostics.get("osm_matching") or {}]
+    records.extend((georeference_diagnostics.get("osm_matching_by_region") or {}).values())
+    return any(record.get("status") in {"matched", "coarse"} for record in records)
+
+
 def _manifest_validation_summary(
     entities, features, policy_diagnostics, topology_diagnostics,
     georeference_diagnostics, delivery_counts=None,
@@ -963,8 +991,15 @@ def _manifest_validation_summary(
     coverage = calibration.get("spatial_coverage") or {}
     lineage = georeference_diagnostics["lineage"]
     coordinate_domain = georeference_diagnostics.get("coordinate_domain") or {}
+    matching = georeference_diagnostics.get("osm_matching") or {}
     calibration_status = calibration["status"]
-    if calibration_status == "accepted":
+    if _has_osm_registration(georeference_diagnostics):
+        coordinate_accuracy_passed: bool | None = None
+        coordinate_verification_status = "relative_osm_matched"
+    elif calibration_status == "accepted" and calibration.get("absolute_accuracy_verified") is False:
+        coordinate_accuracy_passed = None
+        coordinate_verification_status = "relative_control_alignment"
+    elif calibration_status == "accepted":
         coordinate_accuracy_passed: bool | None = True
         coordinate_verification_status = "independently_validated_gcp"
     elif coordinate_domain.get("passed") is False:
@@ -1041,6 +1076,9 @@ def _manifest_validation_summary(
         "coordinate_accuracy": {
             "passed": coordinate_accuracy_passed,
             "verification_status": coordinate_verification_status,
+            "absolute_accuracy_verified": coordinate_accuracy_passed is True,
+            "matching_status": matching.get("status"),
+            "matching_revision": matching.get("revision"),
             "calibration_status": calibration_status,
             "coordinate_domain_status": coordinate_domain.get("status"),
             "coordinate_domain_passed": coordinate_domain.get("passed"),
@@ -1331,6 +1369,7 @@ def _derive_conversion_status(
     if (
         isinstance(unit_contract, Mapping)
         and unit_contract.get("coordinate_mode") not in {None, "direct_crs"}
+        and not _has_osm_registration(georeference_diagnostics)
     ):
         serious_failures.append("unit_crs_contract")
     for key, threshold in (
@@ -1468,6 +1507,31 @@ def _styled_delivery_fingerprint(path, styles_dir):
     }
 
 
+def _prepare_svg_candidates(request, source, source_hash, staged_run_dir, run_dir, delivery_paths):
+    from ..symbol_workflow import prepare
+
+    output = staged_run_dir / "svg-candidates"
+    published_output = run_dir / "svg-candidates"
+    final_paths = {path: run_dir / path.relative_to(staged_run_dir) for path in delivery_paths}
+    report = prepare(source, delivery_paths, output, font_dirs=request.svg_font_dirs,
+                     database_paths=final_paths, expected_source_sha256=source_hash)
+    files = {path.relative_to(output).as_posix(): _sha256(path)
+             for path in sorted(output.rglob("*")) if path.is_file()}
+    return {
+        "mode": "candidate", "status": "completed", "auto_applied": False,
+        "source_sha256": source_hash,
+        "font_dirs": [str(Path(path).expanduser().resolve()) for path in request.svg_font_dirs],
+        "output_dir": str(published_output),
+        "report": str(published_output / "correspondence.json"),
+        "html": str(published_output / "correspondence.html"),
+        "store": str(published_output / "symbols.sqlite3"),
+        "files": files,
+        "all_points_accounted_for": report["all_points_accounted_for"],
+        "dispositions": report["dispositions"],
+        "complete_legend_correspondence_verified": False,
+    }
+
+
 def _validate_ingested_source(source, entities, ingest_diagnostics, profile):
     """Enforce inventory conservation and dependency admission before semantics."""
     accounting_records = account_entities(entities)
@@ -1588,6 +1652,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             request.mapping_registry,
             request.gcp_profile,
             decision_pack=request.decision_pack,
+            osm_data=request.osm_data,
+            match_profile=request.match_profile,
             runtime=startup_runtime,
         )
     except FileNotFoundError:
@@ -1602,6 +1668,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
     # This review gate is before unit/CRS work, AutoCAD startup, or ingestion.
     # Validation never upgrades a draft.
     profile.require_reviewed()
+    if request.svg_mode == "candidate":
+        from ..symbol_workflow import preflight
+        preflight(run_dir / "svg-candidates", font_dirs=request.svg_font_dirs)
     # Keep the pipeline tolerant of legacy/custom SourceProfile-like objects
     # created before the optional DWG GEODATA registration field existed.
     geodata_registration = getattr(profile, "geodata_registration", None)
@@ -1615,13 +1684,17 @@ def convert(request: ConversionRequest) -> ConversionResult:
         # Includes code/runtime identity and source, profile, registry, GCP
         # and decision-pack bytes. No result reuse is enabled by this receipt.
         "conversion_snapshot": conversion_snapshot,
-        "modes": {"domain": request.domain, "llm": request.llm},
+        "modes": {"domain": request.domain, "llm": request.llm, "matching": request.matching, "svg": request.svg_mode},
         "reader_backend": configured_reader(),
     })
     stage_inputs = {
         "source_sha256": source_hash,
         "source_profile_sha256": _sha256(profile.path),
         "mapping_registry_sha256": _sha256(registry.path),
+        "matching": request.matching,
+        "osm_place": request.osm_place,
+        "svg_mode": request.svg_mode,
+        "svg_font_dirs": [str(Path(path).resolve()) for path in request.svg_font_dirs],
     }
 
     from .units import build_unit_crs_contract
@@ -1637,7 +1710,12 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )
     # DirectTransformer is the only implemented geometry transform at this
     # boundary.  Registration contracts must never masquerade as direct CRS.
-    if unit_contract.coordinate_mode != "direct_crs":
+    local_osm_reference = (
+        unit_contract.coordinate_mode != "direct_crs"
+        and request.matching == "osm" and request.gcp_profile is None
+        and geodata_registration is None
+    )
+    if unit_contract.coordinate_mode != "direct_crs" and not local_osm_reference:
         raise RuntimeError(
             "Conversion requires an implemented reviewed authoritative registration; "
             f"unit/CRS contract mode is {unit_contract.coordinate_mode!r}"
@@ -1747,46 +1825,29 @@ def convert(request: ConversionRequest) -> ConversionResult:
 
     from .coordinate_domain import assess_coordinate_domain
 
-    coordinate_domain_entities = _coordinate_domain_view(
-        _drawing_space_entities(semantic_entities), unit_contract,
-        geodata_registration,
-    )
-    coordinate_domain = assess_coordinate_domain(
-        coordinate_domain_entities, profile.source_crs,
-    )
+    if local_osm_reference:
+        coordinate_domain = {
+            "status": "local_registration_required", "passed": False,
+            "failures": ["Native CAD coordinates require geographic registration"],
+        }
+    else:
+        coordinate_domain_entities = _coordinate_domain_view(
+            _drawing_space_entities(semantic_entities), unit_contract,
+            geodata_registration,
+        )
+        coordinate_domain = assess_coordinate_domain(
+            coordinate_domain_entities, profile.source_crs,
+        )
     native_source_crs = _native_inventory_crs(
         entities, profile.source_crs, unit_contract, coordinate_domain,
         geodata_registration,
     )
-    # OSM place-name lookup is relative evidence only.  Persisting a coarse
-    # candidate helps a later review, but it must never mutate delivery
-    # geometry or turn a failed coordinate-domain gate into a pass.
-    osm_anchor: dict[str, Any] | None = None
-    if request.gcp_profile is None and geodata_registration is None:
-        from .osm_anchor import derive_osm_anchor
-
-        # Legacy v1 caches used ``status=derived``.  Treat them as candidates,
-        # never as reviewed registration authority.
-        anchor = _load_osm_anchor(request.mapping_registry.parent)
-        if anchor is not None and anchor.get("status") in {"derived", "candidate"}:
-            anchor = {
-                **anchor,
-                "status": "candidate",
-                "authority": "relative_only",
-                "applicable_for_delivery": False,
-                "refinement": "surveyed_gcp_required",
-            }
-        if anchor is None and coordinate_domain.get("passed") is not True:
-            extent = coordinate_domain.get("observed_extent") or {}
-            if len(extent) == 4:
-                anchor = derive_osm_anchor(
-                    source,
-                    [extent["min_x"], extent["min_y"], extent["max_x"], extent["max_y"]],
-                )
-                if anchor.get("status") == "candidate":
-                    _save_osm_anchor(request.mapping_registry.parent, anchor)
-        if anchor is not None and anchor.get("status") == "candidate":
-            osm_anchor = anchor
+    # Older project anchors are search hints only. Standard matching below
+    # creates a source-bound revision and never overwrites project inputs.
+    osm_anchor = (
+        _load_osm_anchor(request.mapping_registry.parent)
+        if request.matching == "osm" else None
+    )
     raw_entity_keys = {entity.entity_key for entity in entities}
     evidence_entities = [
         *entities,
@@ -1830,20 +1891,6 @@ def convert(request: ConversionRequest) -> ConversionResult:
         },
     )
     record_geometry_candidates("semantic_classification")
-    if (
-        osm_anchor is not None
-        and "road_match" not in osm_anchor
-    ):
-        from .osm_anchor import refine_osm_anchor_with_roads
-
-        osm_anchor = refine_osm_anchor_with_roads(
-            osm_anchor,
-            [
-                feature for feature in features
-                if feature.feature_class == "CABLE"
-            ],
-        )
-        _save_osm_anchor(request.mapping_registry.parent, osm_anchor)
     semantic_diagnostics["legend_spatial"] = {
         "flagged_entity_keys": sorted(legend_flag_map.keys()),
         "flagged_count": len(legend_flag_map),
@@ -2014,20 +2061,20 @@ def convert(request: ConversionRequest) -> ConversionResult:
     segment_gate = _evaluate_diagnostic_gates(
         "segments", profile.expectations.segment_gates, topology_diagnostics,
     )
-    transformer = (
-        DirectTransformer(
-            profile.source_crs,
-            profile.target_crs,
-            unit_contract=unit_contract,
+    if local_osm_reference:
+        from .osm_matching import LocalMatchingReference
+        transformer = LocalMatchingReference(profile.source_crs, profile.target_crs, unit_contract)
+    else:
+        transformer = (
+            DirectTransformer(
+                profile.source_crs, profile.target_crs, unit_contract=unit_contract,
+            )
+            if geodata_registration is None
+            else GeoDataTransformer(
+                profile.source_crs, profile.target_crs,
+                geodata_registration=geodata_registration, unit_contract=unit_contract,
+            )
         )
-        if geodata_registration is None
-        else GeoDataTransformer(
-            profile.source_crs,
-            profile.target_crs,
-            geodata_registration=geodata_registration,
-            unit_contract=unit_contract,
-        )
-    )
     all_points = [point for feature in features for point in feature.native_points]
     roundtrip_error = transformer.roundtrip_error(all_points)
     if roundtrip_error > 0.01:
@@ -2036,22 +2083,100 @@ def convert(request: ConversionRequest) -> ConversionResult:
     if engine_crosscheck > 1e-6:
         raise RuntimeError(f"OSR/PROJ target-coordinate disagreement exceeds 1e-6 m: {engine_crosscheck}")
     selected_transformer = transformer
+    osm_matching: dict[str, Any] | None = None
+    delivery_partitions = _load_delivery_partitions(request.mapping_registry.parent)
+    main_partition_features, all_partitioned_features = _partition_features(features, delivery_partitions)
+    all_partitioned_features[_MAIN_PARTITION_ID] = main_partition_features
+    coordinate_domains_by_region = {
+        region: (
+            assess_coordinate_domain([
+                SimpleNamespace(points=tuple(transformer._source_axis_point(point)
+                    for point in feature.native_points), centroid=())
+                for feature in scoped if feature.native_points
+            ], profile.source_crs)
+            if delivery_partitions and request.matching == "osm"
+            and request.gcp_profile is None and not local_osm_reference
+            else coordinate_domain
+        ) for region, scoped in all_partitioned_features.items()
+    }
+    if any(all_partitioned_features[region] and domain.get("passed") is not True
+           for region, domain in coordinate_domains_by_region.items()):
+        # One drawing can mix georeferenced and local panels. The source
+        # inventory retains all native coordinates and cannot claim one CRS.
+        native_source_crs = None
+    osm_partition_id: str | None = None
+    osm_by_region: dict[str, tuple[Any, dict[str, Any]]] = {}
+    if request.matching == "osm" and request.gcp_profile is None:
+        from .osm_matching import load_match_profile, match_osm
+
+        def resolve_osm_matches():
+            if request.match_profile is not None:
+                matched, record = load_match_profile(request.match_profile, source_hash, transformer)
+                region = record.get("region_id")
+                if delivery_partitions and region is None:
+                    raise ValueError("A multi-panel drawing requires a region-bound OSM match profile")
+                if region is not None and region not in all_partitioned_features:
+                    raise ValueError(f"OSM match profile refers to an unknown delivery region: {region}")
+                return {region or _MAIN_PARTITION_ID: (matched or transformer, record)}
+            scopes = all_partitioned_features if delivery_partitions else {_MAIN_PARTITION_ID: features}
+            matches = {}
+            for region, region_features in scopes.items():
+                matched, record = match_osm(
+                    source=source, source_sha256=source_hash, features=region_features,
+                    nominal=transformer, coordinate_domain=coordinate_domains_by_region[region],
+                    osm_data=request.osm_data, place_name=request.osm_place,
+                    anchor=osm_anchor, cache_dir=request.mapping_registry.parent / ".osm-cache",
+                    **({"region_id": region} if delivery_partitions else {}),
+                )
+                matches[region] = (matched or transformer, record)
+            return matches
+
+        osm_by_region = stage_recorder.run(
+            "osm_matching", version="v1-relative-registration",
+            inputs=lambda: {
+                **stage_inputs,
+                "feature_state_sha256": canonical_sha256(features),
+                "coordinate_domain": coordinate_domain,
+                "coordinate_domains_by_region": coordinate_domains_by_region,
+                "osm_anchor_hint": osm_anchor,
+            },
+            operation=resolve_osm_matches,
+            fingerprint=lambda result: {region: value[1] for region, value in result.items()},
+            summarize=lambda result: {region: {key: value[1].get(key)
+                for key in ("status", "revision", "match_sha256", "authority")}
+                for region, value in result.items()},
+        )
+        if request.match_profile is not None:
+            selected_transformer, osm_matching = next(iter(osm_by_region.values()))
+            osm_partition_id = osm_matching.get("region_id")
+            if osm_partition_id is not None:
+                # Independent panels must never inherit another panel's controls.
+                features = all_partitioned_features[osm_partition_id]
+        else:
+            selected_transformer, osm_matching = osm_by_region[_MAIN_PARTITION_ID]
+    osm_active = any(value[0] is not transformer for value in osm_by_region.values())
+    if local_osm_reference and not osm_active:
+        raise RuntimeError("OSM matching could not register local CAD coordinates; provide an OSM snapshot and geographic search reference")
+    feature_transformers: dict[str, Any] = {}
+    for region, (region_transformer, record) in osm_by_region.items():
+        scoped = all_partitioned_features[region]
+        if scoped and coordinate_domains_by_region[region].get("passed") is not True and region_transformer is transformer:
+            raise RuntimeError(f"OSM matching could not register local CAD region {region}; provide geographic reference data")
+        for feature in scoped:
+            feature_transformers[feature.feature_key] = region_transformer
+            if region_transformer is transformer:
+                continue
+            feature.lineage.append({
+                "operation": "osm_relative_registration",
+                "match_sha256": record["match_sha256"], "revision": record["revision"],
+                "region_id": record.get("region_id"),
+                "authority": "relative_osm", "absolute_accuracy_verified": False,
+                "source_sha256": source_hash,
+            })
     calibration_audit = None
     lineage_audit = None
     calibration_diagnostics = {"status": "not_provided"}
     gcp_profile = None
-    delivery_partitions = _load_delivery_partitions(
-        request.mapping_registry.parent,
-    )
-    main_partition_features, all_partitioned_features = _partition_features(
-        features, delivery_partitions,
-    )
-    if delivery_partitions:
-        # The MAIN panel is the remaining drawing space after the configured
-        # second-level panels are carved out.  Its GCP coverage gates are
-        # scoped to that residual panel too, exactly like every configured
-        # panel.
-        all_partitioned_features[_MAIN_PARTITION_ID] = main_partition_features
     gcp_partition_id: str | None = None
     if request.gcp_profile is not None:
         gcp_profile = GCPProfile.load(
@@ -2175,6 +2300,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "source_sha256": gcp_profile.source_sha256,
             "spatial_coverage": spatial_coverage,
             "result": result_payload,
+            "absolute_accuracy_verified": not any(
+                "OSM" in control.source.upper()
+                or "OPENSTREETMAP" in control.source.upper().replace(" ", "")
+                for control in gcp_profile.active_controls
+            ) and status == "accepted",
         }
         calibration_audit = {
             **calibration_diagnostics,
@@ -2188,15 +2318,36 @@ def convert(request: ConversionRequest) -> ConversionResult:
         # ``calibration_audit`` remains reserved for real profile evidence;
         # this independent audit lets the existing evidence writer persist
         # the lineage table without manufacturing a profile or controls.
-        feature_displacements = feature_adjustment_records(
-            features, transformer, selected_transformer,
-            lineage_model=getattr(transformer, "lineage_model", "nominal_direct"),
-        )
+        if osm_by_region:
+            feature_displacements = [
+                row for region, (region_transformer, _record) in osm_by_region.items()
+                for row in feature_adjustment_records(
+                    all_partitioned_features[region], transformer, region_transformer,
+                    lineage_model=getattr(region_transformer, "lineage_model", "nominal_direct"),
+                )
+            ]
+        else:
+            feature_displacements = feature_adjustment_records(
+                features, transformer, selected_transformer,
+                lineage_model=getattr(selected_transformer, "lineage_model", "nominal_direct"),
+            )
         lineage_audit = _nominal_lineage_audit(
             transformer, source_hash, feature_displacements,
         )
+        if osm_active:
+            lineage_audit["result"]["requested_model"] = "osm_relative_translation"
+            lineage_audit["result"]["selected_model"] = "osm_relative_translation"
+            lineage_audit["result"]["parameters"] = {"regions": {
+                region: record["translation_3857"] for region, (_transform, record) in osm_by_region.items()
+            }}
+            lineage_audit["osm_matching"] = osm_matching
+            lineage_audit["osm_matching_by_region"] = {region: value[1] for region, value in osm_by_region.items()}
 
-    enrich_delivery_metrics(features, selected_transformer)
+    if osm_by_region:
+        for region, (region_transformer, _record) in osm_by_region.items():
+            enrich_delivery_metrics(all_partitioned_features[region], region_transformer)
+    else:
+        enrich_delivery_metrics(features, selected_transformer)
     from .styles import analyze_style_coverage
 
     style_coverage = analyze_style_coverage(
@@ -2207,6 +2358,9 @@ def convert(request: ConversionRequest) -> ConversionResult:
     if style_coverage.get("conversion_allowed") is not True:
         raise RuntimeError(f"Style coverage gate failed: {style_coverage}")
     operation_metadata = transformer.operation_metadata(all_points[0] if all_points else None)
+    if osm_active:
+        operation_metadata["absolute_accuracy_validation"] = "not_verified; relative OpenStreetMap registration only"
+        operation_metadata["osm_matching_sha256"] = osm_matching["match_sha256"]
     if calibration_diagnostics["status"] == "accepted":
         operation_metadata["absolute_accuracy_validation"] = (
             "nominal CRS operation only; accepted GCP validation is recorded in calibration"
@@ -2214,10 +2368,12 @@ def convert(request: ConversionRequest) -> ConversionResult:
     if (
         coordinate_domain.get("passed") is not True
         and calibration_diagnostics["status"] != "accepted"
+        and not osm_active
     ):
         raise RuntimeError(
-            "Declared CRS coordinate-domain gate failed and no independently "
-            "validated GCP registration is active: "
+            "Declared CRS coordinate-domain gate failed and no usable OSM matching "
+            "or independently validated GCP registration is active. Supply --osm-data "
+            "and a geographic search area, or preview control points: "
             + "; ".join(coordinate_domain.get("failures") or ())
         )
     diagnostics = {
@@ -2253,6 +2409,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "source_crs": profile.source_crs,
             "target_crs": profile.target_crs,
             "operation": (
+                "OSM relative registration in EPSG:3857 followed by target CRS projection"
+                if osm_active else
                 "DWG GEODATA local-to-source registration followed by direct "
                 "source-to-target; no EPSG:4326 intermediate geometry"
                 if geodata_registration is not None
@@ -2271,11 +2429,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "engine_crosscheck_max_target_m": engine_crosscheck,
             "coordinate_operation": operation_metadata,
             "coordinate_domain": coordinate_domain,
+            "coordinate_domains_by_region": coordinate_domains_by_region,
             "osm_anchor": osm_anchor,
+            "osm_matching": osm_matching,
+            "osm_matching_by_region": {region: value[1] for region, value in osm_by_region.items()},
             "calibration": calibration_diagnostics,
             "lineage": {
                 "model": (
-                    getattr(transformer, "lineage_model", "nominal_direct")
+                    getattr(selected_transformer, "lineage_model", "nominal_direct")
                     if lineage_audit is not None
                     else "identity_residual" if calibration_diagnostics["status"] == "disabled"
                     else calibration_diagnostics["result"].get("selected_model", "identity_residual")
@@ -2286,12 +2447,13 @@ def convert(request: ConversionRequest) -> ConversionResult:
         "reasoning": reasoning_diagnostics,
     }
 
-    if gcp_partition_id is not None:
+    output_partition_id = osm_partition_id or gcp_partition_id
+    if output_partition_id is not None:
         # A GCP profile exported from one subdrawing review workspace must
         # produce that subdrawing's corrected eight-layer package at the
         # requested run-dir, not the full multi-panel drawing.
         main_delivery_features = all_partitioned_features.get(
-            gcp_partition_id, [],
+            output_partition_id, [],
         )
         partitioned_features = {}
         output_partitions = []
@@ -2318,6 +2480,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
     )).resolve()
     try:
         staged_source_path = staged_run_dir / source_path.name
+        if osm_matching is not None:
+            _write_manifest(staged_run_dir / "osm_matching.json", osm_matching)
         if geometry_report is not None:
             _write_manifest(staged_run_dir / "geometry_repair_candidates.json", geometry_report)
         staged_evidence_path = staged_run_dir / evidence_path.name
@@ -2430,6 +2594,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 calibration_audit=(calibration_audit or lineage_audit),
                 target_srs=transformer.target,
                 delivery_transformer=selected_transformer,
+                **({"delivery_transformers": feature_transformers} if feature_transformers else {}),
             ),
             fingerprint=lambda _result: _sha256(staged_evidence_path),
             summarize=lambda _result: {
@@ -2471,7 +2636,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
             region_delivery_path = region_dir / "delivery.gpkg"
             region_styles_dir = region_dir / "qgis" / "styles"
             region_counts = write_delivery(
-                region_delivery_path, region_features, selected_transformer,
+                region_delivery_path, region_features,
+                osm_by_region.get(region_id, (selected_transformer, None))[0],
             )
             region_style_manifest_path = write_styles(
                 region_styles_dir, region_features, region_delivery_path,
@@ -2499,6 +2665,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "label": partition["label"],
                 "bbox": partition["bbox"],
                 "delivery_counts": region_counts,
+                **({"osm_matching": osm_by_region[region_id][1]} if region_id in osm_by_region else {}),
                 "style_manifest": (
                     f"{region_id}/qgis/styles/style_manifest.json"
                 ),
@@ -2513,6 +2680,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                     f"{region_id}/qgis/styles/style_manifest.json"
                 ),
                 "delivery_counts": region_counts,
+                **({"osm_matching": osm_by_region[region_id][1]} if region_id in osm_by_region else {}),
             }
 
         validation_summary = _manifest_validation_summary(
@@ -2528,6 +2696,30 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "CABLE segment delivery manifest closure validation failed: "
                 f"{validation_summary['segment_delivery']}"
             )
+        svg_candidates = {"mode": "off", "status": "disabled", "font_dirs": []}
+        svg_artifacts = {}
+        if request.svg_mode == "candidate":
+            delivery_paths = [staged_delivery_path, *[
+                staged_run_dir / partition["region_id"] / "delivery.gpkg"
+                for partition in output_partitions
+            ]]
+            svg_candidates = stage_recorder.run(
+                "svg_candidates", version="v1-source-instance-inventory",
+                inputs=lambda: {**stage_inputs, "delivery_databases": {
+                    path.relative_to(staged_run_dir).as_posix(): _sha256(path) for path in delivery_paths
+                }},
+                operation=lambda: _prepare_svg_candidates(
+                    request, source, source_hash, staged_run_dir, run_dir, delivery_paths),
+                fingerprint=lambda result: result,
+                summarize=lambda result: {key: result[key] for key in (
+                    "status", "all_points_accounted_for", "dispositions", "auto_applied")},
+            )
+            for key, name in (("report", "correspondence.json"), ("html", "correspondence.html"),
+                              ("store", "symbols.sqlite3")):
+                svg_artifacts[f"svg_candidates_{key}"] = {
+                    "path": svg_candidates[key], "sha256": svg_candidates["files"][name],
+                }
+        diagnostics["svg_candidates"] = svg_candidates
         run_status = _derive_conversion_status(
             entities=entities,
             ingest_diagnostics=ingest_diagnostics,
@@ -2559,9 +2751,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
             },
             "run_status": run_status.value,
             "stage_contracts": stage_recorder.manifest(),
-            "modes": {"domain": request.domain, "llm": request.llm},
+            "modes": {"domain": request.domain, "llm": request.llm, "matching": request.matching, "svg": request.svg_mode},
+            "svg_candidates": svg_candidates,
             **({"source_replay": replay_receipt} if replay_receipt is not None else {}),
-            **({"semantic_revision": semantic_receipt} if semantic_receipt is not None else {}),
+            **({"semantic_revision": {**semantic_receipt, "store_path": str(Path(request.semantic_store).resolve())}}
+               if semantic_receipt is not None else {}),
             **({"geometry_repairs": "candidate-only"} if geometry_report is not None else {}),
             "source": {"path": str(source), "sha256": source_hash},
             "profiles": {
@@ -2570,8 +2764,14 @@ def convert(request: ConversionRequest) -> ConversionResult:
             },
             "crs": diagnostics["georeference"],
             "osm_anchor": osm_anchor,
+            "osm_matching": osm_matching,
             "legend_spatial": diagnostics.get("legend_spatial", {}),
             "artifacts": {
+                **svg_artifacts,
+                **({"osm_matching": {
+                    "path": str(run_dir / "osm_matching.json"),
+                    "sha256": _sha256(staged_run_dir / "osm_matching.json"),
+                }} if osm_matching is not None else {}),
                 **({"geometry_repair_candidates": {
                     "path": str(run_dir / "geometry_repair_candidates.json"),
                     "sha256": _sha256(staged_run_dir / "geometry_repair_candidates.json"),
@@ -2631,6 +2831,10 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 } if staged_decision_execution_path is not None else {}),
             },
             "delivery_partitions": delivery_partition_artifacts,
+            **({"delivery_partition": next((dict(item) for item in delivery_partitions
+                if item["region_id"] == output_partition_id),
+                {"region_id": output_partition_id, "label": "MAIN"})}
+               if output_partition_id is not None else {}),
             "delivery_counts": counts,
             "delivery_contract_gate": delivery_gate,
             "source_entity_count": source_entity_count,
@@ -2649,6 +2853,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
         if gcp_profile is not None:
             manifest["profiles"]["gcp_profile"] = {
                 "path": str(gcp_profile.path), "sha256": gcp_profile.sha256,
+            }
+        if request.match_profile is not None:
+            manifest["profiles"]["match_profile"] = {
+                "path": str(Path(request.match_profile).resolve()),
+                "sha256": _sha256(request.match_profile),
             }
         _write_manifest(staged_run_dir / manifest_path.name, manifest)
         verify_conversion_snapshot(

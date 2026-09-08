@@ -470,6 +470,12 @@ def auto_onboard_and_convert(
     *,
     provider: str = "deepseek",
     force_bootstrap: bool = False,
+    svg_mode: str = "candidate",
+    svg_font_dirs: list[str] | None = None,
+    matching: str = "osm",
+    osm_data: str = "",
+    osm_place: str = "",
+    match_profile: str = "",
 ) -> dict[str, Any]:
     """Run provider-backed onboarding, deterministic admission, and conversion."""
 
@@ -489,6 +495,12 @@ def auto_onboard_and_convert(
         run_dir=run_path,
         project_dir=project_path,
         llm="off",
+        svg_mode=svg_mode,
+        svg_font_dirs=tuple(_path(p) for p in (svg_font_dirs or [])),
+        **({"matching": matching} if matching != "osm" else {}),
+        **({"osm_data": _path(osm_data)} if osm_data else {}),
+        **({"osm_place": osm_place} if osm_place else {}),
+        **({"match_profile": _path(match_profile)} if match_profile else {}),
     )
     return {
         "schema_version": "cad2gis.auto_onboard_and_convert.v1",
@@ -500,6 +512,8 @@ def auto_onboard_and_convert(
         "delivery": str(result.delivery_path),
         "styles": str(result.style_manifest_path),
         "counts": result.counts,
+        **({"svg_candidates": result.diagnostics["svg_candidates"]}
+           if "svg_candidates" in getattr(result, "diagnostics", {}) else {}),
     }
 
 
@@ -1227,8 +1241,12 @@ def run_conversion(
     semantic_store: str = "",
     semantic_job: str = "",
     geometry_repairs: str = "legacy",
-    svg_mode: str = "off",
+    svg_mode: str = "candidate",
     svg_font_dirs: list[str] | None = None,
+    matching: str = "osm",
+    osm_data: str = "",
+    osm_place: str = "",
+    match_profile: str = "",
 ) -> dict[str, Any]:
     """Run the canonical pipeline; no conversion logic is duplicated here."""
 
@@ -1240,11 +1258,15 @@ def run_conversion(
         project_dir=_path(project_dir),
         llm=llm,
         decision_pack=None if not decision_pack else _path(decision_pack),
+        **({"matching": matching} if matching != "osm" else {}),
+        **({"osm_data": _path(osm_data)} if osm_data else {}),
+        **({"osm_place": osm_place} if osm_place else {}),
+        **({"match_profile": _path(match_profile)} if match_profile else {}),
         **({"source_run": _path(source_run)} if source_run else {}),
         **({"semantic_store": _path(semantic_store) if semantic_store else None, "semantic_job": semantic_job} if semantic_store or semantic_job else {}),
         **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
-        **({"svg_mode": svg_mode, "svg_font_dirs": tuple(_path(p) for p in (svg_font_dirs or []))}
-           if svg_mode != "off" or svg_font_dirs else {}),
+        svg_mode=svg_mode,
+        svg_font_dirs=tuple(_path(p) for p in (svg_font_dirs or [])),
     )
     return {
         "run_status": result.run_status,

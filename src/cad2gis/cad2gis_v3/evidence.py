@@ -231,6 +231,7 @@ def _write_calibration_evidence(dataset, audit, target_srs):
 def _write_staged(
     path, entities, features, relations, unresolved, diagnostics, source_srs,
     calibration_audit=None, target_srs=None, delivery_transformer=None,
+    delivery_transformers=None,
 ):
     _validate_label_provenance(features)
     dataset = ogr.GetDriverByName("GPKG").CreateDataSource(str(path))
@@ -676,14 +677,12 @@ def _write_staged(
             raise RuntimeError(
                 f"Evidence requires one span metric per CABLE segment for {feature.feature_key}"
             )
-        materialized_points = (
+        source_segments = (
             feature.attributes.get("curve_materialization") or {}
-        ).get("delivery_native_points")
-        spatial_source_points = materialized_points or feature.native_points
-        target_points = (
-            delivery_transformer.points(spatial_source_points)
-            if delivery_transformer is not None else None
-        )
+        ).get("source_segments", ())
+        feature_transformer = (delivery_transformers or {}).get(feature.feature_key, delivery_transformer)
+        if len(source_segments) != expected:
+            raise RuntimeError(f"CABLE span evidence source-segment count mismatch for {feature.feature_key}")
         for segment_index, metric in enumerate(metrics):
             if metric.get("segment_index") != segment_index:
                 raise RuntimeError(
@@ -715,15 +714,20 @@ def _write_staged(
             _set(row, values)
             cable_span_table.CreateFeature(row)
             if cable_span_layer is not None:
-                start, end = target_points[segment_index:segment_index + 2]
-                grid_length = math.dist(start, end)
+                # The source-segment index is not a tessellated vertex index:
+                # an arc contains several delivery points. Use the same full
+                # segment and target-axis unit conversion as CABLE_SEGMENT.
+                segment_target_points = feature_transformer.points(
+                    source_segments[segment_index]["delivery_native_points"],
+                )
+                grid_length = feature_transformer.grid_length_m(segment_target_points)
                 if abs(grid_length - float(metric["delivery_grid_length_m"])) > 1e-6:
                     raise RuntimeError(
                         f"CABLE span spatial geometry closure failed: "
                         f"{feature.feature_key}:segment:{segment_index}"
                     )
                 spatial_row = ogr.Feature(cable_span_layer.GetLayerDefn())
-                spatial_row.SetGeometry(_line((start, end)))
+                spatial_row.SetGeometry(_line(segment_target_points))
                 spatial_values = dict(values)
                 displayed = (
                     metric.get("measurement_native_m")
@@ -1019,6 +1023,7 @@ def _write_staged(
 def write_evidence(
     path, entities, features, relations, unresolved, diagnostics, source_srs,
     calibration_audit=None, target_srs=None, delivery_transformer=None,
+    delivery_transformers=None,
 ):
     destination = Path(path).resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -1030,6 +1035,7 @@ def write_evidence(
             staged, entities, features, relations, unresolved, diagnostics, source_srs,
             calibration_audit=calibration_audit, target_srs=target_srs,
             delivery_transformer=delivery_transformer,
+            delivery_transformers=delivery_transformers,
         )
         connection = sqlite3.connect(staged)
         try:

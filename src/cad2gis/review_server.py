@@ -10,6 +10,7 @@ import json
 import math
 import os
 import re
+import shlex
 import sqlite3
 import threading
 import uuid
@@ -1023,6 +1024,66 @@ def _source_path(
     )
 
 
+def _svg_candidate_path(
+    manifest: dict[str, Any], run_dir: Path, relative_path: str,
+) -> Path:
+    """Serve only content-bound SVG review artifacts from the selected run."""
+    record = manifest.get("svg_candidates") or {}
+    if record.get("mode") != "candidate" or record.get("status") != "completed":
+        raise ReviewServerError("SVG candidates are unavailable for this run")
+    relative = Path(relative_path)
+    if (relative.is_absolute() or relative.drive or ".." in relative.parts
+            or "\\" in relative_path or relative.as_posix() != relative_path
+            or relative.suffix.casefold() not in {".html", ".json", ".svg", ".sqlite3"}):
+        raise ReviewServerError("Invalid SVG candidate artifact path")
+    root = run_dir.resolve() / "svg-candidates"
+    path = (root / relative).resolve()
+    if root.resolve() != root or root not in path.parents or not path.is_file():
+        raise ReviewServerError("SVG candidate artifact not found in the current run")
+    expected = (record.get("files") or {}).get(relative_path)
+    if (not isinstance(expected, str) or re.fullmatch(r"[0-9a-f]{64}", expected) is None
+            or _sha256_file(path) != expected):
+        raise ReviewServerError("SVG candidate artifact SHA-256 mismatch")
+    artifact_name = {
+        "correspondence.json": "svg_candidates_report",
+        "correspondence.html": "svg_candidates_html",
+        "symbols.sqlite3": "svg_candidates_store",
+    }.get(relative_path)
+    bound = (manifest.get("artifacts") or {}).get(artifact_name)
+    if isinstance(bound, dict) and bound.get("sha256") != expected:
+        raise ReviewServerError("SVG candidate artifact disagrees with its manifest binding")
+    return path
+
+
+def _svg_candidates_summary(
+    manifest: dict[str, Any], run_dir: Path, manifest_sha256: str,
+) -> dict[str, Any]:
+    record = manifest.get("svg_candidates") or {}
+    result = {
+        **{key: value for key, value in record.items() if key != "files"},
+        "mode": record.get("mode", (manifest.get("modes") or {}).get("svg", "candidate")),
+        "status": record.get("status", "not_recorded"),
+        "auto_applied": record.get("auto_applied", False),
+        "font_dirs": record.get("font_dirs", []),
+        "report_url": None,
+    }
+    if result["status"] == "completed":
+        try:
+            report_path = _svg_candidate_path(manifest, run_dir, "correspondence.json")
+            _svg_candidate_path(manifest, run_dir, "correspondence.html")
+            report = _json_object(report_path)
+            if report.get("source_sha256") != (manifest.get("source") or {}).get("sha256"):
+                raise ReviewServerError("SVG candidate report belongs to a different CAD source")
+            result.update(
+                report_url=f"/api/svg-candidates/{manifest_sha256}/correspondence.html",
+                point_count=report.get("all_points_accounted_for"),
+                dispositions=report.get("dispositions", {}),
+            )
+        except (ReviewServerError, OSError) as exc:
+            result["report_blocker"] = str(exc)
+    return result
+
+
 def _registration_transformer(manifest: dict[str, Any]):
     """Reconstruct the exact reviewed nominal transform, including CAD units."""
     from .cad2gis_v3.config import SourceProfile
@@ -1045,6 +1106,9 @@ def _registration_transformer(manifest: dict[str, Any]):
         local_registration_strategy=profile.local_registration_strategy,
         local_registration_reviewed=profile.local_registration_reviewed,
     )
+    if not units.can_direct_transform and profile.geodata_registration is None:
+        from .cad2gis_v3.osm_matching import LocalMatchingReference
+        return LocalMatchingReference(profile.source_crs, profile.target_crs, units)
     if profile.geodata_registration is not None:
         return GeoDataTransformer(profile.source_crs, profile.target_crs,
             geodata_registration=profile.geodata_registration, unit_contract=units)
@@ -1305,6 +1369,179 @@ def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+def _matching_record(manifest: dict[str, Any]) -> dict[str, Any] | None:
+    partition = manifest.get("delivery_partition") or {}
+    region = partition.get("region_id")
+    if region:
+        entry = (manifest.get("delivery_partitions") or {}).get(region) or {}
+        value = entry.get("osm_matching") or partition.get("osm_matching")
+        if isinstance(value, dict):
+            return value
+    value = manifest.get("osm_matching") or (manifest.get("crs") or {}).get("osm_matching")
+    return value if isinstance(value, dict) else None
+
+
+def _matching_preview(capture: dict[str, Any], manifest: dict[str, Any], parent_sha: str):
+    from .cad2gis_v3.osm_matching import refine_match, transformer_from_record
+
+    record = _matching_record(manifest)
+    if not record:
+        raise ReviewServerError("This run has no OSM matching record; create a standard OSM matching run first")
+    nominal = _registration_transformer(manifest)
+    region_id = (manifest.get("delivery_partition") or {}).get("region_id") or record.get("region_id")
+    refined = refine_match(record, nominal, capture["controls"],
+        source_sha256=manifest["source"]["sha256"], parent_run_sha256=parent_sha,
+        **({"region_id": region_id} if region_id else {}))
+    return refined, transformer_from_record(refined, nominal)
+
+
+def _matching_fit_summary(record: dict[str, Any]) -> dict[str, Any]:
+    quality = record.get("quality") or {}
+    return {
+        "selected_model": "translation", "target_crs": record.get("target_crs", "EPSG:3857"),
+        "train_metrics": quality.get("train_metrics", quality.get("training", {})),
+        "check_metrics": quality.get("check_metrics", quality.get("check", {})),
+        "authority": "relative_osm", "absolute_accuracy_verified": False,
+        "validation": {"passed": None},
+    }
+
+
+def _matching_conversion_options(manifest: dict[str, Any], source_run: Path,
+                                 profile_path: Path, next_run: Path) -> dict[str, Any]:
+    """Replay bound conversion inputs, including the original semantic authority."""
+    source, blocker = _source_path(manifest, run_dir=source_run)
+    if source is None:
+        raise ReviewServerError(blocker)
+    options: dict[str, Any] = {"source": source, "run_dir": next_run,
+        "matching": "osm", "match_profile": profile_path}
+    snapshot = (manifest.get("conversion_snapshot") or {}).get("artifacts") or {}
+    profiles = manifest.get("profiles") or {}
+    for name in ("source_profile", "mapping_registry", "decision_pack"):
+        record = profiles.get(name) or snapshot.get(name)
+        if name == "decision_pack":
+            record = (manifest.get("artifacts") or {}).get(name) or record
+        if not record:
+            if name in {"source_profile", "mapping_registry"}:
+                raise ReviewServerError(f"Re-matching requires the bound {name}")
+            continue
+        path = Path(str(record.get("path", ""))).expanduser()
+        if not path.is_absolute():
+            path = source_run / path
+        if (not path.is_file() or not record.get("sha256")
+                or _sha256_file(path) != record["sha256"]):
+            raise ReviewServerError(f"Bound {name} is unavailable or its SHA-256 changed")
+        # Keep each config beside its relative catalogs and partition contracts.
+        options[name] = path.resolve()
+    for name in ("delivery_partitions", "spatial_regions", "osm_anchor"):
+        # Older runs did not freeze these optional inputs. New snapshots bind
+        # absence as well as content so a rematch cannot silently change scope.
+        if name not in snapshot:
+            continue
+        record = snapshot[name]
+        if not isinstance(record, dict) or not record.get("path"):
+            raise ReviewServerError(f"Bound {name} has an invalid snapshot descriptor")
+        path = Path(str(record["path"])).expanduser()
+        if not path.is_absolute():
+            path = source_run / path
+        if path.resolve() != (options["mapping_registry"].parent / f"{name}.json").resolve():
+            raise ReviewServerError(f"Bound {name} path does not match the conversion configuration")
+        if record.get("exists") is False:
+            if path.exists():
+                raise ReviewServerError(f"Bound {name} was absent but has appeared since the reviewed run")
+        elif (not path.is_file() or not record.get("sha256")
+                or _sha256_file(path) != record["sha256"]):
+            raise ReviewServerError(f"Bound {name} is unavailable or its SHA-256 changed")
+    modes = manifest.get("modes") or {}
+    options["llm"] = modes.get("llm", "off")
+    options["domain"] = modes.get("domain", "auto")
+    svg = manifest.get("svg_candidates") or {}
+    options["svg_mode"] = svg.get("mode", modes.get("svg", "candidate"))
+    if options["svg_mode"] not in {"candidate", "off"}:
+        raise ReviewServerError("Bound SVG mode must be candidate or off")
+    font_dirs = svg.get("font_dirs", [])
+    if (not isinstance(font_dirs, (list, tuple))
+            or any(not isinstance(path, str) or not path.strip() for path in font_dirs)):
+        raise ReviewServerError("Bound SVG font directories must be an array of paths")
+    options["svg_font_dirs"] = tuple(
+        (Path(path).expanduser() if Path(path).expanduser().is_absolute()
+         else source_run / Path(path).expanduser()).resolve()
+        for path in font_dirs
+    )
+    if manifest.get("geometry_repairs"):
+        options["geometry_repairs"] = manifest["geometry_repairs"]
+    replay = manifest.get("source_replay") or {}
+    replay_path = Path(str(replay.get("source_run", source_run))).expanduser()
+    if (replay_path / "source_manifest.json").is_file():
+        from .cad2gis_v3.source_replay import load_native_snapshot
+        _, receipt = load_native_snapshot(replay_path, source)
+        if replay.get("snapshot_sha256") and receipt["snapshot_sha256"] != replay["snapshot_sha256"]:
+            raise ReviewServerError("Source replay snapshot changed")
+        options["source_run"] = replay_path.resolve()
+    elif replay:
+        raise ReviewServerError("The bound native source snapshot is unavailable; restore it before re-matching")
+    semantic = manifest.get("semantic_revision")
+    if semantic:
+        store_path = semantic.get("store_path") or semantic.get("semantic_store")
+        if not store_path or not semantic.get("job_id") or not options.get("source_run"):
+            raise ReviewServerError("This semantic revision has no reproducible store/job/source binding; restore its semantic store before re-matching")
+        from .cad2gis_v3.semantic_delivery import load_published_revision
+        _, receipt = load_published_revision(Path(store_path), semantic["job_id"], semantic["snapshot_sha256"])
+        for key in ("revision", "decisions_sha256", "semantic_gpkg_sha256"):
+            if receipt.get(key) != semantic.get(key):
+                raise ReviewServerError("The bound semantic revision changed")
+        options.update(semantic_store=Path(store_path), semantic_job=semantic["job_id"])
+    return options
+
+
+def _matching_command(options: dict[str, Any]) -> str:
+    # This is a copyable command only; execution calls the typed API below.
+    def quote(value: Any) -> str:
+        text = str(value)
+        return "'" + text.replace("'", "''") + "'" if os.name == "nt" else shlex.quote(text)
+    parts = ["cad2gis convert", quote(options["source"])]
+    for key, value in options.items():
+        if key == "svg_font_dirs":
+            for directory in value:
+                parts.extend(["--svg-font-dir", quote(directory)])
+        elif key != "source":
+            parts.extend(["--" + key.replace("_", "-"), quote(value)])
+    return " ".join(parts)
+
+
+def _execute_matching_conversion(options: dict[str, Any]) -> None:
+    from .pipeline import convert_project
+    convert_project(**options)
+
+
+def _matching_result_view(manifest: dict[str, Any], run_dir: Path, region: str | None):
+    """Retain the selected partition when a whole source is converted again."""
+    if not region:
+        return manifest, run_dir
+    if ((manifest.get("delivery_partition") or {}).get("region_id") == region
+            and (_matching_record(manifest) or {}).get("region_id") == region):
+        return manifest, run_dir
+    if Path(region).name != region or region in {".", ".."}:
+        raise ReviewServerError("Invalid matching result partition")
+    entry = (manifest.get("delivery_partitions") or {}).get(region)
+    view_dir = run_dir / region
+    partition = _json_object(view_dir / "partition_manifest.json")
+    artifact = view_dir / "delivery.gpkg"
+    if (not isinstance(entry, dict) or partition.get("region_id") != region
+            or partition.get("delivery_counts") != entry.get("delivery_counts")
+            or not artifact.is_file() or _sha256_file(artifact) != entry.get("sha256")):
+        raise ReviewServerError("New matching partition does not match its parent manifest")
+    value = json.loads(json.dumps(manifest))
+    value["delivery_counts"] = dict(entry["delivery_counts"])
+    value["delivery_partition"] = partition
+    value["artifacts"]["delivery"] = {"path": str(artifact), "sha256": entry["sha256"]}
+    value["parent_run_provenance"] = {"run_dir": str(run_dir),
+        "manifest_path": str(run_dir / "run_manifest.json"),
+        "manifest_sha256": _sha256_file(run_dir / "run_manifest.json"),
+        "run_status": manifest.get("run_status"), "source_entity_count_scope": "parent_run",
+        "validation_scope": "parent_run"}
+    return value, view_dir
+
+
 def create_review_app(
     run_dir: str | Path,
     *,
@@ -1380,6 +1617,7 @@ def create_review_app(
                 or _sha256_file(partition_delivery) != expected_sha):
             raise ReviewServerError("Partition delivery SHA-256 does not match the parent manifest")
         source_run_path = run_path.parent
+        manifest_path = parent_manifest_path
         manifest["parent_run_provenance"] = {
             "run_dir": str(source_run_path),
             "manifest_path": str(parent_manifest_path),
@@ -1416,6 +1654,12 @@ def create_review_app(
         if isinstance(source_record, dict) else ""
     )
     session_id = f"{run_path.name}:{source_hash[:16]}"
+    active_path = workspace / "matching-active.json"
+    if active_path.is_file():
+        active = _json_object(active_path)
+        if (active.get("source_sha256") == source_hash
+                and Path(str(active.get("run_dir", ""))).resolve() == run_path):
+            session_id = str(active["session_id"])
     resolved_postgis_dsn = (
         os.environ.get("CAD2GIS_REVIEW_POSTGIS_DSN", "")
         if postgis_dsn is None else postgis_dsn
@@ -1428,7 +1672,53 @@ def create_review_app(
         )
     )
     store_kind = "postgis" if resolved_postgis_dsn else "sqlite"
+    matching_lock = threading.Lock()
+    if active_path.is_file():
+        active = _json_object(active_path)
+        if active.get("source_sha256") != source_hash or active.get("session_id") != session_id:
+            raise ReviewServerError("Matching workspace belongs to a different source or review session")
+        resumed_path = Path(active.get("source_run_dir", active["run_dir"])).resolve()
+        resumed_manifest = resumed_path / "run_manifest.json"
+        if not resumed_manifest.is_file() or _sha256_file(resumed_manifest) != active["manifest_sha256"]:
+            raise ReviewServerError("Saved matching result manifest changed")
+        resumed = _json_object(resumed_manifest)
+        if (resumed.get("source") or {}).get("sha256") != source_hash:
+            raise ReviewServerError("Saved matching result belongs to a different CAD source")
+        resumed, view_dir = _matching_result_view(resumed, resumed_path, active.get("region_id"))
+        resumed_delivery = _artifact_path(resumed, "delivery", run_dir=view_dir)
+        if _sha256_file(resumed_delivery) != resumed["artifacts"]["delivery"]["sha256"]:
+            raise ReviewServerError("Saved matching delivery SHA-256 mismatch")
+        delivery = GeoPackageProvider(resumed_delivery)
+        delivery.layers()
+        manifest, run_path, source_run_path, manifest_path = resumed, view_dir, resumed_path, resumed_manifest
+    if not _matching_record(manifest) and (manifest.get("profiles") or {}).get("source_profile"):
+        # Legacy runs can enter the new workflow without reusing an old fitted
+        # delivery as the CAD source. No place lookup or network access occurs.
+        try:
+            from .cad2gis_v3.osm_matching import LocalMatchingReference, match_osm
+            nominal = _registration_transformer(manifest)
+            _, base = match_osm(source=Path(str(manifest["source"].get("path", ""))),
+                source_sha256=source_hash, features=[], nominal=nominal,
+                coordinate_domain=(manifest.get("crs") or {}).get("coordinate_domain")
+                    or {"passed": not isinstance(nominal, LocalMatchingReference)})
+            manifest["osm_matching"] = base
+        except (ValueError, OSError):
+            pass  # The legacy GCP exporter still reports its specific profile error.
+    # A result opened as a fresh workspace inherits the exact native picks
+    # frozen into its match record. Existing revisioned edits take precedence.
+    inherited = (_matching_record(manifest) or {}).get("controls", [])
+    if inherited and not store.events(limit=1):
+        from pyproj import Transformer
+        for item in inherited:
+            lon, lat = Transformer.from_crs(item["target_crs"], 4326, always_xy=True).transform(
+                item["target_easting"], item["target_northing"])
+            store.upsert({"type": "Feature", "id": item["point_id"],
+                "geometry": {"type": "Point", "coordinates": [lon, lat]},
+                "properties": {"_kind": "cad_map_gcp", "cad_x": item["cad_x"],
+                    "cad_y": item["cad_y"], "role": item["role"]}},
+                expected_revision=0, actor="matching-result")
     hub = _WebSocketHub()
+    svg_manifest_sha256 = _sha256_file(manifest_path)
     web_root = Path(__file__).resolve().parent / "webdemo"
     if not (web_root / "index.html").is_file():
         raise ReviewServerError(f"Review web assets are missing: {web_root}")
@@ -1492,6 +1782,11 @@ def create_review_app(
             "delivery_partition": manifest.get("delivery_partition"),
             "parent_run_provenance": manifest.get("parent_run_provenance"),
             "crs": manifest.get("crs"),
+            "osm_matching": _matching_record(manifest),
+            "svg_candidates": _svg_candidates_summary(
+                manifest, source_run_path, svg_manifest_sha256,
+            ),
+            "osm_anchor": manifest.get("osm_anchor"),
             "validation": manifest.get("validation"),
             "reasoning": manifest.get("reasoning"),
             "qgis_server": {
@@ -1506,6 +1801,16 @@ def create_review_app(
     @app.get("/api/registration")
     async def registration_summary():
         capture = _registration_controls(store, manifest)
+        capture["matching"] = _matching_record(manifest)
+        capture["matching_ready"] = False
+        if capture["matching"]:
+            if capture["train_count"]:
+                try:
+                    record, _ = _matching_preview(capture, manifest, _sha256_file(manifest_path))
+                    capture.update(preview_match=record, preview_fit=_matching_fit_summary(record), matching_ready=True)
+                except (ValueError, OSError) as exc:
+                    capture["preview_error"] = str(exc)
+            return capture
         if capture["train_count"]:
             try:
                 result, _ = _registration_fit(capture, manifest)
@@ -1523,15 +1828,24 @@ def create_review_app(
         if capture["controls_sha256"] != expected_controls_sha256:
             raise HTTPException(409, "Control points changed; refresh the registration before previewing")
         try:
-            result, nominal = _registration_fit(capture, manifest)
+            if _matching_record(manifest):
+                record, matched = _matching_preview(capture, manifest, _sha256_file(manifest_path))
+                geographic = Transformer.from_crs(matched.target_crs, "EPSG:4326", always_xy=True)
+                project_native = matched.point
+                fit_payload = _matching_fit_summary(record)
+            else:
+                result, nominal = _registration_fit(capture, manifest)
+                geographic = Transformer.from_crs(result.target_crs, "EPSG:4326", always_xy=True)
+                def project_native(point):
+                    return result.project_native(point, nominal)
+                fit_payload = result.to_dict()
         except (ValueError, OSError) as exc:
             raise ReviewServerError(str(exc)) from exc
-        geographic = Transformer.from_crs(result.target_crs, "EPSG:4326", always_xy=True)
         collection = delivery.geojson(layer_name, limit=limit, native_coordinates=True)
 
         def project(coordinates):
             if coordinates and isinstance(coordinates[0], (int, float)):
-                x, y = result.project_native(coordinates, nominal)
+                x, y = project_native(coordinates)
                 return [*geographic.transform(x, y), *coordinates[2:]]
             return [project(child) for child in coordinates]
 
@@ -1547,8 +1861,87 @@ def create_review_app(
                 geometry(feature["geometry"])
         collection["coordinate_reference"] = "EPSG:4326"
         collection["preview_only"] = True
-        collection["fit"] = result.to_dict()
+        collection["fit"] = fit_payload
         return collection
+
+    @app.post("/api/matching/rematch")
+    async def rematch(request: Request):
+        nonlocal manifest, run_path, source_run_path, manifest_path, delivery, svg_manifest_sha256
+        from starlette.concurrency import run_in_threadpool
+
+        payload = await request.json()
+        if not isinstance(payload, dict) or not isinstance(payload.get("execute", False), bool):
+            raise HTTPException(400, "Request must be an object and execute must be boolean")
+        if not matching_lock.acquire(blocking=False):
+            raise ReviewConflictError("A matching conversion is already running")
+        try:
+            capture = _registration_controls(store, manifest)
+            current = _matching_record(manifest)
+            if not current:
+                raise ReviewServerError("This run has no OSM matching record")
+            if (payload.get("expected_controls_sha256") != capture["controls_sha256"]
+                    or payload.get("expected_match_sha256") != current.get("match_sha256")
+                    or type(payload.get("expected_match_revision")) is not int
+                    or payload["expected_match_revision"] != current.get("revision")):
+                raise ReviewConflictError("Control points or matching version changed; refresh the preview")
+            parent_hash = _sha256_file(manifest_path)
+
+            def prepare():
+                refined, _ = _matching_preview(capture, manifest, parent_hash)
+                version = f"r{refined['revision']}-{uuid.uuid4().hex}"
+                version_dir = workspace / "matching" / version
+                version_dir.mkdir(parents=True, exist_ok=False)
+                profile_path = version_dir / "match-profile.json"
+                # Exclusive files and directories preserve every earlier version.
+                with profile_path.open("x", encoding="utf-8") as handle:
+                    json.dump(refined, handle, ensure_ascii=False, indent=2, allow_nan=False)
+                with (version_dir / "controls.json").open("x", encoding="utf-8") as handle:
+                    json.dump(capture, handle, ensure_ascii=False, indent=2, allow_nan=False)
+                next_run = version_dir / "run"
+                options = _matching_conversion_options(manifest, source_run_path, profile_path, next_run)
+                return refined, profile_path, next_run, options
+
+            refined, profile_path, next_run, options = await run_in_threadpool(prepare)
+            response = {"status": "prepared", "matching": refined,
+                "profile": {"path": str(profile_path), "sha256": _sha256_file(profile_path)},
+                "next_run_dir": str(next_run), "conversion_command": _matching_command(options),
+                "current_run_dir": str(run_path), "controls_sha256": capture["controls_sha256"],
+                "absolute_accuracy_verified": False}
+            if payload.get("execute", False):
+                try:
+                    await run_in_threadpool(_execute_matching_conversion, options)
+                    candidate_path = next_run / "run_manifest.json"
+                    candidate = _json_object(candidate_path)
+                    candidate_match = _matching_record(candidate) or {}
+                    if ((candidate.get("source") or {}).get("sha256") != source_hash
+                            or candidate_match.get("match_sha256") != refined["match_sha256"]):
+                        raise ReviewServerError("New result does not match the reviewed source and matching profile")
+                    region_id = (manifest.get("delivery_partition") or {}).get("region_id")
+                    candidate, view_dir = _matching_result_view(candidate, next_run, region_id)
+                    candidate_delivery = _artifact_path(candidate, "delivery", run_dir=view_dir)
+                    if _sha256_file(candidate_delivery) != candidate["artifacts"]["delivery"]["sha256"]:
+                        raise ReviewServerError("New delivery SHA-256 mismatch")
+                    provider = GeoPackageProvider(candidate_delivery)
+                    provider.layers()  # Open and verify the new result before switching views.
+                    _write_json_atomic(active_path, {"source_sha256": source_hash,
+                        "session_id": session_id, "run_dir": str(view_dir), "source_run_dir": str(next_run),
+                        "region_id": region_id,
+                        "manifest_sha256": _sha256_file(candidate_path)})
+                    manifest, run_path, source_run_path, manifest_path = candidate, view_dir, next_run, candidate_path
+                    svg_manifest_sha256 = _sha256_file(candidate_path)
+                    delivery = provider
+                    app.state.run_dir = run_path
+                    response.update(status="completed", current_run_dir=str(run_path))
+                    await hub.broadcast({"type": "matching_completed", "run_dir": str(run_path)})
+                except Exception as exc:
+                    response.update(status="failed", error=str(exc), current_run_dir=str(run_path))
+            return response
+        except (ValueError, OSError) as exc:
+            if isinstance(exc, ReviewServerError):
+                raise
+            raise ReviewServerError(str(exc)) from exc
+        finally:
+            matching_lock.release()
 
     @app.post("/api/registration/export")
     async def export_registration(request: Request):
@@ -1747,6 +2140,8 @@ def create_review_app(
             isinstance(expected, bool) or not isinstance(expected, int) or expected < 0
         ):
             raise HTTPException(400, "expected_revision must be a non-negative integer")
+        if matching_lock.locked():
+            raise ReviewConflictError("Matching is running; wait before changing control points")
         event = store.upsert(
             payload.get("feature"),
             expected_revision=expected,
@@ -1761,6 +2156,8 @@ def create_review_app(
         expected_revision: int | None = None,
         actor: str = "web-review",
     ):
+        if matching_lock.locked():
+            raise ReviewConflictError("Matching is running; wait before changing control points")
         event = store.delete(
             feature_id,
             expected_revision=expected_revision,
@@ -1776,6 +2173,20 @@ def create_review_app(
         if visual_root not in path.parents or not path.is_file():
             raise HTTPException(404, "Visual artifact not found")
         return FileResponse(path)
+
+    @app.get("/api/svg-candidates/{run_sha256}/{relative_path:path}")
+    async def svg_candidate_file(run_sha256: str, relative_path: str):
+        if run_sha256 != svg_manifest_sha256 or svg_manifest_sha256 != _sha256_file(manifest_path):
+            raise HTTPException(409, "SVG report belongs to a different run; reload the current result")
+        try:
+            path = _svg_candidate_path(manifest, source_run_path, relative_path)
+        except ReviewServerError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        return FileResponse(path, headers={
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox allow-same-origin allow-downloads",
+        })
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):

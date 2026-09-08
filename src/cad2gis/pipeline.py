@@ -202,6 +202,7 @@ def resolve_project_configuration(
     source_profile: str | Path | None = None,
     mapping_registry: str | Path | None = None,
     gcp_profile: str | Path | None = None,
+    discover_gcp: bool = True,
 ) -> ProjectConfiguration:
     """Resolve explicit config paths and fill omissions from ``project_dir``."""
 
@@ -235,7 +236,7 @@ def resolve_project_configuration(
         project=project,
         manifest=manifest,
         kind="gcp_profile",
-    )
+    ) if gcp_profile is not None or discover_gcp else None
 
     return ProjectConfiguration(
         source_profile=resolved_source,
@@ -259,8 +260,12 @@ def convert_project(
     semantic_store: str | Path | None = None,
     semantic_job: str = "",
     geometry_repairs: str = "legacy",
-    svg_mode: str = "off",
+    svg_mode: str = "candidate",
     svg_font_dirs: tuple[str | Path, ...] = (),
+    matching: str = "osm",
+    osm_data: str | Path | None = None,
+    osm_place: str | None = None,
+    match_profile: str | Path | None = None,
 ) -> Any:
     """Resolve project configuration and run the architecture-v3 conversion."""
 
@@ -270,6 +275,12 @@ def convert_project(
         raise ProjectConfigurationError("svg_font_dirs requires SVG candidate mode")
     if bool(semantic_store) != bool(semantic_job) or (semantic_store and not source_run):
         raise ProjectConfigurationError("semantic_store and semantic_job require each other and source_run")
+    if matching not in {"osm", "nominal"}:
+        raise ProjectConfigurationError("matching must be osm or nominal")
+    if matching == "nominal" and (osm_data is not None or osm_place or match_profile is not None):
+        raise ProjectConfigurationError("OSM inputs require matching=osm")
+    if match_profile is not None and (osm_data is not None or osm_place or gcp_profile is not None):
+        raise ProjectConfigurationError("A match profile is a frozen registration; do not combine it with new OSM inputs or a GCP profile")
 
     _validate_mode(domain, _VALID_DOMAINS, "domain")
     _validate_mode(llm, _VALID_LLM_MODES, "llm")
@@ -283,13 +294,14 @@ def convert_project(
         raise NotADirectoryError(f"run directory path is not a directory: {run_path}")
     if svg_mode == "candidate":
         from .symbol_workflow import preflight
-        preflight(run_path.parent / (run_path.name + "-svg-candidates"), font_dirs=svg_font_dirs)
+        preflight(run_path / "svg-candidates", font_dirs=svg_font_dirs)
 
     configuration = resolve_project_configuration(
         project_dir=project_dir,
         source_profile=source_profile,
         mapping_registry=mapping_registry,
         gcp_profile=gcp_profile,
+        discover_gcp=matching == "nominal",
     )
     resolved_decision_pack = (
         None if decision_pack is None else _existing_file(decision_pack, "decision pack")
@@ -299,29 +311,23 @@ def convert_project(
         run_dir=run_path,
         source_profile=configuration.source_profile,
         mapping_registry=configuration.mapping_registry,
-        gcp_profile=configuration.gcp_profile,
+        # Standard matching does not silently activate a manually authored
+        # GCP file discovered in the project. Explicit surveyed-GCP and the
+        # nominal compatibility workflow retain their existing entry point.
+        gcp_profile=(configuration.gcp_profile if gcp_profile is not None or matching == "nominal" else None),
         decision_pack=resolved_decision_pack,
         domain=domain,
         llm=llm,
         **({"source_run": Path(source_run).expanduser().resolve()} if source_run is not None else {}),
         **({"semantic_store": Path(semantic_store).expanduser().resolve(), "semantic_job": semantic_job} if semantic_store is not None else {}),
         **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
+        **({"matching": matching} if matching != "osm" else {}),
+        **({"osm_data": _existing_file(osm_data, "OSM data")} if osm_data is not None else {}),
+        **({"osm_place": osm_place} if osm_place else {}),
+        **({"match_profile": _existing_file(match_profile, "match profile")} if match_profile is not None else {}),
+        svg_mode=svg_mode,
+        svg_font_dirs=tuple(Path(path).expanduser().resolve() for path in svg_font_dirs),
     )
-    if svg_mode == "candidate":
-        from .symbol_workflow import prepare
-        candidate_path = run_path.parent / (run_path.name + "-svg-candidates")
-        try:
-            prepare(source_path, sorted(run_path.rglob("delivery.gpkg")),
-                    candidate_path, font_dirs=svg_font_dirs)
-        except Exception as exc:
-            # The optional presentation store has its own atomic publication boundary.
-            # Keep the valid conversion and expose its location when the optional phase fails.
-            failure = RuntimeError(f"SVG candidate stage failed; canonical run retained at {run_path}: {exc}")
-            failure.artifact_status = str(run_path)
-            raise failure from exc
-        result.diagnostics["svg_candidates"] = {"mode": "candidate", "auto_applied": False,
-                                                "report": str(candidate_path / "correspondence.json"),
-                                                "html": str(candidate_path / "correspondence.html")}
     return result
 
 

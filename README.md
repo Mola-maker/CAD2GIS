@@ -9,7 +9,8 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 
 [产品首页](https://mola-maker.github.io/CAD2GIS/) ·
 [九图交付与演示](https://mola-maker.github.io/CAD2GIS/deliveries/) ·
-[可选 SVG 与 QGZ](docs/OPTIONAL_SYMBOL_ASSETS.md) · [发布审查](docs/RELEASE_REVIEW_2026-09-06.md)
+[OSM 标准匹配与二次校正](docs/OSM_STANDARD_MATCHING.md) ·
+[SVG 提取与 QGZ](docs/OPTIONAL_SYMBOL_ASSETS.md) · [发布审查](docs/RELEASE_REVIEW_2026-09-06.md)
 
 > DWG 中声明了 CRS，不代表实体已经正确落在该 CRS 的真实地面位置。
 > 源几何、拓扑、长度和坐标精度会分别验证。缺少可信控制点时，系统不会把
@@ -35,8 +36,32 @@ canonical 流水线，不为某张测试图维护硬编码分支。
    [`clients`](plugins/cad2gis-agent/clients) 模板加入现有智能体；
 3. 在 DWG 项目目录中启动智能体，让它先调用 `get_capabilities`、
    `get_runtime_status` 和 `inspect_source`；
-4. 转换后用 `cad2gis review` 打开 ToC 审查控制台，检查图层、标签、长度、
-   拓扑和地图定位，再生成新的校准 run。
+4. 默认转换执行 OSM 相对匹配和 SVG 图例候选提取；用 `cad2gis review` 打开结果，
+   检查图层、标签、长度、拓扑和位置，并复核 SVG 与原图实体的对应关系；
+5. 位置需要修正时，添加 CAD → 地图控制点查看人工校正预览，再点击
+   “二次匹配并生成新结果”。完成后工作台自动加载新 GIS，保留控制点供继续迭代。
+
+已有通过验证的项目配置时，可直接运行以下命令。尖括号中的内容是需要替换的
+本地路径；每次转换使用新的输出目录。
+
+```shell
+cad2gis convert "<SOURCE.dwg>" --project "<PROJECT_DIR>" --run-dir "<NEW_RUN_DIR>" --json
+cad2gis review "<NEW_RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
+```
+
+打开 [本地工作台](http://127.0.0.1:8765/)。最终 `delivery.gpkg` 使用当前匹配坐标，
+并记录 `relative_osm` 来源；人工选点保存时只改变预览，确认二次匹配才生成新 GIS。
+OSM 匹配包含单位、投影转换和平移，不自动旋转、拉伸或把缆线改画成道路。
+离线道路快照使用 `--osm-data "<OVERPASS.json>"`；需要显式地点提示时使用
+`--osm-place "<PLACE_NAME>"`。完整参数、分区行为和复现方法见
+[OSM 标准匹配说明](docs/OSM_STANDARD_MATCHING.md)。
+
+`convert`、`auto-convert`、MCP 和批量转换默认使用 `svg_mode=candidate`，在
+`<NEW_RUN_DIR>/svg-candidates/` 保存 `symbols.sqlite3`、`correspondence.json` 和
+`correspondence.html`。SVG 与 GIS 完整生成后一起发布；提取失败时不发布新 run，
+已有结果保留。候选只供复核，不会自动替换交付样式。原图需要指定字体时可重复使用
+`--svg-font-dir "<FONT_DIR>"`；显式 `--svg-mode off` 关闭提取。候选来源、哈希及
+人工绑定方式见 [SVG 提取说明](docs/OPTIONAL_SYMBOL_ASSETS.md)。
 
 插件是 canonical Python 流水线的薄接入层。没有安装 GIS runtime、DWG reader
 或没有授权项目根目录时，插件会失败关闭，而不会输出伪成功 GeoPackage。
@@ -215,8 +240,9 @@ DWG reader (AutoCAD / LibreDWG / source-bound records)
   -> source-bound AI onboarding（只选择源中已观察到的标识）
   -> 确定性语义编译与精确 census gates
   -> 曲线、几何、拓扑、长度四类独立验证
-  -> 名义 CRS 转换
-  -> 可选 GCP 相似变换 + 独立检查点验证
+  -> 单位与基础坐标操作 + 默认 OSM 相对平移匹配
+  -> 人工控制点预览 -> 确认后二次匹配，生成新的 GIS 版本
+     （显式 GCP 配准与 nominal 兼容路径仍可选）
   -> source.gpkg + evidence.gpkg + delivery.gpkg
   -> QML + evidence graph + run_manifest.json + run_status
 ```
@@ -266,12 +292,23 @@ $env:CAD2GIS_READER_BACKEND = "autocad"
 ```powershell
 cad2gis inspect "<SOURCE.dwg>" --json
 cad2gis bootstrap "<SOURCE.dwg>" --project "<PROJECT_DIR>" --json
+```
+
+检查并完成生成的源配置与语义映射后，再验证和转换：
+
+```powershell
 cad2gis validate --project "<PROJECT_DIR>" --json
 cad2gis convert "<SOURCE.dwg>" `
   --project "<PROJECT_DIR>" `
   --run-dir "<NEW_RUN_DIR>" `
   --json
 ```
+
+`convert` 和 `auto-convert` 默认使用 `--matching osm`。需要沿用标称坐标兼容流程时，
+显式选择 `--matching nominal`；需要应用测量 GCP 配置时，显式传入
+`--gcp-profile "<GCP_PROFILE.json>"`。标准 OSM 模式不会自动启用项目目录中发现的
+GCP 文件。有效坐标域、地点提示或离线 OSM 快照提供匹配搜索参考；没有任何地理
+参考的本地 CAD 仍需补充定位输入。自动匹配不确定但地域已知时，会保留待人工检查的粗定位。
 
 使用 DeepSeek 自动完成受约束的 onboarding：
 
@@ -315,12 +352,17 @@ cad2gis review "<RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
 
 打开 `http://127.0.0.1:8765/`：
 
-1. 左图点击 CAD 实体，系统吸附到最近真实几何，拒绝空白区控制点；
-2. 右图点击对应位置，或输入 EPSG:4326 经度/纬度；
-3. 服务端立即把经纬度转换到 run manifest 的目标投影 CRS；
-4. 使用至少 4 个分布合理的训练点和 3 个独立检查点；
-5. 生成 source-bound `web_gcp_profile.json` 和下一次转换命令。
-6. 在“控制台”标签复制命令；执行后生成新的校准 GeoPackage，原 run 保持不变。
+1. 右图先显示当前已应用的 GIS 匹配结果，与 OSM 底图对照；
+2. 左图点击 CAD 实体，系统吸附到真实几何；右图点击同一位置，或输入
+   EPSG:4326 经度/纬度；
+3. 保存至少两个位置不同的训练点后查看人工平移校正预览。独立检查点只评估残差，
+   不参与拟合；足够且分布合理的检查点有助于识别局部偏差；
+4. 确认预览后点击“二次匹配并生成新结果”，由正式转换管线创建新的 GIS；
+5. 完成后自动加载新结果，保留控制点；可继续修改、预览和再次匹配。
+
+工作台会显示本次保存的匹配配置和可复制转换命令。每轮从原始 CAD 坐标及同一
+基础坐标操作重新计算总平移，避免反复叠加前一轮偏移。独立图框分别匹配；
+从某个分区发起的人工校正只生成该分区的新交付。失败时继续保留当前结果和控制点。
 
 界面还提供 `?demo=1` 合成交互模式，用于公开展示图层开关、CAD 几何吸附和
 坐标传送，不读取或上传真实 DWG，也不会伪装成已执行转换。例如：
@@ -334,11 +376,11 @@ cad2gis review "<RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
 “证据 / 控制台 / AI 协作”标签只记录有效审查动作，并提供目标坐标、转换命令和
 受约束 AI 提示词的复制功能。
 
-Web 修改只写独立 revision store，不会修改源文件、evidence 或原 delivery
-GeoPackage。OSM 控制点的精度类别固定为
+人工选点只写独立 revision store 并更新预览；确认二次匹配会创建新的 run，
+原始 CAD 与之前的 delivery GeoPackage 保持不变。OSM 控制点的精度类别固定为
 `RELATIVE_OSM_REFERENCE_ONLY`；若要证明绝对精度，必须替换为测量或权威控制点。
 复制或归档 run 后，服务只接受 SHA-256 与 manifest 完全一致的同目录产物；若
-原 DWG 未重新附加，则允许审查但不生成一条必然失败的校准转换命令。
+原 DWG 或绑定配置不可用，则允许查看已有结果，二次转换需先恢复对应输入。
 
 ## MCP 与主流智能体
 
@@ -398,6 +440,7 @@ $env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"
 - topology 与 cable segment conservation；
 - CAD 曲线长度与独立 DIMENSION 覆盖；
 - nominal CRS transformation；
+- OSM 相对匹配状态、版本、来源与人工校正残差；
 - GCP train residual 与独立 check-point 精度。
 
 `$INSUNITS` 是块插入缩放提示，不自动等同于 WCS 坐标单位。当 DWG 的

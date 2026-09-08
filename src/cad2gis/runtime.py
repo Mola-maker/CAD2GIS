@@ -259,6 +259,12 @@ def call_conversion_backend(
     semantic_store: Path | None = None,
     semantic_job: str = "",
     geometry_repairs: str = "legacy",
+    matching: str = "osm",
+    osm_data: Path | None = None,
+    osm_place: str | None = None,
+    match_profile: Path | None = None,
+    svg_mode: str = "candidate",
+    svg_font_dirs: tuple[Path, ...] = (),
 ) -> Any:
     """Construct the v3 request and invoke its canonical ``convert`` function."""
 
@@ -283,6 +289,12 @@ def call_conversion_backend(
         **({"source_run": Path(source_run)} if source_run is not None else {}),
         **({"semantic_store": Path(semantic_store), "semantic_job": semantic_job} if semantic_store is not None else {}),
         **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
+        **({"matching": matching} if matching != "osm" else {}),
+        **({"osm_data": Path(osm_data)} if osm_data is not None else {}),
+        **({"osm_place": osm_place} if osm_place else {}),
+        **({"match_profile": Path(match_profile)} if match_profile is not None else {}),
+        **({"svg_mode": svg_mode} if svg_mode != "candidate" else {}),
+        **({"svg_font_dirs": tuple(Path(path) for path in svg_font_dirs)} if svg_font_dirs else {}),
     )
     return convert(request)
 

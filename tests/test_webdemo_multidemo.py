@@ -101,7 +101,7 @@ def test_demo_selector_and_typography_assets_are_self_hosted() -> None:
 
     assert 'id="demo-project-select"' in page
     assert 'id="map-reference-note"' in page
-    assert "app.js?v=live-geodata-declutter-20260901" in page
+    assert "app.js?v=svg-rematch-20260908" in page
     assert "demo-fixture.js?v=runtime-fix-20260901" in page
     assert "demo-catalog.json" in fixture_script
     assert '"runtime-fix-20260901"' in fixture_script

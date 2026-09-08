@@ -1,4 +1,4 @@
-"""Optional CAD symbol extraction. Imported by conversion only with SVG opt-in.
+"""Source-bound CAD symbol extraction for standard candidate review.
 
 Run ``python -m cad2gis.symbol_assets --help``. The SQLite asset library is a
 derived review product, not the source or semantic database.
@@ -20,6 +20,14 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 SCHEMA = "cad2gis.symbol-assets.v1"
+
+
+def _create_symbol_schema(db):
+    """Keep a valid asset library even when no source instance is renderable."""
+    db.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+    db.execute("CREATE TABLE IF NOT EXISTS symbols (symbol_id TEXT PRIMARY KEY, label TEXT NOT NULL, status TEXT NOT NULL, "
+               "svg TEXT NOT NULL, svg_sha256 TEXT NOT NULL, source_handles_json TEXT NOT NULL, "
+               "source_entities_json TEXT NOT NULL, diagnostics_json TEXT NOT NULL)")
 
 
 def _sha(data: bytes) -> str:
@@ -112,14 +120,14 @@ def _closure(document, entities):
     return facts
 
 
-def extract(source: Path, selection: Path, output: Path, *, font_dirs=()) -> dict:
+def extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_symbols=5000) -> dict:
     output = Path(output).resolve()
     if output.exists():
         raise FileExistsError(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.symbol-library-', dir=output.parent) as temporary:
         staged = Path(temporary) / 'library'
-        result = _extract(source, selection, staged, font_dirs=font_dirs)
+        result = _extract(source, selection, staged, font_dirs=font_dirs, max_symbols=max_symbols)
         from .cad2gis_v3.artifact_io import inherit_output_permissions
         inherit_output_permissions(Path(temporary))
         staged.rename(output)
@@ -129,7 +137,7 @@ def extract(source: Path, selection: Path, output: Path, *, font_dirs=()) -> dic
             for key, value in result.items()}
 
 
-def _extract(source: Path, selection: Path, output: Path, *, font_dirs=()) -> dict:
+def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_symbols=5000) -> dict:
     """Create a new source-bound asset DB, SVG sidecars and an HTML review gallery."""
     from .runtime import configure_numeric_threads
     configure_numeric_threads()
@@ -150,8 +158,10 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=()) -> di
     if requested.get("source_sha256") != source_hash:
         raise ValueError("Symbol selection belongs to another source SHA-256")
     items = requested.get("symbols", [])
-    if not items or len(items) > 5000:
-        raise ValueError("Select 1 to 5000 source-bound symbols")
+    if type(max_symbols) is not int or max_symbols < 1:
+        raise ValueError("max_symbols must be a positive integer")
+    if not items or len(items) > max_symbols:
+        raise ValueError(f"Select 1 to {max_symbols} source-bound symbols")
     ids = [item.get("symbol_id", "") for item in items]
     if len(set(ids)) != len(ids) or any(not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,79}", value) for value in ids):
         raise ValueError("Symbol IDs must be unique lowercase filename-safe identifiers")
@@ -220,14 +230,11 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=()) -> di
     (output / "symbols").mkdir()
     metadata = {"schema_version": SCHEMA, "source_sha256": source_hash, "source_name": source.name,
                 "dxf_sha256": dxf_hash, "selection_sha256": _sha(selection_bytes),
-                "backend": backend_name, "ezdxf_version": ezdxf.__version__, "default_pipeline_enabled": False,
+                "backend": backend_name, "ezdxf_version": ezdxf.__version__, "auto_applied": False,
                 "role": "derived_symbol_assets_not_source_or_semantic_authority",
                 "font_directories": [str(Path(directory).resolve()) for directory in font_dirs]}
     with closing(sqlite3.connect(output / "symbols.sqlite3")) as db, db:
-        db.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
-        db.execute("CREATE TABLE symbols (symbol_id TEXT PRIMARY KEY, label TEXT NOT NULL, status TEXT NOT NULL, "
-                   "svg TEXT NOT NULL, svg_sha256 TEXT NOT NULL, source_handles_json TEXT NOT NULL, "
-                   "source_entities_json TEXT NOT NULL, diagnostics_json TEXT NOT NULL)")
+        _create_symbol_schema(db)
         db.executemany("INSERT INTO metadata VALUES (?, ?)", [(key, _json(value)) for key, value in metadata.items()])
         for asset in assets:
             db.execute("INSERT INTO symbols VALUES (?,?,?,?,?,?,?,?)", (

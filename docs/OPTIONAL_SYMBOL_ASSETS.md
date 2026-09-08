@@ -1,21 +1,33 @@
-# 可选 SVG 符号资产入口
+# 标准 SVG 候选提取与可选符号绑定
 
-SVG 提取保留独立脚本和独立数据库，默认 `convert` 不调用；显式启用时进入转换后的候选资产步骤。
-`cad2gis convert ... --svg-mode candidate --svg-font-dir /path/to/fonts` 在 run 目录旁生成
-`<run-name>-svg-candidates/`，包含 `symbols.sqlite3`、`correspondence.json` 和并排复核 HTML。
-批量契约每张图可设置 `"svg_mode": "candidate"`。`off` 为默认。
+SVG 提取是标准转换流程的一部分，默认使用 `candidate` 模式。`convert`、`auto-convert`、
+Python `convert_project`、MCP `run_conversion` / `auto_onboard_and_convert` 和批量入口
+都在 `<run>/svg-candidates/` 生成 `symbols.sqlite3`、`correspondence.json` 和
+`correspondence.html`，用于并排复核原图符号及图例对应关系。
+显式传入 `--svg-mode off` 或 API / 批量契约中的 `"svg_mode": "off"` 可以关闭提取；
+旧批量契约省略该字段时也默认提取候选。
 候选步骤为全部交付点记录状态，按布局分别检测图例，不混合纸空间和模型坐标。
 图例候选与实例的归一化 SVG、颜色和镜像比例需要相符；附带属性的块不自动认领图例。
 当前只实现 off/candidate，完整人工复核准入的 reviewed 模式尚未开放。
-CLI、MCP `run_conversion` 和批量入口共享 `svg_mode` 与字体目录参数。
+候选不会自动应用到交付 QML 或 GIS 业务数据；显式符号绑定仍是下文的独立操作。
+
+`convert` 与 `auto-convert` 都接受可重复的 `--svg-font-dir /path/to/fonts`。
+Python API 接收 `svg_font_dirs` 路径元组，两个 MCP 转换工具接收目录字符串数组。
 批量 JSON 的 `svg_font_dirs` 是相对于输入契约的目录数组，只允许输入包内路径；
-MCP 字体目录仍受项目根路径约束。缺依赖、字体目录不存在或候选目录已存在时提前拒绝。
-转换 run 和可选候选库是两个发布边界：后续 SVG 失败会保留成功转换并在错误中返回路径，
-不把候选失败描述成原图转换成功；候选库自身按完整目录原子发布。
-需要时运行 `python -m cad2gis.symbol_assets`，或仓库中的 `tools/extract_svg_symbols.py`。
+MCP 字体目录仍受项目根路径约束。`off` 模式不接受字体目录。字体替代情况记录在提取诊断中。
+
+SVG 候选在规范转换的临时 run 内生成，完成后与 GIS 一起原子发布。
+依赖、字体、提取或生成失败时，不发布不完整的新 run，已有 run 保留。
+运行清单的 `modes.svg` 记录所用模式；`svg_candidates` 包含 `mode`、`status`、
+`auto_applied: false`、`font_dirs`、`output_dir`、`report`、`html`、`store` 和文件 SHA-256。
+关闭时该记录为 `{"mode":"off","status":"disabled","font_dirs":[]}`。
+CLI 和两个 MCP 转换工具都返回候选报告位置；批量 HTML 链接到 run 内的对应报告。
+旧 run 旁的 `<run-name>-svg-candidates/` 历史目录保留原状，新转换只写 run 内目录。
+
+也可独立运行 `python -m cad2gis.symbol_assets`，或仓库中的 `tools/extract_svg_symbols.py`。
 安装后也可以调用 `cad2gis-symbols`，不依赖源码目录。
-需要可选依赖 `ezdxf`；DWG 输入还需要已安装的 LibreDWG `dwg2dxf`。不需要 AutoCAD。
-只安装这项入口的依赖可运行 `pip install ".[symbols]"`；已安装 `agent` 或 `portable` 的环境已有 ezdxf。
+标准安装包含 `ezdxf`；DWG 输入还需要已安装的 LibreDWG `dwg2dxf`。不需要 AutoCAD。
+原有 `pip install ".[symbols]"` extra 继续保留兼容。
 
 ## 数据职责
 
@@ -82,7 +94,7 @@ python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz
 已有候选目录可通过 `cad2gis-svg-delivery --baseline <完整交付目录> --assets <候选目录> --output <新目录>` 接入完整交付。该入口按候选记录中的数据库 SHA-256 对应主工程和分区，不要求转换 run 或交付目录使用固定名称；相同数据库副本的重复绑定会合并，哈希不匹配时拒绝继续。输出的 `delivery.qgz` 使用相邻数据库，`view-with-source-SVG.qgz` 内嵌数据库和 SVG。生成进程退出后，仍须独立运行 `cad2gis-qgis-verify` 验证单文件工程。
 
 工具要求源 DWG SHA 相同、交付 GPKG 哈希匹配、SVG 提取选择恰好为该 handle，且目标恰好为一个点要素。
-未绑定对象沿用原渲染器，标准入口不启用 SVG。必须退出生成进程后运行
+未绑定对象沿用原渲染器，标准转换只提取 SVG 候选，不自动应用符号。必须退出生成进程后运行
 `python tools/verify_qgis_standalone.py --project output.qgz --output verification`。
 此前同进程检查漏检 Windows 临时路径，不能单独作为发布门槛。
 无界面 QGIS 若没有字体，复验会明确失败，不再把方块标签的非空画布当作通过。

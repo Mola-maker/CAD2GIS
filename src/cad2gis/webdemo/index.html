@@ -405,7 +405,7 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
           <span>02</span><span><strong>语义映射</strong><small>证据约束的分类</small></span>
         </button>
         <button class="workflow-step" data-stage="registration">
-          <span>03</span><span><strong>空间配准</strong><small>GCP 与独立检查点</small></span>
+          <span>03</span><span><strong>空间配准</strong><small>OSM 匹配与人工校正</small></span>
         </button>
         <button class="workflow-step" data-stage="validation">
           <span>04</span><span><strong>独立校验</strong><small>几何、拓扑、长度、坐标</small></span>
@@ -426,13 +426,13 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
 
       <section id="stage-registration" class="stage-card registration-card">
         <div class="section-heading">
-          <div><span class="section-kicker">Registration</span><h2>控制点与坐标传送</h2></div>
+          <div><span class="section-kicker">Registration</span><h2>OSM 匹配与人工校正</h2></div>
           <span class="step-chip">GCP</span>
         </div>
         <ol class="steps">
-          <li>在 CAD 图吸附真实设施、缆线或道路拐点。</li>
-          <li>在地图点同一位置，或输入经纬度后传送。</li>
-          <li>使用 4 个分布良好的训练点和 3 个独立检查点。</li>
+          <li>右图默认显示当前 GIS 匹配结果，与 OSM 底图对照。</li>
+          <li>位置不准时，在左侧 CAD 图吸附真实设施或拐点，再在地图选同一位置或输入经纬度。</li>
+          <li>保存人工点后自动预览校正；二次匹配生成新结果后，可继续修改同一组点。</li>
         </ol>
         <label class="field-label">控制点角色
           <select id="gcp-role">
@@ -451,15 +451,18 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
         </div>
         <div id="gcp-list" class="gcp-list"></div>
         <div class="metric-card">
-          <span>模型</span><strong id="fit-model">尚未拟合</strong>
+          <span>当前预览</span><strong id="fit-model">等待 GIS 匹配结果</strong>
           <span>预览残差 RMSE</span><strong id="fit-rmse">—</strong>
-          <span>控制点</span><strong id="fit-coverage">0 / 4 训练；0 / 3 检查</strong>
+          <span>控制点</span><strong id="fit-coverage">0 个训练点；0 个独立检查点</strong>
+          <span>已应用匹配</span><strong id="matching-version">—</strong>
           <span>目标坐标</span><strong id="target-coordinate">—</strong>
         </div>
         <button id="copy-coordinate" class="wide ghost" disabled>复制已传送的目标坐标</button>
-        <button id="export-gcp" class="wide primary" disabled>生成配置与转换命令</button>
+        <button id="preview-gcp" class="wide secondary">预览人工校正</button>
+        <button id="export-gcp" class="wide primary" disabled>二次匹配并生成新结果</button>
+        <p id="matching-status" class="muted" role="status" aria-live="polite">正在读取当前匹配版本与人工控制点…</p>
         <p class="warning">OSM 只能提供相对地图参考；绝对精度必须使用测量或权威控制点证明。</p>
-        <p class="warning">本地预览和导出共用正式平移拟合引擎与目标坐标系；独立检查点不参与拟合。最终转换仍须通过覆盖度与精度门槛，预览不代替验收。静态演示仅记录选点。</p>
+        <p class="warning">训练点用于人工平移校正，独立检查点只用于评估残差。二次匹配可在有效校正后生成新结果；绝对精度验收仍需分布合理的训练点与独立检查点。静态演示仅记录选点。</p>
       </section>
     </aside>
 
@@ -479,7 +482,7 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
           <div id="local-map" class="map"></div>
         </article>
         <article class="map-pane">
-          <header><span><b>GIS</b> 真实地图与配准预览</span><code id="map-coordinate">—</code></header>
+          <header><span><b>GIS</b> OSM 匹配与人工校正预览</span><code id="map-coordinate">—</code></header>
           <div id="map" class="map"></div>
         </article>
         <div id="toast" class="toast" aria-live="polite"></div>
@@ -499,6 +502,11 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
           <div id="diagnosis" class="diagnosis">等待运行清单…</div>
         </section>
         <section><span class="section-kicker">Run evidence</span><h2>运行证据</h2><dl id="run-summary"></dl></section>
+        <section><span class="section-kicker">SVG candidates</span><h2>SVG 图形与图例对应</h2>
+          <p id="svg-candidate-status" class="muted" role="status" aria-live="polite">正在读取 SVG 提取状态…</p>
+          <p class="muted">候选报告列出源实体图形、图例对应和未解决项，供逐项复核；候选不会自动替换 GIS 交付样式。</p>
+          <a id="open-svg-candidates" target="_blank" rel="noopener noreferrer" hidden>打开本轮 SVG 对应报告 ↗</a>
+        </section>
         <section><span class="section-kicker">Selection</span><h2>选中对象</h2><pre id="feature-properties">在任一地图点击对象。</pre></section>
       </div>
 
@@ -511,8 +519,8 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
           <div class="section-heading"><div><span class="section-kicker">Next command</span><h2>重新转换</h2></div>
             <button id="copy-command" class="icon-button" disabled title="复制命令" aria-label="复制转换命令">复制</button>
           </div>
-          <pre id="conversion-command">等待足够的控制点。</pre>
-          <p class="warning" id="preview-source-note">当前画布始终预览配准前的原始 run；执行命令后会生成新的 delivery.gpkg。</p>
+          <pre id="conversion-command">二次匹配后显示本次转换命令，供需要时复现结果。</pre>
+          <p class="warning" id="preview-source-note">右图默认显示当前 GIS 结果。人工点变化后预览校正；二次匹配成功后自动加载新结果，并保留控制点供继续修改。</p>
         </section>
       </div>
 
@@ -541,6 +549,6 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
   <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
   <script src="./assets/demo-fixture.js?v=runtime-fix-20260901"></script>
   <script type="module" src="./assets/hero-motion.js?v=font-system-20260829"></script>
-  <script type="module" src="./assets/app.js?v=live-geodata-declutter-20260901"></script>
+  <script type="module" src="./assets/app.js?v=svg-rematch-20260908"></script>
 </body>
 </html>

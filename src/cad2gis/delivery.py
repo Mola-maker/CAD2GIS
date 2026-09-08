@@ -4,11 +4,12 @@ from __future__ import annotations
 import copy
 import csv
 import json
+import re
 import shutil
 import sqlite3
 import xml.etree.ElementTree as ET
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from .batch import digest, write_json
 from .presentation import LENGTH_EXPRESSION, configure_numeric_fields, csv_value
@@ -107,9 +108,112 @@ def qgis_project(gpkg: Path, styles: Path, destination: Path) -> list[dict]:
     return report
 
 
+def _validated_svg_candidates(run: Path, manifest: dict) -> tuple[dict, list[tuple[str, Path, str]]] | None:
+    """Validate the complete, source-bound inventory before copying any candidate."""
+    record = manifest.get("svg_candidates")
+    if record is None:
+        return None
+    if not isinstance(record, dict):
+        raise ValueError("SVG candidates have an invalid canonical receipt")
+    if record.get("status") == "disabled" and record.get("mode") == "off":
+        return None
+    if (record.get("status") != "completed" or record.get("mode") != "candidate"
+            or record.get("auto_applied") is not False):
+        raise ValueError("SVG candidates must be complete and remain unapplied")
+    root = run / "svg-candidates"
+    if root.resolve() != root or not root.is_dir():
+        raise ValueError("SVG candidate directory is missing or redirects outside its canonical location")
+
+    def recorded_path(value: object):
+        if not isinstance(value, str) or not value:
+            return None
+        windows = PureWindowsPath(value)
+        path = windows if windows.is_absolute() else PurePosixPath(value)
+        if not path.is_absolute() or ".." in path.parts:
+            return None
+        return path
+
+    # A whole run can be moved while its content-bound manifest retains the
+    # publication paths. Use the original delivery descriptor only as a lexical
+    # anchor; all file reads still use the current run's candidate directory.
+    original_delivery = recorded_path(manifest.get("artifacts", {}).get("delivery", {}).get("path"))
+    original_run = (original_delivery.parent if original_delivery is not None
+                    and original_delivery.name == "delivery.gpkg" else None)
+
+    def bound_path(value: object, expected: Path) -> None:
+        actual = recorded_path(value)
+        allowed = {recorded_path(str(expected))}
+        if original_run is not None:
+            allowed.add(original_run.joinpath(*expected.relative_to(run).parts))
+        if actual is None or actual not in allowed:
+            raise ValueError("SVG candidate receipt path does not match its canonical location")
+
+    bound_path(record.get("output_dir"), root)
+    files = record.get("files")
+    if not isinstance(files, dict) or not files:
+        raise ValueError("SVG candidates have no complete file checksum inventory")
+    sources = []
+    for relative, expected_hash in files.items():
+        if (not isinstance(relative, str) or not relative or "\\" in relative or ":" in relative
+                or PurePosixPath(relative).is_absolute()
+                or any(part in {"", ".", ".."} for part in relative.split("/"))
+                or not isinstance(expected_hash, str) or not re.fullmatch(r"[a-f0-9]{64}", expected_hash)):
+            raise ValueError("SVG candidate file inventory contains an invalid path or SHA-256")
+        source = root / relative
+        if source.resolve() != source or not source.is_file():
+            raise ValueError("SVG candidate file is missing or redirects outside its canonical location")
+        sources.append((relative, source, expected_hash))
+
+    # Inspect each directory only after ruling out links and junctions. Copying
+    # a whole tree could otherwise include unbound files or follow a redirect.
+    found = set()
+    pending = [root]
+    while pending:
+        for path in pending.pop().iterdir():
+            if path.resolve() != path or path.is_symlink():
+                raise ValueError("SVG candidate inventory contains a redirected path")
+            if path.is_dir():
+                pending.append(path)
+            elif path.is_file():
+                found.add(path.relative_to(root).as_posix())
+            else:
+                raise ValueError("SVG candidate inventory contains an unsupported file")
+    if found != set(files):
+        raise ValueError("SVG candidate files do not match the complete canonical inventory")
+
+    receipt = {"mode": "candidate", "status": "completed", "auto_applied": False,
+               "complete_legend_correspondence_verified": False, "output_dir": "svg-candidates",
+               "files": dict(files)}
+    for name, relative in (("report", "correspondence.json"), ("html", "correspondence.html"),
+                           ("store", "symbols.sqlite3")):
+        path = root / relative
+        bound_path(record.get(name), path)
+        artifact = manifest.get("artifacts", {}).get("svg_candidates_" + name)
+        if not isinstance(artifact, dict):
+            raise ValueError("SVG candidate artifact is missing from the canonical manifest")
+        bound_path(artifact.get("path"), path)
+        if relative not in files or artifact.get("sha256") != files[relative]:
+            raise ValueError("SVG candidate artifact does not match its canonical SHA-256")
+        receipt[name] = "svg-candidates/" + relative
+    for relative, source, expected_hash in sources:
+        if digest(source) != expected_hash:
+            raise ValueError(f"SVG candidate SHA-256 mismatch: {relative}")
+    correspondence = json.loads((root / "correspondence.json").read_text(encoding="utf-8"))
+    if (correspondence.get("source_sha256") != manifest.get("source", {}).get("sha256")
+            or correspondence.get("auto_applied") is not False
+            or correspondence.get("complete_legend_correspondence_verified") is not False):
+        raise ValueError("SVG correspondence does not match the source or candidate review contract")
+    receipt["source_sha256"] = correspondence["source_sha256"]
+    for name in ("all_points_accounted_for", "dispositions", "inventory_blocks"):
+        if name in correspondence:
+            receipt[name] = correspondence[name]
+    return receipt, sources
+
+
 def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) -> dict:
     run, output = run.resolve(), output.resolve()
     manifest = json.loads((run / "run_manifest.json").read_text(encoding="utf-8"))
+    svg_candidates = _validated_svg_candidates(run, manifest)
     output.mkdir(parents=True, exist_ok=False)
     scopes = [("main", run)]
     scopes.extend((p.parent.name, p.parent) for p in sorted(run.glob("*/delivery.gpkg")))
@@ -148,6 +252,15 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
             raise ValueError("Geometry repair candidates do not match the canonical manifest")
         shutil.copy2(candidate_path, output / candidate_path.name)
         report["geometry_repairs"] = "candidate-only"
+    if svg_candidates is not None:
+        receipt, sources = svg_candidates
+        for relative, source, expected_hash in sources:
+            destination = output / "svg-candidates" / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+            if digest(destination) != expected_hash:
+                raise ValueError(f"SVG candidate changed while packaging: {relative}")
+        report["svg_candidates"] = receipt
     if audit_dir is not None:
         shutil.copytree(audit_dir, output / "visual")
         report["visual_audit_included"] = True

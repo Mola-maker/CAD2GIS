@@ -1,4 +1,4 @@
-"""Optional source-instance SVG inventory; geometry and semantic stores are read-only.
+"""Source-instance SVG inventory; geometry and semantic stores are read-only.
 
 Candidate correspondence is evidence for review, never implicit legend approval.
 Every delivered point receives a disposition, including unsupported primitives.
@@ -27,14 +27,21 @@ def preflight(output: Path, *, font_dirs=()) -> None:
             raise ValueError(f'SVG font directory does not exist: {directory}')
 
 
-def prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=()) -> dict:
+def prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
+            database_paths=None, expected_source_sha256=None) -> dict:
     """Publish an independent inventory atomically, never a partial candidate."""
     output = Path(output).resolve()
     preflight(output, font_dirs=font_dirs)
-    if len({Path(p).parent.name for p in databases}) != len(databases):
-        raise ValueError('Delivery database scopes must be unique')
+    databases = [Path(path).resolve() for path in databases]
+    published_paths = ({Path(path).resolve(): Path(published).resolve()
+                        for path, published in database_paths.items()}
+                       if database_paths is not None else {path: path for path in databases})
+    if set(published_paths) != set(databases) or len(set(databases)) != len(databases):
+        raise ValueError('SVG published database paths must cover each input exactly once')
     source_hash = hashlib.sha256(Path(source).read_bytes()).hexdigest()
-    for database in databases:
+    if expected_source_sha256 is not None and source_hash != expected_source_sha256:
+        raise ValueError('SVG source does not match conversion source SHA-256')
+    for database in databases if expected_source_sha256 is None else ():
         for parent in list(Path(database).resolve().parents)[:3]:
             manifest = parent / 'run_manifest.json'
             if manifest.is_file():
@@ -45,21 +52,21 @@ def prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=()) 
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.svg-stage-', dir=output.parent) as temporary:
         staged = Path(temporary) / 'inventory'
-        report = _prepare(source, databases, staged, font_dirs=font_dirs)
+        report = _prepare(source, databases, staged, font_dirs=font_dirs, database_paths=published_paths)
         from .cad2gis_v3.artifact_io import inherit_output_permissions
         inherit_output_permissions(Path(temporary))
         staged.rename(output)
     return report
 
 
-def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=()) -> dict:
+def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(), database_paths=None) -> dict:
     from .runtime import configure_numeric_threads
     configure_numeric_threads()
     import ezdxf
     from ezdxf.fonts import fonts
     if font_dirs:
         fonts.font_manager.build([str(Path(p).resolve()) for p in font_dirs])
-    from .symbol_assets import extract, _render
+    from .symbol_assets import SCHEMA, extract, _render, _create_symbol_schema
     from .cad2gis_v3.legend_detector import detect_legend_clusters
 
     source, output = Path(source).resolve(), Path(output).resolve()
@@ -69,6 +76,12 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=())
         raise FileExistsError(output)
     digest = hashlib.sha256(source.read_bytes()).hexdigest()
     before = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in databases}
+    published_paths = database_paths or {path: path for path in databases}
+    published_hashes = {str(published_paths[path]): before[str(path)] for path in databases}
+    scope_names = {path: published_paths[path].parent.name for path in databases}
+    if len(set(scope_names.values())) != len(databases):
+        scope_names = {path: f'{index}/{published_paths[path].parent.name}'
+                       for index, path in enumerate(databases)}
     points = []
     for database in databases:
         with closing(sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True)) as db:
@@ -78,7 +91,7 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=())
                 if 'source_handle' not in fields:
                     raise ValueError(f'Point layer {table} lacks source lineage')
                 for handle, in db.execute(f'SELECT source_handle FROM {quoted}'):
-                    points.append(dict(database=database.parent.name, layer=table, source_handle=str(handle)))
+                    points.append(dict(database=scope_names[database], layer=table, source_handle=str(handle)))
     with tempfile.TemporaryDirectory(prefix='cad2gis-legend-inventory-') as temp:
         dxf = source
         if source.suffix.lower() == '.dwg':
@@ -167,16 +180,20 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=())
         selection = Path(temp) / 'selection.json'
         selection.write_text(json.dumps(dict(source_sha256=digest, symbols=list(selected.values()))), encoding='utf-8')
         if selected:
-            extract(source, selection, output, font_dirs=font_dirs)
+            # Automatic inventory is bounded by the observed source handles,
+            # rather than the smaller manual-selection interface's limit.
+            extract(source, selection, output, font_dirs=font_dirs,
+                    max_symbols=max(5000, len(selected)))
         else:
             output.mkdir(parents=True)
         with closing(sqlite3.connect(output / 'symbols.sqlite3')) as db, db:
+            _create_symbol_schema(db)
             if selected:
                 statuses = dict(db.execute('SELECT symbol_id,status FROM symbols'))
                 for point in points:
                     if point['symbol_id'] and statuses[point['symbol_id']] != 'candidate':
                         point['status'] = 'UNRESOLVED_RENDER_INCOMPLETE'
-            db.execute('CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+            db.execute('INSERT OR REPLACE INTO metadata VALUES (?,?)', ('schema_version', json.dumps(SCHEMA)))
             db.execute('INSERT OR REPLACE INTO metadata VALUES (?,?)', ('source_sha256', json.dumps(digest)))
             db.execute('CREATE TABLE correspondence (feature_index INTEGER PRIMARY KEY, database_scope TEXT, layer TEXT, source_handle TEXT, symbol_id TEXT, status TEXT, evidence_json TEXT)')
             db.execute('CREATE INDEX correspondence_source ON correspondence(source_handle, layer)')
@@ -197,7 +214,8 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=())
                       all_points_accounted_for=len(points), dispositions=counts,
                       complete_legend_correspondence_verified=False, auto_applied=False,
                       source_instance_bindings=bindings, points=points, legend_clusters=clusters,
-                      inventory_blocks=len(inserts), input_databases_sha256=before)
+                      inventory_blocks=len(inserts), input_databases_sha256=published_hashes,
+                      database_scopes={str(published_paths[path]): scope_names[path] for path in databases})
         (output / 'correspondence.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
         rows = ''.join('<tr><td>' + html.escape(p['layer'] + ' / ' + p['source_handle']) + '</td><td>' +
                        (f'<img src="symbols/{p["symbol_id"]}.svg">' if p['symbol_id'] else '保留原样式') + '</td><td>' +

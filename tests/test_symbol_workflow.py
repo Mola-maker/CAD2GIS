@@ -63,3 +63,28 @@ def test_mismatched_drawing_rejected_before_render(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='does not match'):
         prepare(source, [tmp_path / 'delivery.gpkg'], tmp_path / 'published')
     assert not (tmp_path / 'published').exists()
+
+
+@pytest.mark.parametrize('has_point', [False, True])
+def test_empty_symbol_library_remains_usable_by_svg_delivery(tmp_path, has_point):
+    import hashlib
+    from cad2gis.svg_delivery import _project_bindings
+    ezdxf = pytest.importorskip('ezdxf')
+    document = ezdxf.new()
+    primitive = document.modelspace().add_point((20, 0))
+    source = tmp_path / 'source.dxf'
+    document.saveas(source)
+    database = tmp_path / 'delivery.gpkg'
+    with sqlite3.connect(database) as db:
+        db.execute('CREATE TABLE gpkg_geometry_columns(table_name,geometry_type_name)')
+        db.execute("INSERT INTO gpkg_geometry_columns VALUES('PTECH','POINT')")
+        db.execute('CREATE TABLE PTECH(source_handle)')
+        if has_point:
+            db.execute('INSERT INTO PTECH VALUES(?)', (primitive.dxf.handle,))
+    report = prepare(source, [database], tmp_path / 'assets')
+    assert report['all_points_accounted_for'] == int(has_point)
+    with sqlite3.connect(tmp_path / 'assets/symbols.sqlite3') as db:
+        statuses = dict(db.execute('SELECT symbol_id,status FROM symbols'))
+        assert statuses == {}
+        assert json.loads(db.execute("SELECT value FROM metadata WHERE key='schema_version'").fetchone()[0]) == 'cad2gis.symbol-assets.v1'
+    assert _project_bindings(report, {'gpkg_sha256': hashlib.sha256(database.read_bytes()).hexdigest()}, statuses) == []
