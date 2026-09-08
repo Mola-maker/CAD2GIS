@@ -103,6 +103,55 @@ absolute positional accuracy. Kletek has no curved cable source segments, so
 the curved native-view behavior is additionally exercised with actual GDAL
 GeoPackage fixtures containing a bulge arc.
 
+## Completed QGIS delivery
+
+The initial validation stopped at the canonical conversion run and omitted the
+QGIS delivery step. The completed deliverables now also include:
+
+- `tmp/review-fix-20260908/kletek-qgis-delivery.zip`: the portable delivery
+  directory with `delivery.qgz`, the unchanged GeoPackage, eight QML files,
+  eight attribute tables, a delivery manifest, README and checksums.
+- `tmp/review-fix-20260908/Kletek-RW05.qgz`: a **standalone project**, with the
+  GeoPackage attached inside the QGZ and all eight layers, styles, labels and
+  the initial map extent saved. Only this QGZ is needed to open the map.
+
+The standalone QGZ is 147,841 bytes; SHA-256:
+`6c19753333c404aff419241833514b28b168d1734038105eac63ddf6f2842bcc`.
+Its attached GeoPackage retains the canonical delivery SHA-256:
+`38adccb40cc7d70358fb5ecd93b58a2572d6400987875663c449de833705cb68`.
+All 20 file entries in the portable directory's checksum manifest also match.
+
+Packaging used the repository's existing `batch package` and `qgis_package`
+entry points. A new, independent **QGIS 3.34.4 process on Ubuntu 24.04 WSL**
+then verified the standalone file after the packaging process exited:
+
+- Relocating the QGZ by itself loads all eight layers and all 263 features.
+- Every data source resolves to an internal attachment; an intentionally
+  invalid adjacent `delivery.gpkg` is ignored.
+- Attachment hashes, numeric display precision, cable label expressions and
+  the saved initial extent pass validation.
+- An actual first-open render completes without renderer errors and has
+  6,141 nonwhite samples. The image was inspected; labels are readable.
+- Reading and saving again with QGIS preserves attachment references.
+
+The verifier exposed a Qt compatibility bug: `QFontDatabase.families()` is an
+instance method in Qt 5 and a static method in Qt 6. The verifier now falls back
+to an instance for Qt 5, retaining the original Qt 6 call and the empty-font
+failure check. The corrected independent QGIS verification passes, and the
+related delivery, equivalence and symbol regression suite passes **44 tests**.
+The real render loaded the existing Windows Arial font for that process only;
+fonts are not redistributed in the QGZ. Source-specific SVG remains optional.
+
+Evidence is in `Kletek-RW05.verification.json` (packaging receipt) and
+`kletek-qgis-check/verification.json` plus `first-open.png` (independent check).
+The run's **CONDITIONAL** positional-accuracy status remains unchanged.
+
+The follow-up also found the original run's reasoning directory nested under
+`qgis/reasoning`, outside the paths recorded in its manifest. After confirming
+the original artifact hashes, copies were restored to `run/reasoning`; the
+existing nested directory was retained. The original run audit, frozen snapshot
+and 33-segment native geometry verification pass again.
+
 ## Automated checks and performance
 
 The final complete installed-runtime regression suite passed **695 tests**, with

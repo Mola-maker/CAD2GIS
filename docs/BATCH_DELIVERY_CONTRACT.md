@@ -50,6 +50,8 @@ attempt-001/
 
 完整解压 ZIP 后打开 `delivery.qgz`。QGZ 使用同目录 `delivery.gpkg` 相对路径，保留全部图层；独立分区各有自己的项目。QGIS 项目不嵌入数据库，不能只复制单个 QGZ。GeoPackage 本身是 SQLite，无须改成 `.db`。
 
+这里描述的是 `batch package` 生成的目录交付包。`cad2gis convert` 先生成包含 GeoPackage、样式和运行清单的规范 run；面向 QGIS 用户交付时，还需要执行打包步骤。需要只携带一个 `.qgz` 时，再使用 `cad2gis-qgis-package` 将数据库封装为内部附件，并在生成进程退出后运行 `cad2gis-qgis-verify` 验证搬移和打开。具体命令见[单文件 QGZ](OPTIONAL_SYMBOL_ASSETS.md#单文件-qgz-与显式-svg-绑定)；这种单文件项目无需旁置 GeoPackage。
+
 每包包含：原字节 GPKG、QGZ、每层 QML、全部非几何属性 CSV、字段类型和缺失标签计数、源 DWG 哈希、原运行清单哈希、完整文件校验清单及 README。已准备的九图历史包另含逐项核验、叠图和转换阶段证据。打包先核对原运行清单中的 GPKG SHA256，再执行 SQLite quick_check。
 
 CABLE 的显示表达式以 `length_value_m` 为值，显示 `m [CAD]` 或 `m [GEOM]`；前者对应 `dwg_dimension`，后者对应 `dwg_curve_geometry`，未知来源显示 `?`。`length_source`、`LONGUEUR`、`delivery_grid_length_m` 与 `geodesic_length_m` 均保留，不能把它们当作相同测量。点标签来自 `display_label`；空值保留并统计，不生成猜测标签。字体描边与长度表达式只改变 QML/QGZ 显示，不修改原数据库。
