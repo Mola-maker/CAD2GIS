@@ -312,11 +312,14 @@ const renderControls = (registration = null) => {
   refreshPreview();
 };
 
+let controlsRequest = 0;
 const loadControls = async () => {
+  const request = ++controlsRequest;
   const [collection, registration] = await Promise.all([
     fetchJSON("/api/review/features"),
     fetchJSON("/api/registration"),
   ]);
+  if (request !== controlsRequest) return false;
   const transferred = new Map(registration.controls.map((item) => [item.point_id, item]));
   controls = collection.features
     .filter((feature) => feature.properties?._kind === "cad_map_gcp")
@@ -334,6 +337,7 @@ const loadControls = async () => {
       };
     });
   renderControls(registration);
+  return true;
 };
 
 const nearestCadEvidence = (coordinate) => {
@@ -759,11 +763,23 @@ const connectSocket = () => {
   const socket = new WebSocket(`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`);
   socket.onopen = () => {
     $("#connection-dot").className = "status-dot online";
-    $("#connection-label").textContent = "实时同步";
-    terminalEvent("ok", "WebSocket 已连接，审查 revision 将实时同步");
+    $("#connection-label").textContent = "正在同步";
   };
   socket.onmessage = async ({ data }) => {
-    if (JSON.parse(data).type === "review_event") await loadControls();
+    try {
+      const type = JSON.parse(data).type;
+      if (type === "connected" || type === "review_event") {
+        $("#connection-label").textContent = "正在同步";
+        const applied = await loadControls();
+        if (applied && socket.readyState === WebSocket.OPEN) {
+          $("#connection-label").textContent = "实时同步";
+        }
+      }
+    } catch (error) {
+      terminalEvent("error", `审查状态同步失败：${error.message}`);
+      // Reconnect to retry a failed handshake/state fetch, not just transport.
+      socket.close();
+    }
   };
   socket.onclose = () => {
     $("#connection-dot").className = "status-dot offline";

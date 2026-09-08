@@ -87,7 +87,7 @@ class _NearestFeatureIndex:
         # Only candidates within 1 cm of the optimum can change the legacy
         # unique/ambiguous decision.  Querying that small envelope avoids an
         # O(n) scan while exact distance calculation below preserves results.
-        radius = min(float(tolerance), nearest_distance + 0.0100000001)
+        radius = nearest_distance + 0.0100000001
         candidate_indices = {
             int(value) for value in self._tree.query(query_point.buffer(radius))
         }
@@ -200,6 +200,50 @@ def _segment_position(fraction, segment_length, tolerance):
     return "interior"
 
 
+def _route_pair_candidates(routes, tolerance):
+    """Yield ordered route pairs with potentially touching source segments.
+
+    The exact predicate allows both segments to extend by one tolerance.
+    Expanding by two tolerances retains those boundary cases; nextafter
+    prevents rounding a small envelope expansion back to the original bound.
+    """
+    try:
+        from shapely.geometry import LineString, box
+        from shapely.strtree import STRtree
+    except ImportError:  # pragma: no cover - declared runtime dependency
+        for left, right in itertools.combinations(routes, 2):
+            yield left, right, None
+        return
+    entries = []
+    geometries = []
+    by_route = defaultdict(list)
+    for route_index, route in enumerate(routes):
+        for segment_index, (start, end) in enumerate(zip(route.native_points, route.native_points[1:])):
+            if math.dist(start, end) <= tolerance:
+                continue
+            geometry = LineString((start, end))
+            by_route[route_index].append((segment_index, geometry.bounds))
+            geometries.append(geometry)
+            entries.append((route_index, segment_index))
+    tree = STRtree(geometries)
+    margin = max(0.0, float(tolerance)) * 2.0
+    for left_index, left in enumerate(routes):
+        candidates = defaultdict(set)
+        for segment_index, (min_x, min_y, max_x, max_y) in by_route[left_index]:
+            envelope = box(
+                math.nextafter(min_x - margin, -math.inf),
+                math.nextafter(min_y - margin, -math.inf),
+                math.nextafter(max_x + margin, math.inf),
+                math.nextafter(max_y + margin, math.inf),
+            )
+            for entry_index in tree.query(envelope):
+                right_index, right_segment = entries[int(entry_index)]
+                if right_index > left_index:
+                    candidates[right_index].add((segment_index, right_segment))
+        for right_index in sorted(candidates):
+            yield left, routes[right_index], candidates[right_index]
+
+
 def _route_segment_intersections(routes, tolerance):
     """Classify source-segment intersections without changing route geometry.
 
@@ -209,13 +253,13 @@ def _route_segment_intersections(routes, tolerance):
     """
     crossings, shared_endpoints, endpoint_on_segment = [], [], []
     collinear_overlaps, collinear_endpoint_on_segment = [], []
-    route_pairs = itertools.combinations(sorted(
+    ordered_routes = sorted(
         routes,
         key=lambda item: (
             item.feature_key, item.source_handle, item.source_entity_key,
         ),
-    ), 2)
-    for left, right in route_pairs:
+    )
+    for left, right, candidate_segments in _route_pair_candidates(ordered_routes, tolerance):
         for left_index, (left_start, left_end) in enumerate(
             zip(left.native_points, left.native_points[1:])
         ):
@@ -228,6 +272,8 @@ def _route_segment_intersections(routes, tolerance):
             for right_index, (right_start, right_end) in enumerate(
                 zip(right.native_points, right.native_points[1:])
             ):
+                if candidate_segments is not None and (left_index, right_index) not in candidate_segments:
+                    continue
                 right_vector = (
                     right_end[0] - right_start[0], right_end[1] - right_start[1],
                 )

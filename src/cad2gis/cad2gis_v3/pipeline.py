@@ -251,13 +251,25 @@ def _write_manifest(path, payload):
     write_json_object(path, payload)
 
 
+def _replace_run_directory(source: Path, destination: Path) -> None:
+    """Give transient Windows scanners/locks a bounded publication window."""
+    for attempt in range(6):
+        try:
+            os.replace(source, destination)
+            return
+        except OSError as exc:
+            if os.name != "nt" or getattr(exc, "winerror", None) not in {5, 32, 33} or attempt == 5:
+                raise
+            time.sleep(min(0.1 * 2**attempt, 1.0))
+
+
 def _publish_run_bundle(staged_run_dir: Path, destination_run_dir: Path) -> None:
     """Publish one complete run directory with rollback on replacement failure.
 
     All GeoPackages, styles and the manifest are closed and validated inside a
     same-volume staging directory before this function is called.  An existing
     destination is first renamed as one unit.  On Windows this also provides a
-    fail-fast lock check: if QGIS holds a file without delete sharing, the
+    bounded lock check: if QGIS keeps a file open without delete sharing, the
     rename fails before any current artifact is replaced.
     """
     staged = Path(staged_run_dir).resolve()
@@ -266,6 +278,7 @@ def _publish_run_bundle(staged_run_dir: Path, destination_run_dir: Path) -> None
         raise ValueError("Run bundle staging and destination must share a parent directory")
     if not staged.is_dir():
         raise ValueError(f"Staged run directory does not exist: {staged}")
+    _require_unpublished_run(destination)
 
     # Final snapshot verification has already completed. Prepare user-readable
     # permissions before moving either the current bundle or its replacement.
@@ -277,18 +290,21 @@ def _publish_run_bundle(staged_run_dir: Path, destination_run_dir: Path) -> None
     moved_existing = False
     try:
         if had_existing:
-            os.replace(destination, backup)
+            _replace_run_directory(destination, backup)
             moved_existing = True
+            # Recheck after taking ownership in case another publisher won
+            # between the admission check and the rename.
+            _require_unpublished_run(backup)
         try:
-            os.replace(staged, destination)
+            _replace_run_directory(staged, destination)
         except Exception:
             if moved_existing and backup.exists() and not destination.exists():
-                os.replace(backup, destination)
+                _replace_run_directory(backup, destination)
                 moved_existing = False
             raise
     except Exception:
         if moved_existing and backup.exists() and not destination.exists():
-            os.replace(backup, destination)
+            _replace_run_directory(backup, destination)
         raise
     else:
         if backup.exists():
@@ -298,6 +314,36 @@ def _publish_run_bundle(staged_run_dir: Path, destination_run_dir: Path) -> None
                 # Publication is already complete.  A consumer may still hold
                 # the retired bundle; leave the hidden backup for later cleanup.
                 pass
+
+
+def _require_unpublished_run(run_dir: Path) -> None:
+    if any((run_dir / name).exists() for name in (
+        "run_manifest.json", "source_manifest.json", "semantic_manifest.json",
+    )):
+        raise FileExistsError(
+            "Published run directories are immutable; choose a new run directory: "
+            f"{run_dir}"
+        )
+
+
+def _coordinate_domain_view(entities, unit_contract, geodata_registration=None):
+    """Express drawing WCS in source CRS axis units without changing facts."""
+    from dataclasses import replace
+    from .geodata import local_to_crs_point
+
+    factor = unit_contract.source_to_crs_axis_factor
+    if geodata_registration is None and factor == 1.0:
+        return list(entities)
+
+    def point(value):
+        if geodata_registration is not None:
+            return local_to_crs_point(value, geodata_registration)
+        return tuple(coordinate * factor for coordinate in value)
+
+    return [replace(
+        entity, points=tuple(point(value) for value in entity.points),
+        centroid=point(entity.centroid), curve_fingerprint="",
+    ) for entity in entities]
 
 
 def _validate_reviewed_policy(registry):
@@ -316,6 +362,21 @@ def _validate_reviewed_policy(registry):
             f"this pipeline requires {required_policy}; "
             f"got {registry.policy}"
         )
+
+
+def _native_inventory_crs(entities, source_crs, unit_contract, coordinate_domain, geodata_registration=None):
+    """Only assign a projected CRS when it describes every raw coordinate."""
+    if (
+        geodata_registration is None
+        and unit_contract.source_to_crs_axis_factor == 1.0
+        and coordinate_domain.get("passed") is True
+        and all(
+            entity.cad_role == "model" and str(entity.layout).casefold() == "model"
+            for entity in entities
+        )
+    ):
+        return source_crs
+    return None
 
 
 def _validate_source_geometry(
@@ -1477,6 +1538,7 @@ def _denoise_plan_entities(semantic_entities, plan_domain, registry, request):
         plan_domain=plan_domain,
         project_config_dir=request.mapping_registry.parent,
         llm_mode=request.llm,
+        persist_decisions=False,
         route_regex=registry.positive_route_layer_regex,
         boundary_exempt_layers=(
             getattr(registry, "layers", {}).get("zpm_boundary", ())
@@ -1511,6 +1573,7 @@ def _denoise_plan_entities(semantic_entities, plan_domain, registry, request):
 def convert(request: ConversionRequest) -> ConversionResult:
     source = Path(request.source).resolve()
     run_dir = Path(request.run_dir).resolve()
+    _require_unpublished_run(run_dir)
     from .implementation import (
         conversion_snapshot_manifest_fields,
         freeze_conversion_snapshot,
@@ -1545,6 +1608,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
     source_hash = profile.validate_source(source)
     registry = MappingRegistry.load(request.mapping_registry, source_hash)
     _validate_project_bindings(profile, registry)
+    _validate_reviewed_policy(registry)
     from ..reader.resolver import configured_reader
 
     stage_recorder = StageRecorder(context={
@@ -1683,27 +1747,16 @@ def convert(request: ConversionRequest) -> ConversionResult:
 
     from .coordinate_domain import assess_coordinate_domain
 
-    coordinate_domain_entities = _drawing_space_entities(semantic_entities)
-    if geodata_registration is not None:
-        from dataclasses import replace as _replace_domain_entity
-        from .geodata import local_to_crs_point
-
-        coordinate_domain_entities = [
-            _replace_domain_entity(
-                entity,
-                points=tuple(
-                    local_to_crs_point(point, geodata_registration)
-                    for point in entity.points
-                ),
-                centroid=local_to_crs_point(
-                    entity.centroid, geodata_registration,
-                ),
-                curve_fingerprint="",
-            )
-            for entity in coordinate_domain_entities
-        ]
+    coordinate_domain_entities = _coordinate_domain_view(
+        _drawing_space_entities(semantic_entities), unit_contract,
+        geodata_registration,
+    )
     coordinate_domain = assess_coordinate_domain(
         coordinate_domain_entities, profile.source_crs,
+    )
+    native_source_crs = _native_inventory_crs(
+        entities, profile.source_crs, unit_contract, coordinate_domain,
+        geodata_registration,
     )
     # OSM place-name lookup is relative evidence only.  Persisting a coarse
     # candidate helps a later review, but it must never mutate delivery
@@ -2324,15 +2377,16 @@ def convert(request: ConversionRequest) -> ConversionResult:
             shutil.copy2(Path(request.decision_pack).resolve(), staged_decision_pack_path)
         source_result = stage_recorder.run(
             "write_source_gpkg",
-            version="v2-immutable-source-facts",
+            version="v3-native-coordinate-reference",
             inputs=lambda: {
                 **stage_inputs,
                 "entity_count": len(entities),
                 "entities_sha256": canonical_sha256(entities),
                 "legend_flags_sha256": canonical_sha256(legend_flag_map),
+                "geometry_crs": native_source_crs,
             },
             operation=lambda: write_source_gpkg(
-                staged_source_path, entities, profile.source_crs,
+                staged_source_path, entities, native_source_crs,
                 legend_flag_map=legend_flag_map,
             ),
             fingerprint=lambda _result: _sha256(staged_source_path),

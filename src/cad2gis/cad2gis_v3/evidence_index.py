@@ -32,6 +32,10 @@ class EvidenceIndexError(ValueError):
     """An evidence index is missing, stale, or violates its graph binding."""
 
 
+def _readonly_connection(path: Path) -> sqlite3.Connection:
+    return sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
+
+
 @dataclass(frozen=True)
 class EvidenceIndexBinding:
     """Validated query identity; standalone data carries no run authority."""
@@ -193,7 +197,7 @@ def read_index_metadata(path: str | Path) -> dict[str, Any]:
     source = Path(path)
     if not source.is_file():
         raise EvidenceIndexError(f"Evidence index does not exist: {source}")
-    connection = sqlite3.connect(f"file:{source.as_posix()}?mode=ro", uri=True)
+    connection = _readonly_connection(source)
     try:
         values = _metadata(connection)
     finally:
@@ -215,7 +219,7 @@ def page_evidence_nodes(
     """Return one indexed page, validating every selected content address."""
 
     source = Path(path)
-    connection = sqlite3.connect(f"file:{source.as_posix()}?mode=ro", uri=True)
+    connection = _readonly_connection(source)
     try:
         metadata = _metadata(connection)
         where = "WHERE kind = ?" if kind else ""
@@ -261,7 +265,7 @@ def get_indexed_evidence_node(path: str | Path, node_id: str) -> dict[str, Any] 
     """Return one validated node by content address, or ``None``."""
 
     source = Path(path)
-    connection = sqlite3.connect(f"file:{source.as_posix()}?mode=ro", uri=True)
+    connection = _readonly_connection(source)
     try:
         _metadata(connection)
         row = connection.execute(
@@ -280,7 +284,7 @@ def indexed_nodes_by_kind(path: str | Path, kind: str) -> Iterable[EvidenceNode]
     """Yield all nodes of one kind while validating each row independently."""
 
     source = Path(path)
-    connection = sqlite3.connect(f"file:{source.as_posix()}?mode=ro", uri=True)
+    connection = _readonly_connection(source)
     try:
         _metadata(connection)
         rows = connection.execute(
@@ -329,6 +333,16 @@ def _artifact_record(manifest: dict[str, Any], manifest_path: Path, name: str) -
         declared_path = Path(record["path"]).expanduser()
         if not declared_path.is_absolute():
             declared_path = manifest_path.parent / declared_path
+        # A copied complete run retains its original absolute manifest paths.
+        # Rebase only conventional sidecars; the cold resolver still verifies
+        # both file digests, semantic graph identity and source binding.
+        parts = record["path"].replace("\\", "/").split("/")
+        allowed_names = ({EVIDENCE_INDEX_FILENAME} if name == "evidence_index"
+                         else {"evidence_graph.json", "evidence_graph.json.gz"})
+        if len(parts) >= 2 and parts[-2] == "reasoning" and parts[-1] in allowed_names:
+            portable = manifest_path.parent / "reasoning" / parts[-1]
+            if portable.is_file():
+                declared_path = portable
         return {
             "path": declared_path.resolve(),
             "sha256": _digest(record["sha256"], f"manifest {name}"),

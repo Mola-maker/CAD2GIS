@@ -17,7 +17,7 @@ from typing import Any
 
 IMPLEMENTATION_SCHEMA_VERSION = "cad2gis-implementation-provenance-v1"
 PRODUCTION_CONVERSION_SCOPE = "production-conversion"
-PRODUCTION_CONVERSION_SCOPE_VERSION = 8
+PRODUCTION_CONVERSION_SCOPE_VERSION = 9
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
 # Paths are relative to src/cad2gis.  Keep this list explicit: adding
@@ -26,6 +26,7 @@ CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 PRODUCTION_CONVERSION_FILES = (
     "coordinate_runtime.py",
     "native_runtime.py",
+    "presentation.py",
     "reader/autocad.py",
     "reader/contracts.py",
     "reader/libredwg.py",
@@ -63,9 +64,15 @@ PRODUCTION_CONVERSION_FILES = (
     "cad2gis_v3/schema_config.py",
     "cad2gis_v3/scene_partition.py",
     "cad2gis_v3/semantics.py",
+    "cad2gis_v3/semantic_delivery.py",
+    "cad2gis_v3/semantic_stage.py",
+    "cad2gis_v3/semantic_store.py",
     "cad2gis_v3/spatial_coverage.py",
     "cad2gis_v3/source_dependencies.py",
+    "cad2gis_v3/source_export.py",
     "cad2gis_v3/source_gpkg.py",
+    "cad2gis_v3/source_query.py",
+    "cad2gis_v3/source_replay.py",
     "cad2gis_v3/spatial_filter.py",
     "cad2gis_v3/stage_contract.py",
     "cad2gis_v3/styles.py",
@@ -185,12 +192,17 @@ def _artifact_record(path: str | os.PathLike[str], *, kind: str) -> dict[str, An
     resolved = Path(path).expanduser().resolve()
     if not resolved.is_file():
         raise FileNotFoundError(f"Conversion snapshot {kind} does not exist: {resolved}")
-    content = resolved.read_bytes()
+    digest = hashlib.sha256()
+    size = 0
+    with resolved.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+            size += len(chunk)
     return {
         "kind": str(kind),
         "path": str(resolved),
-        "sha256": _sha256_bytes(content),
-        "size_bytes": len(content),
+        "sha256": digest.hexdigest(),
+        "size_bytes": size,
     }
 
 
@@ -252,6 +264,15 @@ def freeze_conversion_snapshot(
             else _artifact_record(decision_pack, kind="decision_pack")
         ),
     }
+    # These optional project inputs also change geometry admission, delivery
+    # membership and GCP coverage. Bind absence as well as existing bytes.
+    config_dir = Path(mapping_registry).expanduser().resolve().parent
+    for name in ("delivery_partitions", "spatial_regions"):
+        path = config_dir / f"{name}.json"
+        artifacts[name] = (
+            _artifact_record(path, kind=name) if path.exists()
+            else {"kind": name, "path": str(path), "exists": False}
+        )
     snapshot: dict[str, Any] = {
         "schema_version": CONVERSION_SNAPSHOT_SCHEMA_VERSION,
         "code_root": str(root),
@@ -395,6 +416,21 @@ def verify_conversion_snapshot(
         )
         if not ok:
             mismatches.append(detail)
+
+    for name in ("delivery_partitions", "spatial_regions"):
+        # Older snapshots did not bind auxiliary configuration. Keep them
+        # inspectable; all newly frozen snapshots include both descriptors.
+        if name not in artifacts:
+            continue
+        expected = artifacts[name]
+        checked.append(name)
+        if isinstance(expected, Mapping) and expected.get("exists") is False:
+            if Path(str(expected.get("path", ""))).exists():
+                mismatches.append(f"artifacts.{name}: previously absent input appeared")
+        else:
+            ok, detail = _verify_artifact(name, expected)
+            if not ok:
+                mismatches.append(detail)
 
     implementation = snapshot.get("implementation")
     if not isinstance(implementation, Mapping):
