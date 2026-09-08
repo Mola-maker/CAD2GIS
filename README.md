@@ -374,6 +374,9 @@ $env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"
 
 ## QGIS 交付
 
+需要排查底图偏移时，可使用独立的 [QGIS / OSM 复核入口](docs/qgis-osm-review.md)，
+为工程加入离线参考底图并生成真实 QGIS 快照。原图坐标标注约束的可选校正只应用于复核工程显示，不改写原始数据库或长度，也不代替测量控制点验收。
+
 成功 run 包含：
 
 - `source.gpkg`

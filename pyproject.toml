@@ -44,6 +44,8 @@ cad2gis-agent-mcp = "cad2gis.agent_mcp:main"
 cad2gis-symbols = "cad2gis.symbol_assets:main"
 cad2gis-qgis-package = "cad2gis.qgis_package:main"
 cad2gis-qgis-verify = "cad2gis.qgis_verify:main"
+cad2gis-qgis-review = "cad2gis.qgis_review:main"
+cad2gis-qgis-review-verify = "cad2gis.qgis_review_verify:main"
 cad2gis-svg-delivery = "cad2gis.svg_delivery:main"
 
 [tool.setuptools]

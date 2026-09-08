@@ -1,0 +1,30 @@
+{
+  "schema": "cad2gis.osm-review-release.v1",
+  "release": "https://github.com/Mola-maker/CAD2GIS/releases/tag/osm-review-20260908",
+  "source_drawings": 9,
+  "qgz_count": 22,
+  "snapshot_count": 22,
+  "before_image_count": 9,
+  "svg_feature_bindings": 751,
+  "raw_dwg_included": false,
+  "coordinate_correction_scope": "project_display_only",
+  "corrected_drawings": [
+    "drawing-01",
+    "drawing-02"
+  ],
+  "absolute_accuracy_verified": false,
+  "assets": [
+    {
+      "file": "CAD2GIS-OSM-review-projects-20260908.zip",
+      "bytes": 28473054,
+      "sha256": "f2057a2aeb6057945db5a7d050bd6cf31c1a2e71f0dac3bd1865d4367af8cd10",
+      "url": "https://github.com/Mola-maker/CAD2GIS/releases/download/osm-review-20260908/CAD2GIS-OSM-review-projects-20260908.zip"
+    },
+    {
+      "file": "CAD2GIS-OSM-snapshots-20260908.zip",
+      "bytes": 19467829,
+      "sha256": "049362f65a9c596134a6a6c8086ab07f83d8bc4cd4afc188239151b0ae3944fe",
+      "url": "https://github.com/Mola-maker/CAD2GIS/releases/download/osm-review-20260908/CAD2GIS-OSM-snapshots-20260908.zip"
+    }
+  ]
+}
