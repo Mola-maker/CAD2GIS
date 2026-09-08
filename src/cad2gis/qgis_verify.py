@@ -23,7 +23,11 @@ def verify(path, output):
                            QgsRenderContext, QgsExpressionContextUtils, QgsApplication)
     from qgis.PyQt.QtCore import QSize
     from qgis.PyQt.QtGui import QColor, QFontDatabase
-    available_fonts = QFontDatabase.families()
+    try:
+        available_fonts = QFontDatabase.families()
+    except TypeError:
+        # Qt 5 exposes an instance method; Qt 6 exposes a static method.
+        available_fonts = QFontDatabase().families()
     if not available_fonts:
         raise RuntimeError('QGIS has no fonts: provide --font with a local TTF/OTF file before visual verification')
     path, output = Path(path).resolve(), Path(output).resolve()
