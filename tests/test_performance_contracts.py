@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import random
+import itertools
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -99,3 +100,42 @@ def test_stage_contract_cache_key_and_output_hash_are_deterministic():
     )
     assert first.receipts[0]["cache_key"] == second.receipts[0]["cache_key"]
     assert first.receipts[0]["output_sha256"] == second.receipts[0]["output_sha256"]
+
+
+def test_index_preserves_ambiguity_across_tolerance_boundary():
+    features = [SimpleNamespace(feature_key=str(i), native_centroid=(distance, 0.0))
+                for i, distance in enumerate((74.999, 75.005))]
+    expected = _nearest_unique_linear((0.0, 0.0), features, 75.0)
+    actual = _NearestFeatureIndex(features).nearest_unique((0.0, 0.0), 75.0)
+    assert actual == expected == (None, None, "multiple_optima")
+
+
+def test_spatial_intersection_candidates_preserve_exhaustive_results(monkeypatch):
+    from cad2gis.cad2gis_v3 import topology
+    rng = random.Random(9817)
+    points = [tuple((rng.uniform(-5, 5), rng.uniform(-5, 5)) for _ in range(3))
+              for _ in range(36)]
+    points += [
+        ((0, 0), (10, 0)), ((5, 0), (15, 0)),  # collinear overlap
+        ((5, 0), (5, 5)), ((10, 0), (20, 0)),  # T and shared endpoints
+        ((10.001, -5), (10.001, -0.001)),  # both extended tolerance bounds
+        ((0, 20), (0, 20)),  # degenerate source
+    ]
+    routes = [SimpleNamespace(feature_key=f"r{i:03}", source_handle=str(i),
+                              source_entity_key=f"e{i}", native_points=p)
+              for i, p in enumerate(points)]
+    indexed = topology._route_segment_intersections(routes, 0.002)
+
+    def exhaustive(values, _tolerance):
+        for left, right in itertools.combinations(values, 2):
+            yield left, right, None
+
+    monkeypatch.setattr(topology, "_route_pair_candidates", exhaustive)
+    assert indexed == topology._route_segment_intersections(routes, 0.002)
+
+
+def test_disjoint_routes_do_not_enter_quadratic_exact_comparisons():
+    from cad2gis.cad2gis_v3.topology import _route_pair_candidates
+    routes = [SimpleNamespace(native_points=((0.0, 10.0*i), (1.0, 10.0*i)))
+              for i in range(1000)]
+    assert list(_route_pair_candidates(routes, 0.001)) == []

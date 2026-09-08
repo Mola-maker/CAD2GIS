@@ -71,3 +71,105 @@ def test_windows_canonical_bundle_inherits_parent_acl_recursively(tmp_path):
     assert inherited_owner(destination / "nested" / "delivery.gpkg")
     assert (destination / "nested" / "delivery.gpkg").read_bytes() == b"closed delivery fixture"
     assert not staged.exists()
+
+
+def test_style_field_inspection_releases_database_before_bundle_publication(tmp_path, monkeypatch):
+    import sqlite3
+    from cad2gis.cad2gis_v3 import styles, warehouse
+    from cad2gis.cad2gis_v3.georef import DirectTransformer
+
+    staged = tmp_path / ".stage"
+    staged.mkdir()
+    delivery = staged / "delivery.gpkg"
+    warehouse.write_delivery(delivery, [], DirectTransformer("EPSG:3857", "EPSG:3857"))
+    connect = sqlite3.connect
+    retained_connections = []
+
+    def track(*args, **kwargs):
+        connection = connect(*args, **kwargs)
+        if kwargs.get("uri"):
+            # Keeping references makes the test independent of garbage
+            # collection, which otherwise hides open SQLite handles.
+            retained_connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(styles.sqlite3, "connect", track)
+    try:
+        styles.write_styles(staged / "styles", [], delivery)
+        assert retained_connections
+        for connection in retained_connections:
+            with pytest.raises(sqlite3.ProgrammingError, match="closed"):
+                connection.execute("SELECT 1")
+        pipeline._publish_run_bundle(staged, tmp_path / "published")
+        assert (tmp_path / "published/delivery.gpkg").is_file()
+    finally:
+        for connection in retained_connections:
+            connection.close()
+
+
+def test_persistent_windows_publication_error_is_bounded_and_preserves_files(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    source, destination = tmp_path / "staged", tmp_path / "previous"
+    source.write_bytes(b"candidate")
+    destination.write_bytes(b"original")
+    attempts, waits = [], []
+    error = PermissionError("persistent lock")
+    error.winerror = 32
+
+    def blocked(*args):
+        attempts.append(args)
+        raise error
+
+    monkeypatch.setattr(pipeline, "os", SimpleNamespace(name="nt", replace=blocked))
+    monkeypatch.setattr(pipeline.time, "sleep", waits.append)
+    with pytest.raises(PermissionError, match="persistent lock"):
+        pipeline._replace_run_directory(source, destination)
+    assert len(attempts) == 6
+    assert sum(waits) <= 2.5
+    assert source.read_bytes() == b"candidate"
+    assert destination.read_bytes() == b"original"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows delete-sharing publication regression")
+def test_windows_publication_recovers_after_temporary_directory_lock(tmp_path, monkeypatch):
+    import ctypes
+    from ctypes import wintypes
+    import threading
+
+    staged = tmp_path / ".stage"
+    staged.mkdir()
+    (staged / "delivery.gpkg").write_bytes(b"closed delivery")
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                  ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    kernel.CreateFileW.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    # A scanner with read/write sharing, but no delete sharing, blocks rename.
+    handle = kernel.CreateFileW(str(staged), 0x80000000, 3, None, 3, 0x02000000, None)
+    assert handle != ctypes.c_void_p(-1).value
+    release = threading.Event()
+    failures = []
+    replace = os.replace
+
+    def attempt(source, destination):
+        try:
+            return replace(source, destination)
+        except PermissionError as exc:
+            failures.append(exc.winerror)
+            release.set()
+            raise
+
+    def unlock():
+        release.wait(timeout=5)
+        kernel.CloseHandle(handle)
+
+    worker = threading.Thread(target=unlock)
+    worker.start()
+    monkeypatch.setattr(pipeline.os, "replace", attempt)
+    try:
+        pipeline._publish_run_bundle(staged, tmp_path / "published")
+        assert failures
+        assert (tmp_path / "published/delivery.gpkg").read_bytes() == b"closed delivery"
+    finally:
+        release.set()
+        worker.join(timeout=6)

@@ -829,6 +829,7 @@ def _run_fake_conversion(
         "build_unit_crs_contract",
         lambda *_args, **_kwargs: SimpleNamespace(
             coordinate_mode="direct_crs",
+            source_to_crs_axis_factor=1.0,
             to_manifest_dict=lambda: {},
         ),
     )

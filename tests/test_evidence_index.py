@@ -4,6 +4,7 @@ import hashlib
 import gzip
 import json
 from pathlib import Path
+import shutil
 
 import pytest
 
@@ -13,6 +14,8 @@ from cad2gis.cad2gis_v3.evidence_index import (
     EvidenceIndexError,
     get_indexed_evidence_node,
     page_evidence_nodes,
+    read_index_metadata,
+    indexed_nodes_by_kind,
     resolve_evidence_index,
     validate_index_manifest_binding,
     write_evidence_index,
@@ -246,3 +249,49 @@ def test_same_size_artifact_change_with_restored_mtime_invalidates_cache(tmp_pat
     assert file_cache_identity(artifact) != identity
     with pytest.raises(EvidenceIndexError):
         resolve_evidence_index(graph_path)
+
+
+def test_copied_run_rebases_both_absolute_sidecars_and_still_rejects_tampering(tmp_path):
+    original = tmp_path / "original"
+    graph, index, manifest_path = _official_run(original)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for name, path in (("evidence_graph", graph), ("evidence_index", index)):
+        manifest["artifacts"][name]["path"] = str(path)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    copied = tmp_path / "copied"
+    shutil.copytree(original, copied)
+    copied_graph = copied / "reasoning" / graph.name
+    copied_index = copied / "reasoning" / index.name
+    binding = resolve_evidence_index(copied_graph)
+    assert binding.graph_path == copied_graph
+    assert binding.index_path == copied_index
+    assert validate_index_manifest_binding(copied_index)
+    with copied_index.open("ab") as stream:
+        stream.write(b"tampered")
+    with pytest.raises(EvidenceIndexError, match="does not match"):
+        resolve_evidence_index(copied_graph)
+
+
+@pytest.mark.parametrize("target", ["sha256", "graph_sha256", "path"])
+def test_mcp_rechecks_changed_manifest_without_index_stat_change(tmp_path, monkeypatch, target):
+    from cad2gis import agent_mcp
+    graph, _, manifest_path = _official_run(tmp_path)
+    monkeypatch.setenv("CAD2GIS_PROJECT_ROOT", str(tmp_path))
+    assert agent_mcp.list_evidence_nodes(str(graph))["binding_status"] == "manifest_bound"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["artifacts"]["evidence_index"][target] = "reasoning/wrong.sqlite3" if target == "path" else "f" * 64
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(agent_mcp.MCPServiceError):
+        agent_mcp.list_evidence_nodes(str(graph))
+
+
+def test_readonly_queries_escape_hash_and_percent_in_paths(tmp_path):
+    path = tmp_path / "project#1%2" / EVIDENCE_INDEX_FILENAME
+    graph = _graph()
+    write_evidence_index(path, graph)
+    before = set(tmp_path.rglob("*"))
+    assert read_index_metadata(path)["graph_sha256"] == graph.graph_sha256
+    assert page_evidence_nodes(path)["total"] == len(graph.nodes)
+    assert get_indexed_evidence_node(path, graph.nodes[0].node_id)["node_id"] == graph.nodes[0].node_id
+    assert list(indexed_nodes_by_kind(path, "source_entity"))
+    assert set(tmp_path.rglob("*")) == before

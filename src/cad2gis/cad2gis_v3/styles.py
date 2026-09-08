@@ -7,6 +7,7 @@ import hashlib
 import sqlite3
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+from contextlib import closing
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -599,7 +600,7 @@ def write_styles(
             label_field="display_label",
         )
         if delivery_path is not None:
-            with sqlite3.connect(Path(delivery_path).resolve().as_uri() + "?mode=ro", uri=True) as db:
+            with closing(sqlite3.connect(Path(delivery_path).resolve().as_uri() + "?mode=ro", uri=True)) as db:
                 fields = list(db.execute('PRAGMA table_info("' + layer_name.replace('"', '""') + '")'))
             root = ET.fromstring(qml)
             configure_numeric_fields(root, fields)

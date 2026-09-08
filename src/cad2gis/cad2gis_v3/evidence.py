@@ -16,6 +16,7 @@ from pathlib import Path
 from ..native_runtime import ensure_osgeo_runtime
 from .gpkg_metadata import normalize_geopackage_metadata
 from .warehouse import LAYER_CONFIGS
+from .curve_geometry import delivery_points
 
 ensure_osgeo_runtime()
 from osgeo import ogr  # noqa: E402
@@ -414,6 +415,7 @@ def _write_staged(
         ("source_entity_key", ogr.OFTString), ("source_handle", ogr.OFTString),
         ("source_layer", ogr.OFTString), ("attributes", ogr.OFTString),
         ("display_label", ogr.OFTString), ("label_provenance", ogr.OFTString),
+        ("native_points", ogr.OFTString),
     ])
     for feature in features:
         row = ogr.Feature(candidate_table.GetLayerDefn())
@@ -425,6 +427,11 @@ def _write_staged(
             "attributes": json.dumps(feature.attributes, ensure_ascii=False, sort_keys=True),
             "display_label": feature.display_label,
             "label_provenance": feature.label_provenance,
+            "native_points": json.dumps(
+                delivery_points(feature, require_materialized=False)
+                if feature.feature_class == "CABLE" else feature.native_points,
+                separators=(",", ":"), allow_nan=False,
+            ),
         })
         candidate_table.CreateFeature(row)
 

@@ -388,6 +388,7 @@ def apply_spatial_denoising(
     plan_domain: Any,
     project_config_dir: Path | None,
     llm_mode: str = "off",
+    persist_decisions: bool = True,
     route_regex: str | None = None,
     boundary_exempt_layers: Sequence[str] = (),
     label_text_patterns: Sequence[str] = (),
@@ -405,6 +406,9 @@ def apply_spatial_denoising(
         plan_domain: The ``PlanDomainView`` (used for diagnostics reference).
         project_config_dir: Per-project ``config/`` directory.
         llm_mode: ``"off"``, ``"observe"``, or ``"assist"``.
+        persist_decisions: Onboarding may update the project's cache. A
+            conversion keeps admitted inputs immutable and records new
+            decisions in its run diagnostics instead.
         boundary_exempt_layers: Layer names whose entities are real
             deployment geometry even when hugging the body perimeter (e.g.
             reviewed ZPM boundary layers); the annotation-frame band never
@@ -748,14 +752,15 @@ def apply_spatial_denoising(
     diagnostics["annotation_frame_band"] = frame_diag
 
     # ── 6. Save decisions to spatial_regions.json ──────────────────────
-    _save_spatial_regions(
-        spatial_regions_path,
-        llm_result,
-        legend_diag,
-        flag_map,
-        llm_mode,
-        layer_semantics=semantics,
-    )
+    if persist_decisions:
+        _save_spatial_regions(
+            spatial_regions_path,
+            llm_result,
+            legend_diag,
+            flag_map,
+            llm_mode,
+            layer_semantics=semantics,
+        )
 
     # ── 6. Auto-exclude deterministic and LLM noise ─────────────────────
     # Boundary-band candidates are deterministic detector output and are

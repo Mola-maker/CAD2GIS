@@ -34,6 +34,21 @@ reader selection and modes. Delivery fingerprints are taken after embedded
 QGIS styles, and include external style-file hashes. Hashing time is recorded
 separately from operation time; these sums are not total conversion wall time.
 
+Published conversion, source-export and semantic directories are immutable.
+Their respective `run_manifest.json`, `source_manifest.json` and
+`semantic_manifest.json` markers reject reuse as a conversion output, including
+the case where `--source-run` and `--run-dir` resolve to the same directory.
+Windows publication closes style inspection connections before renaming the
+bundle and retries transient access/sharing errors for at most 2.5 seconds per
+rename. Persistent errors propagate through the existing rollback path.
+
+The input snapshot binds the presence and content of `delivery_partitions.json`
+and `spatial_regions.json` beside the registry. Production denoising records
+new decisions in run diagnostics without changing that frozen configuration;
+onboarding can still prepare the project cache. Source hashing reads 1 MiB
+chunks. Scope version 9 also covers the source replay, semantic revision and
+numeric presentation modules used by the current conversion path.
+
 There is **no result-cache reuse**: every receipt declares `cacheable: false`
 and `cache_status: disabled_receipt_only`. The reserved `cache_key` alone must
 never authorize reuse. A future cache still needs complete external-input and
@@ -91,6 +106,17 @@ treated as the WCS coordinate unit. When authoritative DWG `CGEOCS` metadata
 identifies a projected CRS, its horizontal axis unit controls the WCS-to-metre
 scale. The manifest records both facts and the resulting source-to-axis factor.
 
+Coordinate-domain admission uses a derived view expressed in source CRS axis
+units, including a reviewed source scale or DWG GEODATA registration. Raw reader
+coordinates remain unchanged. A raw source GeoPackage has an undefined local
+SRS when it includes paper/block coordinate spaces, a non-unit scale or GEODATA
+registration; it receives the declared projected SRS only when that reference
+describes the full model-space inventory.
+
+An external backend includes both `cad2gis_v3` and `reader`. Namespace readers
+are restricted to the selected deployment. Switching deployment after importing
+another backend fails explicitly rather than combining their modules.
+
 ## Plan-Domain Contract
 
 `cad2gis_v3/plan_domain.py` creates a derived semantic view without modifying
@@ -142,11 +168,29 @@ queries. Final distances, the 1 cm ambiguity rule and abstention decisions are
 still evaluated by the legacy scalar contract; randomized equivalence tests
 compare both implementations.
 
+Segment intersections use an STRtree over tolerance-expanded segment bounds.
+Candidate ordering remains deterministic and the exact intersection predicates
+are unchanged. Nearest-neighbour queries retain competitors within 1 cm of the
+nearest point even when a competitor lies just outside the acceptance radius.
+
 The canonical evidence graph is stored as deterministic
 `reasoning/evidence_graph.json.gz`; the content-addressed SQLite index remains
 the normal paged query interface. Repeated `raw_properties` in auxiliary
 block/annotation tables are SHA-256 references to the canonical `cad_entities`
 fact, while the authoritative fact remains queryable for curation and audit.
+
+The native review view reads feature-native delivery points and canonical
+source-segment materializations from the evidence ledger. A cable segment is
+identified by its route key and segment index. Older non-cable and straight
+feature lineage remains usable; a legacy curved cable with no materialization
+fails explicitly instead of being displayed as a chord. WebSocket handshakes
+refresh current control points before reporting synchronization, and obsolete
+HTTP responses cannot overwrite newer state.
+
+Copied runs may resolve their canonical graph/index sidecars beside their own
+manifest, retaining both file hashes, graph/source binding and manifest-aware
+cache validation. Read-only SQLite URIs escape filesystem paths, including `#`
+and `%` characters.
 
 ## OSM Review Boundary
 

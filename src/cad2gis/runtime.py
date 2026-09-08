@@ -77,7 +77,8 @@ def _valid_backend_root(candidate: Path) -> Path | None:
     except OSError:
         return None
     package_path = _backend_package_path(resolved)
-    if (package_path / "__init__.py").is_file():
+    if ((package_path / "__init__.py").is_file()
+            and (resolved / "cad2gis" / "reader").is_dir()):
         return resolved
     return None
 
@@ -166,9 +167,38 @@ def _prepare_backend_import() -> None:
                 f"{rendered}"
             )
         root_text = str(root)
+        package_path = root / "cad2gis"
+        # Parent-package imports do not consult sys.path again. Select the
+        # parent's search path, and refuse to mix already loaded deployments.
+        for name, module in tuple(sys.modules.items()):
+            if not (name == BACKEND_PACKAGE or name.startswith(BACKEND_PACKAGE + ".")
+                    or name == "cad2gis.reader" or name.startswith("cad2gis.reader.")):
+                continue
+            origin = getattr(module, "__file__", None)
+            origins = [origin] if origin else list(getattr(module, "__path__", ()))
+            if any(not Path(path).resolve().is_relative_to(package_path) for path in origins):
+                raise BackendUnavailable(
+                    "A different CAD2GIS backend is already loaded; start a new "
+                    f"process with {BACKEND_PATH_ENV} configured before imports"
+                )
+        parent = sys.modules["cad2gis"]
+        search_paths = list(parent.__path__)
+        selected_path = str(package_path)
+        parent.__path__ = [selected_path, *(p for p in search_paths if p != selected_path)]
+        reader_path = package_path / "reader"
+        if "cad2gis.reader" not in sys.modules and not (reader_path / "__init__.py").is_file():
+            # The bundled reader is a namespace package. Resolve an external
+            # namespace against only its deployment so missing submodules
+            # cannot silently fall through to the bundled reader directory.
+            spec = importlib.machinery.PathFinder.find_spec("cad2gis.reader", [selected_path])
+            reader = importlib.util.module_from_spec(spec)
+            reader.__path__ = [str(reader_path)]
+            spec.submodule_search_locations = reader.__path__
+            sys.modules["cad2gis.reader"] = reader
+            parent.reader = reader
         if root_text not in sys.path:
             sys.path.insert(0, root_text)
-            importlib.invalidate_caches()
+        importlib.invalidate_caches()
         return
     if _importable_backend_location() is not None:
         return

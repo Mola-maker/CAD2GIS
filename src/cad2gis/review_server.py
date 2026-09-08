@@ -652,13 +652,13 @@ class GeoPackageProvider:
         )
 
     def _native_point_lookup(self) -> dict[str, Any] | None:
-        """Map source entity keys to CAD-native point sequences."""
+        """Read feature geometry and segment materialization from the ledger."""
         evidence = self._evidence_path()
         if evidence is None or not evidence.is_file():
             return None
         try:
-            import sqlite3
-            connection = sqlite3.connect(str(evidence))
+            connection = sqlite3.connect(evidence.as_uri() + "?mode=ro", uri=True)
+            connection.row_factory = sqlite3.Row
             try:
                 cursor = connection.cursor()
                 columns = {
@@ -669,41 +669,104 @@ class GeoPackageProvider:
                 }
                 if "entity_key" not in columns or "native_points" not in columns:
                     return None
-                lookup: dict[str, Any] = {}
-                for entity_key, native_points, cad_role in cursor.execute(
-                    "SELECT entity_key, native_points, cad_role "
-                    "FROM cad_entities"
-                ):
-                    if not native_points or cad_role != "model":
+                lookup: dict[str, Any] = {"entities": {}, "features": {}, "by_source": {}}
+                for row in cursor.execute("SELECT * FROM cad_entities"):
+                    if not row["native_points"]:
                         continue
-                    lookup[entity_key] = native_points
+                    facts = json.loads(row["curve_facts"] or "{}") if "curve_facts" in columns else {}
+                    lookup["entities"][row["entity_key"]] = {
+                        "points": json.loads(row["native_points"]),
+                        "curve_facts": facts,
+                    }
+                feature_columns = {
+                    row[1] for row in connection.execute("PRAGMA table_info(feature_candidates)")
+                }
+                lineage = {}
+                lineage_columns = {
+                    row[1] for row in connection.execute("PRAGMA table_info(georef_feature_lineage)")
+                }
+                if {"feature_key", "native_points_json"}.issubset(lineage_columns):
+                    lineage = dict(connection.execute(
+                        "SELECT feature_key, native_points_json FROM georef_feature_lineage"
+                    ))
+                if {"feature_key", "feature_class", "source_entity_key", "attributes"}.issubset(feature_columns):
+                    for row in connection.execute("SELECT * FROM feature_candidates"):
+                        attributes = json.loads(row["attributes"] or "{}")
+                        materialization = attributes.get("curve_materialization") or {}
+                        points = materialization.get("delivery_native_points")
+                        canonical = points is not None
+                        if points is None:
+                            raw = (row["native_points"] if "native_points" in feature_columns else None)
+                            canonical = bool(raw)
+                            raw = raw or lineage.get(row["feature_key"])
+                            points = json.loads(raw) if raw else None
+                            # Non-cable delivery uses feature.native_points
+                            # directly; only cables substitute materialized
+                            # curves for their immutable control vertices.
+                            canonical = canonical or (row["feature_class"] != "CABLE" and points is not None)
+                        lookup["features"][row["feature_key"]] = {
+                            "points": points,
+                            "canonical": canonical,
+                            "segments": materialization.get("source_segments"),
+                        }
+                        key = (row["feature_class"], row["source_entity_key"])
+                        lookup["by_source"].setdefault(key, []).append(row["feature_key"])
                 return lookup
             finally:
                 connection.close()
-        except Exception:
-            return None
+        except (sqlite3.Error, ValueError, TypeError) as exc:
+            raise ReviewServerError(f"Cannot read native geometry evidence: {exc}") from exc
 
     def _geometry_from_native_points(
         self,
         native_lookup: dict[str, Any] | None,
         properties: dict[str, Any],
         delivery_geometry: Any,
+        layer_name: str = "",
     ) -> Any | None:
-        """Rebuild the CAD-native geometry for a delivery feature.
-
-        Point/lines/polygons are reconstructed from the immutable
-        ``native_points`` JSON of the evidence ledger; the geometry type is
-        taken from the delivery feature so the layer contract is preserved.
-        """
+        """Recover the exact feature/segment in CAD WCS, including curves."""
         if not native_lookup:
             return None
         entity_key = str(properties.get("source_entity_key") or "")
-        native_points = native_lookup.get(entity_key)
-        if not native_points:
-            return None
+        feature_key = str(properties.get("route_key") or properties.get("feature_key") or "")
+        feature_class = "CABLE" if layer_name == "CABLE_SEGMENT" else layer_name
+        if not feature_key:
+            candidates = native_lookup["by_source"].get((feature_class, entity_key), [])
+            if len(candidates) > 1:
+                raise ReviewServerError("Native geometry has ambiguous feature lineage")
+            feature_key = candidates[0] if candidates else ""
+        feature = native_lookup["features"].get(feature_key) or {}
+        source = native_lookup["entities"].get(entity_key) or {}
+        points = feature.get("points")
+        segment_index = properties.get("segment_index")
+        if segment_index is not None:
+            segments = feature.get("segments")
+            if segments is not None:
+                if not isinstance(segment_index, int) or not 0 <= segment_index < len(segments):
+                    raise ReviewServerError("Native geometry has an invalid source segment index")
+                points = segments[segment_index]["delivery_native_points"]
+            else:
+                # Legacy straight-only evidence can still be read. Curves
+                # without canonical materialization must never become chords.
+                facts = source.get("curve_facts") or {}
+                if any(facts.get("bulges", ())) or facts.get("primitive_type", "LINE") not in {
+                    "LINE", "LWPOLYLINE", "POLYLINE", "2DPOLYLINE", "3DPOLYLINE",
+                }:
+                    raise ReviewServerError("Native curve materialization is missing; reconvert this run")
+                source_points = points if points is not None else source.get("points") or []
+                if not isinstance(segment_index, int) or not 0 <= segment_index < len(source_points) - 1:
+                    raise ReviewServerError("Native geometry has an invalid source segment index")
+                points = source_points[segment_index:segment_index + 2]
+        elif points is None or not feature.get("canonical"):
+            facts = source.get("curve_facts") or {}
+            if any(facts.get("bulges", ())) or facts.get("primitive_type", "LINE") not in {
+                "LINE", "LWPOLYLINE", "POLYLINE", "2DPOLYLINE", "3DPOLYLINE",
+            }:
+                raise ReviewServerError("Native curve materialization is missing; reconvert this run")
+            if points is None:
+                points = source.get("points")
         try:
             from osgeo import ogr
-            points = json.loads(native_points)
             if not isinstance(points, list) or not points:
                 return None
             pairs = [
@@ -816,7 +879,7 @@ class GeoPackageProvider:
                     # immutable drawing coordinates, recovered from the
                     # evidence ledger via the source entity key.
                     native_geometry = self._geometry_from_native_points(
-                        native_lookup, properties, geometry,
+                        native_lookup, properties, geometry, layer_name,
                     )
                     if native_geometry is None:
                         continue

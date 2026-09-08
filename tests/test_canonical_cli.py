@@ -154,6 +154,9 @@ def test_explicit_backend_path_is_supported(
     package = backend_root / "cad2gis" / "cad2gis_v3"
     package.mkdir(parents=True)
     (package / "__init__.py").write_text("", encoding="utf-8")
+    reader = backend_root / "cad2gis" / "reader"
+    reader.mkdir()
+    (reader / "__init__.py").write_text("", encoding="utf-8")
     monkeypatch.setenv(runtime.BACKEND_PATH_ENV, str(backend_root))
     monkeypatch.setattr(runtime, "_importable_backend_location", lambda: None)
     monkeypatch.setattr(runtime, "_editable_backend_root", lambda: None)
