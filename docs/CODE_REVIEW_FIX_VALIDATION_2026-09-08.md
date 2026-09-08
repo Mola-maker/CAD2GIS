@@ -152,6 +152,67 @@ the original artifact hashes, copies were restored to `run/reasoning`; the
 existing nested directory was retained. The original run audit, frozen snapshot
 and 33-segment native geometry verification pass again.
 
+## Source SVG extraction and delivery
+
+The standard `Kletek-RW05.qgz` above has no SVG bindings. The requested SVG
+follow-up now provides `tmp/review-fix-20260908/Kletek-RW05-with-SVG.qgz` and
+`tmp/review-fix-20260908/kletek-svg-delivery.zip`.
+
+The source-bound workflow accounted for all **210 delivered points**:
+
+| Layer | Source-instance SVGs | Other point dispositions |
+| --- | ---: | --- |
+| SITE | 1 | — |
+| BOITE | 9 | — |
+| PTECH | 33 | — |
+| IMB | 0 | 167 non-block entities retain existing labels and styling |
+
+All **43 delivered block instances** have extracted SVG assets and explicit
+layer/source-handle bindings. They form eight distinct SVG contents. The
+inventory records 57 blocks across the source layouts; this does not imply all
+source blocks are delivered symbols or approved legends. All 43 bindings are
+`SOURCE_INSTANCE_ONLY`; complete legend correspondence remains unverified.
+
+The standalone QGZ is 160,814 bytes, SHA-256
+`fdcb7a8d6c4b712808940a9e653e87ccde8d75a8d2178ffe8fffb5f74426b5ec`.
+After the packaging process exited, independent QGIS 3.34.4 verification
+checked **43 actual feature-level SvgMarker selections**, internal SVG content,
+all eight layers and 263 features, database attachments, isolated relocation,
+an invalid adjacent database, first-open rendering and resaving. The render
+has 6,067 nonwhite samples. The eight distinct SVGs were additionally rendered
+with Qt SVG and visually inspected in `kletek-svg-symbols.png`.
+
+Connecting the existing general SVG delivery command exposed a scope mismatch:
+it expected the main inventory scope to be named `delivery`, but extraction
+records the actual run directory name (`kletek-verified` here). Packaging now
+selects inventory scopes using the exact GeoPackage hash, supports recorded
+Windows and POSIX paths, removes identical duplicate bindings, rejects a
+missing hash match, and preserves legacy inventories without hash metadata.
+The related regression suite passes **51 tests**, including real ezdxf
+extraction followed by selection for a renamed delivery directory.
+
+The corrected general command generated a second standalone project and the
+editable project in `kletek-svg-delivery/`. Both passed separate actual QGIS
+checks. The editable directory was relocated; all 43 selected SVG payloads
+match their extraction hashes and all layer sources resolve to its adjacent
+database. The GeoPackage retains the canonical SHA-256
+`38adccb40cc7d70358fb5ecd93b58a2572d6400987875663c449de833705cb68`.
+
+The complete ZIP includes both project forms, the unchanged database, QML,
+attribute tables, 43 SVG files, the independent SQLite symbol library,
+correspondence HTML/JSON, previews and verification records. All **79 file
+checksum entries** match both the directory and ZIP. ZIP size is 1,059,347
+bytes; SHA-256
+`0fa43cce58bb7b92f90ec48c80ab065a1ca96280fe3dc282052fdf4d1c6a54f9`.
+
+Extraction diagnostics retain missing `simplex.shx` (one asset) and
+`dgn003.shx` (33 assets), so affected glyphs may use substitutions. There are
+231 recorded invisible-item skips and no render-incomplete assets; dynamic
+block visibility still requires comparison with the original CAD state.
+This is an actual source-instance SVG display, not a certification of complete
+legend matching, original font fidelity or positional accuracy. The canonical
+run remains **CONDITIONAL**.
+
 ## Automated checks and performance
 
 The final complete installed-runtime regression suite passed **695 tests**, with

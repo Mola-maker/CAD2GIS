@@ -12,10 +12,31 @@ import sqlite3
 from contextlib import closing
 import zipfile
 import xml.etree.ElementTree as ET
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from cad2gis.qgis_package import package
 from cad2gis.presentation import csv_value
+
+
+def _project_bindings(correspondence, entry, statuses):
+    inputs = correspondence.get('input_databases_sha256')
+    if inputs is None:
+        # Older inventories identify the main scope as "delivery".
+        parent = Path(entry['project']).parent
+        scopes = {'delivery' if parent == Path('.') else parent.name}
+    else:
+        # Extraction records the original run/partition directory names. The
+        # portable package may have moved or renamed those directories.
+        scopes = {PureWindowsPath(path).parent.name for path, digest in inputs.items()
+                  if digest == entry['gpkg_sha256']}
+        if not scopes:
+            raise ValueError('SVG inventory has no matching delivery database hash')
+    selected = {}
+    for binding in correspondence['source_instance_bindings']:
+        if binding['database_scope'] in scopes and statuses[binding['symbol_id']] == 'candidate':
+            key = (binding['layer'], binding['source_handle'], binding['symbol_id'])
+            selected[key] = dict(zip(('layer', 'source_handle', 'symbol_id'), key))
+    return list(selected.values())
 
 
 def build(baseline, assets, output):
@@ -38,10 +59,7 @@ def build(baseline, assets, output):
         relative = Path(entry['project'])
         folder = output / relative.parent
         original = baseline / relative
-        scope = 'delivery' if relative.parent == Path('.') else relative.parent.name
-        selected = [dict(layer=b['layer'], source_handle=b['source_handle'], symbol_id=b['symbol_id'])
-                    for b in correspondence['source_instance_bindings']
-                    if b['database_scope'] == scope and statuses[b['symbol_id']] == 'candidate']
+        selected = _project_bindings(correspondence, entry, statuses)
         standalone = folder / 'view-with-source-SVG.qgz'
         options = dict(store=assets / 'symbols.sqlite3', bindings=selected,
                        delivery_manifest=baseline / 'delivery-manifest.json') if selected else {}
