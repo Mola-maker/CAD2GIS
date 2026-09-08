@@ -79,6 +79,8 @@ python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz
 [{"layer": "PTECH", "source_handle": "7943", "symbol_id": "ptech-7943"}]
 ```
 
+已有候选目录可通过 `cad2gis-svg-delivery --baseline <完整交付目录> --assets <候选目录> --output <新目录>` 接入完整交付。该入口按候选记录中的数据库 SHA-256 对应主工程和分区，不要求转换 run 或交付目录使用固定名称；相同数据库副本的重复绑定会合并，哈希不匹配时拒绝继续。输出的 `delivery.qgz` 使用相邻数据库，`view-with-source-SVG.qgz` 内嵌数据库和 SVG。生成进程退出后，仍须独立运行 `cad2gis-qgis-verify` 验证单文件工程。
+
 工具要求源 DWG SHA 相同、交付 GPKG 哈希匹配、SVG 提取选择恰好为该 handle，且目标恰好为一个点要素。
 未绑定对象沿用原渲染器，标准入口不启用 SVG。必须退出生成进程后运行
 `python tools/verify_qgis_standalone.py --project output.qgz --output verification`。
