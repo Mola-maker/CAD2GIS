@@ -242,7 +242,8 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
               "source_dwg_included": False, "full_source_evidence_included": False}
     report["numeric_presentation"] = {"decimal_places": 2, "csv": "presentation_not_lossless_reimport",
                                       "database_values": "unchanged", "geometry": "unchanged_full_precision",
-                                      "business_length_sources": ["dwg_dimension", "dwg_curve_geometry"]}
+                                      "business_length_sources": ["dwg_dimension"],
+                                      "unlabelled_evidence_length_sources": ["dwg_curve_geometry"]}
     if manifest.get("semantic_revision") is not None:
         report["semantic_revision"] = manifest["semantic_revision"]
     candidate_artifact = manifest.get("artifacts", {}).get("geometry_repair_candidates")
