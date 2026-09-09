@@ -2,12 +2,32 @@
   "crs": {
     "local_registration_reviewed": false,
     "local_registration_strategy": null,
-    "source_crs": "EPSG:3857",
-    "target_crs": "EPSG:3857"
+    "source_crs": "EPSG:32750",
+    "target_crs": "EPSG:32750",
+    "geodata_registration": {
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "coordinate_system_id": "UTM84-50S",
+      "target_crs": "EPSG:32750",
+      "design_point": [
+        -5315.786220931768,
+        16586.157234284794
+      ],
+      "reference_point": [
+        816000.6270378672,
+        9899218.12253687
+      ],
+      "horizontal_unit_scale": 1.0,
+      "user_scale_factor": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "authority": "DWG_DIRECT:GEODATA"
+    }
   },
   "drawing": {
     "drawing_units": "metre",
-    "dwg_cgeocs": "WGS84.PseudoMercator",
+    "dwg_cgeocs": "UTM84-50S",
     "dwg_insunits": 4,
     "source_coordinate_scale_reviewed": true,
     "source_coordinate_scale_to_m": 1.0
@@ -19,18 +39,18 @@
       "BOITE": 26,
       "CABLE": 17,
       "IMB": 369,
+      "INFRASTRUCTURE": 17,
       "PTECH": 112,
       "SITE": 1,
-      "ZPM": 26,
-      "INFRASTRUCTURE": 17,
-      "ZNRO": 4
+      "ZNRO": 4,
+      "ZPM": 26
     },
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
-      "model_dimensions": 118,
-      "model_entities": 1809,
-      "model_inserts": 204
+      "model_entities": 1297,
+      "model_inserts": 151,
+      "model_dimensions": 118
     },
     "topology_gates": {}
   },
@@ -43,7 +63,7 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "8308164a4135c537970a9c2bdc870798d8e30f28e648ce2233882634a886cd4c",
+    "inventory_sha256": "ce35d5023f96dfead9e7b46e9581ed1004dc889fbeff94d86e7f1a319755f9ae",
     "source_sha256": "57cc7756b55aa10b6d18a7986b9c55cf0e7796a451e9e220c7d8ef4856e40614",
     "source_size_bytes": 603730
   },
