@@ -3,7 +3,27 @@
     "local_registration_reviewed": false,
     "local_registration_strategy": null,
     "source_crs": "EPSG:3857",
-    "target_crs": "EPSG:3857"
+    "target_crs": "EPSG:3857",
+    "geodata_registration": {
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "coordinate_system_id": "WGS84.PseudoMercator",
+      "target_crs": "EPSG:3857",
+      "design_point": [
+        0.0,
+        0.0
+      ],
+      "reference_point": [
+        0.0,
+        0.0
+      ],
+      "horizontal_unit_scale": 1.0,
+      "user_scale_factor": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "authority": "DWG_DIRECT:GEODATA"
+    }
   },
   "drawing": {
     "drawing_units": "metre",
@@ -26,9 +46,9 @@
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
-      "model_dimensions": 12,
-      "model_entities": 2933,
-      "model_inserts": 62
+      "model_entities": 2395,
+      "model_inserts": 35,
+      "model_dimensions": 12
     },
     "topology_gates": {}
   },
@@ -41,7 +61,7 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "768d4c8b6b0103db93c548a1c1639755afd2f954109a94f88d3ab7e2b9116c5c",
+    "inventory_sha256": "488e5126ea596513dedcd0c65f472fc589fb8ca0eb96664c6205616d72a8dd04",
     "source_sha256": "524aa257bdbe706a3175337e5722787c269c8ebe44dca4f5525c0092046c77a8",
     "source_size_bytes": 2291255
   },
