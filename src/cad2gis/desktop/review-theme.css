@@ -1,0 +1,10 @@
+/* The installed OSM workspace shares Blue Atelier chrome; geometry styles stay authoritative. */
+:root{--ink:#203852;--ink-strong:#17477e;--muted:#73879e;--line:#dce7f2;--line-strong:#b9d2ec;--surface-0:#f0f6ff;--surface-1:#ffffff;--surface-2:#edf5ff;--surface-3:#e1edfb;--accent:#2671c5;--accent-strong:#195eaa;--accent-soft:#dfedff;--shadow:0 12px 30px #396c9f16;--font-display:"Noto Sans SC","Microsoft YaHei",sans-serif}
+body{background:#f0f6ff}
+.topbar,.panel{background:linear-gradient(145deg,#ffffffc4,#e8f2ff9c)!important;backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:inset 0 1px 0 #fff,0 6px 18px #5182ad09;border-color:#d6e6f3!important}
+.map-toolbar{border-radius:14px;background:#ffffffb8!important;backdrop-filter:blur(24px);box-shadow:inset 0 1px 0 #fff,0 5px 18px #376c9e19}
+button,a{transition:transform .38s cubic-bezier(.22,1.18,.36,1),background .25s,color .25s,box-shadow .35s!important}
+button:not(:disabled):active{transform:scale(.965)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8ab7e6;outline-offset:2px}
+.is-selected,[aria-selected=true]{box-shadow:inset 2px 0 0 #6099d3}
+@media(prefers-reduced-motion:reduce){button,a{transition:none!important}button:not(:disabled):active{transform:none}}

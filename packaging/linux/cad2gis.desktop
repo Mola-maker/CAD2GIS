@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=CAD2GIS
+Comment=Convert CAD drawings and review geospatial evidence
+Comment[zh_CN]=转换 CAD 图纸并审查 GIS 交付证据
+Exec=/opt/cad2gis/bin/cad2gis-desktop
+Icon=cad2gis
+Terminal=false
+Categories=Science;Geography;Graphics;
+StartupNotify=true
