@@ -1,0 +1,76 @@
+[
+  {
+    "project": "lamteh_sf",
+    "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+    "inventory_sha256": "71dd024f808886bfa64cc63bb4ea2e943ae3f751f2bd07db622ed61474e7bbf5",
+    "counts": {
+      "model_entities": 213,
+      "model_inserts": 54,
+      "model_dimensions": 25
+    },
+    "source_crs": "EPSG:23846",
+    "target_crs": "EPSG:3857",
+    "geodata_registration": {
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "coordinate_system_id": "Indonesian1974.UTM-46N",
+      "target_crs": "EPSG:23846",
+      "design_point": [
+        -1663.3467141419387,
+        -570.8684767123486
+      ],
+      "reference_point": [
+        750640.2059408867,
+        613213.2658479799
+      ],
+      "horizontal_unit_scale": 1.0,
+      "user_scale_factor": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "authority": "DWG_DIRECT:GEODATA"
+    },
+    "tested_model_vertices": 449,
+    "raw_reverse_roundtrip_max_m": 2.8892213623508647e-05,
+    "refined_inverse_roundtrip_max_m": 2.8373214545777117e-09,
+    "forward_engine_crosscheck_max_m": 0.0,
+    "absolute_accuracy_verified": false
+  },
+  {
+    "project": "lamteh_main",
+    "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78",
+    "inventory_sha256": "b19303a98ce5a57f591f90ae1a3124ab0aefd4f3a0c29d301eb6af4bd155ea1d",
+    "counts": {
+      "model_entities": 3283,
+      "model_inserts": 304,
+      "model_dimensions": 209
+    },
+    "source_crs": "EPSG:23846",
+    "target_crs": "EPSG:3857",
+    "geodata_registration": {
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "coordinate_system_id": "Indonesian1974.UTM-46N",
+      "target_crs": "EPSG:23846",
+      "design_point": [
+        -1663.3467141419387,
+        -570.8684767123486
+      ],
+      "reference_point": [
+        750640.2059408867,
+        613213.2658479799
+      ],
+      "horizontal_unit_scale": 1.0,
+      "user_scale_factor": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "authority": "DWG_DIRECT:GEODATA"
+    },
+    "tested_model_vertices": 6388,
+    "raw_reverse_roundtrip_max_m": 2.891948572341849e-05,
+    "refined_inverse_roundtrip_max_m": 3.492363493367283e-09,
+    "forward_engine_crosscheck_max_m": 0.0,
+    "absolute_accuracy_verified": false
+  }
+]

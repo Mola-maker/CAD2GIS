@@ -11,7 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from pyproj import Transformer
+from pyproj import Geod, Transformer
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -210,7 +210,11 @@ def test_refinement_uses_only_train_and_never_accumulates_translation(tmp_path):
     assert refined["parent_match_sha256"] == original["match_sha256"]
     assert refined["parent_run_sha256"] == PARENT_SHA
     assert refined["translation_3857"] == pytest.approx((1020.0, 1985.0))
-    assert refined["quality"]["check_metrics"]["max_m"] == pytest.approx(100.0)
+    geographic = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+    expected = Geod(ellps="WGS84").inv(
+        *geographic.transform(1120.0, 1985.0), *geographic.transform(1120.0, 2085.0),
+    )[2]
+    assert refined["quality"]["check_metrics"]["max_m"] == pytest.approx(expected)
     assert refined["quality"]["train_metrics"]["max_m"] == pytest.approx(0.0)
     assert refined["quality"]["checks_used_for_fit"] is False
     assert refined["controls"][0]["longitude"] == 0.1
@@ -460,3 +464,42 @@ def test_empty_partition_is_unavailable_without_any_network_requests(tmp_path, m
     assert transform is None
     assert record["status"] == "unavailable"
     assert record["quality"]["reason"] == "empty_drawing_partition"
+
+
+def test_route_samples_do_not_weight_redundant_cad_vertices():
+    sparse = [[(0, 0), (100, 0), (100, 100)]]
+    dense = [[(x, 0) for x in range(101)] + [(100, 100)]]
+    a = matching._samples(sparse, 1.0)
+    b = matching._samples(dense, 1.0)
+    for expected, actual in zip(a, b):
+        assert actual.shape == expected.shape
+        assert actual == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("latitude", [0.0, 60.0, -60.0])
+def test_manual_residuals_are_ellipsoidal_ground_metres(tmp_path, latitude):
+    nominal = Nominal()
+    _, original = run_match(tmp_path, nominal=nominal, valid=True)
+    forward = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+    reverse = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+    x, y = forward.transform(12.0, latitude)
+    controls = [
+        {"point_id": str(i), "cad_x": p[0], "cad_y": p[1],
+         "target_easting": p[0] + x, "target_northing": p[1] + y,
+         "target_crs": "EPSG:3857", "role": "train"}
+        for i, p in enumerate([(0, 0), (100, 0)])
+    ]
+    # Exactly 30 ground metres, regardless of map projection scale.
+    lon, lat, _ = Geod(ellps="WGS84").fwd(12.0, latitude, 90.0, 30.0)
+    check_x, check_y = forward.transform(lon, lat)
+    controls.append({"point_id": "check", "cad_x": 0, "cad_y": 0,
+                     "target_easting": check_x, "target_northing": check_y,
+                     "target_crs": "EPSG:3857", "role": "check"})
+    refined = matching.refine_match(original, nominal, controls,
+                                    source_sha256=SOURCE_SHA, parent_run_sha256=PARENT_SHA)
+    # The nominal base isolates residual measurement from local CAD scale.
+    actual = matching.transformer_from_record(refined, nominal).point((0, 0))
+    expected = Geod(ellps="WGS84").inv(*reverse.transform(*actual), lon, lat)[2]
+    assert refined["quality"]["check_metrics"]["max_m"] == pytest.approx(expected, abs=1e-6)
+    assert refined["quality"]["residual_distance_method"] == "WGS84_ellipsoidal_geodesic"
+    assert refined["needs_review"] is False

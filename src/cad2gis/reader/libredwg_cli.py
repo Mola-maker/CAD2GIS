@@ -336,6 +336,8 @@ def _dimension_block_text(document: Any, entity: Any) -> str:
         block = document.blocks.get(block_name)
     except (AttributeError, IndexError, KeyError, TypeError, ValueError):
         return ""
+    if block is None:
+        return ""
     for block_entity in block:
         if block_entity.dxftype() not in {"TEXT", "MTEXT", "ATTRIB", "ATTDEF"}:
             continue
@@ -496,7 +498,10 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
             # rendered text as ``dimension_text_override`` and its numeric
             # token as ``dimension_value`` whenever the block text exists.
             actual_measurement = None
-            dimension_text_override = _dimension_block_text(document, entity)
+            dimension_text_override = (
+                _dimension_block_text(document, entity)
+                or str(getattr(entity.dxf, "text", "") or "")
+            )
             nominal = _dimension_text_number(dimension_text_override)
             try:
                 if nominal is None:

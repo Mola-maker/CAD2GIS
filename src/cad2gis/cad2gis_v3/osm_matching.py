@@ -471,21 +471,27 @@ def _fetch_roads(bbox, cache_dir):
 
 
 def _samples(routes, scale_to_ground):
+    """Sample by route arclength so redundant CAD vertices carry no extra vote."""
     total_length = sum(LineString(route).length for route in routes)
     spacing = max(total_length / 350.0, 5.0 / scale_to_ground)
     locations, directions, route_ids = [], [], []
     for route_id, route in enumerate(routes):
-        for a, b in zip(route, route[1:]):
-            a, b = np.asarray(a), np.asarray(b)
-            length = float(np.linalg.norm(b - a))
-            if length <= 1e-9:
-                continue
-            count = min(100, max(2, math.ceil(length / spacing)))
-            direction = (b - a) / length
-            for offset in (np.arange(count) + 0.5) / count:
-                locations.append(a + offset * (b - a))
-                directions.append(direction)
-                route_ids.append(route_id)
+        points = np.asarray(route, dtype=float)
+        vectors = np.diff(points, axis=0)
+        lengths = np.linalg.norm(vectors, axis=1)
+        keep = lengths > 1e-9
+        starts, vectors, lengths = points[:-1][keep], vectors[keep], lengths[keep]
+        if not len(lengths):
+            continue
+        cumulative = np.cumsum(lengths)
+        count = max(2, math.ceil(cumulative[-1] / spacing))
+        offsets = (np.arange(count) + 0.5) * (cumulative[-1] / count)
+        indices = np.searchsorted(cumulative, offsets, side="right")
+        previous = np.concatenate(([0.0], cumulative[:-1]))
+        fractions = (offsets - previous[indices]) / lengths[indices]
+        locations.extend(starts[indices] + fractions[:, None] * vectors[indices])
+        directions.extend(vectors[indices] / lengths[indices, None])
+        route_ids.extend([route_id] * count)
     return np.asarray(locations), np.asarray(directions), np.asarray(route_ids)
 
 
@@ -565,6 +571,8 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
     accepted = (best["coverage"] >= 0.75 and best["direction_consistency"] >= 0.70
                 and best["supported_route_fraction"] >= 0.75 and gap >= 0.06)
     quality = {"method": "multi_route_translation_consensus", "route_count": len(routes),
+               "sampling_method": "uniform_route_arclength",
+               "distance_method": "web_mercator_reference_latitude_cosine_approximation",
                "source_segment_count": source_segments, "sample_count": len(samples),
                "confidence_gap": gap, "candidates": distinct,
                "thresholds": {"corridor_m": 25.0, "coverage": 0.75,
@@ -742,8 +750,13 @@ def refine_match(record, nominal, controls, *, source_sha256, parent_run_sha256,
     residuals = []
     for item in compiled:
         actual = candidate.point([item["cad_x"], item["cad_y"]])
-        distance = nominal.target_length_to_m(math.dist(actual, [item["target_easting"], item["target_northing"]]))
-        residuals.append({"point_id": item["point_id"], "role": item["role"], "error_m": distance})
+        target = [item["target_easting"], item["target_northing"]]
+        # Projected axis metres (especially EPSG:3857) are not ground metres.
+        actual_geo = _point(candidate.target_to_geographic.transform(*actual), "actual geographic control")
+        target_geo = _point(candidate.target_to_geographic.transform(*target), "target geographic control")
+        distance = _number(abs(candidate.geod.inv(*actual_geo, *target_geo)[2]), "control ground residual")
+        residuals.append({"point_id": item["point_id"], "role": item["role"], "error_m": distance,
+                          "grid_error_m": nominal.target_length_to_m(math.dist(actual, target))})
 
     def metrics(role):
         values = [item["error_m"] for item in residuals if item["role"] == role]
@@ -752,6 +765,7 @@ def refine_match(record, nominal, controls, *, source_sha256, parent_run_sha256,
 
     train_metrics, check_metrics = metrics("train"), metrics("check")
     result["quality"] = {"method": "manual_translation_from_original_base", "training": train_metrics,
+                         "residual_distance_method": "WGS84_ellipsoidal_geodesic",
                          "check": check_metrics, "residuals": residuals,
                          "train_metrics": train_metrics, "check_metrics": check_metrics,
                          "checks_used_for_fit": False, "absolute_accuracy_verified": False}
