@@ -25,6 +25,27 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 OSM_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 OSM_CREDIT = "© OpenStreetMap contributors | openstreetmap.org/copyright"
+OSM_REVIEW_GROUP = "OpenStreetMap — cached review data"
+
+
+def _drop_existing_osm_review(project) -> None:
+    """Remove a previous review OSM group before adding a fresh one.
+
+    Standalone review projects are rebuilt from already-reviewed deliveries,
+    which carry their own cached OSM layers.  Without this step every rebuild
+    would append a second identical ``OpenStreetMap — cached review data``
+    group instead of refreshing the first.
+    """
+    root = project.layerTreeRoot()
+    for group in list(root.findGroups()):
+        if group.name() != OSM_REVIEW_GROUP:
+            continue
+        for node in list(group.findLayers()):
+            project.removeMapLayer(node.layerId())
+        root.removeChildNode(group)
+    for layer in list(project.mapLayers().values()):
+        if Path(layer.source().split("|", 1)[0]).name == "osm-basemap.gpkg":
+            project.removeMapLayer(layer)
 
 
 def sha(path):
@@ -321,6 +342,7 @@ def build(
             and OSM_URL in unquote(layer.source())
         ):
             project.removeMapLayer(layer.id())
+    _drop_existing_osm_review(project)
     layers = list(project.mapLayers().values())
     if not layers or any(
         not layer.isValid() or not isinstance(layer, QgsVectorLayer) for layer in layers
@@ -490,7 +512,7 @@ def build(
             if osm_destination.exists():
                 raise FileExistsError(osm_destination)
             shutil.copyfile(osm_path, osm_destination)
-        group = project.layerTreeRoot().addGroup("OpenStreetMap — cached review data")
+        group = project.layerTreeRoot().addGroup(OSM_REVIEW_GROUP)
         osm_expected = {}
         for layer, table in reversed(backgrounds):
             _swap_source(layer, osm_destination.as_posix() + "|layername=" + table)

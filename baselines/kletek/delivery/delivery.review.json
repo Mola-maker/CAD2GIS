@@ -1,0 +1,248 @@
+{
+  "schema": "cad2gis.qgis-osm-review.v1",
+  "input_project_sha256": "eb628b0b5ac52bc40bc37748f1e0841a48819b4a127b3f66f11b7cdbf1117478",
+  "sha256": "033e3ad0474c733d75eafc827424ea90d0d8cbcece90f105d6b2a849f5feb562",
+  "standalone": false,
+  "cad_database_hashes": [
+    "912ffbe0de131923d1d67759bbdf0d0032c48be80330a2a49a2c5db5dda76da5"
+  ],
+  "cad_layers": {
+    "BOITE": 9,
+    "CABLE": 33,
+    "IMB": 167,
+    "INFRASTRUCTURE": 9,
+    "PTECH": 33,
+    "SITE": 1,
+    "ZNRO": 2,
+    "ZPM": 9
+  },
+  "svg_bindings": [
+    {
+      "layer": "BOITE",
+      "source_handle": "133E",
+      "svg_sha256": "ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "1343",
+      "svg_sha256": "09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "1348",
+      "svg_sha256": "ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "134D",
+      "svg_sha256": "09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "1352",
+      "svg_sha256": "ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "1357",
+      "svg_sha256": "09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "135C",
+      "svg_sha256": "cdec97f9c0cedeb2f9af777fc263fddca6f5638c7c04c4f572d41ad684ba31d4"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "1361",
+      "svg_sha256": "cdec97f9c0cedeb2f9af777fc263fddca6f5638c7c04c4f572d41ad684ba31d4"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "CD8",
+      "svg_sha256": "d707bd344ffcb443dce31cd6b662e395a8ebb0a8e9ff917d46112a4c06b720d6"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "127E",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1281",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1284",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1287",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "128A",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "128D",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1290",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1296",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1299",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "129C",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "129F",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12A2",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12A5",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12A8",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12AB",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12AE",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12B1",
+      "svg_sha256": "f18169328a237693d3bbfd01f2ee2ae56dc338ad6e0d491159a8fdfa057b53ad"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12B4",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12B7",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12BA",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12BD",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12C0",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12C4",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12C7",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12CD",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12D3",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12D9",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12DC",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "12DF",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1369",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "C87",
+      "svg_sha256": "31a6a1c1f2cf2c36bcdfb33a309f0b7796bbc7cdc1c5811dcbf46186ef7acd39"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "CF3",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "CF6",
+      "svg_sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc"
+    },
+    {
+      "layer": "SITE",
+      "source_handle": "C35",
+      "svg_sha256": "be1e219fc958cbc8a821e3fdbcf7c8e4362705533df502f081d61213881b4e3f"
+    }
+  ],
+  "osm_layers": {
+    "OSM roads": 125,
+    "OSM buildings": 0,
+    "OSM water": 0,
+    "OSM land use": 0
+  },
+  "osm_database_sha256": "99a90404327dbd9777da8c6eecacd836f7e4817288469e9ab4239b3611c68225",
+  "osm_source_sha256": "f2e7dc73a06826aecfde63369d74ad705d02bee3ab89fa2313b819e172fc3797",
+  "coordinate_review": null,
+  "absolute_accuracy_verified": false,
+  "geometry_and_attributes_unchanged": true,
+  "attribution": "© OpenStreetMap contributors | openstreetmap.org/copyright"
+}
