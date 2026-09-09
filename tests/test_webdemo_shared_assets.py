@@ -56,7 +56,7 @@ const ol = {
     items: [], extend(items) { this.items.push(...items); return this; },
   }) } },
 };
-const context = { ol, document: { getElementById: () => ({
+const context = { ol, URLSearchParams, location: {search: ""}, document: { getElementById: () => ({
   textContent: JSON.stringify(input.config),
 }) } };
 const script = fs.readFileSync(input.app, "utf8").split("const refreshPreview =")[0];

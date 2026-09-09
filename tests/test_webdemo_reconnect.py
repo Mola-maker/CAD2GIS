@@ -34,6 +34,7 @@ class Socket {
 }
 const context = vm.createContext({
   window: {}, location: {protocol:'http:', host:'localhost'},
+  applicationReviewId: null, reviewPageExpired: false,
   $: id => {if (!labels.has(id)) labels.set(id, {}); return labels.get(id);},
   terminalEvent: () => {}, setTimeout: fn => timers.push(fn), WebSocket: Socket,
   loadControls: async () => {calls++; visible = [...stored]; return true;},
@@ -96,6 +97,7 @@ class Socket {
 }
 const context = vm.createContext({
   window: {}, location: {protocol:'http:', host:'localhost'}, WebSocket: Socket,
+  applicationReviewId: null, reviewPageExpired: false,
   $: id => {if (!labels.has(id)) labels.set(id, {}); return labels.get(id);},
   terminalEvent: () => {}, setTimeout: () => {},
   loadControls: () => new Promise(resolve => pending.push(resolve)),

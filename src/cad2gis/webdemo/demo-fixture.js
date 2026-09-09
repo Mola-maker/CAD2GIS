@@ -21,7 +21,7 @@
 
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const loadCatalog = async () => {
-    catalogPromise ||= fetch(catalogUrl).then(async (response) => {
+    catalogPromise = catalogPromise || fetch(catalogUrl).then(async (response) => {
       if (!response.ok) throw new Error(`无法加载演示项目目录：${response.status}`);
       return response.json();
     });

@@ -103,6 +103,27 @@ def discover_libredwg_cli() -> tuple[Path | None, str]:
     return None, "not_found"
 
 
+def _configure_pyramids_windows_paths() -> None:
+    """Pass existing data paths through GDAL's UTF-8 API on Windows.
+
+    Pyramids initializes these environment variables with Unicode paths, but
+    GDAL's Windows getenv bridge reads the ANSI bytes as UTF-8.  A non-ASCII
+    installation directory then hides an existing proj.db from GDAL.  The
+    setter preserves the environment's path values and precedence; explicit
+    GDAL configuration must retain precedence over the environment as well.
+    """
+
+    if sys_platform() != "win32":
+        return
+    from osgeo import gdal
+
+    configured = gdal.GetConfigOptions()
+    for key in ("GDAL_DATA", "PROJ_DATA", "PROJ_LIB"):
+        value = os.environ.get(key)
+        if value is not None and key not in configured:
+            gdal.SetConfigOption(key, value)
+
+
 def ensure_osgeo_runtime() -> dict[str, Any]:
     """Expose an installed OSGeo runtime, including a bundled wheel runtime.
 
@@ -117,6 +138,8 @@ def ensure_osgeo_runtime() -> dict[str, Any]:
         if spec is not None:
             origin = str(spec.origin or "")
             provider = "pyramids-gis" if "pyramids" in origin.casefold() else "system"
+            if provider == "pyramids-gis":
+                _configure_pyramids_windows_paths()
             return {
                 "available": True,
                 "provider": provider,
@@ -142,6 +165,8 @@ def ensure_osgeo_runtime() -> dict[str, Any]:
         available = importlib.util.find_spec("osgeo") is not None
     except (ImportError, AttributeError, ValueError):
         available = False
+    if available:
+        _configure_pyramids_windows_paths()
     return {
         "available": available,
         "provider": "pyramids-gis" if available else "missing",

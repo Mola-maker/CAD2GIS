@@ -35,6 +35,8 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             "assets/noto-sans-sc-subset.woff2",
             "assets/smiley-sans-subset.woff2",
             "assets/styles.css",
+            "assets/vendor/ol.css",
+            "assets/vendor/ol.js",
         ])
         assert result["files"] == sorted([
             ".cad2gis-webdemo-build",
@@ -69,6 +71,9 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             "assets/smiley-sans-subset.woff2",
             "assets/space-grotesk-subset.woff2",
             "assets/styles.css",
+            "assets/vendor/OPENLAYERS-LICENSE.md",
+            "assets/vendor/ol.css",
+            "assets/vendor/ol.js",
             "index.html",
         ])
         assert (destination / "assets" / "app.js").is_file()

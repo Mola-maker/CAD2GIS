@@ -1,5 +1,20 @@
 const $ = (selector) => document.querySelector(selector);
 const pageConfig = JSON.parse(document.getElementById("cad2gis-page-config")?.textContent || "{}");
+// The installed application selects a run per login; keep every page bound to
+// the selection that opened it even when another browser tab opens another run.
+// Standalone review and the public demo have no application page identity.
+const applicationReviewId = new URLSearchParams(location.search).get("review");
+if (applicationReviewId) {
+  const atelier = document.createElement("link");
+  atelier.rel = "stylesheet";
+  atelier.href = "/_app/assets/review-theme.css";
+  document.head.append(atelier);
+  // Installed clients open a selected result directly, including on mobile
+  // WebViews whose initial hash scroll can move while local fonts load.
+  const landing = document.getElementById("hero-page");
+  if (landing) landing.style.display = "none";
+}
+let reviewPageExpired = false;
 
 const terminalEvent = (level, message) => {
   const root = $("#terminal-log");
@@ -64,9 +79,13 @@ const fetchJSON = async (url, options = {}) => {
   if (window.CAD2GIS_DEMO?.active) {
     return window.CAD2GIS_DEMO.request(url, options);
   }
-  const response = await fetch(url, options);
+  const headers = new Headers(options.headers);
+  if (applicationReviewId) headers.set("X-CAD2GIS-Review", applicationReviewId);
+  const response = await fetch(url, { ...options, headers });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (applicationReviewId && response.status === 409
+        && body.detail?.includes("此页面的审查结果已切换")) expireReviewPage();
     const message = body.detail || `${response.status} ${response.statusText}`;
     terminalEvent("error", `${options.method || "GET"} ${url}: ${message}`);
     throw new Error(message);
@@ -94,6 +113,14 @@ let controlsMutationPending = false;
 let resultReloadPending = false;
 let activePreviewKind = null;
 
+const expireReviewPage = () => {
+  reviewPageExpired = true;
+  $("#connection-dot").className = "status-dot offline";
+  $("#connection-label").textContent = "请重新打开结果";
+  $("#matching-status").textContent = "此审查页面已失效。请返回 CAD2GIS 工作台，重新打开需要审查的结果。";
+  updateMatchingActions();
+};
+
 const matchingRecord = () => {
   const matching = registrationPreview?.matching || runSummary?.osm_matching;
   return matching?.record || matching || null;
@@ -108,7 +135,7 @@ const matchingStatusText = (matching) => ({
 
 const updateMatchingActions = () => {
   const demo = Boolean(window.CAD2GIS_DEMO?.active);
-  const busy = matchingBusy || controlsMutationPending;
+  const busy = matchingBusy || controlsMutationPending || reviewPageExpired;
   const matching = matchingRecord();
   $("#export-gcp").disabled = demo || busy || resultReloadPending
     || !registrationPreview?.matching_ready || !registrationPreview?.controls_sha256
@@ -455,7 +482,8 @@ const savePair = async (cad, lonLat) => {
   controlsMutationPending = true;
   updateMatchingActions();
   try {
-    const id = `gcp:${crypto.randomUUID()}`;
+    const randomBytes = crypto.getRandomValues(new Uint8Array(16));
+    const id = `gcp:${Array.from(randomBytes, byte => byte.toString(16).padStart(2, "0")).join("")}`;
     const role = $("#gcp-role").value;
     await fetchJSON("/api/review/features", {
       method: "POST",
@@ -936,6 +964,7 @@ document.querySelectorAll("[data-copy-prompt]").forEach((button) => {
 });
 
 const connectSocket = () => {
+  if (reviewPageExpired) return;
   if (window.CAD2GIS_DEMO?.active) {
     $("#connection-dot").className = "status-dot online";
     $("#connection-label").textContent = "静态演示";
@@ -946,7 +975,8 @@ const connectSocket = () => {
     );
     return;
   }
-  const socket = new WebSocket(`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`);
+  const socketQuery = applicationReviewId ? `?review=${encodeURIComponent(applicationReviewId)}` : "";
+  const socket = new WebSocket(`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws${socketQuery}`);
   socket.onopen = () => {
     $("#connection-dot").className = "status-dot online";
     $("#connection-label").textContent = "正在同步";
@@ -989,7 +1019,12 @@ const connectSocket = () => {
       socket.close();
     }
   };
-  socket.onclose = () => {
+  socket.onclose = (event) => {
+    if (applicationReviewId && (event.code === 1008 || reviewPageExpired)) {
+      expireReviewPage();
+      terminalEvent("warn", "审查连接已结束，请返回工作台重新打开结果");
+      return;
+    }
     $("#connection-dot").className = "status-dot offline";
     $("#connection-label").textContent = "连接中断";
     terminalEvent("warn", "实时连接中断，正在重连");

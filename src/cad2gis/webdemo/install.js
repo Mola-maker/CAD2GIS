@@ -86,7 +86,7 @@ const replay = () => {
   timers.forEach(window.clearTimeout);
   timers = [];
   window.clearInterval(metricTimer);
-  output.replaceChildren();
+  output.textContent = "";
   throughputFill.style.width = "0%";
   const started = performance.now();
   if (reducedMotion) {

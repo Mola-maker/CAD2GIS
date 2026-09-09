@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cad2gis"
-version = "0.4.0"
+version = "0.5.0"
 description = "Deterministic CAD-to-GIS orchestration and verification CLI"
 readme = { text = "CAD2GIS provides a lightweight canonical API and CLI with a bundled cad2gis.cad2gis_v3 backend. The GIS runtime and backend deployment are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
 requires-python = ">=3.11,<3.13"
@@ -31,6 +31,7 @@ review = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.30,<1"]
 review-postgis = ["psycopg[binary]>=3.2,<4"]
 portable = ["ezdxf>=1.4,<2", "pyramids-gis==0.58.1", "Pillow>=11,<13"]
 agent = [
+  "pydantic-ai-slim[openai]==2.42.0",
   "mcp>=1.0,<2",
   "fastapi>=0.115,<1",
   "uvicorn[standard]>=0.30,<1",
@@ -41,6 +42,7 @@ agent = [
 
 [project.scripts]
 cad2gis = "cad2gis.cli:main"
+cad2gis-desktop = "cad2gis.application:main"
 cad2gis-agent-mcp = "cad2gis.agent_mcp:main"
 cad2gis-symbols = "cad2gis.symbol_assets:main"
 cad2gis-qgis-package = "cad2gis.qgis_package:main"
@@ -62,7 +64,7 @@ include = ["cad2gis*"]
 namespaces = true
 
 [tool.setuptools.package-data]
-cad2gis = ["webdemo/*.html", "webdemo/*.css", "webdemo/*.js", "webdemo/*.json", "webdemo/assets/*.svg", "webdemo/assets/*.json", "webdemo/assets/*.woff2", "webdemo/assets/font-licenses/*.txt"]
+cad2gis = ["desktop/*.html", "desktop/*.css", "desktop/*.js", "desktop/assets/*", "desktop/vendor/*", "desktop/docs/*.md", "webdemo/*.html", "webdemo/*.css", "webdemo/*.js", "webdemo/*.json", "webdemo/assets/*.svg", "webdemo/assets/*.json", "webdemo/assets/*.woff2", "webdemo/assets/font-licenses/*.txt", "webdemo/assets/vendor/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

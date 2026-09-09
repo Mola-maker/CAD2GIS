@@ -89,7 +89,7 @@ class ProviderConfig:
         source = os.environ if env is None else env
         provider_id = (
             provider or str(source.get("CAD2GIS_LLM_PROVIDER", "deepseek"))
-        ).strip().casefold()
+        ).strip().casefold().replace("-", "_")
         if provider_id not in SUPPORTED_PROVIDERS:
             raise ProviderError(
                 "CAD2GIS_LLM_PROVIDER must be one of: "
@@ -128,6 +128,9 @@ class ProviderConfig:
             token_field = "max_completion_tokens"
             disable_thinking = False
 
+        token_field = str(source.get("CAD2GIS_LLM_TOKEN_FIELD", token_field)).strip()
+        if token_field not in {"max_tokens", "max_completion_tokens"}:
+            raise ProviderError("CAD2GIS_LLM_TOKEN_FIELD must be max_tokens or max_completion_tokens")
         if "\r" in api_key or "\n" in api_key:
             raise ProviderError("Provider API key contains an invalid newline")
         common = {

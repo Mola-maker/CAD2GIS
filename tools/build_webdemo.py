@@ -32,7 +32,7 @@ EXPECTED_PROJECT_IDS = (
     "tinggede",
 )
 PUBLIC_ASSET_DIR = SOURCE_ROOT / "assets"
-PUBLIC_ASSET_SUFFIXES = {".svg", ".json", ".woff2", ".txt"}
+PUBLIC_ASSET_SUFFIXES = {".svg", ".json", ".woff2", ".txt", ".js", ".css", ".md"}
 BUILD_SENTINEL = ".cad2gis-webdemo-build"
 BUILD_SENTINEL_VALUE = "cad2gis.webdemo_build.v1\n"
 FORBIDDEN_SUFFIXES = {

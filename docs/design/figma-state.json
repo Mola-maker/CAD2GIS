@@ -1,0 +1,12 @@
+{
+  "file_key": "gjcYZ4DDk11piCtxr3XE3y",
+  "url": "https://www.figma.com/design/gjcYZ4DDk11piCtxr3XE3y",
+  "name": "molamaker · CAD2GIS — Blue Atelier",
+  "screens": {"conversation": "2:195", "config": "13:15", "osm": "15:41", "svg": "15:79", "sqlite": "17:57"},
+  "motion_notes": "17:98",
+  "library": "Figma Simple Design System: Button, Input Field, Tab instances",
+  "web_capture": "19:65 used as layout reference, removed after component design refinement",
+  "theme": {"accent": "#2671c5", "ink": "#203852", "pink": "#f4acd6", "glass": "translucent powder blue"},
+  "motion": {"button_ms": 380, "dock_ms": 480, "popup_ms": 420, "pressed_scale": 0.965, "reduced_motion": true},
+  "font": "Noto Sans SC in Figma; runtime uses available system font fallback"
+}
