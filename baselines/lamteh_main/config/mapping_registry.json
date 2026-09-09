@@ -163,7 +163,7 @@
   },
   "schema_version": "cad2gis-mapping-registry-v2",
   "source_binding": {
-    "inventory_sha256": "2d6c61afff84d29660d737afcc065c748e0ae1aa5566fc41622bd21ea6d713f9",
+    "inventory_sha256": "b19303a98ce5a57f591f90ae1a3124ab0aefd4f3a0c29d301eb6af4bd155ea1d",
     "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78"
   },
   "thresholds_native_m": {
