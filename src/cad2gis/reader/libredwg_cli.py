@@ -324,6 +324,41 @@ def _block_base_point(document: Any, block_name: str) -> list[float] | None:
         return None
 
 
+_DIMENSION_DISPLAY_NUMBER_RE = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?")
+
+
+def _dimension_block_text(document: Any, entity: Any) -> str:
+    """Return the rendered annotation text of a DIMENSION anonymous block."""
+    block_name = str(getattr(entity.dxf, "geometry", "") or "")
+    if not block_name:
+        return ""
+    try:
+        block = document.blocks.get(block_name)
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError):
+        return ""
+    for block_entity in block:
+        if block_entity.dxftype() not in {"TEXT", "MTEXT", "ATTRIB", "ATTDEF"}:
+            continue
+        text = str(getattr(block_entity.dxf, "text", "") or "")
+        if text.strip():
+            return text.strip()
+    return ""
+
+
+def _dimension_text_number(text: str) -> float | None:
+    """Parse the numeric token of a rendered dimension annotation (``42m``)."""
+    if not text:
+        return None
+    tokens = _DIMENSION_DISPLAY_NUMBER_RE.findall(text)
+    if not tokens:
+        return None
+    try:
+        value = float(tokens[-1])
+    except (TypeError, ValueError):
+        return None
+    return value if math.isfinite(value) and value >= 0.0 else None
+
+
 def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, Any]:
     points: list[tuple[float, float]] = []
     bulges: list[float] = []
@@ -453,18 +488,31 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
                 points = [_xy(first), _xy(second)]
             else:
                 points = [_xy(entity.dxf.defpoint)]
+            # The annotation a reader or designer actually sees is the text
+            # rendered inside the anonymous dimension geometry block (for
+            # example ``42m``); the raw DIMENSION measurement is the
+            # full-precision value AutoCAD measured.  The nominal annotation
+            # is the DWG-faithful authority for delivered lengths, so keep the
+            # rendered text as ``dimension_text_override`` and its numeric
+            # token as ``dimension_value`` whenever the block text exists.
+            actual_measurement = None
+            dimension_text_override = _dimension_block_text(document, entity)
+            nominal = _dimension_text_number(dimension_text_override)
             try:
-                actual_measurement = getattr(entity.dxf, "actual_measurement", None)
-                if actual_measurement is None:
-                    dimension_value = float(entity.get_measurement())
+                if nominal is None:
+                    actual_measurement = getattr(entity.dxf, "actual_measurement", None)
+                    dimension_value = (
+                        float(entity.get_measurement())
+                        if actual_measurement is None
+                        else float(actual_measurement)
+                    )
                 else:
-                    dimension_value = float(actual_measurement)
+                    dimension_value = float(nominal)
                 if not math.isfinite(dimension_value) or dimension_value < 0.0:
                     raise ValueError("invalid DIMENSION measurement")
             except Exception:
                 dimension_value = None
                 reasons.append("libredwg_cli_dimension_measurement_unavailable")
-            dimension_text_override = str(getattr(entity.dxf, "text", "") or "")
         elif type_name == "POINT":
             points = [_xy(entity.dxf.location)]
         elif type_name == "CIRCLE":

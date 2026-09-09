@@ -1,0 +1,403 @@
+{
+  "schema": "cad2gis.qgis-osm-review.v1",
+  "input_project_sha256": "b1a662fe06a39af0627f74993f2a786aaacd8b7de42d8a49d3a5ceac07ca5aa3",
+  "sha256": "d9ba813107d0e001605ff595e85369c5d268ce25c95fff148a5360ec3f9e3a0d",
+  "standalone": true,
+  "cad_database_hashes": [
+    "83e2c38a44aec3d8b97f7170d080aea46fcd485c5f230202f27dc555a82a68d5"
+  ],
+  "cad_layers": {
+    "BOITE": 22,
+    "CABLE": 65,
+    "IMB": 337,
+    "INFRASTRUCTURE": 16,
+    "PTECH": 51,
+    "SITE": 1,
+    "ZNRO": 1,
+    "ZPM": 22
+  },
+  "svg_bindings": [
+    {
+      "layer": "BOITE",
+      "source_handle": "4D2F1",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D2F5",
+      "svg_sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D2F9",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D2FD",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D301",
+      "svg_sha256": "d3f9f4747adf62f27c889607bfe128d3c2b2e01d240831966909a384eeefa20d"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D305",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D309",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D30D",
+      "svg_sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D311",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D315",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D319",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D31D",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D321",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D325",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D329",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D32D",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D331",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D335",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D339",
+      "svg_sha256": "828fe784d305838c5be467cbb2b079284060fac9e3725cce0166eefdcbaf7ede"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D33D",
+      "svg_sha256": "be8dfd59add8d89809de3da941535a50309cdf7255b2fd9a195cc934794ead90"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D341",
+      "svg_sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "4D347",
+      "svg_sha256": "0fd92709a9f3c48cb9fe429a526ccd5a18d7ea2f5612fc1448cbe6955ca91ffd"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDBC",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDC4",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDCC",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDD4",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDDC",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDE4",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDEC",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CDF4",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE04",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE14",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE1C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE24",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE34",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE3C",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE4C",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE54",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE5C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE64",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE6C",
+      "svg_sha256": "9ef12a2e981902cf20faeb88b7b5ed33ec40f5d275f1c4c81c22771c7fe5a0d1"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE74",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE84",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE8C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE94",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CE9C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEA4",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEAC",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEB4",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEBC",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEC4",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CECC",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CED4",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEDC",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEE4",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEEC",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CEF4",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF04",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF0C",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF14",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF1C",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF2C",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF3C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF44",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF4C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF54",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF74",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF7C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF8C",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF94",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CF9C",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CFC7",
+      "svg_sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4CFCF",
+      "svg_sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583"
+    },
+    {
+      "layer": "SITE",
+      "source_handle": "4D0B5",
+      "svg_sha256": "fed37bada48030590b7b3ca9f46a6868546b4a52be1fdafb371cb46db1ff203c"
+    }
+  ],
+  "osm_layers": {
+    "OSM roads": 45,
+    "OSM buildings": 0,
+    "OSM water": 0,
+    "OSM land use": 0
+  },
+  "osm_database_sha256": "2d2d572f834c1f46aebb505c82833e7d9fcece778ec31864d67572ad33e346e8",
+  "osm_source_sha256": "547a37b477c59240dfce406324a896f442b098680998a955dd02a2ab2a5b9d77",
+  "coordinate_review": null,
+  "absolute_accuracy_verified": false,
+  "geometry_and_attributes_unchanged": true,
+  "attribution": "© OpenStreetMap contributors | openstreetmap.org/copyright"
+}

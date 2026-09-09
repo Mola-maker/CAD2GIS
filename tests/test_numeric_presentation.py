@@ -23,7 +23,9 @@ def test_qgis_numeric_formatter_is_idempotent_and_only_targets_real_fields():
     assert ET.tostring(root) == first
     assert [node.get("name") for node in root.findall("fieldConfiguration/field")] == ["length_value_m"]
     assert root.find('.//Option[@name="Precision"]').get("value") == "2"
-    assert "'dwg_dimension' THEN ''" in LENGTH_EXPRESSION
-    assert "'dwg_curve_geometry' THEN ' [CAD curve]'" in LENGTH_EXPRESSION
+    assert '"length_label"' in LENGTH_EXPRESSION
+    assert "[CAD curve]" not in LENGTH_EXPRESSION
+    assert "dwg_curve_geometry" not in LENGTH_EXPRESSION
     assert "geodesic_length_m" not in LENGTH_EXPRESSION
     assert "delivery_grid_length_m" not in LENGTH_EXPRESSION
+    assert "length_value_m" not in LENGTH_EXPRESSION
