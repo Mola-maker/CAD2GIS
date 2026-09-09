@@ -37,7 +37,8 @@ def run(bundle: Path, output: Path):
             self.end_headers()
             packet = {'id':'fixture','created':1,'model':'fixture-model'}
             if body.get('stream'):
-                if not completed: message['tool_calls'][0]['index']=0
+                if not completed:
+                    message['tool_calls'][0]['index']=0
                 packet.update(object='chat.completion.chunk',choices=[{'index':0,'delta':message,'finish_reason':None}])
                 self.wfile.write(('data: '+json.dumps(packet)+'\n\n').encode())
                 packet['choices']=[{'index':0,'delta':{},'finish_reason':'stop' if completed else 'tool_calls'}]
@@ -49,7 +50,8 @@ def run(bundle: Path, output: Path):
     thread = threading.Thread(target=model.serve_forever,daemon=True)
     thread.start()
     env = dict(os.environ)
-    for key in ('PYTHONPATH','PYTHONHOME','CAD2GIS_BACKEND_PATH'):env.pop(key,None)
+    for key in ('PYTHONPATH','PYTHONHOME','CAD2GIS_BACKEND_PATH'):
+        env.pop(key,None)
     env['CAD2GIS_BUNDLE_ROOT']=str(bundle)
     process = None
     try:
@@ -66,9 +68,13 @@ def run(bundle: Path, output: Path):
             base = f'{parsed.scheme}://{parsed.netloc}'
             with httpx.Client(base_url=base,headers={'Origin':base},timeout=60) as client:
                 def post(path,data):
-                    r=client.post('/_app/api/'+path,json=data);r.raise_for_status();return r.json()
+                    r=client.post('/_app/api/'+path,json=data)
+                    r.raise_for_status()
+                    return r.json()
                 def get(path):
-                    r=client.get('/_app/api/'+path);r.raise_for_status();return r.json()
+                    r=client.get('/_app/api/'+path)
+                    r.raise_for_status()
+                    return r.json()
                 post('login',{'token':parse_qs(parsed.fragment)['token'][0]})
                 post('ai/config',{'provider':'new-api','base_url':f'http://127.0.0.1:{model.server_port}/v1','api_key':'local-fixture-key','model':'fixture-model','token_field':'max_tokens'})
                 probe=post('ai/test',{})
@@ -77,7 +83,8 @@ def run(bundle: Path, output: Path):
                 deadline=time.monotonic()+45
                 while time.monotonic()<deadline:
                     state=get('agent/'+started['id'])
-                    if state['status']!='running':break
+                    if state['status']!='running':
+                        break
                     time.sleep(.2)
                 assert state['status']=='succeeded',state
                 assert any(e['name']=='get_capabilities' and e['kind']=='tool_result' for e in state['events'])
@@ -93,8 +100,12 @@ def run(bundle: Path, output: Path):
         (output/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
         print(json.dumps(result,ensure_ascii=False))
     finally:
-        if process and process.poll() is None:process.terminate();process.wait(timeout=15)
-        model.shutdown();model.server_close();thread.join(5)
+        if process and process.poll() is None:
+            process.terminate()
+            process.wait(timeout=15)
+        model.shutdown()
+        model.server_close()
+        thread.join(5)
 
 
 if __name__=='__main__':

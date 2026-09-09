@@ -169,9 +169,10 @@ class DesktopAgent:
 
     def start(self, payload: dict[str, Any]) -> dict[str, Any]:
         # Fail synchronously before creating a run if an installation is incomplete.
+        import importlib
         try:
-            import pydantic_ai
-            import mcp
+            importlib.import_module("pydantic_ai")
+            importlib.import_module("mcp")
         except ImportError as exc:
             raise ValueError("智能体组件缺失，请重新安装完整版本。") from exc
         if self.active or self.jobs.active:
