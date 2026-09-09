@@ -267,7 +267,7 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
     write_json(output / "delivery-manifest.json", report)
     (output / "README.md").write_text("# CAD2GIS QGIS delivery\n\nUnzip the entire package; open delivery.qgz. Keep delivery.gpkg and styles beside it.\n\n"
         "GeoPackage is SQLite. CSV files contain every non-geometry attribute; floating-point values are formatted to two decimals for viewing, so CSV is not a lossless re-import format. Use GeoPackage for full-precision values. CABLE labels use original CAD dimension length without a suffix; source CAD curve length is used only when no dimension is bound and is marked [CAD curve]. Empty labels are not invented.\n\n"
-        "CONDITIONAL: no independent surveyed GCP acceptance. A QGIS project and visual overlay do not certify absolute accuracy. Partitions are separate projects and may share assets with the main project.\n\n"
+        f"Run status: **{report['run_status']}**. No independent surveyed GCP acceptance. A QGIS project and visual overlay do not certify absolute accuracy. UNSAFE or FAILED results require investigation before use. Partitions are separate projects and may share assets with the main project.\n\n"
         "Original GeoPackage bytes are preserved. QML label settings are presentation overrides. This portable delivery excludes raw DWG and full source/evidence databases; AI source-bound edits require the original reviewed run and project.\n", encoding="utf-8")
     seal_delivery(output)
     return report

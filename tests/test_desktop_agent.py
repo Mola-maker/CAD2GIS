@@ -55,6 +55,36 @@ def test_database_paging_and_write_denial(tmp_path):
             query(config, str(path), sql=sql)
 
 
+def test_provider_alias_uses_canonical_saved_profile(tmp_path, monkeypatch):
+    monkeypatch.delenv('NEW_API_API_KEY', raising=False)
+    settings = AISettings(tmp_path / '.state')
+    public = settings.save({'provider': 'new_api', 'base_url': 'http://127.0.0.1:19876/v1',
+                            'model': 'fixture-model', 'api_key': 'test-private-key'})
+    assert public['active'] == 'new-api'
+    assert public['profiles']['new-api']['configured']
+    restored = AISettings(settings.directory)
+    assert restored.require()['api_key'] == 'test-private-key'
+    assert restored.environment()['NEW_API_MODEL'] == 'fixture-model'
+    restored.save({'provider': 'new-api', 'model': 'updated-model'})
+    assert restored.require('new_api')['model'] == 'updated-model'
+    assert restored.require('new_api')['api_key'] == 'test-private-key'
+    assert set(restored._load()['profiles']) == {'new-api'}
+
+
+def test_database_nonfinite_values_are_json_safe_without_changing_storage(tmp_path):
+    path = tmp_path / 'measurements.sqlite'
+    values = [(float('inf'),), (float('-inf'),), (1.25,), (None,)]
+    with sqlite3.connect(path) as db:
+        db.execute('CREATE TABLE measurements (value REAL)')
+        db.executemany('INSERT INTO measurements VALUES (?)', values)
+    result = query(ApplicationConfig((tmp_path,)), str(path),
+                   sql='SELECT value FROM measurements ORDER BY rowid')
+    assert result['rows'] == [['inf'], ['-inf'], [1.25], [None]]
+    json.dumps(result, allow_nan=False)
+    with sqlite3.connect(path) as db:
+        assert db.execute('SELECT value FROM measurements ORDER BY rowid').fetchall() == values
+
+
 def test_conversation_pages_are_stable_and_scoped(tmp_path):
     store = AgentStore(tmp_path, 'one')
     record = store.create('中文项目')

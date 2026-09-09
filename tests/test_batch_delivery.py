@@ -58,10 +58,11 @@ def test_source_hash_mismatch_never_calls_conversion(tmp_path, monkeypatch):
     assert "SHA256 mismatch" in result["drawings"][0]["error"]
 
 
-def test_portable_package_preserves_database_and_attributes(tmp_path):
+@pytest.mark.parametrize("run_status", ["CONDITIONAL", "UNSAFE", "FAILED", "VERIFIED"])
+def test_portable_package_preserves_database_and_attributes(tmp_path, run_status):
     run = tmp_path / "run"
     run.mkdir()
-    (run / "run_manifest.json").write_text(json.dumps({"run_status": "CONDITIONAL", "source": {"sha256": "a" * 64}}))
+    (run / "run_manifest.json").write_text(json.dumps({"run_status": run_status, "source": {"sha256": "a" * 64}}))
     with sqlite3.connect(run / "delivery.gpkg") as db:
         db.executescript('''CREATE TABLE gpkg_geometry_columns(table_name,column_name,geometry_type_name,srs_id);
           INSERT INTO gpkg_geometry_columns VALUES('CABLE','geom','LINESTRING',3857);
@@ -90,6 +91,8 @@ def test_portable_package_preserves_database_and_attributes(tmp_path):
         assert archive.read("visual/report.json") == (visual / "report.json").read_bytes()
         assert archive.read("geometry_repair_candidates.json") == candidates
         assert json.loads(archive.read("delivery-manifest.json"))["semantic_revision"]["revision"] == 1
+        assert json.loads(archive.read("delivery-manifest.json"))["run_status"] == run_status
+        assert f"Run status: **{run_status}**" in archive.read("README.md").decode()
     with zipfile.ZipFile(tmp_path / "delivery" / "delivery.qgz") as archive:
         xml = archive.read("delivery.qgs").decode()
         assert "./delivery.gpkg|layername=CABLE" in xml

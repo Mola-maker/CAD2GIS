@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import math
 import sqlite3
 import time
 from typing import Any
@@ -80,6 +81,8 @@ def query(config, path: str, *, table: str = "", sql: str = "", page: int = 1, p
         rows = cursor.fetchall()
 
         def cell(value):
+            if isinstance(value, float) and not math.isfinite(value):
+                return str(value)
             if isinstance(value, bytes):
                 return f"[BLOB · {len(value)} bytes]"
             if isinstance(value, str) and len(value) > 2000:

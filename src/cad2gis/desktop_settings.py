@@ -128,6 +128,7 @@ class AISettings:
         provider = payload.get("provider", "deepseek")
         with self.lock:
             profile = self.profile(provider)
+            provider = profile["provider"]
             for field in ("base_url", "model", "capability", "token_field"):
                 if field in payload:
                     value = payload[field]
