@@ -43,7 +43,7 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "f0bf78e15c96d3ab287baaf5c1c2ae0d8972efc04a5367a56068f6071e878bc8",
+    "inventory_sha256": "de13e8c3de8eec39bb3032169a592b77dcaab8722189302b839fc0ebc12c54de",
     "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
     "source_size_bytes": 1755055
   },
