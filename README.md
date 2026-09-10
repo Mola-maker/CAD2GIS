@@ -339,9 +339,9 @@ cad2gis auto-convert "<SOURCE.dwg>" `
 - `source_cad_length_m`：CABLE_SEGMENT 的名义源长度——有 DIMENSION 时等于标注值，无 DIMENSION 时回退为不可变 CAD 曲线长度；
 - `delivery_grid_length_m` / `geodesic_length_m`：坐标转换后的网格与椭球长度。
 
-没有 `DIMENSION` 时，线段仍然具有可靠的 CAD 曲线长度。此时
-`measurement_state=cad_geometry_only`，标签显示
-`[CAD geometry; no DIMENSION]`，不再误导为“没有长度”。尺寸匹配采用：
+没有 `DIMENSION` 时，线段仍然具有可靠的 CAD 曲线长度，`measurement_state=cad_geometry_only`，
+但 QGIS 中不显示任何长度标签：原图没有标注的跨度不会被补上系统发明的文字。
+尺寸匹配采用：
 
 1. 精确线段端点；
 2. 尺寸端点与缆线端点落在同一对唯一支撑设施上。
@@ -363,7 +363,9 @@ cad2gis review "<RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
 3. 保存至少两个位置不同的训练点后查看人工平移校正预览。独立检查点只评估残差，
    不参与拟合；足够且分布合理的检查点有助于识别局部偏差；
 4. 确认预览后点击“二次匹配并生成新结果”，由正式转换管线创建新的 GIS；
-5. 完成后自动加载新结果，保留控制点；可继续修改、预览和再次匹配。
+5. 完成后自动加载新结果，保留控制点；可继续修改、预览和再次匹配；
+6. 复核版交付用 `cad2gis publish-match "<新RUN_DIR>"` 发布，见
+   [QGIS 交付](#qgis-交付)。
 
 工作台会显示本次保存的匹配配置和可复制转换命令。每轮从原始 CAD 坐标及同一
 基础坐标操作重新计算总平移，避免反复叠加前一轮偏移。独立图框分别匹配；
@@ -423,6 +425,30 @@ $env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"
 
 需要排查底图偏移时，可使用独立的 [QGIS / OSM 复核入口](docs/qgis-osm-review.md)，
 为工程加入离线参考底图并生成真实 QGIS 快照。原图坐标标注约束的可选校正只应用于复核工程显示，不改写原始数据库或长度，也不代替测量控制点验收。
+
+### 复核版交付（`delivery/r<N>/`）
+
+Web 工作台二次匹配产生的新 run 不是标准 run，其便携交付按版本发布在项目 `delivery/`
+下，标准 run 的交付仍在 `delivery/` 根，两者互不覆盖：
+
+```powershell
+# RUN_DIR 位于 <PROJECT_DIR>/run.review/matching/r<N>-<uuid>/run 时自动推导交付目录
+cad2gis publish-match "<RUN_DIR>"
+
+# 其他位置需显式指定
+cad2gis publish-match "<RUN_DIR>" --delivery-root "<PROJECT_DIR>/delivery"
+```
+
+- 版本目录名取自该 run 的 `osm_matching.revision`（`r2`、`r3`……）；已存在的版本目录会被拒绝，不覆盖旧版本。
+- 每个版本目录与标准交付同构：`delivery.gpkg`（与 run 字节一致）、`delivery.qgz`、
+  `delivery.review.json`、`osm-basemap.gpkg`、`view-with-source-SVG.qgz`、
+  `view-with-source-SVG.review.json`；分区图纸的面板交付位于 `delivery/r<N>/<分区>/`。
+- SVG 符号绑定取自 run 的 `svg-candidates`；OSM 底图按各 scope 的要素范围获取，
+  也可用 `--osm-data "[SCOPE=]PATH"` 复用已复核的 Overpass JSON 快照（离线环境或分区各一份）。
+- 该步骤需要能 `import qgis.core` 的解释器，依次尝试 `--qgis-python`、环境变量
+  `CAD2GIS_QGIS_PYTHON`、当前解释器、`/usr/bin/python3`。
+- 转换 run 与 review 工作区都不存放 QGZ 交付文件：发布过程在系统临时目录完成组装，
+  成功后原子改名入库，失败即清理，不留半成品。
 
 成功 run 包含：
 
