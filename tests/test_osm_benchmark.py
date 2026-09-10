@@ -92,10 +92,16 @@ def test_benchmark_detects_mutated_input_vectors(tmp_path):
 
 
 def test_taipa_numerical_candidates_converge_before_ambiguity_decision():
-    """A 20-iteration cap left 0.385 m duplicates of the same local optimum."""
+    """A 20-iteration cap left 0.385 m duplicates of the same local optimum.
+
+    The specimen is frozen under ``tests/data/taipa-osm-matching`` (the CABLE
+    and OSM road layers as they stood in ``baselines/taipa/delivery`` before
+    that package was republished). Reading the live package would silently
+    re-baseline this pin on every re-run of the drawing.
+    """
     from cad2gis.cad2gis_v3 import osm_matching
 
-    result = benchmark.benchmark_case(osm_matching, ROOT / "baselines/taipa/delivery")
+    result = benchmark.benchmark_case(osm_matching, ROOT / "tests/data/taipa-osm-matching")
     fit = result["unperturbed"]
     assert fit["accepted"] is True
     assert fit["translation_3857"] == pytest.approx([-2.309862, 0.549932], abs=0.1)

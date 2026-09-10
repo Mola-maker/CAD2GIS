@@ -95,3 +95,6 @@ raw/
 /experiment/*.dwg
 !scripts/fetch_derived_release.py
 baselines/*/config/.osm-cache/
+
+# Tool state can be created below any working directory.
+**/.omc/
