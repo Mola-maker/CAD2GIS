@@ -242,7 +242,8 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
               "source_dwg_included": False, "full_source_evidence_included": False}
     report["numeric_presentation"] = {"decimal_places": 2, "csv": "presentation_not_lossless_reimport",
                                       "database_values": "unchanged", "geometry": "unchanged_full_precision",
-                                      "business_length_sources": ["dwg_dimension", "dwg_curve_geometry"]}
+                                      "business_length_sources": ["dwg_dimension"],
+                                      "unlabelled_evidence_length_sources": ["dwg_curve_geometry"]}
     if manifest.get("semantic_revision") is not None:
         report["semantic_revision"] = manifest["semantic_revision"]
     candidate_artifact = manifest.get("artifacts", {}).get("geometry_repair_candidates")
@@ -266,8 +267,8 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
         report["visual_audit_included"] = True
     write_json(output / "delivery-manifest.json", report)
     (output / "README.md").write_text("# CAD2GIS QGIS delivery\n\nUnzip the entire package; open delivery.qgz. Keep delivery.gpkg and styles beside it.\n\n"
-        "GeoPackage is SQLite. CSV files contain every non-geometry attribute; floating-point values are formatted to two decimals for viewing, so CSV is not a lossless re-import format. Use GeoPackage for full-precision values. CABLE labels use original CAD dimension length without a suffix; source CAD curve length is used only when no dimension is bound and is marked [CAD curve]. Empty labels are not invented.\n\n"
-        "CONDITIONAL: no independent surveyed GCP acceptance. A QGIS project and visual overlay do not certify absolute accuracy. Partitions are separate projects and may share assets with the main project.\n\n"
+        "GeoPackage is SQLite. CSV files contain every non-geometry attribute; floating-point values are formatted to two decimals for viewing, so CSV is not a lossless re-import format. Use GeoPackage for full-precision values. CABLE length labels reproduce the original CAD dimension annotation (for example 42m) and are only present where the drawing annotates the span; spans without a DWG annotation are never given an invented length label.\n\n"
+        f"Run status: **{report['run_status']}**. No independent surveyed GCP acceptance. A QGIS project and visual overlay do not certify absolute accuracy. UNSAFE or FAILED results require investigation before use. Partitions are separate projects and may share assets with the main project.\n\n"
         "Original GeoPackage bytes are preserved. QML label settings are presentation overrides. This portable delivery excludes raw DWG and full source/evidence databases; AI source-bound edits require the original reviewed run and project.\n", encoding="utf-8")
     seal_delivery(output)
     return report

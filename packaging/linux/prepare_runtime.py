@@ -46,6 +46,12 @@ def prepare(work: Path) -> None:
                     return None
                 return tarfile.data_filter(member, destination)
             archive.extractall(python_root, filter=runtime_filter)
+            for member in archive.getmembers():
+                if member.name.startswith("python/share/terminfo"):
+                    continue
+                if member.isfile() or member.isdir():
+                    (python_root / member.name).chmod(
+                        0o755 if member.isdir() or member.mode & 0o111 else 0o644)
         (python_root / "complete.json").write_text(json.dumps({
             "archive_sha256": PYTHON_SHA256, "excluded": ["python/share/terminfo"],
             "reason": "Optional terminal database has case-only aliases on Windows mounts",
@@ -65,6 +71,8 @@ def prepare(work: Path) -> None:
             make = str(work / "build-tools/usr/bin/make")
         if not shutil.which("cc"):
             raise RuntimeError("A C compiler is required to build the pinned LibreDWG release")
+        if not shutil.which("pkg-config"):
+            raise RuntimeError("pkg-config is required to build the pinned LibreDWG release")
         source_root = work / "source"
         source = source_root / "libredwg-0.14"
         if not (source / "configure").is_file():

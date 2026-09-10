@@ -88,7 +88,9 @@ const fetchJSON = async (url, options = {}) => {
         && body.detail?.includes("此页面的审查结果已切换")) expireReviewPage();
     const message = body.detail || `${response.status} ${response.statusText}`;
     terminalEvent("error", `${options.method || "GET"} ${url}: ${message}`);
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
   return body;
 };
@@ -112,6 +114,12 @@ let matchingBusy = false;
 let controlsMutationPending = false;
 let resultReloadPending = false;
 let activePreviewKind = null;
+let previewIsCurrent = false;
+let selectedGcpId = null;
+const evidenceLayers = new Map();
+let evidenceLoaded = false;
+let evidenceLoading = false;
+let evidenceLoadRequest = 0;
 
 const expireReviewPage = () => {
   reviewPageExpired = true;
@@ -145,9 +153,18 @@ const updateMatchingActions = () => {
   $("#preview-gcp").textContent = resultReloadPending ? "重新加载匹配结果" : "预览人工校正";
   ["#send-coordinate", "#gcp-role", "#target-lon", "#target-lat", "#use-map-center", "#clear-pending"]
     .forEach((selector) => { $(selector).disabled = busy || resultReloadPending; });
-  document.querySelectorAll("[data-delete-gcp]").forEach((button) => {
+  document.querySelectorAll("[data-delete-gcp], [data-select-gcp]").forEach((button) => {
     button.disabled = busy || resultReloadPending;
   });
+  const selected = controls.find((pair) => pair.id === selectedGcpId);
+  const canAdjust = Boolean(selected) && !demo && !busy && !resultReloadPending;
+  document.querySelectorAll("[data-adjust-gcp], #gcp-step, #center-gcp").forEach((button) => {
+    button.disabled = !canAdjust;
+  });
+  $("#undo-gcp").disabled = !canAdjust || !selected?.edit?.undo_targets?.length;
+  $("#reset-gcp").disabled = !canAdjust || !selected?.edit?.initial_target;
+  updatePrecisionState();
+  updatePickGuide();
   $("#matching-version").textContent = matching?.revision != null ? `第 ${matching.revision} 版` : "—";
 };
 
@@ -202,10 +219,10 @@ const gcpStyle = (feature, resolution) => {
   return new ol.style.Style({
     image: new ol.style.Circle({
       radius,
-      fill: new ol.style.Fill({ color: feature.get("role") === "check" ? "#7257d6" : "#f08b28" }),
-      stroke: new ol.style.Stroke({ color: "#fff", width: Math.max(1.5, radius * 0.22) }),
+      fill: new ol.style.Fill({ color: feature.get("role") === "pending" ? "#007d91" : feature.get("role") === "check" ? "#7257d6" : "#f08b28" }),
+      stroke: new ol.style.Stroke({ color: feature.get("gcp_id") === selectedGcpId ? "#173d68" : "#fff", width: feature.get("gcp_id") === selectedGcpId ? 3 : Math.max(1.5, radius * 0.22) }),
     }),
-    text: showLabel ? new ol.style.Text({
+    text: showLabel || feature.get("gcp_id") === selectedGcpId || feature.get("role") === "pending" ? new ol.style.Text({
       text: String(feature.get("label") || ""),
       offsetY: -14,
       font: "600 11px 'Noto Sans SC', sans-serif",
@@ -234,10 +251,11 @@ const localMap = new ol.Map({
     maxZoom: 50, constrainResolution: false,
   }),
 });
+const osmBaseLayer = new ol.layer.Tile({ visible: false });
 const worldMap = new ol.Map({
   target: "map",
   layers: [
-    new ol.layer.Tile({ source: new ol.source.OSM() }),
+    osmBaseLayer,
     new ol.layer.Vector({ source: gcpMapSource, style: gcpStyle, zIndex: 100 }),
   ],
   controls: mapControls(pageConfig.worldExtentControl),
@@ -275,6 +293,8 @@ const refreshPreview = async ({ fitView = false } = {}) => {
     $("#fit-model").textContent = `${previewError}；保留${retained}`;
     $("#fit-rmse").textContent = "—（本次校正尚不可用）";
     if (!matchingBusy) $("#matching-status").textContent = `控制点已保存，${retained}仍可查看。`;
+    previewIsCurrent = false;
+    updatePrecisionState();
     return false;
   }
   const nominalPreview = (
@@ -285,6 +305,8 @@ const refreshPreview = async ({ fitView = false } = {}) => {
   if (!fittedCollections.size && !nominalPreview) {
     $("#fit-model").textContent = previewError || "添加控制点后生成 GIS 匹配预览";
     $("#fit-rmse").textContent = "—";
+    previewIsCurrent = false;
+    updatePrecisionState();
     return false;
   }
   // Build the complete replacement before removing the last usable preview.
@@ -334,6 +356,7 @@ const refreshPreview = async ({ fitView = false } = {}) => {
     previewLayers.set(name, layer);
   }
   activePreviewKind = fittedCollections.size ? "correction" : "applied";
+  previewIsCurrent = !previewError;
   const matching = matchingRecord();
   $("#fit-model").textContent = fittedCollections.size
     ? `人工平移校正预览 · ${fit.target_crs || runSummary?.crs?.target_crs || "目标 CRS"}`
@@ -363,26 +386,54 @@ const refreshPreview = async ({ fitView = false } = {}) => {
     const extent = extents.reduce((acc, value) => ol.extent.extend(acc, value), ol.extent.createEmpty());
     if (!ol.extent.isEmpty(extent)) worldMap.getView().fit(extent, { padding: [50, 50, 50, 50] });
   }
+  updatePrecisionState();
   return !previewError;
 };
 
 const renderControls = async (registration = null) => {
   registrationPreview = registration;
+  previewIsCurrent = false;
+  if (!controls.some((pair) => pair.id === selectedGcpId)) selectedGcpId = controls[controls.length - 1]?.id || null;
   gcpLocalSource.clear();
   gcpMapSource.clear();
   controls.forEach((pair, index) => {
     for (const [source, coordinate] of [[gcpLocalSource, pair.cad], [gcpMapSource, pair.map]]) {
       const feature = new ol.Feature(new ol.geom.Point(coordinate));
-      feature.setProperties({ role: pair.role, label: `${index + 1}${pair.role === "check" ? "C" : ""}` });
+      feature.setProperties({ role: pair.role, gcp_id: pair.id, label: `${index + 1}${pair.role === "check" ? "C" : ""}` });
       source.addFeature(feature);
     }
   });
-  $("#gcp-list").innerHTML = controls.map((pair, index) => `
-    <div>
-      <strong>${index + 1} · ${pair.role === "check" ? "检查" : "训练"}</strong>
-      <span>${pair.cad[0].toFixed(2)}, ${pair.cad[1].toFixed(2)} → ${pair.lonLat[0].toFixed(6)}, ${pair.lonLat[1].toFixed(6)}</span>
-      <button data-delete-gcp="${pair.id}" title="删除">×</button>
-    </div>`).join("");
+  const list = $("#gcp-list");
+  list.textContent = "";
+  if (!controls.length) {
+    const empty = document.createElement("p");
+    empty.className = "gcp-empty";
+    empty.textContent = "还没有控制点。先在左侧 CAD 中选点。";
+    list.append(empty);
+  }
+  controls.forEach((pair, index) => {
+    const row = document.createElement("div");
+    row.className = "gcp-row";
+    const select = document.createElement("button");
+    select.className = "gcp-select";
+    select.dataset.selectGcp = pair.id;
+    select.setAttribute("aria-pressed", String(pair.id === selectedGcpId));
+    const title = document.createElement("strong");
+    title.textContent = `${index + 1} · ${pair.role === "check" ? "独立检查" : "训练"}`;
+    const coordinate = document.createElement("span");
+    coordinate.textContent = `${pair.lonLat[0].toFixed(8)}, ${pair.lonLat[1].toFixed(8)}`;
+    coordinate.title = `CAD: ${pair.cad[0].toFixed(3)}, ${pair.cad[1].toFixed(3)} → WGS84: ${coordinate.textContent}`;
+    select.append(title, coordinate);
+    select.addEventListener("click", () => selectControl(pair.id));
+    const remove = document.createElement("button");
+    remove.dataset.deleteGcp = pair.id;
+    remove.className = "gcp-delete";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `删除第 ${index + 1} 个控制点`);
+    row.append(select, remove);
+    list.append(row);
+  });
+  updateSelectedControl();
   const trainCount = controls.filter((item) => item.role === "train").length;
   const checkCount = controls.filter((item) => item.role === "check").length;
   $("#fit-coverage").textContent = `${trainCount} 个训练点；${checkCount} 个独立检查点`;
@@ -396,6 +447,7 @@ const renderControls = async (registration = null) => {
       updateMatchingActions();
       try {
         await fetchJSON(`/api/review/features/${encodeURIComponent(pair.id)}?expected_revision=${pair.revision}`, { method: "DELETE" });
+        invalidateCorrection();
         terminalEvent("info", `已删除控制点 ${pair.id}`);
         await loadControls();
       } catch (error) {
@@ -431,6 +483,7 @@ const loadControls = async () => {
         map: ol.proj.fromLonLat(lonLat),
         lonLat,
         target,
+        edit: feature.properties._gcp_edit || null,
       };
     });
   await renderControls(registration);
@@ -454,15 +507,18 @@ const nearestCadEvidence = (coordinate) => {
 };
 
 const selectCadPoint = (coordinate) => {
-  if (matchingBusy || controlsMutationPending || resultReloadPending) return;
+  if (reviewPageExpired || matchingBusy || controlsMutationPending || resultReloadPending) return;
   const evidence = nearestCadEvidence(coordinate);
   if (!evidence) {
     pendingCad = null;
     pendingCadEvidence = null;
+    updatePickGuide();
     toast("请靠近真实 CAD 几何点击，不能用空白区或图框作为控制点", true);
     return;
   }
   pendingCad = [...evidence.coordinate];
+  $("#target-lon").value = "";
+  $("#target-lat").value = "";
   pendingCadEvidence = {
     layer: evidence.layerName,
     source_entity_key: evidence.feature.get("source_entity_key") || "",
@@ -470,11 +526,18 @@ const selectCadPoint = (coordinate) => {
   };
   $("#cad-coordinate").textContent = `${pendingCad[0].toFixed(3)}, ${pendingCad[1].toFixed(3)}（已吸附 ${evidence.layerName}）`;
   terminalEvent("info", `CAD 点已吸附到 ${evidence.layerName}：${pendingCad[0].toFixed(3)}, ${pendingCad[1].toFixed(3)}`);
+  updatePickGuide();
+  for (const feature of gcpLocalSource.getFeatures()) {
+    if (feature.get("role") === "pending") gcpLocalSource.removeFeature(feature);
+  }
+  const marker = new ol.Feature(new ol.geom.Point(pendingCad));
+  marker.setProperties({ role: "pending", label: "待配对" });
+  gcpLocalSource.addFeature(marker);
   toast("CAD 点已吸附；请在右图点击同一位置或输入经纬度");
 };
 
 const savePair = async (cad, lonLat) => {
-  if (matchingBusy || controlsMutationPending || resultReloadPending) throw new Error("请等待当前操作完成后再修改控制点");
+  if (reviewPageExpired || matchingBusy || controlsMutationPending || resultReloadPending) throw new Error("请等待当前操作完成后再修改控制点");
   if (!Number.isFinite(lonLat[0]) || !Number.isFinite(lonLat[1])
       || lonLat[0] < -180 || lonLat[0] > 180 || lonLat[1] < -90 || lonLat[1] > 90) {
     throw new Error("经纬度必须是有效的 EPSG:4326 坐标");
@@ -509,6 +572,8 @@ const savePair = async (cad, lonLat) => {
     });
     pendingCad = null;
     pendingCadEvidence = null;
+    selectedGcpId = id;
+    invalidateCorrection();
     await loadControls();
     const saved = registrationPreview?.controls.find((item) => item.point_id === id);
     if (saved) {
@@ -523,9 +588,17 @@ const savePair = async (cad, lonLat) => {
   }
 };
 
-localMap.on("singleclick", ({ coordinate }) => selectCadPoint(coordinate));
-worldMap.on("singleclick", async ({ coordinate }) => {
-  if (matchingBusy || controlsMutationPending || resultReloadPending) return;
+const controlAtPixel = (map, pixel) => map.forEachFeatureAtPixel(pixel, (feature) => feature.get("gcp_id") || undefined, { hitTolerance: 7 });
+localMap.on("singleclick", ({ coordinate, pixel }) => {
+  if (reviewPageExpired || matchingBusy || controlsMutationPending || resultReloadPending) return;
+  const controlId = controlAtPixel(localMap, pixel);
+  if (controlId) return selectControl(controlId);
+  selectCadPoint(coordinate);
+});
+worldMap.on("singleclick", async ({ coordinate, pixel }) => {
+  if (reviewPageExpired || matchingBusy || controlsMutationPending || resultReloadPending) return;
+  const controlId = controlAtPixel(worldMap, pixel);
+  if (controlId) return selectControl(controlId);
   const lonLat = ol.proj.toLonLat(coordinate);
   $("#target-lon").value = lonLat[0].toFixed(8);
   $("#target-lat").value = lonLat[1].toFixed(8);
@@ -627,6 +700,17 @@ const clearProjectState = () => {
   pendingCadEvidence = null;
   registrationPreview = null;
   activePreviewKind = null;
+  previewIsCurrent = false;
+  selectedGcpId = null;
+  evidenceLoadRequest += 1;
+  evidenceLoaded = false;
+  evidenceLoading = false;
+  for (const layer of evidenceLayers.values()) worldMap.removeLayer(layer);
+  evidenceLayers.clear();
+  document.querySelectorAll("[data-evidence-layer]").forEach((input) => { input.checked = false; input.disabled = true; });
+  $("#evidence-layer-status").textContent = "展开后读取当前匹配证据。";
+  $("#evidence-layer-menu").open = false;
+  $("#gcp-adjust").hidden = true;
   controlsRequest += 1;
   previewEpoch += 1;
   runSummary = null;
@@ -716,7 +800,11 @@ const renderRun = (run) => {
   const sourceName = sourcePath.split(/[\\/]/).pop() || "未命名 CAD 项目";
   if (!window.CAD2GIS_DEMO?.active) {
     const selector = $("#demo-project-select");
-    selector.innerHTML = `<option value="live">${sourceName}</option>`;
+    selector.textContent = "";
+    const option = document.createElement("option");
+    option.value = "live";
+    option.textContent = sourceName;
+    selector.append(option);
     selector.value = "live";
     selector.disabled = true;
     const deliveryCount = Object.values(run.delivery_counts || {})
@@ -731,6 +819,12 @@ const renderRun = (run) => {
     $("#demo-project-sha").textContent = run.source?.sha256 ? `${run.source.sha256.slice(0, 12)}…` : "—";
   }
   $("#project-name").textContent = sourceName;
+  $("#review-current-source").textContent = sourceName;
+  $("#review-current-source").title = sourceName;
+  if (!window.CAD2GIS_DEMO?.active) {
+    document.body.classList.add("live-review");
+    $("#hero-page").hidden = true;
+  }
   $("#project-source").textContent = sourcePath || "未提供源路径";
   $("#map-reference-note").textContent = matching
     ? `${matchingStatusText(matching)} · 第 ${matching.revision ?? "—"} 版 · 相对地图参考`
@@ -765,7 +859,14 @@ const renderRun = (run) => {
     ["审查存储", run.review_store || "—"],
     ["源文件重连", run.source_available ? "已按 SHA-256 验证" : (run.source_blocker || "不可用")],
   ];
-  $("#run-summary").innerHTML = rows.map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`).join("");
+  $("#run-summary").textContent = "";
+  for (const [key, value] of rows) {
+    const term = document.createElement("dt");
+    const detail = document.createElement("dd");
+    term.textContent = key;
+    detail.textContent = String(value);
+    $("#run-summary").append(term, detail);
+  }
   renderSvgCandidates(run.svg_candidates);
   $("#preview-source-note").textContent = window.CAD2GIS_DEMO?.active
     ? "静态演示仅显示已发布的派生结果并记录选点。请在本地工作台执行人工校正和二次匹配。"
@@ -784,6 +885,9 @@ worldMap.on("pointermove", ({ coordinate }) => {
 
 $("#send-coordinate").addEventListener("click", async () => {
   if (!pendingCad) return toast("请先在左图选择并吸附一个 CAD 点", true);
+  if (!$("#target-lon").value.trim() || !$("#target-lat").value.trim()) {
+    return toast("请填写经度和纬度；空白值不能作为 0° 坐标保存", true);
+  }
   const lon = Number($("#target-lon").value);
   const lat = Number($("#target-lat").value);
   try {
@@ -802,6 +906,10 @@ $("#use-map-center").addEventListener("click", () => {
 $("#clear-pending").addEventListener("click", () => {
   pendingCad = null;
   pendingCadEvidence = null;
+  for (const feature of gcpLocalSource.getFeatures()) {
+    if (feature.get("role") === "pending") gcpLocalSource.removeFeature(feature);
+  }
+  updatePickGuide();
   toast("已取消当前 CAD 点");
   terminalEvent("info", "已取消待配对 CAD 点");
 });
@@ -824,7 +932,7 @@ const reloadCurrentResult = async () => {
 };
 
 $("#preview-gcp").addEventListener("click", async () => {
-  if (matchingBusy || controlsMutationPending) return;
+  if (reviewPageExpired || matchingBusy || controlsMutationPending) return;
   const reloadingResult = resultReloadPending;
   try {
     if (reloadingResult) {
@@ -853,7 +961,7 @@ $("#export-gcp").addEventListener("click", async () => {
     toast("静态演示仅记录选点，请在本地工作台执行二次匹配");
     return;
   }
-  if (matchingBusy || controlsMutationPending || resultReloadPending || !registrationPreview?.matching_ready) return;
+  if (reviewPageExpired || matchingBusy || controlsMutationPending || resultReloadPending || !registrationPreview?.matching_ready) return;
   const matching = matchingRecord();
   if (!matching?.match_sha256 || matching.revision == null || !registrationPreview.controls_sha256) {
     return toast("请先刷新并获取当前匹配版本", true);
@@ -938,19 +1046,7 @@ document.querySelectorAll(".tab-button").forEach((button) => {
   button.addEventListener("click", () => activateTab(button.dataset.tab));
 });
 document.querySelectorAll(".workflow-step").forEach((button) => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll(".workflow-step").forEach((item) => item.classList.remove("is-active"));
-    button.classList.add("is-active");
-    const stage = button.dataset.stage;
-    if (stage === "source" || stage === "registration") {
-      document.querySelector(`#stage-${stage}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else if (stage === "semantic") {
-      activateTab("agent");
-    } else {
-      activateTab("evidence");
-    }
-    terminalEvent("info", `已切换到 ${button.querySelector("strong")?.textContent || stage}`);
-  });
+  button.addEventListener("click", () => setReviewStage(button.dataset.stage));
 });
 document.querySelectorAll("[data-copy-prompt]").forEach((button) => {
   button.addEventListener("click", async () => {
@@ -962,6 +1058,238 @@ document.querySelectorAll("[data-copy-prompt]").forEach((button) => {
     }
   });
 });
+
+function invalidateCorrection() {
+  registrationPreview = null;
+  previewIsCurrent = false;
+  previewEpoch += 1;
+  updateMatchingActions();
+}
+
+function updatePrecisionState() {
+  const fit = previewIsCurrent && activePreviewKind === "correction"
+    ? registrationPreview?.preview_fit || registrationPreview?.fit : null;
+  const metres = (value) => Number.isFinite(value) ? `${value.toFixed(3)} m` : "—";
+  const checks = controls.filter((pair) => pair.role === "check").length;
+  $("#precision-view").textContent = matchingBusy ? "正在生成新结果"
+    : controlsMutationPending ? "正在保存控制点"
+    : activePreviewKind === "correction" ? (previewIsCurrent ? "人工校正预览" : "上次预览 · 待刷新")
+    : "已应用结果";
+  $("#precision-train").textContent = metres(fit?.train_metrics?.rmse_m);
+  $("#precision-check").textContent = Number.isFinite(fit?.check_metrics?.rmse_m)
+    ? metres(fit.check_metrics.rmse_m) : checks ? "等待有效预览" : "尚无检查点";
+  $("#precision-evidence").textContent = window.CAD2GIS_DEMO?.active ? "演示 · 不执行拟合"
+    : checks ? `${checks} 个检查点 · 待验收` : "绝对精度尚未验证";
+  $("#precision-check").classList.toggle("is-unverified", !Number.isFinite(fit?.check_metrics?.rmse_m));
+}
+
+function updatePickGuide() {
+  $("#pick-guide").classList.toggle("has-pending", Boolean(pendingCad));
+  $("#pick-guide-text").textContent = reviewPageExpired ? "请返回工作空间重新打开当前结果。"
+    : controlsMutationPending ? "正在保存，请稍候。源点和目标点会保持成对。"
+    : pendingCad ? "CAD 源点已吸附。现在点击右图的同一位置，或填写经纬度后保存。"
+    : controls.length ? `已保存 ${controls.length} 个控制点。可点选已有点微调，也可继续在 CAD 中选新点。`
+    : "在左侧 CAD 中放大并选择一个真实设施或清晰拐点。";
+  $("#send-coordinate").disabled = !pendingCad || matchingBusy || controlsMutationPending || resultReloadPending || reviewPageExpired;
+  $("#pick-guide-action").textContent = pendingCad ? "填写目标坐标" : selectedGcpId ? "微调选中点" : "选点操作提示";
+}
+
+function updateSelectedControl() {
+  const pair = controls.find((item) => item.id === selectedGcpId);
+  $("#gcp-adjust").hidden = !pair;
+  document.querySelectorAll("[data-select-gcp]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.selectGcp === selectedGcpId));
+  });
+  gcpLocalSource.changed();
+  gcpMapSource.changed();
+  if (!pair) return;
+  const index = controls.indexOf(pair) + 1;
+  $("#gcp-adjust-title").textContent = `微调第 ${index} 个点`;
+  $("#gcp-adjust-role").textContent = pair.role === "check" ? "独立检查" : "训练";
+  $("#gcp-adjust-coordinate").textContent = `${pair.lonLat[0].toFixed(8)}, ${pair.lonLat[1].toFixed(8)} · WGS84`;
+  $("#gcp-adjust-status").textContent = window.CAD2GIS_DEMO?.active
+    ? "静态演示仅记录选点。请在本地工作台进行精确微调。"
+    : "按实际距离移动目标点，CAD 源点保持不变。移动步长不代表测量精度。";
+}
+
+function selectControl(id) {
+  if (matchingBusy || controlsMutationPending || resultReloadPending || reviewPageExpired) return;
+  if (!controls.some((pair) => pair.id === id)) return;
+  selectedGcpId = id;
+  pendingCad = null;
+  pendingCadEvidence = null;
+  for (const feature of gcpLocalSource.getFeatures()) {
+    if (feature.get("role") === "pending") gcpLocalSource.removeFeature(feature);
+  }
+  updateSelectedControl();
+  updateMatchingActions();
+}
+
+async function adjustControl(operation, direction) {
+  const pair = controls.find((item) => item.id === selectedGcpId);
+  if (!pair || window.CAD2GIS_DEMO?.active || matchingBusy || controlsMutationPending || resultReloadPending || reviewPageExpired) return;
+  const step = Number($("#gcp-step").value);
+  if (operation === "nudge" && ![0.01, 0.1, 1].includes(step)) return;
+  controlsMutationPending = true;
+  updateMatchingActions();
+  $("#gcp-adjust-status").textContent = "正在保存目标点微调…";
+  try {
+    await fetchJSON(`/api/review/features/${encodeURIComponent(pair.id)}/adjust`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ operation, direction, step_m: step, expected_revision: pair.revision, actor: "registration-workspace" }),
+    });
+    invalidateCorrection();
+    await loadControls();
+    const directions = { north: "北", south: "南", east: "东", west: "西" };
+    const description = operation === "undo" ? "已撤销上次微调"
+      : operation === "reset" ? "已恢复最初选定的目标点"
+      : `目标点已向${directions[direction]}移动 ${step} m`;
+    $("#gcp-adjust-status").textContent = description;
+    terminalEvent("ok", description);
+  } catch (error) {
+    if (error.status === 409 && !reviewPageExpired) {
+      invalidateCorrection();
+      await loadControls().catch(() => {});
+    }
+    $("#gcp-adjust-status").textContent = `微调未完成：${error.message}`;
+    toast(error.message, true);
+  } finally {
+    controlsMutationPending = false;
+    updateMatchingActions();
+  }
+}
+
+function toggleInspector(open, tab = null) {
+  $("#review-inspector").hidden = !open;
+  $("#toggle-evidence").setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("evidence-open", open);
+  if (tab) activateTab(tab);
+  if (open) $("#close-inspector").focus();
+  else $("#toggle-evidence").focus();
+  requestAnimationFrame(() => { localMap.updateSize(); worldMap.updateSize(); });
+}
+
+function setReviewStage(stage) {
+  document.body.classList.toggle("gcp-focused", ["registration", "validation", "delivery"].includes(stage));
+  document.querySelectorAll(".workflow-step").forEach((button) => {
+    const active = button.dataset.stage === stage;
+    button.classList.toggle("is-active", active);
+    if (active) button.setAttribute("aria-current", "step");
+    else button.removeAttribute("aria-current");
+  });
+  if (stage === "semantic") toggleInspector(true, "agent");
+  if (stage === "validation") toggleInspector(true, "evidence");
+  if (stage === "delivery") $("#export-gcp").scrollIntoView({ block: "center" });
+  requestAnimationFrame(() => { localMap.updateSize(); worldMap.updateSize(); });
+}
+
+function setOnlineBasemap(enabled) {
+  if (enabled && !osmBaseLayer.getSource()) osmBaseLayer.setSource(new ol.source.OSM({
+    // OSM requires a Referer for browser tiles. Opt-in tiles disclose only the
+    // service origin; the application's no-referrer policy remains elsewhere.
+    tileLoadFunction: (tile, source) => {
+      const image = tile.getImage();
+      image.referrerPolicy = "strict-origin";
+      image.src = source;
+    },
+  }));
+  osmBaseLayer.setVisible(enabled);
+  if (!enabled) osmBaseLayer.setSource(null);
+  $("#online-basemap").checked = enabled;
+  $("#basemap-status").textContent = enabled
+    ? "在线 OSM 底图已开启：地图瓦片服务会收到当前视野相关请求。底图不作为测量精度证明。"
+    : "在线底图未加载。启用后会向 OpenStreetMap 请求当前视野的地图瓦片。";
+}
+
+async function loadEvidenceLayers() {
+  if (evidenceLoaded || evidenceLoading || reviewPageExpired) return;
+  if (window.CAD2GIS_DEMO?.active) {
+    $("#evidence-layer-status").textContent = "此静态案例未发布 OSM 匹配中间层，请在本地转换结果中查看。";
+    return;
+  }
+  evidenceLoading = true;
+  const epoch = ++evidenceLoadRequest;
+  $("#evidence-layer-status").textContent = "正在读取当前匹配的矢量证据…";
+  try {
+    const expected = matchingRecord()?.match_sha256;
+    const query = expected ? `?expected_match_sha256=${encodeURIComponent(expected)}` : "";
+    const evidence = await fetchJSON(`/api/matching/evidence${query}`);
+    if (epoch !== evidenceLoadRequest) return;
+    if (expected && evidence.match_sha256 !== expected) throw new Error("匹配版本已变化，请重新打开证据层");
+    const colors = { cad_routes: "#196cd2", osm_roads: "#687680", cad_nodes: "#00868c", osm_nodes: "#8953b7", residuals: "#c54c35" };
+    let count = 0;
+    for (const input of document.querySelectorAll("[data-evidence-layer]")) {
+      const name = input.dataset.evidenceLayer;
+      const collection = evidence.collections?.[name];
+      if (!collection || collection.type !== "FeatureCollection") continue;
+      const features = format.readFeatures(collection, { dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" });
+      const layer = new ol.layer.Vector({
+        source: new ol.source.Vector({ features }),
+        visible: false,
+        zIndex: name === "residuals" ? 80 : 60,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({ color: colors[name], width: name === "residuals" ? 2 : 1.8, lineDash: name === "residuals" ? [5, 4] : undefined }),
+          image: new ol.style.Circle({ radius: 4, fill: new ol.style.Fill({ color: colors[name] }), stroke: new ol.style.Stroke({ color: "#fff", width: 1.5 }) }),
+        }),
+      });
+      evidenceLayers.set(name, layer);
+      worldMap.addLayer(layer);
+      input.disabled = features.length === 0;
+      input.title = `${features.length} 个证据要素`;
+      if (features.length) count += 1;
+    }
+    evidenceLoaded = true;
+    $("#evidence-layer-status").textContent = count
+      ? `第 ${evidence.revision ?? "—"} 版 · ${count} 类矢量证据。此层绑定已应用匹配，不随临时 GCP 预览移动。`
+      : "当前结果没有可显示的匹配几何证据。";
+  } catch (error) {
+    if (epoch === evidenceLoadRequest) $("#evidence-layer-status").textContent = `证据层不可用：${error.message}`;
+  } finally {
+    if (epoch === evidenceLoadRequest) evidenceLoading = false;
+  }
+}
+
+$("#toggle-evidence").addEventListener("click", () => toggleInspector($("#review-inspector").hidden));
+$("#close-inspector").addEventListener("click", () => toggleInspector(false));
+$("#start-guided-correction").addEventListener("click", () => {
+  $("#review-guide").open = false;
+  setReviewStage("registration");
+  $("#local-map").focus();
+});
+$("#review-guide").addEventListener("toggle", () => requestAnimationFrame(() => { localMap.updateSize(); worldMap.updateSize(); }));
+$("#pick-guide-action").addEventListener("click", () => {
+  setReviewStage("registration");
+  if (!pendingCad && !selectedGcpId) {
+    $("#review-guide").open = true;
+    $("#review-guide").scrollIntoView({ block: "start" });
+    return;
+  }
+  const target = $(pendingCad ? "#target-lon" : "#gcp-step");
+  target.scrollIntoView({ block: "center" });
+  target.focus();
+});
+document.querySelectorAll("[data-adjust-gcp]").forEach((button) => button.addEventListener("click", () => adjustControl("nudge", button.dataset.adjustGcp)));
+$("#undo-gcp").addEventListener("click", () => adjustControl("undo"));
+$("#reset-gcp").addEventListener("click", () => adjustControl("reset"));
+$("#center-gcp").addEventListener("click", () => {
+  const pair = controls.find((item) => item.id === selectedGcpId);
+  if (!pair) return;
+  const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 200;
+  localMap.getView().animate({ center: pair.cad, duration });
+  worldMap.getView().animate({ center: pair.map, duration });
+});
+$("#fit-both").addEventListener("click", () => $("#tool-fit").click());
+$("#online-basemap").addEventListener("change", (event) => setOnlineBasemap(event.target.checked));
+setOnlineBasemap(Boolean(window.CAD2GIS_DEMO?.active));
+$("#evidence-layer-menu").addEventListener("toggle", () => {
+  if ($("#evidence-layer-menu").open) loadEvidenceLayers();
+});
+document.querySelectorAll("[data-evidence-layer]").forEach((input) => input.addEventListener("change", () => evidenceLayers.get(input.dataset.evidenceLayer)?.setVisible(input.checked)));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !$("#review-inspector").hidden) toggleInspector(false);
+});
+
 
 const connectSocket = () => {
   if (reviewPageExpired) return;
@@ -1040,6 +1368,7 @@ const boot = async () => {
     renderRun(run);
     await loadLayers();
     await loadControls();
+    setReviewStage("registration");
     connectSocket();
   } catch (error) {
     toast(error.message, true);

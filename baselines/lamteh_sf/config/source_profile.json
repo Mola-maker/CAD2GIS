@@ -2,12 +2,32 @@
   "crs": {
     "local_registration_reviewed": false,
     "local_registration_strategy": null,
-    "source_crs": "EPSG:3857",
-    "target_crs": "EPSG:3857"
+    "source_crs": "EPSG:23846",
+    "target_crs": "EPSG:3857",
+    "geodata_registration": {
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "coordinate_system_id": "Indonesian1974.UTM-46N",
+      "target_crs": "EPSG:23846",
+      "design_point": [
+        -1663.3467141419387,
+        -570.8684767123486
+      ],
+      "reference_point": [
+        750640.2059408867,
+        613213.2658479799
+      ],
+      "horizontal_unit_scale": 1.0,
+      "user_scale_factor": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "authority": "DWG_DIRECT:GEODATA"
+    }
   },
   "drawing": {
     "drawing_units": "metre",
-    "dwg_cgeocs": "WGS84.PseudoMercator",
+    "dwg_cgeocs": "Indonesian1974.UTM-46N",
     "dwg_insunits": 4,
     "source_coordinate_scale_reviewed": true,
     "source_coordinate_scale_to_m": 1.0
@@ -26,9 +46,9 @@
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
-      "model_dimensions": 25,
       "model_entities": 213,
-      "model_inserts": 54
+      "model_inserts": 54,
+      "model_dimensions": 25
     },
     "topology_gates": {}
   },
@@ -41,7 +61,7 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "c4f9a053d75f1f665a95656ae36263da513cd95a30d64eef4123a6411d1fffb5",
+    "inventory_sha256": "71dd024f808886bfa64cc63bb4ea2e943ae3f751f2bd07db622ed61474e7bbf5",
     "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
     "source_size_bytes": 4848807
   },

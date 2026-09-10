@@ -186,7 +186,7 @@ class DirectTransformer:
         It inverts only the nominal CRS operation; an accepted residual
         calibration is a separate target-space step and is never hidden here.
         """
-        x, y, _ = self.reverse.TransformPoint(float(point[0]), float(point[1]))
+        x, y = self._inverse_grid_points([point])[0]
         return (
             float(x) / self.source_to_crs_axis_factor,
             float(y) / self.source_to_crs_axis_factor,
@@ -196,9 +196,7 @@ class DirectTransformer:
         values = list(points)
         if not values:
             return []
-        transformed = self.reverse.TransformPoints([
-            (float(point[0]), float(point[1])) for point in values
-        ])
+        transformed = self._inverse_grid_points(values)
         return [
             (
                 float(point[0]) / self.source_to_crs_axis_factor,
@@ -206,6 +204,43 @@ class DirectTransformer:
             )
             for point in transformed
         ]
+
+    def _inverse_grid_points(self, points):
+        """Invert the actual 2D forward map, seeded by the CRS reverse operation.
+
+        A datum pipeline may discard transformed height. Reversing with height
+        zero then is only an approximate inverse of the delivered XY mapping.
+        Refine that seed against the unchanged forward operation; never adjust
+        delivery coordinates or relax the independent source round-trip gate.
+        """
+        targets = [(float(p[0]), float(p[1])) for p in points]
+        if not all(math.isfinite(v) for p in targets for v in p):
+            raise ValueError("Inverse CRS target coordinates must be finite")
+        seeds = self.reverse.TransformPoints(targets)
+        projected = self.forward.TransformPoints([(p[0], p[1]) for p in seeds])
+        step = 1.0 / self.unit_contract.source_crs_axis_unit.metres_per_unit
+        result = []
+        for target, seed, actual in zip(targets, seeds, projected):
+            x, y = float(seed[0]), float(seed[1])
+            for iteration in range(5):
+                if not all(math.isfinite(v) for v in (x, y, actual[0], actual[1])):
+                    raise ValueError("Inverse CRS operation produced non-finite coordinates")
+                rx, ry = target[0] - actual[0], target[1] - actual[1]
+                if self.target_length_to_m(math.hypot(rx, ry)) <= 1e-8:
+                    break
+                if iteration == 4:
+                    raise ValueError("Inverse 2D CRS operation did not converge")
+                px, py = self.forward.TransformPoints([(x + step, y), (x, y + step)])
+                a, b = (px[0] - actual[0]) / step, (py[0] - actual[0]) / step
+                c, d = (px[1] - actual[1]) / step, (py[1] - actual[1]) / step
+                determinant = a * d - b * c
+                if not math.isfinite(determinant) or abs(determinant) < 1e-20:
+                    raise ValueError("Inverse 2D CRS operation has a singular derivative")
+                x += (d * rx - b * ry) / determinant
+                y += (a * ry - c * rx) / determinant
+                actual = self.forward.TransformPoint(x, y)
+            result.append((x, y))
+        return result
 
     def roundtrip_error(self, points):
         values = list(points)
@@ -250,6 +285,7 @@ class DirectTransformer:
             "declared_accuracy_m": None if accuracy < 0 else accuracy,
             "pyproj_version": pyproj.__version__,
             "proj_version": pyproj.proj_version_str,
+            "inverse_method": "reverse_CRS_seed_with_forward_XY_refinement",
             "absolute_accuracy_validation": "not independently verified; no surveyed GCP supplied",
             "unit_crs_contract": self.unit_contract.to_manifest_dict(),
         }
@@ -360,16 +396,14 @@ class GeoDataTransformer(DirectTransformer):
         )
 
     def target_to_source_point(self, point):
-        x, y, _ = self.reverse.TransformPoint(float(point[0]), float(point[1]))
+        x, y = self._inverse_grid_points([point])[0]
         return self._source_grid_to_local(x, y)
 
     def target_to_source_points(self, points):
         values = list(points)
         if not values:
             return []
-        transformed = self.reverse.TransformPoints([
-            (float(point[0]), float(point[1])) for point in values
-        ])
+        transformed = self._inverse_grid_points(values)
         return [
             self._source_grid_to_local(point[0], point[1])
             for point in transformed

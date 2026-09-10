@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .artifact_io import inherit_output_permissions as _inherit_output_permissions
+from .curve_geometry import DEFAULT_MATERIALIZATION_POLICY
 from .model import SourceEntity
 from .project_profile import _extract_records, _inspect_source_facts
 from .source_gpkg import _lossless_json_value, write_source_gpkg
@@ -146,6 +147,12 @@ def export_source(
             "coordinate_reference": {
                 "state": "declared" if source_crs is not None else "native_cad_unregistered",
                 "source_crs": source_crs, "units": "not_inferred", "transformed": False,
+                "geometry_representation": {
+                    "spatial_geometry": "bounded_native_xy_display",
+                    "authoritative_fields": ["native_points", "curve_facts"],
+                    "curve_policy": dict(DEFAULT_MATERIALIZATION_POLICY),
+                    "unsupported_curves": "source_metadata_with_reason",
+                },
             },
             "entity_count": result.entity_count, "layer_counts": result.layer_counts,
             "conservation": {"reader_records": len(entities), "gpkg_entities": result.entity_count,

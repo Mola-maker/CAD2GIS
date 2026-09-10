@@ -62,7 +62,8 @@ def verify(path, output):
                     assert setup.type() == 'Range' and setup.config().get('Precision') == 2
             if layer.name() == 'CABLE' and layer.labeling():
                 expression = layer.labeling().settings().fieldName
-                assert "'dwg_dimension' THEN ''" in expression and '[CAD curve]' in expression
+                assert '"length_label"' in expression and 'CAD curve' not in expression
+                assert '[unverified source]' not in expression
         assert {hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in project.attachedFiles()
                 if p.endswith('.gpkg')} == hashes
         attached = {str(Path(p).resolve()) for p in project.attachedFiles()}

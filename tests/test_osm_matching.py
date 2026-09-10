@@ -11,7 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from pyproj import Transformer
+from pyproj import Geod, Transformer
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -210,7 +210,11 @@ def test_refinement_uses_only_train_and_never_accumulates_translation(tmp_path):
     assert refined["parent_match_sha256"] == original["match_sha256"]
     assert refined["parent_run_sha256"] == PARENT_SHA
     assert refined["translation_3857"] == pytest.approx((1020.0, 1985.0))
-    assert refined["quality"]["check_metrics"]["max_m"] == pytest.approx(100.0)
+    geographic = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+    expected = Geod(ellps="WGS84").inv(
+        *geographic.transform(1120.0, 1985.0), *geographic.transform(1120.0, 2085.0),
+    )[2]
+    assert refined["quality"]["check_metrics"]["max_m"] == pytest.approx(expected)
     assert refined["quality"]["train_metrics"]["max_m"] == pytest.approx(0.0)
     assert refined["quality"]["checks_used_for_fit"] is False
     assert refined["controls"][0]["longitude"] == 0.1
@@ -460,3 +464,164 @@ def test_empty_partition_is_unavailable_without_any_network_requests(tmp_path, m
     assert transform is None
     assert record["status"] == "unavailable"
     assert record["quality"]["reason"] == "empty_drawing_partition"
+
+
+def test_route_samples_do_not_weight_redundant_cad_vertices():
+    sparse = [[(0, 0), (100, 0), (100, 100)]]
+    dense = [[(x, 0) for x in range(101)] + [(100, 100)]]
+    a = matching._samples(sparse, 1.0)
+    b = matching._samples(dense, 1.0)
+    for expected, actual in zip(a, b):
+        assert actual.shape == expected.shape
+        assert actual == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("latitude", [0.0, 60.0, -60.0])
+def test_manual_residuals_are_ellipsoidal_ground_metres(tmp_path, latitude):
+    nominal = Nominal()
+    _, original = run_match(tmp_path, nominal=nominal, valid=True)
+    forward = Transformer.from_crs("EPSG:4326", "EPSG:3857", always_xy=True)
+    reverse = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+    x, y = forward.transform(12.0, latitude)
+    controls = [
+        {"point_id": str(i), "cad_x": p[0], "cad_y": p[1],
+         "target_easting": p[0] + x, "target_northing": p[1] + y,
+         "target_crs": "EPSG:3857", "role": "train"}
+        for i, p in enumerate([(0, 0), (100, 0)])
+    ]
+    # Exactly 30 ground metres, regardless of map projection scale.
+    lon, lat, _ = Geod(ellps="WGS84").fwd(12.0, latitude, 90.0, 30.0)
+    check_x, check_y = forward.transform(lon, lat)
+    controls.append({"point_id": "check", "cad_x": 0, "cad_y": 0,
+                     "target_easting": check_x, "target_northing": check_y,
+                     "target_crs": "EPSG:3857", "role": "check"})
+    refined = matching.refine_match(original, nominal, controls,
+                                    source_sha256=SOURCE_SHA, parent_run_sha256=PARENT_SHA)
+    # The nominal base isolates residual measurement from local CAD scale.
+    actual = matching.transformer_from_record(refined, nominal).point((0, 0))
+    expected = Geod(ellps="WGS84").inv(*reverse.transform(*actual), lon, lat)[2]
+    assert refined["quality"]["check_metrics"]["max_m"] == pytest.approx(expected, abs=1e-6)
+    assert refined["quality"]["residual_distance_method"] == "WGS84_ellipsoidal_geodesic"
+    assert refined["needs_review"] is False
+
+
+@pytest.mark.parametrize("routes", [
+    [[(0, 0), (50, 0), (100, 0)]],
+    [[(x, 0) for x in range(101)]],
+    [[(0, 0), (100, 0)], [(0, 50), (100, 50)]],
+    [[(0, 0), (100, 0)], [(0, 50), (100, 51)]],
+])
+def test_vertices_and_parallel_spans_do_not_invent_translation_constraints(tmp_path, routes):
+    transform, record = run_match(tmp_path, routes=routes, osm_routes=routes)
+    assert transform is not None  # The independent coarse area view remains useful.
+    assert record["status"] == "coarse"
+    assert record["quality"]["reason"] == "source_geometry_unobservable"
+    assert record["quality"]["source_observability"]["observable"] is False
+    assert record["quality"]["source_observability"]["minimum_eigenvalue"] < 0.04
+    assert record["evidence"]["placement_status"] == "coarse"
+
+
+def test_repeated_network_eight_metres_away_is_not_merged_into_confidence(tmp_path):
+    routes = [[(0, 0), (100, 0), (100, 100)]]
+    transform, record = run_match(tmp_path, routes=routes, osm_routes=routes,
+                                  shifts=(SHIFT, (SHIFT[0] + 8, SHIFT[1])))
+    assert record["status"] == "coarse"
+    assert record["quality"]["confidence_gap"] == pytest.approx(0.0, abs=1e-7)
+    candidates = record["quality"]["candidates"]
+    assert len(candidates) >= 2
+    assert math.dist(candidates[0]["translation_3857"], candidates[1]["translation_3857"]) == pytest.approx(8.0, abs=0.001)
+    assert record["quality"]["search_complete"] is False
+    assert transform is not None
+
+
+def test_point_to_line_fit_retains_minority_direction_translation(tmp_path):
+    routes = [[(0, 0), (1000, 0), (1000, 200)]]
+    transform, record = run_match(tmp_path, routes=routes, osm_routes=routes)
+    assert record["status"] == "matched"
+    assert transform.point((0, 0)) == pytest.approx(SHIFT, abs=0.001)
+    assert record["quality"]["candidates"][0]["observability"]["rank"] == 2
+    assert record["quality"]["sample_weighting"] == "represented_route_length"
+
+
+def test_evidence_vectors_residuals_and_manual_revision_are_bound_and_rebuilt(tmp_path):
+    from cad2gis.cad2gis_v3.osm_evidence import evidence_geojson
+
+    transform, original = run_match(tmp_path)
+    evidence = original["evidence"]
+    assert evidence["source_sha256"] == SOURCE_SHA
+    assert evidence["osm_snapshot_sha256"] == original["osm_snapshot"]["sha256"]
+    assert evidence["cad_routes"][0]["native_points"] == ROUTES[0]
+    assert evidence["osm_topology"]["geometry_only_way_count"] == 2
+    assert evidence["osm_topology"]["nodes"] == []
+    layers = evidence_geojson(original)
+    assert len(layers["cad_routes"]["features"]) == 2
+    assert len(layers["osm_roads"]["features"]) == 2
+    assert len(layers["residuals"]["features"]) == original["quality"]["sample_count"]
+    coordinates = layers["cad_routes"]["features"][0]["geometry"]["coordinates"][0]
+    assert coordinates == pytest.approx(matching._TO_WGS84.transform(*SHIFT), abs=1e-8)
+    frozen = copy.deepcopy(original)
+    refined = matching.refine_match(original, Nominal(), controls_for(transform),
+                                   source_sha256=SOURCE_SHA, parent_run_sha256=PARENT_SHA)
+    assert original == frozen
+    assert refined["evidence"]["revision"] == 2
+    assert refined["evidence"]["translation_3857"] == refined["translation_3857"]
+    assert refined["evidence"]["evidence_sha256"] != evidence["evidence_sha256"]
+    assert refined["evidence"]["cad_routes"] == evidence["cad_routes"]
+    manual = [feature for feature in evidence_geojson(refined)["residuals"]["features"]
+              if feature["properties"]["residual_kind"] == "manual_control"]
+    assert len(manual) == 3
+    check = next(feature for feature in manual if feature["properties"]["role"] == "check")
+    assert check["properties"]["error_m"] == refined["quality"]["check_metrics"]["max_m"]
+    assert check["properties"]["absolute_accuracy_verified"] is False
+    refined["controls"][0]["target_easting"] += 100
+    with pytest.raises(ValueError, match="evidence profile hash mismatch"):
+        evidence_geojson(refined)
+
+
+def test_evidence_corruption_is_rejected_even_when_outer_profile_is_resealed(tmp_path):
+    from cad2gis.cad2gis_v3.osm_evidence import evidence_geojson
+
+    _, record = run_match(tmp_path)
+    record["evidence"]["cad_routes"][0]["native_points"][0] = [999, 999]
+    record = matching._seal(record)
+    with pytest.raises(ValueError, match="evidence hash mismatch"):
+        matching.transformer_from_record(record, Nominal())
+    with pytest.raises(ValueError, match="evidence hash mismatch"):
+        evidence_geojson(record)
+
+
+def test_pre_upgrade_profiles_remain_readable_without_fabricated_evidence(tmp_path):
+    from cad2gis.cad2gis_v3.osm_evidence import evidence_geojson
+
+    _, record = run_match(tmp_path)
+    record.pop("evidence")
+    record = matching._seal(record)
+    assert matching.transformer_from_record(record, Nominal()).point((0, 0)) == pytest.approx(SHIFT, abs=0.001)
+    assert all(not layer["features"] for layer in evidence_geojson(record).values())
+
+
+def test_manual_pick_history_is_hash_bound_without_affecting_fit(tmp_path):
+    transform, record = run_match(tmp_path)
+    controls = controls_for(transform)
+    controls[0]["editor_state"] = {"schema_version": 1, "initial_target": [12.0, 20.0],
+        "undo_targets": [[12.1, 20.0]], "last_action": "nudge", "distance_method": "WGS84_ellipsoidal_geodesic",
+        "last_nudge": {"direction": "east", "step_m": 0.01}}
+    state = copy.deepcopy(controls[0]["editor_state"])
+    refined = matching.refine_match(record, Nominal(), controls, source_sha256=SOURCE_SHA, parent_run_sha256=PARENT_SHA)
+    assert refined["controls"][0]["editor_state"] == state
+    assert refined["translation_3857"] == pytest.approx([1020, 1985])
+    controls[0]["editor_state"]["initial_target"][0] = 0
+    assert refined["controls"][0]["editor_state"] == state
+
+
+@pytest.mark.parametrize("field,value", [
+    ("initial_target", [float("nan"), 0]),
+    ("undo_targets", [[0, 0]] * 129),
+    ("last_nudge", {"direction": "east", "step_m": 100}),
+    ("schema_version", True),
+])
+def test_invalid_manual_pick_history_is_rejected(field, value):
+    state = {"schema_version": 1, "initial_target": [12.0, 20.0], "undo_targets": [],
+             "last_action": "pick", "distance_method": "WGS84_ellipsoidal_geodesic", field: value}
+    with pytest.raises(ValueError, match="editor_state"):
+        matching._editor_state(state)

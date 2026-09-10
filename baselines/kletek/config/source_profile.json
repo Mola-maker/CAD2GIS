@@ -7,10 +7,19 @@
     "geodata_registration": {
       "authority": "DWG_DIRECT:GEODATA",
       "coordinate_system_id": "UTM84-49S",
-      "design_point": [0.0, 0.0],
+      "design_point": [
+        0.0,
+        0.0
+      ],
       "horizontal_unit_scale": 1.0,
-      "north_direction": [0.0, 1.0],
-      "reference_point": [685710.1999292718, 9185968.57756193],
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "reference_point": [
+        685710.1999292718,
+        9185968.57756193
+      ],
       "schema_version": "cad2gis.dwg_geodata_registration.v1",
       "target_crs": "EPSG:32749",
       "user_scale_factor": 1.0
@@ -54,7 +63,7 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "929f58d1b09da9f52831af617c1842114dc9207a6e33394e63412ef480dfce11",
+    "inventory_sha256": "bf44ebd977cf650b5e9a9b475eb1481547b6dcaa651dffccdf0a9fe0cd15744a",
     "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
     "source_size_bytes": 308753
   },

@@ -15,7 +15,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import urllib.request
+import xml.etree.ElementTree as ET
 import zipfile
 
 
@@ -90,6 +92,9 @@ def run(command: list[str | Path], *, env: dict[str, str], cwd: Path | None = No
 
 
 def build(args: argparse.Namespace) -> Path:
+    version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+    major, minor, patch = (int(part) for part in version.split("."))
+    version_code = major * 10000 + minor * 100 + patch
     java_home = args.java_home
     if java_home is None:
         homes = list((TOOLCHAIN / "jdk").glob("jdk-*"))
@@ -111,6 +116,13 @@ def build(args: argparse.Namespace) -> Path:
     temp_parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="build-", dir=temp_parent) as temporary:
         work = Path(temporary)
+        manifest = ET.parse(APP / "AndroidManifest.xml")
+        android_ns = "http://schemas.android.com/apk/res/android"
+        ET.register_namespace("android", android_ns)
+        manifest.getroot().set(f"{{{android_ns}}}versionName", version)
+        manifest.getroot().set(f"{{{android_ns}}}versionCode", str(version_code))
+        build_manifest = work / "AndroidManifest.xml"
+        manifest.write(build_manifest, encoding="utf-8", xml_declaration=True)
         test_classes = work / "policy-tests"
         test_classes.mkdir()
         run([
@@ -126,7 +138,7 @@ def build(args: argparse.Namespace) -> Path:
         generated.mkdir()
         run([
             build_tools / f"aapt2{suffix}", "link", "-o", unsigned,
-            "--manifest", APP / "AndroidManifest.xml", "-I", android,
+            "--manifest", build_manifest, "-I", android,
             "--java", generated, "--auto-add-overlay", compiled,
         ], env=env)
         classes = work / "classes"
@@ -170,7 +182,7 @@ def build(args: argparse.Namespace) -> Path:
             raise SystemExit("Supply --keystore and CAD2GIS_ANDROID_KEY_PASSWORD, or --development-key for a test APK.")
         if not env.get("CAD2GIS_ANDROID_KEY_PASSWORD"):
             raise SystemExit("Set CAD2GIS_ANDROID_KEY_PASSWORD without putting the signing password on the command line.")
-        name = "CAD2GIS-0.4.0-android" + ("-dev" if args.development_key else "") + ".apk"
+        name = f"CAD2GIS-{version}-android" + ("-dev" if args.development_key else "") + ".apk"
         artifact = output / name
         apksigner = [java, "-jar", build_tools / "lib/apksigner.jar"]
         run([
@@ -183,7 +195,7 @@ def build(args: argparse.Namespace) -> Path:
         alignment = run([build_tools / f"zipalign{suffix}", "-c", "-p", "4", artifact], env=env)
         report = {
             "artifact": artifact.name, "sha256": sha256(artifact), "bytes": artifact.stat().st_size,
-            "application_id": "org.cad2gis.mobile", "version": "0.4.0", "min_android_api": 26,
+            "application_id": "org.cad2gis.mobile", "version": version, "version_code": version_code, "min_android_api": 26,
             "target_android_api": 35, "build_tools": "36.0.0", "compile_android_api": 36,
             "development_signature": bool(args.development_key), "signature_verification": signature,
             "server_address_tests": policy_test,

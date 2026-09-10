@@ -55,6 +55,36 @@ def test_database_paging_and_write_denial(tmp_path):
             query(config, str(path), sql=sql)
 
 
+def test_provider_alias_uses_canonical_saved_profile(tmp_path, monkeypatch):
+    monkeypatch.delenv('NEW_API_API_KEY', raising=False)
+    settings = AISettings(tmp_path / '.state')
+    public = settings.save({'provider': 'new_api', 'base_url': 'http://127.0.0.1:19876/v1',
+                            'model': 'fixture-model', 'api_key': 'test-private-key'})
+    assert public['active'] == 'new-api'
+    assert public['profiles']['new-api']['configured']
+    restored = AISettings(settings.directory)
+    assert restored.require()['api_key'] == 'test-private-key'
+    assert restored.environment()['NEW_API_MODEL'] == 'fixture-model'
+    restored.save({'provider': 'new-api', 'model': 'updated-model'})
+    assert restored.require('new_api')['model'] == 'updated-model'
+    assert restored.require('new_api')['api_key'] == 'test-private-key'
+    assert set(restored._load()['profiles']) == {'new-api'}
+
+
+def test_database_nonfinite_values_are_json_safe_without_changing_storage(tmp_path):
+    path = tmp_path / 'measurements.sqlite'
+    values = [(float('inf'),), (float('-inf'),), (1.25,), (None,)]
+    with sqlite3.connect(path) as db:
+        db.execute('CREATE TABLE measurements (value REAL)')
+        db.executemany('INSERT INTO measurements VALUES (?)', values)
+    result = query(ApplicationConfig((tmp_path,)), str(path),
+                   sql='SELECT value FROM measurements ORDER BY rowid')
+    assert result['rows'] == [['inf'], ['-inf'], [1.25], [None]]
+    json.dumps(result, allow_nan=False)
+    with sqlite3.connect(path) as db:
+        assert db.execute('SELECT value FROM measurements ORDER BY rowid').fetchall() == values
+
+
 def test_conversation_pages_are_stable_and_scoped(tmp_path):
     store = AgentStore(tmp_path, 'one')
     record = store.create('中文项目')
@@ -135,10 +165,51 @@ def test_cancel_preserves_completed_mutation_for_next_turn(tmp_path):
     asyncio.run(scenario())
 
 
-def test_openai_http_protocol_probe_and_streamed_mcp_run(tmp_path):
+@pytest.mark.parametrize("keep_failing", [False, True])
+def test_real_mcp_failure_reaches_model_retry_and_has_bounded_usage(tmp_path, keep_failing):
+    from pydantic_ai.models.function import FunctionModel, DeltaToolCall
+
+    async def scenario():
+        settings = configured(tmp_path)
+        agent = DesktopAgent(ApplicationConfig((tmp_path,), state_dir=settings.directory), settings, SimpleNamespace(active=""))
+        calls = 0
+
+        async def stream(messages, _info):
+            nonlocal calls
+            calls += 1
+            if calls > 1:
+                retries = [part for message in messages for part in message.parts
+                           if getattr(part, "part_kind", "") == "retry-prompt"]
+                assert retries and "ARTIFACT_NOT_FOUND" in str(retries[-1].content)
+                assert "recovery" in str(retries[-1].content)
+            if calls == 1 or keep_failing:
+                yield {0: DeltaToolCall(name="inspect_run", json_args=json.dumps({"run_dir": str(tmp_path / "missing-run")}),
+                                       tool_call_id=f"missing-{calls}")}
+            else:
+                yield "该目录不存在，尚未取得转换结果。"
+
+        agent.model_override = FunctionModel(stream_function=stream)
+        run = agent.start({"message": "检查转换结果"})
+        await asyncio.wait_for(agent.task, 40)
+        state = agent.store.run(run["id"])
+        assert state["status"] == ("failed" if keep_failing else "succeeded"), state
+        assert calls == (3 if keep_failing else 2)
+        assert state["usage"]["tool_attempts"] == (3 if keep_failing else 1)
+        assert state["usage"]["requests"] == calls
+        assert not any(event["kind"] == "tool_result" and event["name"] == "inspect_run" for event in state["events"])
+        assert any(event["kind"] == "tool_error" and event["name"] == "inspect_run" for event in state["events"])
+    asyncio.run(scenario())
+
+
+def test_openai_http_protocol_probe_and_streamed_mcp_run(tmp_path, monkeypatch):
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     import threading
     from cad2gis.desktop_agent import test_connection
+
+    # This is a loopback protocol fixture; a host's proxy must not affect it or
+    # require optional SOCKS dependencies before the first local request.
+    for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+        monkeypatch.delenv(name, raising=False)
 
     requests = []
     class Handler(BaseHTTPRequestHandler):
