@@ -1,10 +1,10 @@
 {
   "schema": "cad2gis.qgis-osm-review.v1",
-  "input_project_sha256": "c0feb58ed3c55179cbf7f120cbd8469cffbc97438a7783c4b3fe124f9f0319e5",
-  "sha256": "3d37f9869f8f26e291263b6c0211c50eb9c37d34f40248585a4ad008d34a7718",
+  "input_project_sha256": "cfbe9df26dd421e1ed1b10e4d75978d925acda69b9ea2ccc2442fbbff4182bea",
+  "sha256": "019b3f10304e70210ad438d0d5e7d33533fe3d99a0aadf6a74927d7e8309dded",
   "standalone": false,
   "cad_database_hashes": [
-    "bc7bd5a61bbae37f7303fb1f2a1b121298dd859c5588ced542e5e015c0f2f6a8"
+    "066cbbe51e2730656e7c0f9d39f0ed7d649f1ecd114c922c9d7678e8d054bdd1"
   ],
   "cad_layers": {
     "BOITE": 1,
@@ -20,7 +20,7 @@
     {
       "layer": "BOITE",
       "source_handle": "2988D",
-      "svg_sha256": "878684884a7d72f2f31cdb8c107864a248c298b84a819b633972b3116a3b57ca"
+      "svg_sha256": "bdd112544282b98d0923b50b1d1d2a4f2d51ab98728aa506f3d1521fa7944bcb"
     },
     {
       "layer": "PTECH",
@@ -99,8 +99,8 @@
     "OSM water": 0,
     "OSM land use": 0
   },
-  "osm_database_sha256": "f09e2cb1151f43dcba8e331626c336f94ae41de974e7a86fba6f2445c3f60c33",
-  "osm_source_sha256": "823c6e1c2bcd56bfeb06a0e4a8d0f7bfff442fdfc35d4eab55f2eea47f1501cd",
+  "osm_database_sha256": "b53e56890fb5b85eb446122a6ea5d23b70febe0757ada9b6df6abf10b3fad285",
+  "osm_source_sha256": "c946a9a79ef6f141d4cfb5883692c278865343e0fbad278351f975716b39ac3f",
   "coordinate_review": null,
   "absolute_accuracy_verified": false,
   "geometry_and_attributes_unchanged": true,

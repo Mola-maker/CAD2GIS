@@ -1,0 +1,64 @@
+{
+  "schema": "cad2gis.qgis-osm-review.v1",
+  "input_project_sha256": "b4f497b02f88f2ef33af55758ee22031a2d17b1749bc7be82d8533d5542a15b9",
+  "sha256": "a2ce58c5d63f6d8e72333a074a1060cb72c3b13631d1c7ce3dfcc5af86499612",
+  "standalone": true,
+  "cad_database_hashes": [
+    "e5c8afb6201c14c34bc440db3d69edf964c99362ee7f22313a8e7179003abd5f"
+  ],
+  "cad_layers": {
+    "BOITE": 0,
+    "CABLE": 6,
+    "EMR": 1,
+    "IMB": 0,
+    "INFRASTRUCTURE": 1,
+    "PTECH": 6,
+    "SITE": 0,
+    "ZNRO": 0,
+    "ZPM": 0
+  },
+  "svg_bindings": [
+    {
+      "layer": "PTECH",
+      "source_handle": "75A2",
+      "svg_sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75AB",
+      "svg_sha256": "dc247c7cc9bbf4265b4b3732bb7f6f7062a421e147278abc61749665e996374f"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75C1",
+      "svg_sha256": "dc247c7cc9bbf4265b4b3732bb7f6f7062a421e147278abc61749665e996374f"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75C9",
+      "svg_sha256": "dc247c7cc9bbf4265b4b3732bb7f6f7062a421e147278abc61749665e996374f"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75D1",
+      "svg_sha256": "dc247c7cc9bbf4265b4b3732bb7f6f7062a421e147278abc61749665e996374f"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75D9",
+      "svg_sha256": "dc247c7cc9bbf4265b4b3732bb7f6f7062a421e147278abc61749665e996374f"
+    }
+  ],
+  "osm_layers": {
+    "OSM roads": 123,
+    "OSM buildings": 0,
+    "OSM water": 0,
+    "OSM land use": 0
+  },
+  "osm_database_sha256": "719482f1c7f634bd049082325842e257f0df13c2d586de1bac3379e55592d96e",
+  "osm_source_sha256": "6a92fefe96731cd1901f42cd3dc4d383454ff5a553e1ea6659d44bf3e600543a",
+  "coordinate_review": null,
+  "absolute_accuracy_verified": false,
+  "geometry_and_attributes_unchanged": true,
+  "attribution": "© OpenStreetMap contributors | openstreetmap.org/copyright"
+}
