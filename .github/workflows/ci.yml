@@ -44,6 +44,8 @@ jobs:
           tests/test_plugin_contracts.py
           tests/test_database_mcp.py
           tests/test_osm_matching.py
+          tests/test_osm_accuracy.py
+          tests/test_osm_benchmark.py
           tests/test_osm_anchor.py
           tests/test_osm_pipeline.py
           tests/test_osm_topology_ingest.py

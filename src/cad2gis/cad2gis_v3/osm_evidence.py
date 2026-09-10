@@ -16,7 +16,7 @@ from collections import defaultdict
 
 import numpy as np
 from pyproj import Transformer
-from shapely import points as shapely_points
+from shapely import box as shapely_box, points as shapely_points
 from shapely.geometry import LineString
 from shapely.strtree import STRtree
 
@@ -46,24 +46,78 @@ class RoadSegmentIndex:
         self.lengths2 = np.sum(self.vectors * self.vectors, axis=1)
         self.units = self.vectors / np.sqrt(self.lengths2)[:, None]
         self.tree = STRtree([LineString(segment) for segment in segments])
+        # Stable identity, including an orientation-independent geometry key,
+        # makes bounded correspondence ties independent of snapshot order.
+        identity_order = sorted(range(len(segments)), key=lambda i: (
+            references[i]["osm_way_id"], tuple(sorted(tuple(point) for point in segments[i])),
+            references[i]["segment_index"]))
+        self.identity_ranks = np.empty(len(segments), dtype=int)
+        self.identity_ranks[identity_order] = np.arange(len(segments))
 
-    def inspect(self, locations, directions=None):
-        """Resolve exact nearest ties by direction, then stable segment order.
+    def inspect(self, locations, directions=None, *, max_distance=None, min_direction_consistency=0.7):
+        """Find nearest segments, optionally among compatible local directions.
 
-        STRtree.nearest chooses an arbitrary equidistant geometry. In particular
-        at an intersection that can change a match from supported to rejected.
-        query_nearest returns every tie so our policy is explicit and replayable.
+        Without a radius, preserve geometric-nearest selection with directional
+        tie breaking. With a radius (in index coordinate units), consider every
+        segment within that distance before selecting the nearest directionally
+        compatible one. This avoids a crossing stealing a nearby road's sample.
+        If none qualifies, retain the geometric nearest for finite diagnostics;
+        callers must still apply their distance and direction support gates.
         """
         locations = np.asarray(locations, dtype=float).reshape((-1, 2))
         if not len(self.endpoints) or not len(locations):
             raise ValueError("Nearest road inspection requires nonempty segments and locations")
+        if directions is not None:
+            directions = np.asarray(directions, dtype=float)
+        if max_distance is not None:
+            if not math.isfinite(max_distance) or max_distance < 0:
+                raise ValueError("Road search max_distance must be finite and nonnegative")
+            if not math.isfinite(min_direction_consistency) or not 0 <= min_direction_consistency <= 1:
+                raise ValueError("Road search minimum direction consistency must be between zero and one")
+            if directions is None or directions.shape != locations.shape:
+                raise ValueError("Bounded road inspection requires directions for every location")
+            lengths = np.linalg.norm(directions, axis=1)
+            if not np.all(np.isfinite(directions)) or np.any(lengths <= 0):
+                raise ValueError("Bounded road inspection requires finite nonzero directions")
+            directions = directions / lengths[:, None]
         pairs = np.asarray(self.tree.query_nearest(shapely_points(locations), all_matches=True), dtype=int)
         alignment = (np.abs(np.sum(directions[pairs[0]] * self.units[pairs[1]], axis=1))
                      if directions is not None else np.zeros(len(pairs[0])))
-        order = np.lexsort((pairs[1], -alignment, pairs[0]))
+        tie_order = self.identity_ranks[pairs[1]] if max_distance is not None else pairs[1]
+        order = np.lexsort((tie_order, -alignment, pairs[0]))
         ordered = pairs[:, order]
         first = np.concatenate(([True], ordered[0, 1:] != ordered[0, :-1]))
         ids = ordered[1, first]
+        unresolved = np.empty(0, dtype=int)
+        if max_distance is not None:
+            # A compatible geometric-nearest winner is necessarily also the
+            # nearest compatible segment. Its exact ties already follow the
+            # bounded ordering above, so only incompatible winners need search.
+            nearest_alignment = np.abs(np.sum(directions * self.units[ids], axis=1))
+            unresolved = np.flatnonzero(nearest_alignment < min_direction_consistency)
+        if len(unresolved):
+            # The index queries boxes; the exact clipped segment distance below
+            # enforces a circular radius without relying on GEOS dwithin.
+            remaining = locations[unresolved]
+            boxes = shapely_box(remaining[:, 0] - max_distance, remaining[:, 1] - max_distance,
+                                remaining[:, 0] + max_distance, remaining[:, 1] + max_distance)
+            nearby = np.asarray(self.tree.query(boxes), dtype=int)
+            sample_ids, segment_ids = nearby
+            sample_ids = unresolved[sample_ids]
+            vectors = self.vectors[segment_ids]
+            starts = self.endpoints[segment_ids, 0]
+            fractions = np.sum((locations[sample_ids] - starts) * vectors, axis=1) / self.lengths2[segment_ids]
+            feet = starts + np.clip(fractions, 0.0, 1.0)[:, None] * vectors
+            distances = np.linalg.norm(locations[sample_ids] - feet, axis=1)
+            alignment = np.abs(np.sum(directions[sample_ids] * self.units[segment_ids], axis=1))
+            eligible = (distances <= max_distance) & (alignment >= min_direction_consistency)
+            if np.any(eligible):
+                sample_ids, segment_ids = sample_ids[eligible], segment_ids[eligible]
+                order = np.lexsort((self.identity_ranks[segment_ids], -alignment[eligible],
+                                    distances[eligible], sample_ids))
+                sample_ids, segment_ids = sample_ids[order], segment_ids[order]
+                first = np.concatenate(([True], sample_ids[1:] != sample_ids[:-1]))
+                ids[sample_ids[first]] = segment_ids[first]
         starts, vectors = self.endpoints[ids, 0], self.vectors[ids]
         fractions = np.sum((locations - starts) * vectors, axis=1) / self.lengths2[ids]
         feet = starts + np.clip(fractions, 0.0, 1.0)[:, None] * vectors
@@ -142,12 +196,14 @@ def build_match_evidence(record, native_routes, base_routes, *, samples=None, di
                                 "base_points_3857": copy.deepcopy(base), "native_sha256": _digest(native)}
                                for index, (native, base) in enumerate(zip(native_routes, base_routes))],
                 "cad_topology": cad_topology(native_routes), "osm_topology": osm_topology(roads),
-                "residuals": [], "residual_distance_method": "web_mercator_reference_latitude_cosine_approximation"}
+                "residuals": [], "residual_distance_method": "web_mercator_reference_latitude_cosine_approximation",
+                "correspondence_method": "nearest_direction_compatible_segment_within_corridor",
+                "correspondence_corridor_m": 25.0, "minimum_direction_consistency": 0.7}
     index = RoadSegmentIndex(roads)
     if placed and samples is not None and len(samples) and len(index.references):
         moved = np.asarray(samples) + record["translation_3857"]
-        inspected = index.inspect(moved, directions)
         ground_scale = math.cos(math.radians(record["base"]["reference_latitude"]))
+        inspected = index.inspect(moved, directions, max_distance=25.0 / ground_scale)
         for i, segment_id in enumerate(inspected["segment_ids"]):
             distance = float(inspected["distances"][i]) * ground_scale
             alignment = float(abs(np.dot(directions[i], inspected["directions"][i])))
