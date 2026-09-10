@@ -212,7 +212,7 @@ def _path(value: str | Path, *, must_exist: bool = True) -> Path:
             code="PATH_OUTSIDE_ROOT",
         )
     if must_exist and not path.exists():
-        raise MCPServiceError(f"Path does not exist: {path}")
+        raise MCPServiceError(f"Path does not exist: {path}", code="ARTIFACT_NOT_FOUND")
     return path
 
 

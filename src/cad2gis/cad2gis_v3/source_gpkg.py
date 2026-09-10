@@ -17,6 +17,7 @@ from typing import Any
 
 from ..native_runtime import ensure_osgeo_runtime
 from .accounting import EntityAccounting, account_entities
+from .curve_geometry import source_display_points
 from .gpkg_metadata import normalize_geopackage_metadata
 from .model import SourceEntity
 
@@ -197,8 +198,12 @@ def _polygon_points(
     if len(points) < 3 or len(set(points)) < 3:
         return None
     closed_points = points if points[0] == points[-1] else (*points, points[0])
-    twice_area = sum(
-        start[0] * end[1] - end[0] * start[1]
+    origin = closed_points[0]
+    # Local coordinates avoid subtracting ~1e18 products for small boundaries
+    # in large projected CAD coordinate domains.
+    twice_area = math.fsum(
+        (start[0] - origin[0]) * (end[1] - origin[1])
+        - (end[0] - origin[0]) * (start[1] - origin[1])
         for start, end in zip(closed_points, closed_points[1:])
     )
     if twice_area == 0.0:
@@ -228,6 +233,17 @@ def _route_entity(
         )
 
     entity_type = entity.dwg_type.strip().upper()
+    curve_display = False
+    if entity_type in _LINE_TYPES and (entity.curve_facts or entity_type in {"ARC", "CIRCLE", "ELLIPSE", "SPLINE", "HELIX"}):
+        try:
+            display_points = source_display_points(entity)
+        except (ValueError, TypeError, KeyError, OverflowError) as exc:
+            return _RoutedEntity(
+                entity, accounting, "source_metadata",
+                f"source_curve_geometry_unavailable: {exc}", (), legend_flag=legend_flag,
+            )
+        curve_display = display_points != points
+        points = display_points
     if entity_type in _TEXT_TYPES:
         if points:
             return _RoutedEntity(
@@ -270,7 +286,7 @@ def _route_entity(
                 entity,
                 accounting,
                 "source_polygons",
-                "source_closed_boundary",
+                "source_tessellated_curve_boundary" if curve_display else "source_closed_boundary",
                 polygon_points,
                 legend_flag=legend_flag,
             )
@@ -281,7 +297,7 @@ def _route_entity(
                 entity,
                 accounting,
                 "source_lines",
-                "source_linear_vertices",
+                "source_tessellated_curve" if curve_display else "source_linear_vertices",
                 points,
                 legend_flag=legend_flag,
             )
@@ -379,6 +395,20 @@ def _create_layer(dataset, name: str, spatial_reference):
     return layer
 
 
+def _bind_field_indices(definition, layer_name: str) -> dict[str, int]:
+    """Bind exact names/types once, after the layer schema is complete."""
+    indices: dict[str, int] = {}
+    for field_name, field_type in _ENTITY_FIELDS:
+        index = definition.GetFieldIndex(field_name)
+        if index < 0:
+            raise RuntimeError(f"Missing source GeoPackage field: {layer_name}.{field_name}")
+        actual = definition.GetFieldDefn(index)
+        if actual.GetNameRef() != field_name or actual.GetType() != field_type:
+            raise RuntimeError(f"Unexpected source GeoPackage field schema: {layer_name}.{field_name}")
+        indices[field_name] = index
+    return indices
+
+
 def _geometry(routed: _RoutedEntity):
     if routed.layer_name == "source_metadata":
         return None
@@ -413,6 +443,8 @@ def _write_staged(
     transaction_started = False
     transaction_committed = False
     layers: dict[str, Any] = {}
+    layer_definitions: dict[str, Any] = {}
+    field_indices: dict[str, dict[str, int]] = {}
     layer = None
     feature = None
     geometry = None
@@ -424,12 +456,18 @@ def _write_staged(
             name: _create_layer(dataset, name, spatial_reference)
             for name in MATERIALIZATION_LAYERS
         }
+        layer_definitions = {name: layer.GetLayerDefn() for name, layer in layers.items()}
+        field_indices = {
+            name: _bind_field_indices(definition, name)
+            for name, definition in layer_definitions.items()
+        }
         for routed in routed_entities:
             layer = layers[routed.layer_name]
-            feature = ogr.Feature(layer.GetLayerDefn())
+            feature = ogr.Feature(layer_definitions[routed.layer_name])
+            indices = field_indices[routed.layer_name]
             for field_name, value in _entity_values(routed).items():
                 if value is not None:
-                    feature.SetField(field_name, value)
+                    feature.SetField(indices[field_name], value)
             geometry = _geometry(routed)
             if geometry is not None:
                 feature.SetGeometry(geometry)
@@ -445,6 +483,8 @@ def _write_staged(
         geometry = None
         feature = None
         layer = None
+        field_indices.clear()
+        layer_definitions.clear()
         layers.clear()
         gc.collect()
         if transaction_started and not transaction_committed:

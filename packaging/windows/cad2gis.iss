@@ -5,7 +5,7 @@
   #error OutputDir is required
 #endif
 #ifndef AppVersion
-  #define AppVersion "0.4.0"
+  #error AppVersion must be supplied by the package builder
 #endif
 
 [Setup]
@@ -40,9 +40,9 @@ Name: "addpath"; Description: "Add CAD2GIS commands to the user PATH (for agent 
 Source: "{#PayloadDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [InstallDelete]
-; Remove obsolete application metadata during 0.4 -> 0.5 upgrades. Leaving two
+; Remove obsolete CAD2GIS metadata during upgrades. Leaving two
 ; dist-info versions makes importlib.metadata report the old package identity.
-Type: filesandordirs; Name: "{app}\runtime\Lib\site-packages\cad2gis-0.4.0.dist-info"
+Type: filesandordirs; Name: "{app}\runtime\Lib\site-packages\cad2gis-*.dist-info"
 
 [Icons]
 Name: "{group}\CAD2GIS"; Filename: "{app}\bin\cad2gis-desktop.exe"

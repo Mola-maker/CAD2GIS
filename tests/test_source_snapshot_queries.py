@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import sqlite3
+from copy import deepcopy
 from threading import Event
 from pathlib import Path
 
@@ -30,8 +31,17 @@ def snapshot(tmp_path, records=None, name="run"):
 
 def test_unregistered_source_keeps_exact_facts_and_undefined_cartesian_srs(tmp_path):
     root, manifest = snapshot(tmp_path)
-    assert manifest["coordinate_reference"] == {"state": "native_cad_unregistered",
-                                               "source_crs": None, "units": "not_inferred", "transformed": False}
+    reference = dict(manifest["coordinate_reference"])
+    representation = dict(reference.pop("geometry_representation"))
+    assert reference == {"state": "native_cad_unregistered", "source_crs": None,
+                         "units": "not_inferred", "transformed": False}
+    policy = representation.pop("curve_policy")
+    assert representation == {
+        "spatial_geometry": "bounded_native_xy_display",
+        "authoritative_fields": ["native_points", "curve_facts"],
+        "unsupported_curves": "source_metadata_with_reason",
+    }
+    assert policy["max_sagitta_native"] > 0 and policy["max_chord_native"] > 0
     assert manifest["reader_provenance"]["mode"] == "injected_records"
     assert manifest["snapshot_sha256"] == source_export.snapshot_digest(manifest)
     with sqlite3.connect(root / "source.gpkg") as db:
@@ -41,6 +51,11 @@ def test_unregistered_source_keeps_exact_facts_and_undefined_cartesian_srs(tmp_p
         assert set(r[0] for r in db.execute("SELECT srs_id FROM gpkg_geometry_columns")) == {-1}
     assert json.loads((root / "reader_records.jsonl").read_text(encoding="utf-8")) == row()
     assert len((root / "plan_entities.jsonl").read_text(encoding="utf-8").splitlines()) == 1
+    # Display tolerance is part of snapshot authority, while source coordinates
+    # above remain full-precision values with no inferred CRS or unit conversion.
+    altered = deepcopy(manifest)
+    altered["coordinate_reference"]["geometry_representation"]["curve_policy"]["max_sagitta_native"] *= 2
+    assert source_export.snapshot_digest(altered) != manifest["snapshot_sha256"]
 
 
 def test_export_refuses_nonempty_destination_without_deleting_anything(tmp_path):

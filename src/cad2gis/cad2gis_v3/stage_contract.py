@@ -28,16 +28,191 @@ class _StateEncoder(json.JSONEncoder):
         return super().default(value)
 
 
+_CANONICAL_CHUNK_ASCII_LIMIT = 64 * 1024
+
+
+def _key_budget(key: Any, remaining: int) -> int:
+    # Bound the JSON object-key spelling, including its quotes.
+    if type(key) is str:
+        return remaining - ((6 if key.isascii() else 12) * len(key) + 2)
+    if key is None or isinstance(key, bool):
+        return remaining - 7
+    if isinstance(key, int):
+        return remaining - (int.bit_length(key) * 30103 // 100000 + 5)
+    if isinstance(key, float):
+        return remaining - 34
+    return -1
+
+
+def _encoding_budget(value: Any, remaining: int, active: set[int]) -> int:
+    """Conservative ASCII size bound; stop as soon as a subtree exceeds it.
+
+    No normalized deep copy or cross-call memo is constructed.  The 12-byte
+    bound for a Unicode code point includes JSON surrogate-pair escaping.
+    """
+    if remaining < 0:
+        return -1
+    kind = type(value)
+    if kind is str:
+        return remaining - ((6 if value.isascii() else 12) * len(value) + 2)
+    if value is None or kind is bool:
+        return remaining - 5
+    if kind is int:
+        return remaining - (value.bit_length() * 30103 // 100000 + 3)
+    if kind is float:
+        return remaining - 32
+    dataclass_instance = False
+    if kind not in (dict, list, tuple, set, frozenset):
+        if isinstance(value, Path):
+            return remaining - (12 * len(str(value)) + 2)
+        dataclass_instance = is_dataclass(value) and not isinstance(value, type)
+        if not dataclass_instance:
+            return -1
+    marker = id(value)
+    if marker in active:
+        return -1
+    active.add(marker)
+    try:
+        remaining -= 2
+        if kind is dict:
+            # Every item needs at least a quoted key, ':', a scalar and ','.
+            if len(value) * 5 > remaining:
+                return -1
+            for key, item in value.items():
+                remaining = _key_budget(key, remaining - 2)
+                remaining = _encoding_budget(item, remaining, active)
+                if remaining < 0:
+                    return -1
+        elif dataclass_instance:
+            for item in fields(value):
+                remaining = _key_budget(item.name, remaining - 2)
+                remaining = _encoding_budget(getattr(value, item.name), remaining, active)
+                if remaining < 0:
+                    return -1
+        else:
+            if len(value) * 2 > remaining:
+                return -1
+            for item in value:
+                remaining = _encoding_budget(item, remaining - 1, active)
+                if remaining < 0:
+                    return -1
+        return remaining
+    finally:
+        active.remove(marker)
+
+
+def _canonical_chunks(value: Any, encoder: _StateEncoder, active: set[int]):
+    """Use public JSONEncoder.encode only for bounded complete subtrees."""
+    limit = _CANONICAL_CHUNK_ASCII_LIMIT
+    if _encoding_budget(value, limit, active) >= 0:
+        yield encoder.encode(value)
+        return
+    if isinstance(value, str):
+        # Escape complete code points; slicing cannot cut an escape sequence.
+        yield '"'
+        step = max(1, (limit - 2) // 12)
+        for start in range(0, str.__len__(value), step):
+            yield encoder.encode(str.__getitem__(value, slice(start, start + step)))[1:-1]
+        yield '"'
+        return
+    kind = type(value)
+    if kind not in (dict, list, tuple) and not (
+        (is_dataclass(value) and not isinstance(value, type))
+        or isinstance(value, Path) or kind in (set, frozenset)
+    ):
+        # Preserve the legacy encoder's errors and subclass/custom behavior.
+        yield from encoder.iterencode(value)
+        return
+    marker = id(value)
+    if marker in active:
+        raise ValueError('Circular reference detected')
+    active.add(marker)
+    try:
+        if kind in (list, tuple):
+            yield '['
+            batch = []
+            remaining = limit - 2
+            first = True
+            for item in value:
+                available = _encoding_budget(item, remaining - 1, active)
+                if available < 0:
+                    if batch:
+                        if not first:
+                            yield ','
+                        yield encoder.encode(batch)[1:-1]
+                        first = False
+                        batch = []
+                        remaining = limit - 2
+                        available = _encoding_budget(item, remaining - 1, active)
+                    if available < 0:
+                        if not first:
+                            yield ','
+                        yield from _canonical_chunks(item, encoder, active)
+                        first = False
+                        continue
+                batch.append(item)
+                remaining = available
+            if batch:
+                if not first:
+                    yield ','
+                yield encoder.encode(batch)[1:-1]
+            yield ']'
+        elif kind is dict:
+            yield '{'
+            # Match JSONEncoder's sort-before-key-coercion semantics, including
+            # TypeError for incomparable mixed key types. Sorting is inherent
+            # to the existing contract; only references are duplicated here.
+            items = sorted(value.items())
+            batch = {}
+            remaining = limit - 2
+            first = True
+            for key, item in items:
+                available = _encoding_budget(item, _key_budget(key, remaining - 2), active)
+                if available < 0:
+                    if batch:
+                        if not first:
+                            yield ','
+                        yield encoder.encode(batch)[1:-1]
+                        first = False
+                        batch = {}
+                        remaining = limit - 2
+                        available = _encoding_budget(item, _key_budget(key, remaining - 2), active)
+                    if available < 0:
+                        if not first:
+                            yield ','
+                        if isinstance(key, str):
+                            yield from _canonical_chunks(key, encoder, active)
+                        else:
+                            # A one-key dict delegates exact bool/null/numeric
+                            # key spelling and invalid-key errors to stdlib.
+                            yield encoder.encode({key: None})[1:-6]
+                        yield ':'
+                        yield from _canonical_chunks(item, encoder, active)
+                        first = False
+                        continue
+                batch[key] = item
+                remaining = available
+            if batch:
+                if not first:
+                    yield ','
+                yield encoder.encode(batch)[1:-1]
+            yield '}'
+        else:
+            yield from _canonical_chunks(encoder.default(value), encoder, active)
+    finally:
+        active.remove(marker)
+
+
 def canonical_sha256(value: Any) -> str:
     encoder = _StateEncoder(
         ensure_ascii=True,
         sort_keys=True,
-        separators=(",", ":"),
+        separators=(',', ':'),
         allow_nan=False,
     )
     digest = hashlib.sha256()
-    for chunk in encoder.iterencode(value):
-        digest.update(chunk.encode("ascii"))
+    for chunk in _canonical_chunks(value, encoder, set()):
+        digest.update(chunk.encode('ascii'))
     return digest.hexdigest()
 
 

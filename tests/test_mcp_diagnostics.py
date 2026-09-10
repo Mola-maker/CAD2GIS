@@ -67,6 +67,33 @@ def test_cancelled_call_has_one_terminal_event(capsys):
     assert events[-1]["committed"] is False
 
 
+def test_error_result_is_not_traced_as_success(capsys):
+    from mcp.types import CallToolResult, TextContent
+
+    def query():
+        return CallToolResult(isError=True, content=[TextContent(type="text", text="query failed")])
+
+    wrapped = mcp_diagnostics.traced_tool("query_source_entities", query, _Server())
+    assert wrapped().isError is True
+    events = [json.loads(line) for line in capsys.readouterr().err.splitlines()]
+    assert [event["phase"] for event in events] == ["started", "failed"]
+    assert events[-1]["error_code"] == "TOOL_EXECUTION_FAILED"
+
+
+def test_mutation_busy_error_is_not_advertised_as_safe_to_replay():
+    import sqlite3
+
+    def commit():
+        raise sqlite3.OperationalError("database is locked")
+
+    wrapped = mcp_diagnostics.traced_tool("commit_semantic_patch", commit, _Server())
+    with pytest.raises(Exception) as exc:
+        wrapped()
+    result = json.loads(str(exc.value))
+    assert result["retryable"] is False and result["committed"] == "unknown"
+    assert "status" in result["recovery"]
+
+
 def test_identity_detects_schema_drift_without_installing_runtime(monkeypatch):
     from cad2gis import agent_mcp
 

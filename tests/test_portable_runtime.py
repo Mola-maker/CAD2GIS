@@ -80,7 +80,7 @@ def test_posix_runtime_builds_pinned_source_into_user_cache(
     monkeypatch.setattr(
         native_runtime.shutil,
         "which",
-        lambda name: f"/usr/bin/{name}" if name in {"make", "cc"} else None,
+        lambda name: f"/usr/bin/{name}" if name in {"make", "cc", "pkg-config"} else None,
     )
     monkeypatch.setattr(
         native_runtime,

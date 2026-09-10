@@ -19,7 +19,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
-from pyproj import Transformer
+from pyproj import CRS, Transformer
+from pyproj.enums import TransformDirection
+from pyproj.exceptions import ProjError
 from shapely.geometry import LineString, Point, Polygon, box as geometry_box, shape
 from shapely.ops import transform, unary_union
 
@@ -159,37 +161,294 @@ def source_shape(entity, expected_type=None):
     return LineString(dense)
 
 
-def inverse_operation(manifest):
+def _canonical_sha256(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                    ensure_ascii=False, allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def _audit_number(value, name, *, positive=False):
+    if isinstance(value, bool):
+        raise UnsupportedAuditTransform(f"{name} must be finite")
+    try:
+        value = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise UnsupportedAuditTransform(f"{name} must be finite") from exc
+    if not math.isfinite(value) or (positive and value <= 0):
+        raise UnsupportedAuditTransform(f"{name} must be finite" + (" and positive" if positive else ""))
+    return value
+
+
+def _audit_pair(value, name):
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise UnsupportedAuditTransform(f"{name} must contain exactly two coordinates")
+    return tuple(_audit_number(item, name) for item in value)
+
+
+def _crs_identity(value):
+    if value is None or not str(value).strip():
+        return None
+    try:
+        crs = CRS.from_user_input(value)
+    except (ValueError, TypeError):
+        return {"local_name": str(value)}
+    authority = crs.to_authority()
+    return {"authority": list(authority)} if authority else {"wkt": crs.to_wkt()}
+
+
+def _audit_matching_record(manifest, partition):
+    """Select the manifest-applied record; an old area hint is not a transform."""
+    crs = manifest["crs"]
+    operation = crs.get("coordinate_operation") or {}
+    lineage = (crs.get("lineage") or {}).get("model")
+    primary = crs.get("osm_matching")
+    if lineage != "osm_relative_translation":
+        if lineage not in {"nominal_direct", "dwg_geodata_nominal", "identity_residual"}:
+            raise UnsupportedAuditTransform("Unknown or missing coordinate lineage; refuse inferred inversion")
+        registered = bool(crs.get("unit_crs_contract", {}).get("coordinate_registration"))
+        if (lineage == "nominal_direct" and registered) or (lineage == "dwg_geodata_nominal" and not registered):
+            raise UnsupportedAuditTransform("Nominal lineage and GEODATA registration declarations disagree")
+        if operation.get("osm_matching_sha256"):
+            raise UnsupportedAuditTransform("OSM operation binding conflicts with the declared lineage")
+        if isinstance(primary, dict) and primary.get("status") in {"matched", "coarse"}:
+            raise UnsupportedAuditTransform("Applicable OSM record conflicts with the declared nominal lineage")
+        return None
+    if not isinstance(primary, dict) or operation.get("osm_matching_sha256") != primary.get("match_sha256"):
+        raise UnsupportedAuditTransform("Applied OSM record is missing its coordinate-operation hash binding")
+    if manifest.get("osm_matching") is not None and manifest["osm_matching"] != primary:
+        raise UnsupportedAuditTransform("Top-level and CRS OSM matching records disagree")
+    regions = crs.get("osm_matching_by_region") or {}
+    record = regions.get(partition) if partition else primary
+    if not isinstance(record, dict):
+        raise UnsupportedAuditTransform("No manifest-applied OSM matching record for this delivery partition")
+    if (partition and record.get("region_id") != partition) or (not partition and record.get("region_id") not in {None, "MAIN"}):
+        raise UnsupportedAuditTransform("OSM matching region does not bind this delivery scope")
+    if record.get("schema_version") != "cad2gis.osm-matching.v1":
+        raise UnsupportedAuditTransform("Unsupported OSM matching record schema")
+    if record.get("match_sha256") != _canonical_sha256({key: value for key, value in record.items() if key != "match_sha256"}):
+        raise UnsupportedAuditTransform("OSM matching record hash mismatch")
+    if record.get("source_sha256") != manifest["source"]["sha256"]:
+        raise UnsupportedAuditTransform("OSM matching source hash mismatch")
+    if record.get("status") not in {"matched", "coarse"}:
+        raise UnsupportedAuditTransform("An abstained or unavailable OSM candidate cannot be an applied transform")
+    if record.get("authority") != "relative_osm" or record.get("absolute_accuracy_verified") is not False:
+        raise UnsupportedAuditTransform("OSM matching authority must remain relative-only")
+    for key in ("source_crs", "target_crs"):
+        if _crs_identity(record.get(key)) != _crs_identity(crs[key]):
+            raise UnsupportedAuditTransform(f"OSM matching {key} binding mismatch")
+    snapshot = record.get("osm_snapshot")
+    if not isinstance(snapshot, dict) or snapshot.get("sha256") != _canonical_sha256(snapshot.get("roads")):
+        raise UnsupportedAuditTransform("OSM snapshot hash mismatch")
+    return record
+
+
+def _pipeline_xy_inverse(projection, target_x, target_y):
+    """Invert the declared two-dimensional forward map, including dropped Z.
+
+    A 3D datum pipeline with push/pop can lose transformed height when its
+    output is delivered as XY. Its formal INVERSE is then a seed, not the exact
+    inverse of that XY mapping. Refine only source XY against the same recorded
+    forward pipeline, using an independent central-difference Jacobian.
+    """
+    x, y = projection.transform(target_x, target_y, direction=TransformDirection.INVERSE, errcheck=True)
+    for _ in range(8):
+        actual_x, actual_y = projection.transform(x, y, errcheck=True)
+        rx, ry = target_x - actual_x, target_y - actual_y
+        if math.hypot(rx, ry) <= 1e-8:
+            return x, y
+        hx, hy = max(0.01, abs(x) * 1e-8), max(0.01, abs(y) * 1e-8)
+        east = projection.transform(x + hx, y, errcheck=True)
+        west = projection.transform(x - hx, y, errcheck=True)
+        north = projection.transform(x, y + hy, errcheck=True)
+        south = projection.transform(x, y - hy, errcheck=True)
+        a, c = (east[0] - west[0]) / (2 * hx), (east[1] - west[1]) / (2 * hx)
+        b, d = (north[0] - south[0]) / (2 * hy), (north[1] - south[1]) / (2 * hy)
+        determinant = a * d - b * c
+        if not math.isfinite(determinant) or abs(determinant) <= 1e-12 * max(abs(a * d), abs(b * c), 1e-24):
+            raise UnsupportedAuditTransform("Declared 2D forward pipeline has a singular inverse derivative")
+        x += (d * rx - b * ry) / determinant
+        y += (a * ry - c * rx) / determinant
+        _audit_pair((x, y), "Refined inverse point")
+    raise UnsupportedAuditTransform("Declared 2D forward pipeline inverse did not converge")
+
+
+def inverse_operation(manifest, partition=None):
+    """Independently invert only the exact CRS/GEODATA/OSM operation declared.
+
+    OSMMatchingTransformer applies native -> fixed base -> Mercator shift ->
+    target CRS. The inverse below reverses that order. It does not import the
+    production transformer, derive a new fit, or apply legacy Nominatim hints.
+    The returned callable also exposes an independent forward for roundtrips.
+    """
     crs = manifest["crs"]
     if crs.get("calibration", {}).get("status") not in {None, "not_provided"}:
-        raise UnsupportedAuditTransform("This independent audit only supports uncalibrated nominal runs")
-    if crs.get("osm_anchor"):
-        raise UnsupportedAuditTransform("OSM anchor inversion is not implemented; refuse inferred registration")
+        raise UnsupportedAuditTransform("This independent audit does not support residual calibration inversion")
     contract = crs["unit_crs_contract"]
-    coordinate_scale = float(contract["source_coordinate_scale_to_m"])
-    if not contract.get("source_coordinate_scale_reviewed") or not math.isfinite(coordinate_scale) or coordinate_scale <= 0:
+    coordinate_scale = _audit_number(contract.get("source_coordinate_scale_to_m"), "Reviewed coordinate scale", positive=True)
+    if contract.get("source_coordinate_scale_reviewed") is not True:
         raise UnsupportedAuditTransform("A finite positive reviewed coordinate scale is required")
+    record = _audit_matching_record(manifest, partition)
+    operation = crs.get("coordinate_operation") or {}
     registration = contract.get("coordinate_registration")
-    projection = Transformer.from_crs(crs["target_crs"], crs["source_crs"], always_xy=True)
-    factor = float(contract["source_to_crs_axis_factor"])
-    if registration:
-        factor = float(registration["horizontal_unit_scale"]) * float(registration["user_scale_factor"])
-        nx, ny = registration["north_direction"]
-        design_x, design_y = registration["design_point"]
-        reference_x, reference_y = registration["reference_point"]
+    nominal_contract = {key: value for key, value in contract.items() if key != "coordinate_registration"}
+    if operation.get("coordinate_registration") is not None and operation["coordinate_registration"] != registration:
+        raise UnsupportedAuditTransform("GEODATA registration declarations disagree")
+    if operation.get("unit_crs_contract") is not None and operation["unit_crs_contract"] != nominal_contract:
+        raise UnsupportedAuditTransform("Coordinate-operation unit contract binding mismatch")
 
-    def inverse(x, y, z=None):
-        # Shapely may first pass coordinate arrays, then retry scalar points.
-        if not isinstance(x, (int, float)):
-            converted = [inverse(float(a), float(b)) for a, b in zip(x, y)]
-            return tuple(p[0] for p in converted), tuple(p[1] for p in converted)
-        grid_x, grid_y = projection.transform(x, y)
+    local = record is not None and record.get("base", {}).get("mode") == "local"
+    if record is not None:
+        base = record.get("base") or {}
+        if base.get("mode") not in {"nominal", "local"}:
+            raise UnsupportedAuditTransform("Unsupported OSM base operation")
+        latitude = _audit_number(base.get("reference_latitude"), "OSM reference latitude")
+        if abs(latitude) > 85:
+            raise UnsupportedAuditTransform("OSM reference latitude outside supported extent")
+        base_scale = _audit_number(base.get("scale_to_3857"), "OSM base scale", positive=True)
+        expected_scale = coordinate_scale / math.cos(math.radians(latitude)) if local else 1.0
+        if not math.isclose(base_scale, expected_scale, rel_tol=1e-12):
+            raise UnsupportedAuditTransform("OSM base scale violates its unit/latitude binding")
+        if not math.isclose(_audit_number(base.get("source_unit_to_m"), "OSM source unit", positive=True), coordinate_scale, rel_tol=1e-12):
+            raise UnsupportedAuditTransform("OSM source unit does not match the reviewed coordinate scale")
+        identity = {"source_crs": _crs_identity(crs["source_crs"]), "target_crs": _crs_identity(crs["target_crs"]),
+                    "unit_contract": nominal_contract, "geodata_registration": registration,
+                    "lineage_model": "local_unit_reference" if local else "dwg_geodata_nominal" if registration else "nominal_direct"}
+        if base.get("nominal_operation_sha256") != _canonical_sha256(identity):
+            raise UnsupportedAuditTransform("OSM nominal operation hash binding mismatch")
+        delta = _audit_pair(record.get("translation_3857"), "OSM translation")
+        to_mercator = Transformer.from_crs(crs["target_crs"], "EPSG:3857", always_xy=True)
+        from_mercator = Transformer.from_crs("EPSG:3857", crs["target_crs"], always_xy=True)
+    if local:
+        if registration or contract.get("coordinate_mode") != "reviewed_authoritative_registration" or contract.get("local_registration_reviewed") is not True:
+            raise UnsupportedAuditTransform("Local OSM inverse requires its reviewed local registration contract")
+        projection, projection_method = None, "declared_local_unit_scale"
+    else:
+        factor = _audit_number(contract.get("source_to_crs_axis_factor"), "Source CRS axis factor", positive=True)
+        if registration:
+            if registration.get("authority") != "DWG_DIRECT:GEODATA" or _crs_identity(registration.get("target_crs")) != _crs_identity(crs["source_crs"]):
+                raise UnsupportedAuditTransform("GEODATA authority/CRS does not bind the source coordinate frame")
+            reg_scale = (_audit_number(registration.get("horizontal_unit_scale"), "GEODATA horizontal scale", positive=True)
+                         * _audit_number(registration.get("user_scale_factor"), "GEODATA user scale", positive=True))
+            if not math.isclose(reg_scale, factor, rel_tol=1e-12, abs_tol=1e-15):
+                raise UnsupportedAuditTransform("GEODATA scale does not match the reviewed source axis factor")
+            nx, ny = _audit_pair(registration.get("north_direction"), "GEODATA north direction")
+            if not math.isclose(math.hypot(nx, ny), 1.0, rel_tol=1e-12, abs_tol=1e-12):
+                raise UnsupportedAuditTransform("GEODATA north direction is not a recorded unit vector")
+            design_x, design_y = _audit_pair(registration.get("design_point"), "GEODATA design point")
+            reference_x, reference_y = _audit_pair(registration.get("reference_point"), "GEODATA reference point")
+        definition = operation.get("definition")
+        try:
+            if isinstance(definition, str) and definition.strip():
+                projection = Transformer.from_pipeline(definition)
+                projection_method = "manifest_declared_pipeline_inverse"
+            elif record is None:
+                projection = Transformer.from_crs(crs["source_crs"], crs["target_crs"], always_xy=True)
+                projection_method = "declared_crs_pair_inverse"
+            else:
+                raise UnsupportedAuditTransform("OSM nominal inverse requires the manifest's exact CRS pipeline definition")
+            if not projection.has_inverse:
+                raise UnsupportedAuditTransform("Declared CRS pipeline does not provide an inverse")
+        except ProjError as exc:
+            raise UnsupportedAuditTransform("Declared CRS pipeline cannot be reconstructed") from exc
+
+    def scalar_inverse(x, y):
+        if record is not None:
+            # The two CRS directions can each discard transformed height.
+            # Invert each actual forward XY leg; they are not exact inverses
+            # of one another when the target CRS has a non-WGS84 datum.
+            x, y = _pipeline_xy_inverse(from_mercator, x, y)
+            x, y = x - delta[0], y - delta[1]
+            if local:
+                return x / base_scale, y / base_scale
+            x, y = _pipeline_xy_inverse(to_mercator, x, y)
+        grid_x, grid_y = _pipeline_xy_inverse(projection, x, y)
         if registration:
             dx, dy = grid_x - reference_x, grid_y - reference_y
             return design_x + (dx * ny + dy * nx) / factor, design_y + (-dx * nx + dy * ny) / factor
         return grid_x / factor, grid_y / factor
 
+    def scalar_forward(x, y):
+        if local:
+            x, y = x * base_scale, y * base_scale
+        else:
+            if registration:
+                dx, dy = x - design_x, y - design_y
+                x, y = reference_x + factor * (dx * ny - dy * nx), reference_y + factor * (dx * nx + dy * ny)
+            else:
+                x, y = x * factor, y * factor
+            x, y = projection.transform(x, y, errcheck=True)
+            if record is not None:
+                x, y = to_mercator.transform(x, y, errcheck=True)
+        if record is not None:
+            x, y = from_mercator.transform(x + delta[0], y + delta[1], errcheck=True)
+        return x, y
+
+    def wrap(operation):
+        def apply(x, y, z=None):
+            if not isinstance(x, (int, float)):
+                if len(x) != len(y):
+                    raise UnsupportedAuditTransform("Audit coordinate arrays have different lengths")
+                converted = [apply(float(a), float(b)) for a, b in zip(x, y)]
+                return tuple(p[0] for p in converted), tuple(p[1] for p in converted)
+            try:
+                return _audit_pair(operation(_audit_number(x, "Audit X"), _audit_number(y, "Audit Y")), "Audit transformed point")
+            except ProjError as exc:
+                raise UnsupportedAuditTransform("A coordinate is outside the declared invertible CRS operation") from exc
+        return apply
+
+    inverse = wrap(scalar_inverse)
+    inverse.forward = wrap(scalar_forward)
+    inverse.metadata = {"method": projection_method, "production_transformer_reused": False,
+                        "numeric_inverse_method": "exact_local_scale" if local else "declared_pipeline_inverse_seed_with_central_difference_XY_refinement",
+                        "geodata_inverse_applied": bool(registration), "osm_relative_inverse_applied": record is not None,
+                        "osm_matching_sha256": record["match_sha256"] if record else None,
+                        "osm_inverse_method": "each_forward_XY_leg_inverse_with_central_difference_refinement" if record else None,
+                        "osm_translation_3857": list(delta) if record else None,
+                        "osm_base_mode": record["base"]["mode"] if record else None,
+                        "legacy_osm_anchor_hint_applied": False, "absolute_accuracy_verified": False}
     return inverse
+
+
+def transform_roundtrip_metrics(inverse, source_points, target_points, source_scale, target_scale):
+    """Check both directions numerically; this does not verify map accuracy."""
+    source_errors = [math.dist(point[:2], inverse(*inverse.forward(*point[:2]))) * source_scale for point in source_points]
+    target_errors = [math.dist(point[:2], inverse.forward(*inverse(*point[:2]))) * target_scale for point in target_points]
+    tolerance = 1e-5
+    result = {"source_point_count": len(source_errors), "target_point_count": len(target_errors),
+              "max_source_error_m": max(source_errors, default=0.0),
+              "max_target_grid_error_m": max(target_errors, default=0.0),
+              "numeric_tolerance_m": tolerance, "absolute_accuracy_verified": False}
+    result["passed"] = max(result["max_source_error_m"], result["max_target_grid_error_m"]) <= tolerance
+    if not result["passed"]:
+        raise UnsupportedAuditTransform("Declared transform failed the independent numerical roundtrip: " + json.dumps(result))
+    return result
+
+
+def geometry_change_review_rows(comparisons, groups):
+    """Expose known source displacements without treating lineage as approval."""
+    rows = []
+    for comparison in comparisons:
+        if comparison["status"] != "explicit_derived_displacement":
+            continue
+        values = groups[(comparison["layer"], comparison["source_entity_key"])]
+        operations = [operation for item in values
+                      for operation in json.loads(item["properties"].get("lineage_json") or "[]")
+                      if operation.get("operation") in GEOMETRY_CHANGE_OPERATIONS]
+        review_flags = [item["requires_review"] for item in operations if type(item.get("requires_review")) is bool]
+        review_states = sorted({str(item[key]) for item in operations for key in ("review_status", "acceptance_status") if item.get(key)})
+        rows.append({"feature_class": comparison["layer"], "source_handle": comparison["source_handle"],
+                     "source_entity_key": comparison["source_entity_key"],
+                     "delivery_fids": "|".join(str(item["fid"]) for item in values),
+                     "codes": "|".join(sorted({str(item["properties"].get("CODE", "")) for item in values})),
+                     "operations": "|".join(sorted({item["operation"] for item in operations})),
+                     "support_handles": "|".join(sorted({str(item["support_handle"]) for item in operations if item.get("support_handle")})),
+                     "source_relative_displacement_m": comparison["hausdorff_native_m"],
+                     "displacement_basis": comparison["distance_basis"],
+                     "declared_requires_review": any(review_flags) if review_flags else None,
+                     "declared_review_status": "|".join(review_states) if review_states else "not_recorded",
+                     "audit_requires_review": True,
+                     "engineering_acceptance": "not_established_by_lineage",
+                     "review_question": "Confirm whether moving the source asset to the recorded support is intended; traceability alone is not engineering acceptance."})
+    return rows
 
 
 def geometries(geometry):
@@ -414,7 +673,21 @@ def audit(source_run, run, output, partition=None):
     before = {name: digest(run / name) for name in ("delivery.gpkg", "evidence.gpkg", "run_manifest.json")}
     if partition:
         before[delivery_path.relative_to(run).as_posix()] = digest(delivery_path)
-    inverse = inverse_operation(manifest)
+    inverse = inverse_operation(manifest, partition=partition)
+    matching_artifact_verified = None
+    if inverse.metadata["osm_relative_inverse_applied"]:
+        matching_artifact = manifest.get("artifacts", {}).get("osm_matching")
+        if not isinstance(matching_artifact, dict) or not matching_artifact.get("path"):
+            raise UnsupportedAuditTransform("Applied OSM match artifact has no manifest-bound path")
+        matching_path = Path(matching_artifact["path"]).resolve()
+        if not matching_path.is_relative_to(run):
+            raise ValueError("Manifest OSM matching path must stay inside its canonical run")
+        if digest(matching_path) != matching_artifact.get("sha256"):
+            raise ValueError("Manifest-bound OSM matching artifact hash mismatch")
+        if read_json(matching_path) != manifest["crs"]["osm_matching"]:
+            raise ValueError("Manifest and file OSM matching records disagree")
+        matching_artifact_verified = dict(matching_artifact)
+        before[matching_path.relative_to(run).as_posix()] = matching_artifact["sha256"]
     metric_scale = float(manifest["crs"]["unit_crs_contract"]["source_coordinate_scale_to_m"])
     ensure_osgeo_runtime()
     from osgeo import ogr
@@ -423,6 +696,7 @@ def audit(source_run, run, output, partition=None):
     content_db.close()
     dataset = ogr.Open(str(delivery_path), 0)
     delivered, groups, missing_geometries, nonspatial_layers = [], defaultdict(list), [], []
+    target_coordinates = []
     for layer in dataset:
         if layer.GetName() not in spatial_tables:
             nonspatial_layers.append({"table": layer.GetName(), "row_count": layer.GetFeatureCount()})
@@ -433,10 +707,16 @@ def audit(source_run, run, output, partition=None):
                 continue
             properties = {row.GetFieldDefnRef(i).GetName(): row.GetField(i) for i in range(row.GetFieldCount())}
             geometry = shape(json.loads(row.GetGeometryRef().ExportToJson()))
+            target_coordinates.extend(point for _, points in geometries(geometry) for point in points)
             item = {"layer": layer.GetName(), "fid": row.GetFID(), "source_key": properties["source_entity_key"], "properties": properties, "local_geometry": transform(inverse, geometry)}
             delivered.append(item)
             groups[(item["layer"], item["source_key"])].append(item)
     dataset = None
+    roundtrip = transform_roundtrip_metrics(
+        inverse, [point for entity in plan for point in entity.get("points", [])], target_coordinates,
+        metric_scale, _audit_number(manifest["crs"]["unit_crs_contract"]["target_crs_axis_unit"]["metres_per_unit"],
+                                    "Target CRS axis scale", positive=True),
+    )
     by_key = {x["entity_key"]: x for x in plan}
     all_source_by_key = {x["entity_key"]: x for x in records}
     all_source_by_key.update(by_key)
@@ -521,7 +801,14 @@ def audit(source_run, run, output, partition=None):
         delivery_graph = vertex_graph([x["local_geometry"] for x in delivered if x["layer"] == "CABLE"])
         vertex_topology.update({"status": "equal" if source_graph == delivery_graph else "different", "source": source_graph, "delivery": delivery_graph})
     report = {"schema_version": "cad2gis.independent-visual-audit.v1", "run_dir": str(run), "source_run": str(source_run), "source_sha256": source_sha, "source_snapshot_schema": source_manifest.get("schema_version"), "coordinate_frame": "native CAD metres", "comparison_basis": "Independent pyproj inverse CRS plus manifest GEODATA inverse; source snapshot plan; analytic bulges sampled at <= 0.001 native-unit chord error. No production geometry/transformer reuse.", "absolute_accuracy_verified": False, "source_plan_count": len(plan), "delivery_feature_count": len(delivered), "delivery_layer_counts": dict(Counter(x["layer"] for x in delivered)), "geometry_status_counts": dict(Counter(x["status"] for x in comparisons)), "cable_group_count": len(cables), "cable_max_hausdorff_native_m": max((x["hausdorff_native_m"] or 0 for x in cables), default=0), "cable_max_length_difference_native_m": max((abs(x["length_difference_native_m"] or 0) for x in cables), default=0), "explicit_relocation_count": sum(x["status"] == "explicit_derived_displacement" for x in comparisons), "derived_without_source_count": sum(x["status"] == "derived_without_direct_source" for x in comparisons), "present_fields_without_provenance": sum(not x["missing_value"] and not x["provenance"] for x in fields), "blank_delivery_field_count": sum(x["missing_value"] for x in fields), "labels_with_replacement_characters": sum(x["field_name"] == "display_label" and x["replacement_character_in_delivery"] for x in fields), "labels_replacement_already_in_source": sum(x["field_name"] == "display_label" and x["replacement_character_in_delivery"] and x["replacement_character_in_source_text"] for x in fields), "source_disposition_counts": dict(Counter(x["canonical_disposition"] for x in disposition_rows)), "source_not_directly_delivered_count": sum(x["delivery_feature_count"] == 0 for x in disposition_rows), "immutable_artifacts_before": before}
-    report.update({"drawing_name": Path(manifest["source"]["path"]).stem,
+    geometry_reviews = geometry_change_review_rows(comparisons, groups)
+    report.update({"status": "EXECUTED", "drawing_name": Path(manifest["source"]["path"]).stem,
+                   "comparison_basis": "Independent inverse of manifest-declared OSM translation, CRS pipeline and GEODATA where applied; source snapshot plan; analytic bulges sampled at <= 0.001 native-unit chord error. No production geometry/transformer reuse.",
+                   "inverse_operation": inverse.metadata,
+                   "transform_numeric_roundtrip": roundtrip,
+                   "osm_matching_artifact_verified": matching_artifact_verified,
+                   "geometry_review_required": geometry_reviews,
+                   "geometry_review_required_count": len(geometry_reviews),
                    "coordinate_frame": "native CAD coordinates; reported distances scaled to metres by reviewed coordinate scale",
                    "source_crs": manifest["crs"]["source_crs"], "target_crs": manifest["crs"]["target_crs"],
                    "reviewed_coordinate_unit_m": metric_scale,
@@ -556,6 +843,7 @@ def audit(source_run, run, output, partition=None):
         "device_number_source_relation_checks": [relation for relations in number_relations.values() for relation in relations],
     })
     write_csv(output / "geometry-comparison.csv", comparisons)
+    write_csv(output / "geometry-review-required.csv", geometry_reviews)
     write_csv(output / "field-lineage.csv", fields)
     write_csv(output / "source-dispositions.csv", disposition_rows)
     source_geometries = [(x, source_shape(x)) for x in plan]

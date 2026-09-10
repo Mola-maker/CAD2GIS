@@ -19,6 +19,7 @@ import sys
 import time
 from typing import Any
 
+from .agent_tool_bridge import MCPToolBridge, ToolAttemptBudget
 from .desktop_database import page_bounds, query
 from .desktop_settings import AISettings, safe_ai_error
 
@@ -212,9 +213,11 @@ class DesktopAgent:
         from pydantic_ai import Agent
         from pydantic_ai.messages import ModelMessagesTypeAdapter, PartDeltaEvent, TextPartDelta, PartStartEvent, TextPart
         from pydantic_ai.tools import Tool
-        from pydantic_ai.usage import UsageLimits
+        from pydantic_ai.usage import RunUsage, UsageLimits
 
         events: list[dict[str, Any]] = []
+        usage = RunUsage()
+        tool_budget = ToolAttemptBudget()
         text_buffer = ""
         last_flush = 0.0
         secret = profile["api_key"]
@@ -230,6 +233,7 @@ class DesktopAgent:
             @wraps(function)
             def wrapped(*args, **kwargs):
                 from pydantic_ai import ModelRetry
+                tool_budget.consume()
                 try:
                     return function(*args, **kwargs)
                 except (ValueError, OSError) as exc:
@@ -328,6 +332,8 @@ class DesktopAgent:
             "每次转换使用新的 run_dir，不覆盖旧结果；如果结果目录已存在，换一个带时间的目录。"
             "auto_onboard_and_convert 使用 workspace_context 的 provider。"
             "大数据采用查询和分页，不全量塞入上下文。工具失败不可冒充成功。"
+            "工具失败后先检查错误码与恢复提示，再修正参数或更换方法；不要原样循环。"
+            "committed=unknown 表示写入结果未知，先 inspect_run 或 inspect_semantic_store 检查，不能直接重新提交。"
             "最终说明已执行的操作、产物路径、验证结果和未完成原因。"
         )
         try:
@@ -339,28 +345,12 @@ class DesktopAgent:
                         listed = await mcp.list_tools()
                         self.tools = [{"name": tool.name, "description": tool.description or ""} for tool in listed.tools]
                         tools = []
+                        mcp_bridge = MCPToolBridge(mcp, admitted=admitted, clean=clean, event=event,
+                                                   budget=tool_budget, provider=profile["provider"])
 
                         def bridge(name):
                             async def call(**kwargs):
-                                if name == "auto_onboard_and_convert":
-                                    kwargs.setdefault("provider", profile["provider"])
-                                # Recheck all declared path fields against the desktop boundary,
-                                # including protected configuration, before MCP's own validation.
-                                for key, value in kwargs.items():
-                                    if isinstance(value, str) and (key.endswith(("_path", "_dir", "_store")) or key in {"source", "source_run", "semantic_store", "osm_data", "match_profile"}) and value:
-                                        try:
-                                            admitted(value, False)
-                                        except (ValueError, OSError) as exc:
-                                            from pydantic_ai import ModelRetry
-                                            raise ModelRetry(clean(str(exc))[:1200]) from None
-                                event("tool_call", name, json.dumps(kwargs, ensure_ascii=False)[:1200])
-                                response = await mcp.call_tool(name, kwargs)
-                                parts = [item.text for item in response.content if getattr(item, "type", "") == "text"]
-                                result = clean("\n".join(parts))
-                                event("tool_error" if response.isError else "tool_result", name, result)
-                                if len(result) > 60000:
-                                    result = result[:60000] + "\n[结果已截断，请用分页或更具体的查询继续]"
-                                return {"is_error": bool(response.isError), "result": result}
+                                return await mcp_bridge.call(name, kwargs)
                             return call
 
                         for tool in listed.tools:
@@ -387,7 +377,8 @@ class DesktopAgent:
                             agent = Agent(model, tools=tools, instructions=instructions, retries=2, model_settings=settings)
                             return await agent.run(prompt + "\n当前界面选中的项目上下文：" + json.dumps(context, ensure_ascii=False),
                                                    message_history=history, event_stream_handler=stream,
-                                                   usage_limits=UsageLimits(request_limit=profile["max_requests"], tool_calls_limit=150))
+                                                   usage=usage,
+                                                   usage_limits=UsageLimits(request_limit=profile["max_requests"], tool_calls_limit=tool_budget.limit))
 
                         if self.model_override is not None:
                             result = await execute(self.model_override)
@@ -399,12 +390,9 @@ class DesktopAgent:
                         history_bytes = result.all_messages_json()
                         with self.store.connect() as db:
                             db.execute("UPDATE conversations SET history=? WHERE id=?", (clean(history_bytes.decode()), conversation))
-                        usage = result.usage
             # Completion is visible only after the MCP child has closed, so the
             # next task and normal application shutdown are immediately available.
-            self.store.update_run(identifier, status="succeeded", progress="", usage=json.dumps({
-                "requests": usage.requests, "input_tokens": usage.input_tokens,
-                "output_tokens": usage.output_tokens, "tool_calls": usage.tool_calls}))
+            self.store.update_run(identifier, status="succeeded", progress="")
         except asyncio.CancelledError:
             save_interruption()
             self.store.message(conversation, "system", "任务已停止。已写出的项目文件保留，可以检查后继续。")
@@ -416,3 +404,7 @@ class DesktopAgent:
             self.store.update_run(identifier, status="failed", error=error, progress="")
         finally:
             self.active = ""
+            self.store.update_run(identifier, usage=json.dumps({
+                "requests": usage.requests, "input_tokens": usage.input_tokens,
+                "output_tokens": usage.output_tokens, "tool_calls": usage.tool_calls,
+                "tool_attempts": tool_budget.attempts}))

@@ -7,6 +7,11 @@ CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Py
 Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
 canonical 流水线，不为某张测试图维护硬编码分支。
 
+**0.6.0 升级交付**：[安装与新功能](docs/UPGRADE_0_6_0.md) ·
+[OSM 算法与证据层](docs/UPGRADE_OSM.md) · [GCP 微调](docs/UPGRADE_GCP.md) ·
+[九图旧配置兼容性](docs/UPGRADE_BASELINE_COMPATIBILITY.md)。本次源码归档和安装包的
+验证记录随交付提供；上方远端 badge 不代表这些本地改动已在 GitHub 发布。
+
 [产品首页](https://mola-maker.github.io/CAD2GIS/) ·
 [九图交付与演示](https://mola-maker.github.io/CAD2GIS/deliveries/) ·
 [OSM 标准匹配与二次校正](docs/OSM_STANDARD_MATCHING.md) ·

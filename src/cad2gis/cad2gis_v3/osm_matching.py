@@ -14,17 +14,16 @@ import json
 import math
 import os
 import re
-from collections import Counter
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from pyproj import CRS, Geod, Transformer
-from shapely.geometry import LineString, Point
-from shapely.strtree import STRtree
+from shapely.geometry import LineString
 
 from . import osm_anchor
+from .osm_evidence import RoadSegmentIndex, build_match_evidence, osm_topology, validate_match_evidence
 
 
 SCHEMA = "cad2gis.osm-matching.v1"
@@ -85,6 +84,46 @@ def _point(value: Sequence, name: str = "point") -> tuple[float, float]:
     if not isinstance(value, (list, tuple, np.ndarray)) or len(value) < 2:
         raise ValueError(f"{name} must contain two coordinates")
     return _number(value[0], name), _number(value[1], name)
+
+
+def _editor_state(value):
+    """Bound server-owned pick/undo history to the control's sealed provenance."""
+    if not isinstance(value, Mapping):
+        raise ValueError("Control editor_state must be an object")
+    try:
+        size = len(_canonical(value))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("Control editor_state must contain finite JSON data") from exc
+    if size > 32 * 1024:
+        raise ValueError("Control editor_state exceeds 32 KiB")
+    if type(value.get("schema_version")) is not int or value["schema_version"] != 1:
+        raise ValueError("Unsupported control editor_state schema")
+    if value.get("last_action") not in {"pick", "edit", "nudge", "undo", "reset"}:
+        raise ValueError("Invalid control editor_state last_action")
+    if value.get("distance_method") != "WGS84_ellipsoidal_geodesic":
+        raise ValueError("Invalid control editor_state distance_method")
+
+    def target(point):
+        lon, lat = _point(point, "editor_state target")
+        if not -180 <= lon <= 180 or not -90 <= lat <= 90:
+            raise ValueError("Control editor_state target is outside WGS84 bounds")
+        return [lon, lat]
+
+    history = value.get("undo_targets")
+    if not isinstance(history, list) or len(history) > 128:
+        raise ValueError("Control editor_state undo_targets must contain at most 128 targets")
+    state = {"schema_version": 1, "initial_target": target(value.get("initial_target")),
+             "undo_targets": [target(point) for point in history], "last_action": value["last_action"],
+             "distance_method": value["distance_method"]}
+    if "last_nudge" in value:
+        nudge = value["last_nudge"]
+        if not isinstance(nudge, Mapping) or nudge.get("direction") not in {"east", "west", "north", "south"}:
+            raise ValueError("Invalid control editor_state last_nudge")
+        step = _number(nudge.get("step_m"), "editor_state step_m")
+        if step not in {0.01, 0.1, 1.0}:
+            raise ValueError("Control editor_state step_m must be 0.01, 0.1 or 1 metre")
+        state["last_nudge"] = {"direction": nudge["direction"], "step_m": step}
+    return state
 
 
 def _scale(nominal) -> float:
@@ -160,6 +199,7 @@ def _validate_record(record: Mapping, nominal, source_sha256: str | None = None)
     if snapshot is not None:
         if not isinstance(snapshot, Mapping) or snapshot.get("sha256") != _digest(snapshot.get("roads")):
             raise ValueError("OSM road snapshot hash mismatch")
+    validate_match_evidence(result)
     return result
 
 
@@ -350,34 +390,45 @@ def _parse_roads(payload) -> list[dict]:
     if not isinstance(elements, list):
         raise ValueError("OSM snapshot elements must be an array")
     nodes = {item.get("id"): item for item in elements if isinstance(item, Mapping) and item.get("type") == "node"}
-    uses = Counter(node for item in elements if isinstance(item, Mapping)
-                   and item.get("type") == "way" and (item.get("tags") or {}).get("highway")
-                   for node in item.get("nodes", []))
     roads = []
     for item in elements:
         if not isinstance(item, Mapping) or item.get("type") != "way":
             continue
         tags = item.get("tags") or {}
+        if not isinstance(tags, Mapping):
+            raise ValueError("OSM way tags must be an object")
         if not tags.get("highway"):
             continue
-        geometry = item.get("geometry") or [nodes.get(key) for key in item.get("nodes", [])]
+        ids = item.get("nodes", [])
+        if not isinstance(ids, list) or any(type(node) is not int for node in ids):
+            raise ValueError("OSM way nodes must be integer node IDs")
+        geometry = item.get("geometry") or [nodes.get(key) for key in ids]
+        if not isinstance(geometry, list) or (ids and len(ids) != len(geometry)):
+            raise ValueError("OSM node IDs and geometry must have matching lengths")
         points = []
         for value in geometry:
             if not isinstance(value, Mapping):
-                points = []
-                break
+                raise ValueError("OSM road geometry is incomplete; all referenced nodes are required")
             lon, lat = _number(value.get("lon"), "OSM longitude"), _number(value.get("lat"), "OSM latitude")
             if not -180 <= lon <= 180 or not -85 <= lat <= 85:
                 raise ValueError("OSM coordinates outside supported longitude/latitude extent")
             point = list(_point(_TO_3857.transform(lon, lat)))
-            if not points or point != points[-1]:
-                points.append(point)
+            # Keep the one-to-one node/vertex relation, including coincident
+            # distinct IDs. Zero-length segments are excluded only from fitting.
+            points.append(point)
         if len(points) >= 2:
-            ids = item.get("nodes", [])
             roads.append({"osm_way_id": int(item.get("id", 0)), "points": points,
                           "name": str(tags.get("name", "")), "highway": str(tags["highway"]),
-                          "endpoint_degree": sum(max(0, uses[node] - 1) for node in ([ids[0], ids[-1]] if ids else []))})
-    return sorted(roads, key=lambda road: (road["osm_way_id"], _digest(road)))
+                          "node_ids": list(ids),
+                          **{key: str(tags[key]) for key in ("layer", "bridge", "tunnel", "junction") if key in tags}})
+    # Count actual adjacent nodes at endpoints; way occurrence counts miss
+    # interior junctions and overcount closed or repeated node references.
+    topology = osm_topology(roads)
+    degrees = {node["node_id"]: node["degree"] for node in topology["nodes"]}
+    for road in roads:
+        ids = road["node_ids"]
+        road["endpoint_degree"] = sum(max(0, degrees[node] - 1) for node in ([ids[0], ids[-1]] if ids else []))
+    return _normalise_roads(roads)
 
 
 def _normalise_roads(roads) -> list[dict]:
@@ -385,9 +436,14 @@ def _normalise_roads(roads) -> list[dict]:
     for road in roads:
         points = [list(_point(point, "OSM projected point")) for point in road.get("points", [])]
         if len(points) >= 2:
+            ids = road.get("node_ids", [])
+            if not isinstance(ids, list) or any(type(node) is not int for node in ids) or (ids and len(ids) != len(points)):
+                raise ValueError("OSM projected node IDs must align with geometry vertices")
             result.append({"osm_way_id": int(road.get("osm_way_id", 0)), "points": points,
                            "name": str(road.get("name", "")), "highway": str(road.get("highway", "")),
-                           "endpoint_degree": int(road.get("endpoint_degree", 0))})
+                           "endpoint_degree": int(road.get("endpoint_degree", 0)), "node_ids": list(ids),
+                           **{key: str(road[key]) for key in ("layer", "bridge", "tunnel", "junction") if key in road}})
+    osm_topology(result)  # Fail closed on contradictory coordinates for one ID.
     return sorted(result, key=lambda road: (road["osm_way_id"], _digest(road)))
 
 
@@ -495,28 +551,64 @@ def _samples(routes, scale_to_ground):
     return np.asarray(locations), np.asarray(directions), np.asarray(route_ids)
 
 
+def _observability(directions, weights):
+    """Normal information for two translation parameters, independent of scale.
+
+    For a line normal n, residual(delta) = n.T @ delta + constant. Thus
+    H = sum(w * n @ n.T) has rank one for any number of parallel spans. More
+    vertices or separated parallel lines cannot provide the missing constraint.
+    Eigenvalues are normalized by length; they are not survey uncertainty.
+    """
+    directions, weights = np.asarray(directions), np.asarray(weights)
+    if not len(directions) or float(np.sum(weights)) <= 0:
+        return {"rank": 0, "eigenvalues": [0.0, 0.0], "minimum_eigenvalue": 0.0,
+                "condition_number": None, "observable": False}
+    normals = np.column_stack((-directions[:, 1], directions[:, 0]))
+    information = normals.T @ (weights[:, None] * normals) / np.sum(weights)
+    eigenvalues = np.maximum(np.linalg.eigvalsh(information), 0.0)
+    return {"rank": int(np.count_nonzero(eigenvalues > 1e-8)), "eigenvalues": eigenvalues.tolist(),
+            "minimum_eigenvalue": float(eigenvalues[0]),
+            "condition_number": float(eigenvalues[1] / eigenvalues[0]) if eigenvalues[0] > 1e-8 else None,
+            "observable": bool(eigenvalues[0] >= 0.04)}
+
+
+def _sample_weights(routes, route_ids):
+    counts = np.bincount(route_ids, minlength=len(routes))
+    per_route = [LineString(route).length / max(count, 1) for route, count in zip(routes, counts)]
+    return np.asarray(per_route)[route_ids]
+
+
 def _match_routes(routes, roads, scale_to_ground, initial_translation):
-    """Score translation hypotheses against all sampled routes, never one line."""
-    segments = [(a, b) for road in roads for a, b in zip(road["points"], road["points"][1:]) if math.dist(a, b) > 1e-8]
+    """Fit bounded translation hypotheses using robust point-to-line consensus."""
+    index = RoadSegmentIndex(roads)
     source_segments = sum(len(route) - 1 for route in routes)
-    if not segments or source_segments < 2:
+    if not index.references or source_segments < 2:
         return None, {"reason": "insufficient_route_structure", "candidates": []}
     samples, directions, route_ids = _samples(routes, scale_to_ground)
-    endpoints = np.asarray(segments, dtype=float)
-    vectors = endpoints[:, 1] - endpoints[:, 0]
-    lengths2 = np.sum(vectors * vectors, axis=1)
-    tree = STRtree([LineString(segment) for segment in segments])
+    if not len(samples):
+        return None, {"reason": "insufficient_route_structure", "candidates": []}
+    weights = _sample_weights(routes, route_ids)
+    source_vectors = np.asarray([np.subtract(b, a) for route in routes for a, b in zip(route, route[1:])
+                                 if math.dist(a, b) > 1e-8])
+    source_lengths = np.linalg.norm(source_vectors, axis=1)
+    source_structure = _observability(source_vectors / source_lengths[:, None], source_lengths)
+    quality = {"method": "observable_multi_route_translation_consensus", "route_count": len(routes),
+               "sampling_method": "uniform_route_arclength", "sample_weighting": "represented_route_length",
+               "distance_method": "web_mercator_reference_latitude_cosine_approximation",
+               "source_segment_count": source_segments, "sample_count": len(samples),
+               "source_observability": source_structure,
+               "search_complete": False, "confidence_interpretation": "score_gap_among_bounded_hypotheses",
+               "thresholds": {"corridor_m": 25.0, "coverage": 0.75, "direction_consistency": 0.70,
+                              "supported_route_fraction": 0.75, "confidence_gap": 0.06,
+                              "minimum_normal_eigenvalue": 0.04, "candidate_merge_distance_m": 0.25}}
+    if not source_structure["observable"]:
+        return None, {**quality, "reason": "source_geometry_unobservable", "candidates": []}
     tolerance = 25.0 / scale_to_ground
 
     def inspect(delta):
-        moved = samples + delta
-        ids = np.asarray(tree.nearest([Point(point) for point in moved]), dtype=int)
-        starts, vectors_at = endpoints[ids, 0], vectors[ids]
-        t = np.clip(np.sum((moved - starts) * vectors_at, axis=1) / lengths2[ids], 0.0, 1.0)
-        feet = starts + t[:, None] * vectors_at
-        distances = np.linalg.norm(moved - feet, axis=1)
-        directional = np.abs(np.sum(directions * vectors_at, axis=1)) / np.sqrt(lengths2[ids])
-        return distances, directional, feet - moved
+        result = index.inspect(samples + delta, directions)
+        result["directional"] = np.abs(np.sum(directions * result["directions"], axis=1))
+        return result
 
     hypotheses = [np.asarray(initial_translation, dtype=float)]
     # Several complete CAD routes independently propose candidates. Endpoints
@@ -533,52 +625,69 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
             hypotheses.extend([np.asarray(left) - route[0], np.asarray(right) - route[-1]])
     unique = {}
     for hypothesis in hypotheses:
-        key = tuple(np.round(hypothesis * scale_to_ground / 5.0).astype(np.int64))
+        # Seed binning is numerical work reduction, never the acceptance corridor.
+        key = tuple(np.round(hypothesis * scale_to_ground / 0.05).astype(np.int64))
         unique.setdefault(key, hypothesis)
     candidates = []
     for hypothesis in unique.values():
         delta = hypothesis.copy()
-        for _ in range(5):
-            distances, directional, offsets = inspect(delta)
-            eligible = (distances < tolerance * 4.0) & (directional >= 0.7)
+        for _ in range(20):
+            fitted = inspect(delta)
+            eligible = (fitted["distances"] < tolerance * 4.0) & (fitted["directional"] >= 0.7)
             if np.count_nonzero(eligible) < 3:
                 break
-            correction = np.median(offsets[eligible], axis=0)
+            vectors = fitted["directions"][eligible]
+            normals = np.column_stack((-vectors[:, 1], vectors[:, 0]))
+            signed = np.sum(fitted["offsets"][eligible] * normals, axis=1)
+            # Huber influence limits distant parallel carriageways/outliers. A
+            # coordinate-wise median freezes a minority direction's correction;
+            # the normal equations retain its independent spatial constraint.
+            robust = weights[eligible] / np.maximum(1.0, np.abs(signed) / (tolerance * 0.5))
+            hessian = normals.T @ (robust[:, None] * normals)
+            gradient = normals.T @ (robust * signed)
+            correction = np.linalg.lstsq(hessian, gradient, rcond=1e-8)[0]
             delta += correction
-            if np.linalg.norm(correction) * scale_to_ground < 0.05:
+            if np.linalg.norm(correction) * scale_to_ground < 0.01:
                 break
-        distances, directional, _ = inspect(delta)
+        fitted = inspect(delta)
+        distances, directional = fitted["distances"], fitted["directional"]
         support = (distances <= tolerance) & (directional >= 0.7)
-        route_coverages = [float(np.mean(support[route_ids == index])) for index in range(len(routes))]
-        coverage = float(np.mean(support))
-        direction = float(np.mean(directional))
-        residual_score = float(np.mean(np.exp(-distances / tolerance)))
+        route_coverages = [float(np.mean(support[route_ids == i])) for i in range(len(routes))]
+        coverage = float(np.average(support, weights=weights))
+        direction = float(np.average(directional, weights=weights))
+        residual_score = float(np.average(np.exp(-distances / tolerance), weights=weights))
         score = 0.55 * coverage + 0.20 * direction + 0.25 * residual_score
+        structure = _observability(fitted["directions"][support], weights[support])
         candidates.append({"translation_3857": delta.tolist(), "score": score,
                            "coverage": coverage, "direction_consistency": direction,
-                           "route_coverages": route_coverages,
+                           "route_coverages": route_coverages, "observability": structure,
                            "supported_route_fraction": float(np.mean(np.asarray(route_coverages) >= 0.6)),
                            "distance_p95_m": float(np.percentile(distances, 95)) * scale_to_ground})
     candidates.sort(key=lambda value: (-value["score"], value["translation_3857"]))
     distinct = []
     for candidate in candidates:
-        if all(math.dist(candidate["translation_3857"], other["translation_3857"]) * scale_to_ground > 12.5 for other in distinct):
+        # A road 8 m away is a different placement, even inside a 25 m corridor.
+        if all(math.dist(candidate["translation_3857"], other["translation_3857"]) * scale_to_ground > 0.25 for other in distinct):
             distinct.append(candidate)
         if len(distinct) == 5:
             break
     best = distinct[0]
     gap = best["score"] - distinct[1]["score"] if len(distinct) > 1 else best["score"]
     accepted = (best["coverage"] >= 0.75 and best["direction_consistency"] >= 0.70
-                and best["supported_route_fraction"] >= 0.75 and gap >= 0.06)
-    quality = {"method": "multi_route_translation_consensus", "route_count": len(routes),
-               "sampling_method": "uniform_route_arclength",
-               "distance_method": "web_mercator_reference_latitude_cosine_approximation",
-               "source_segment_count": source_segments, "sample_count": len(samples),
-               "confidence_gap": gap, "candidates": distinct,
-               "thresholds": {"corridor_m": 25.0, "coverage": 0.75,
-                              "supported_route_fraction": 0.75, "confidence_gap": 0.06},
-               "reason": None if accepted else "weak_or_ambiguous_network_alignment"}
+                and best["supported_route_fraction"] >= 0.75 and gap >= 0.06
+                and best["observability"]["observable"])
+    quality.update({"confidence_gap": gap, "hypothesis_count": len(unique), "candidates": distinct,
+                    "reason": None if accepted else "weak_or_ambiguous_network_alignment"})
+    if not best["observability"]["observable"]:
+        quality["reason"] = "matched_geometry_unobservable"
     return best["translation_3857"] if accepted else None, quality
+
+
+def _seal_with_evidence(record, native_routes, base_routes):
+    samples, directions, route_ids = _samples(base_routes, math.cos(math.radians(record["base"]["reference_latitude"])))
+    record["evidence"] = build_match_evidence(record, native_routes, base_routes,
+                                             samples=samples, directions=directions, route_ids=route_ids)
+    return _seal(record)
 
 
 def match_osm(*, source: Path, source_sha256: str, features: list, nominal,
@@ -641,13 +750,15 @@ def match_osm(*, source: Path, source_sha256: str, features: list, nominal,
               "search_bbox": bbox, "quality": {"reason": "no_geographic_reference"},
               "osm_snapshot": {"origin": snapshot_origin, "input_sha256": offline_hash,
                                "roads": roads, "sha256": _digest(roads)}}
+    base_routes = ([[list(_point(target_to_3857.transform(*nominal.point(point)))) for point in route] for route in native_routes]
+                   if nominal_valid else [[[p[0] * base["scale_to_3857"], p[1] * base["scale_to_3857"]] for p in route] for route in native_routes])
     if not native_points:
         record["quality"] = {"reason": "empty_drawing_partition"}
-        return None, _seal(record)
+        return None, _seal_with_evidence(record, native_routes, base_routes)
     if centre is None:
         if not native_routes:
             record["quality"] = {"reason": "no_source_routes"}
-        return None, _seal(record)
+        return None, _seal_with_evidence(record, native_routes, base_routes)
     base_points = (nominal_points if nominal_valid else
                    [[p[0] * base["scale_to_3857"], p[1] * base["scale_to_3857"]] for p in native_points])
     base_centre = _centre(base_points)
@@ -659,11 +770,9 @@ def match_osm(*, source: Path, source_sha256: str, features: list, nominal,
             record["status"] = "coarse"
             record["translation_3857"] = initial
             record["quality"]["fallback"] = "place_centre" if hint else "osm_snapshot_bbox_centre"
-            record = _seal(record)
+            record = _seal_with_evidence(record, native_routes, base_routes)
             return transformer_from_record(record, nominal), record
-        return None, _seal(record)
-    base_routes = ([[list(_point(target_to_3857.transform(*nominal.point(point)))) for point in route] for route in native_routes]
-                   if nominal_valid else [[[p[0] * base["scale_to_3857"], p[1] * base["scale_to_3857"]] for p in route] for route in native_routes])
+        return None, _seal_with_evidence(record, native_routes, base_routes)
     if roads:
         translation, quality = _match_routes(base_routes, roads, scale_to_ground, initial)
         record["quality"] = quality
@@ -685,7 +794,7 @@ def match_osm(*, source: Path, source_sha256: str, features: list, nominal,
     else:
         record["status"] = "unavailable"
         record["quality"] = {"reason": "osm_roads_unavailable"}
-    record = _seal(record)
+    record = _seal_with_evidence(record, native_routes, base_routes)
     return (transformer_from_record(record, nominal) if record["status"] in {"matched", "coarse"} else None), record
 
 
@@ -696,7 +805,7 @@ def refine_match(record, nominal, controls, *, source_sha256, parent_run_sha256,
     region_id = _region(original.get("region_id") if region_id is None else region_id)
     # A previously abstained candidate can be resolved with explicit paired
     # references. The base remains identical; its candidate shift is ignored.
-    base_record = _seal({**original, "status": "coarse"})
+    base_record = _seal({**{key: value for key, value in original.items() if key != "evidence"}, "status": "coarse"})
     transform = transformer_from_record(base_record, nominal)
     target_to_3857 = Transformer.from_crs(original["target_crs"], "EPSG:3857", always_xy=True)
     compiled, train = [], []
@@ -733,6 +842,8 @@ def refine_match(record, nominal, controls, *, source_sha256, parent_run_sha256,
         for field in ("longitude", "latitude", "accuracy_m"):
             if field in item:
                 control[field] = _number(item[field], f"control {field}")
+        if "editor_state" in item:
+            control["editor_state"] = _editor_state(item["editor_state"])
         compiled.append(control)
         if role == "train":
             train.append(control)
@@ -742,6 +853,7 @@ def refine_match(record, nominal, controls, *, source_sha256, parent_run_sha256,
     total_weight = sum(item["weight"] for item in train)
     delta = [sum(item["translation_3857"][axis] * item["weight"] for item in train) / total_weight for axis in (0, 1)]
     result = copy.deepcopy(original)
+    result.pop("evidence", None)  # Recomputed after the new revision's fit.
     result.update({"revision": original["revision"] + 1, "parent_match_sha256": original["match_sha256"],
                    "parent_run_sha256": parent_run_sha256, "translation_3857": delta,
                    "region_id": region_id,
@@ -770,4 +882,8 @@ def refine_match(record, nominal, controls, *, source_sha256, parent_run_sha256,
                          "train_metrics": train_metrics, "check_metrics": check_metrics,
                          "checks_used_for_fit": False, "absolute_accuracy_verified": False}
     result["needs_review"] = any(item["error_m"] > 40.0 for item in residuals)
+    if original.get("evidence") is not None:
+        routes = original["evidence"]["cad_routes"]
+        return _seal_with_evidence(result, [item["native_points"] for item in routes],
+                                  [item["base_points_3857"] for item in routes])
     return _seal(result)

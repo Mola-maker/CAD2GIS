@@ -52,8 +52,12 @@ def _finite_coordinates(value: Any, path: str = "geometry.coordinates") -> None:
             raise ReviewServerError(f"{path} coordinate requires longitude and latitude")
         if any(isinstance(item, bool) or not isinstance(item, (int, float)) for item in value):
             raise ReviewServerError(f"{path} contains a non-numeric coordinate")
-        lon, lat = float(value[0]), float(value[1])
-        if not math.isfinite(lon) or not math.isfinite(lat):
+        try:
+            numbers = [float(item) for item in value]
+        except (OverflowError, ValueError) as exc:
+            raise ReviewServerError(f"{path} contains a non-finite coordinate") from exc
+        lon, lat = numbers[:2]
+        if not all(math.isfinite(item) for item in numbers):
             raise ReviewServerError(f"{path} contains a non-finite coordinate")
         if not -180.0 <= lon <= 180.0 or not -90.0 <= lat <= 90.0:
             raise ReviewServerError(f"{path} must be EPSG:4326 longitude/latitude")
@@ -85,7 +89,10 @@ def _normalized_feature(value: Any) -> dict[str, Any]:
     properties = value.get("properties", {})
     if not isinstance(properties, dict):
         raise ReviewServerError("Feature properties must be an object")
-    encoded = json.dumps(properties, ensure_ascii=False, allow_nan=False)
+    try:
+        encoded = json.dumps(properties, ensure_ascii=False, allow_nan=False)
+    except (ValueError, TypeError, OverflowError) as exc:
+        raise ReviewServerError("Feature properties must be finite JSON values") from exc
     if len(encoded.encode("utf-8")) > 256 * 1024:
         raise ReviewServerError("Feature properties exceed 256 KiB")
     return {
@@ -94,6 +101,53 @@ def _normalized_feature(value: Any) -> dict[str, Any]:
         "geometry": geometry,
         "properties": properties,
     }
+
+
+def _expected_revision(value: Any, *, required: bool = False) -> None:
+    if value is None and not required:
+        return
+    if type(value) is not int or value < 0:
+        raise ReviewServerError("expected_revision must be a non-negative integer; use 0 for a new GCP")
+
+
+async def _request_object(request: Any) -> dict[str, Any]:
+    try:
+        payload = await request.json()
+    except (ValueError, UnicodeError) as exc:
+        raise ReviewServerError("Request body must be valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ReviewServerError("Request body must be an object")
+    return payload
+
+
+def _review_update(
+    feature: dict[str, Any], previous: dict[str, Any] | None,
+    expected_revision: int | None, gcp_action: Mapping[str, Any] | None,
+    initial_gcp_state: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Enforce GCP invariants against the row locked by either store."""
+    is_gcp = feature["properties"].get("_kind") == "cad_map_gcp"
+    was_gcp = previous is not None and (previous.get("properties") or {}).get("_kind") == "cad_map_gcp"
+    _expected_revision(expected_revision, required=is_gcp or was_gcp or gcp_action is not None)
+    if was_gcp and not is_gcp:
+        raise ReviewServerError("An existing GCP must retain its kind and immutable CAD pick")
+    if is_gcp or gcp_action is not None:
+        from .gcp_workflow import edit_web_control
+
+        try:
+            if initial_gcp_state is not None:
+                if previous is not None or gcp_action is not None:
+                    raise ValueError("Saved GCP editor state can only initialize a new control")
+                # Only the bound matching-record importer passes this keyword;
+                # public feature writes cannot supply or replace stored history.
+                previous = {**feature, "properties": {
+                    **feature["properties"], "_gcp_edit": dict(initial_gcp_state),
+                }}
+            feature = edit_web_control(feature, previous, action=gcp_action)
+        except (ValueError, TypeError, KeyError) as exc:
+            raise ReviewServerError(str(exc)) from exc
+    return {**feature, "properties": {key: value for key, value in feature["properties"].items()
+                                      if key not in {"_review_revision", "_review_updated_at"}}}
 
 
 class SQLiteReviewStore:
@@ -204,6 +258,8 @@ class SQLiteReviewStore:
         *,
         expected_revision: int | None,
         actor: str,
+        gcp_action: Mapping[str, Any] | None = None,
+        initial_gcp_state: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         normalized = _normalized_feature(feature)
         feature_id = normalized["id"]
@@ -213,17 +269,24 @@ class SQLiteReviewStore:
             connection.execute("BEGIN IMMEDIATE")
             current = connection.execute(
                 """
-                SELECT revision FROM review_features
+                SELECT revision, feature_json, deleted FROM review_features
                 WHERE session_id = ? AND feature_id = ?
                 """,
                 (self.session_id, feature_id),
             ).fetchone()
             current_revision = 0 if current is None else int(current["revision"])
+            _expected_revision(expected_revision)
             if expected_revision is not None and expected_revision != current_revision:
                 raise ReviewConflictError(
                     f"Feature {feature_id} revision is {current_revision}, "
                     f"not {expected_revision}"
                 )
+            if gcp_action is not None and (current is None or current["deleted"]):
+                raise ReviewConflictError("The GCP was deleted; reload the control points")
+            normalized = _review_update(
+                normalized, json.loads(current["feature_json"]) if current is not None else None,
+                expected_revision, gcp_action, initial_gcp_state,
+            )
             revision = current_revision + 1
             properties = {
                 **normalized["properties"],
@@ -286,13 +349,16 @@ class SQLiteReviewStore:
             connection.execute("BEGIN IMMEDIATE")
             current = connection.execute(
                 """
-                SELECT revision FROM review_features
+                SELECT revision, feature_json FROM review_features
                 WHERE session_id = ? AND feature_id = ?
                 """,
                 (self.session_id, feature_id),
             ).fetchone()
             if current is None:
                 raise ReviewServerError(f"Unknown review feature: {feature_id}")
+            _expected_revision(expected_revision, required=(
+                json.loads(current["feature_json"]).get("properties", {}).get("_kind") == "cad_map_gcp"
+            ))
             current_revision = int(current["revision"])
             if expected_revision is not None and expected_revision != current_revision:
                 raise ReviewConflictError(
@@ -413,7 +479,7 @@ class PostGISReviewStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT feature_id, revision, ST_AsGeoJSON(geometry)::jsonb AS geometry,
+                SELECT feature_id, revision, ST_AsGeoJSON(geometry, 15)::jsonb AS geometry,
                        properties, updated_at
                 FROM cad2gis_review.features
                 WHERE session_id = %s AND deleted = FALSE
@@ -476,19 +542,21 @@ class PostGISReviewStore:
         *,
         expected_revision: int | None,
         actor: str,
+        gcp_action: Mapping[str, Any] | None = None,
+        initial_gcp_state: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         normalized = _normalized_feature(feature)
         feature_id = normalized["id"]
         event_id = uuid.uuid4()
-        properties = {
-            **normalized["properties"],
-            "_review_actor": str(actor or "anonymous"),
-        }
-        stored = {**normalized, "properties": properties}
         with self._connect() as connection, connection.cursor() as cursor:
+            # FOR UPDATE cannot lock a row that does not exist yet. Serialize
+            # creates too, so two clients cannot both create revision 1.
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s), hashtext(%s))",
+                           (self.session_id, feature_id))
             cursor.execute(
                 """
-                SELECT revision FROM cad2gis_review.features
+                SELECT revision, ST_AsGeoJSON(geometry, 15)::jsonb AS geometry, properties, deleted
+                FROM cad2gis_review.features
                 WHERE session_id = %s AND feature_id = %s
                 FOR UPDATE
                 """,
@@ -496,12 +564,21 @@ class PostGISReviewStore:
             )
             current = cursor.fetchone()
             current_revision = 0 if current is None else int(current["revision"])
+            _expected_revision(expected_revision)
             if expected_revision is not None and expected_revision != current_revision:
                 raise ReviewConflictError(
                     f"Feature {feature_id} revision is {current_revision}, "
                     f"not {expected_revision}"
                 )
+            if gcp_action is not None and (current is None or current["deleted"]):
+                raise ReviewConflictError("The GCP was deleted; reload the control points")
+            previous = ({"type": "Feature", "id": feature_id,
+                         "geometry": current["geometry"], "properties": current["properties"]}
+                        if current is not None else None)
+            normalized = _review_update(normalized, previous, expected_revision, gcp_action, initial_gcp_state)
             revision = current_revision + 1
+            properties = {**normalized["properties"], "_review_actor": str(actor or "anonymous")}
+            stored = {**normalized, "properties": properties}
             cursor.execute(
                 """
                 INSERT INTO cad2gis_review.features(
@@ -560,9 +637,11 @@ class PostGISReviewStore:
         event_id = uuid.uuid4()
         payload = {"actor": str(actor or "anonymous")}
         with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s), hashtext(%s))",
+                           (self.session_id, feature_id))
             cursor.execute(
                 """
-                SELECT revision FROM cad2gis_review.features
+                SELECT revision, properties FROM cad2gis_review.features
                 WHERE session_id = %s AND feature_id = %s
                 FOR UPDATE
                 """,
@@ -571,6 +650,9 @@ class PostGISReviewStore:
             current = cursor.fetchone()
             if current is None:
                 raise ReviewServerError(f"Unknown review feature: {feature_id}")
+            _expected_revision(expected_revision, required=(
+                (current["properties"] or {}).get("_kind") == "cad_map_gcp"
+            ))
             current_revision = int(current["revision"])
             if expected_revision is not None and expected_revision != current_revision:
                 raise ReviewConflictError(
@@ -968,21 +1050,22 @@ def _artifact_path(
     raw_path = record.get("path") if isinstance(record, dict) else None
     if not isinstance(raw_path, str) or not raw_path.strip():
         raise ReviewServerError(f"Run manifest has no {name} artifact")
-    original = Path(raw_path).expanduser().resolve()
-    if original.is_file() or run_dir is None:
-        return original
+    declared = Path(raw_path).expanduser()
+    original = ((run_dir / declared) if run_dir is not None and not declared.is_absolute()
+                else declared).resolve()
     relative = _PORTABLE_ARTIFACT_PATHS.get(name)
     expected_sha = str(record.get("sha256", "")).strip().casefold()
-    if relative is None or re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
-        return original
-    portable = (run_dir / relative).resolve()
-    if not portable.is_file():
-        return original
-    if _sha256_file(portable) != expected_sha:
-        raise ReviewServerError(
-            f"Portable {name} artifact SHA-256 mismatch: {portable}"
-        )
-    return portable
+    if re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
+        raise ReviewServerError(f"Run manifest has no valid {name} artifact SHA-256")
+    portable = (run_dir / relative).resolve() if run_dir is not None and relative is not None else None
+    # A selected copied run is the review authority even while the old path
+    # still exists. Never silently substitute its files if this copy changed.
+    candidate = portable if portable is not None and portable.is_file() else original
+    if not candidate.is_file():
+        raise ReviewServerError(f"{name} artifact was not found: {candidate}")
+    if _sha256_file(candidate) != expected_sha:
+        raise ReviewServerError(f"{name} SHA-256 mismatch: {candidate}")
+    return candidate
 
 
 def _source_path(
@@ -1118,6 +1201,8 @@ def _registration_transformer(manifest: dict[str, Any]):
 def _registration_fit(capture: dict[str, Any], manifest: dict[str, Any]):
     from .cad2gis_v3.calibration import GroundControlPoint, fit_calibration
 
+    if (capture.get("distribution_checks") or {}).get("checks_reusing_training_locations"):
+        raise ReviewServerError("Held-out checks must use different CAD and reference locations from training controls")
     nominal = _registration_transformer(manifest)
     controls = tuple(GroundControlPoint(
         point_id=item["point_id"], cad_point=(item["cad_x"], item["cad_y"]),
@@ -1145,6 +1230,7 @@ def _registration_controls(
         raise ReviewServerError("Run manifest CRS contract is incomplete")
     try:
         from pyproj import CRS, Transformer
+        from pyproj.exceptions import ProjError
 
         target = CRS.from_user_input(target_crs)
         if not target.is_projected:
@@ -1172,17 +1258,16 @@ def _registration_controls(
             or geometry.get("type") != "Point"
         ):
             continue
-        coordinates = geometry.get("coordinates")
-        if not isinstance(coordinates, list) or len(coordinates) < 2:
-            continue
-        lon, lat = float(coordinates[0]), float(coordinates[1])
-        easting, northing = transformer.transform(lon, lat)
-        values = (
-            float(properties.get("cad_x")),
-            float(properties.get("cad_y")),
-            float(easting),
-            float(northing),
-        )
+        from .gcp_workflow import edit_web_control
+
+        try:
+            validated = edit_web_control(feature)
+            properties = validated["properties"]
+            lon, lat = validated["geometry"]["coordinates"]
+            easting, northing = transformer.transform(lon, lat, errcheck=True)
+            values = (properties["cad_x"], properties["cad_y"], float(easting), float(northing))
+        except (ValueError, TypeError, KeyError, ProjError) as exc:
+            raise ReviewServerError(f"Control {feature.get('id')} is invalid: {exc}") from exc
         if not all(math.isfinite(value) for value in values):
             raise ReviewServerError(
                 f"Control {feature.get('id')} has non-finite coordinates"
@@ -1206,32 +1291,54 @@ def _registration_controls(
                 "OPENSTREETMAP_VISUAL_REFERENCE:EPSG:4326;"
                 "relative_registration_only"
             ),
-            "accuracy_m": 8.0,
-            "weight": 1.0,
-            "enabled": True,
+            # This prior exists only for the canonical fit's required weight
+            # contract. It is never a measured OSM or output accuracy claim.
+            "accuracy_m": properties.get("accuracy_m", 8.0),
+            "accuracy_basis": ("operator_estimate" if "accuracy_m" in properties
+                               else "default_reference_uncertainty_prior_not_measured_accuracy"),
+            "weight": properties.get("weight", 1.0),
+            "enabled": properties.get("enabled", True),
             "revision": int(properties.get("_review_revision", 0)),
+            "editor_state": (feature["properties"].get("_gcp_edit") or properties["_gcp_edit"]),
         })
     compiled.sort(key=lambda item: item["point_id"])
-    train = [item for item in compiled if item["role"] == "train"]
-    check = [item for item in compiled if item["role"] == "check"]
+    train = [item for item in compiled if item["role"] == "train" and item["enabled"]]
+    check = [item for item in compiled if item["role"] == "check" and item["enabled"]]
 
-    def spans_both_axes(values: list[dict[str, Any]]) -> bool:
-        if len(values) < 2:
+    def has_two_dimensional_support(values: list[dict[str, Any]]) -> bool:
+        # Both X/Y spans can be nonzero for a single diagonal line. Normalize
+        # first to avoid precision loss from large projected/CAD coordinates.
+        points = {(item["cad_x"], item["cad_y"]) for item in values}
+        if len(points) < 3:
             return False
-        return (
-            max(item["cad_x"] for item in values)
-            - min(item["cad_x"] for item in values)
-            > 1e-6
-            and max(item["cad_y"] for item in values)
-            - min(item["cad_y"] for item in values)
-            > 1e-6
-        )
+        x0, y0 = min(points)
+        extent = max(max(abs(x - x0), abs(y - y0)) for x, y in points)
+        if not math.isfinite(extent) or extent <= 1e-6:
+            return False
+        local = [((x - x0) / extent, (y - y0) / extent) for x, y in points]
+        mx = sum(x for x, _ in local) / len(local)
+        my = sum(y for _, y in local) / len(local)
+        xx = sum((x - mx) ** 2 for x, _ in local)
+        yy = sum((y - my) ** 2 for _, y in local)
+        xy = sum((x - mx) * (y - my) for x, y in local)
+        return xx * yy - xy * xy > 1e-8 * (xx + yy) ** 2
+
+    training_sources = {(item["cad_x"], item["cad_y"]) for item in train}
+    training_targets = {(item["longitude"], item["latitude"]) for item in train}
+    reused_checks = [item["point_id"] for item in check
+                     if (item["cad_x"], item["cad_y"]) in training_sources
+                     or (item["longitude"], item["latitude"]) in training_targets]
+    train_support = has_two_dimensional_support(train)
+    check_support = has_two_dimensional_support(check)
 
     ready = (
-        len(train) >= 4
-        and len(check) >= 3
-        and spans_both_axes(train)
-        and spans_both_axes(check)
+        len({(item["cad_x"], item["cad_y"]) for item in train}) >= 4
+        and len({(item["cad_x"], item["cad_y"]) for item in check}) >= 3
+        and len({(item["longitude"], item["latitude"]) for item in train}) >= 4
+        and len({(item["longitude"], item["latitude"]) for item in check}) >= 3
+        and train_support
+        and check_support
+        and not reused_checks
     )
     return {
         "schema_version": "cad2gis.web_registration_capture.v1",
@@ -1244,9 +1351,24 @@ def _registration_controls(
         "minimum_train_count": 4,
         "minimum_check_count": 3,
         "distribution_gate_passed": ready,
+        "distribution_checks": {
+            "train_two_dimensional": train_support,
+            "check_two_dimensional": check_support,
+            "checks_reusing_training_locations": reused_checks,
+            "scope": "control_geometry_preflight; final coverage gates still apply",
+        },
         "activation_ready": ready,
         "accuracy_class": "RELATIVE_OSM_REFERENCE_ONLY",
         "absolute_accuracy_verified": False,
+        "precision_contract": {
+            "nudge_steps_m": [0.01, 0.1, 1.0],
+            "nudge_distance_method": "WGS84_ellipsoidal_geodesic",
+            "nudge_step_is_accuracy_claim": False,
+            "source_cad_pick_mutable": False,
+            "train_role": "used_to_fit_transform",
+            "check_role": "held_out_from_current_fit; operator_selected_reference",
+            "absolute_accuracy": "unverified; OSM visual references are not surveyed control",
+        },
     }
 
 
@@ -1384,6 +1506,8 @@ def _matching_record(manifest: dict[str, Any]) -> dict[str, Any] | None:
 def _matching_preview(capture: dict[str, Any], manifest: dict[str, Any], parent_sha: str):
     from .cad2gis_v3.osm_matching import refine_match, transformer_from_record
 
+    if (capture.get("distribution_checks") or {}).get("checks_reusing_training_locations"):
+        raise ReviewServerError("Held-out checks must use different CAD and reference locations from training controls")
     record = _matching_record(manifest)
     if not record:
         raise ReviewServerError("This run has no OSM matching record; create a standard OSM matching run first")
@@ -1401,6 +1525,10 @@ def _matching_fit_summary(record: dict[str, Any]) -> dict[str, Any]:
         "selected_model": "translation", "target_crs": record.get("target_crs", "EPSG:3857"),
         "train_metrics": quality.get("train_metrics", quality.get("training", {})),
         "check_metrics": quality.get("check_metrics", quality.get("check", {})),
+        "residuals": quality.get("residuals", []),
+        "residual_distance_method": quality.get("residual_distance_method", "WGS84_ellipsoidal_geodesic"),
+        "checks_used_for_fit": False,
+        "accuracy_scope": "relative_reference_agreement; not_absolute_accuracy",
         "authority": "relative_osm", "absolute_accuracy_verified": False,
         "validation": {"passed": None},
     }
@@ -1716,7 +1844,8 @@ def create_review_app(
                 "geometry": {"type": "Point", "coordinates": [lon, lat]},
                 "properties": {"_kind": "cad_map_gcp", "cad_x": item["cad_x"],
                     "cad_y": item["cad_y"], "role": item["role"]}},
-                expected_revision=0, actor="matching-result")
+                expected_revision=0, actor="matching-result",
+                initial_gcp_state=item.get("editor_state"))
     hub = _WebSocketHub()
     svg_manifest_sha256 = _sha256_file(manifest_path)
     web_root = Path(__file__).resolve().parent / "webdemo"
@@ -1815,10 +1944,29 @@ def create_review_app(
             try:
                 result, _ = _registration_fit(capture, manifest)
                 capture["preview_fit"] = {**result.to_dict(), "authority": "canonical_fit_engine",
+                    "residual_distance_method": "target_projected_grid_metres",
+                    "checks_used_for_fit": False,
+                    "absolute_accuracy_verified": False,
+                    "accuracy_scope": "relative_reference_agreement; not_absolute_accuracy",
                     "acceptance": "preview_only; final run still enforces profile and spatial coverage gates"}
             except (ValueError, OSError, ReviewServerError) as exc:
                 capture["preview_error"] = str(exc)
         return capture
+
+    @app.get("/api/matching/evidence")
+    async def matching_evidence(expected_match_sha256: str | None = None):
+        record = _matching_record(manifest)
+        if not record:
+            raise HTTPException(404, "This run has no OSM matching evidence")
+        if expected_match_sha256 is not None and expected_match_sha256 != record.get("match_sha256"):
+            raise ReviewConflictError("Matching result changed; reload the evidence layers")
+        from .cad2gis_v3.osm_evidence import evidence_geojson
+
+        return {
+            "match_sha256": record.get("match_sha256"), "revision": record.get("revision"),
+            "collections": evidence_geojson(record),
+            "authority": "relative_osm", "absolute_accuracy_verified": False,
+        }
 
     @app.get("/api/registration/preview/{layer_name}")
     async def registration_preview(layer_name: str, expected_controls_sha256: str, limit: int = 100_000):
@@ -1869,7 +2017,7 @@ def create_review_app(
         nonlocal manifest, run_path, source_run_path, manifest_path, delivery, svg_manifest_sha256
         from starlette.concurrency import run_in_threadpool
 
-        payload = await request.json()
+        payload = await _request_object(request)
         if not isinstance(payload, dict) or not isinstance(payload.get("execute", False), bool):
             raise HTTPException(400, "Request must be an object and execute must be boolean")
         if not matching_lock.acquire(blocking=False):
@@ -1945,13 +2093,16 @@ def create_review_app(
 
     @app.post("/api/registration/export")
     async def export_registration(request: Request):
-        payload = await request.json()
+        payload = await _request_object(request)
         if not isinstance(payload, dict):
             raise HTTPException(400, "Request body must be an object")
         activate = payload.get("activate", True)
         if not isinstance(activate, bool):
             raise HTTPException(400, "activate must be boolean")
         capture = _registration_controls(store, manifest)
+        if (payload.get("expected_controls_sha256") is not None
+                and payload["expected_controls_sha256"] != capture["controls_sha256"]):
+            raise ReviewConflictError("Control points changed; refresh the preview before exporting")
         if activate and not capture["activation_ready"]:
             raise ReviewServerError(
                 "Activation requires at least 4 distributed training controls "
@@ -1997,26 +2148,12 @@ def create_review_app(
         )
         generated_source_profile = None
         if activate and source_profile_path is not None and source_profile_path.is_file():
+            expected_source_profile_sha = str(source_profile_record.get("sha256", ""))
+            if _sha256_file(source_profile_path) != expected_source_profile_sha:
+                raise ReviewServerError("Bound source profile SHA-256 mismatch; reload the original run")
             source_profile_payload = _json_object(source_profile_path)
-            # OSM visual references are coarse and drawing geometry is
-            # often concentrated in part of the sheet (e.g. poles cluster
-            # in one area while the rest is residential labels, which are
-            # unreliable on OSM).  Web registration therefore relaxes the
-            # spatial-coverage gates: controls must cover the populated
-            # region, not a uniform sheet rectangle.  Translation-only
-            # fitting and the strict rotation gate keep the result stable.
-            source_profile_payload["spatial_coverage_policy"] = {
-                "min_training_extent_x_ratio": 0.20,
-                "min_training_extent_y_ratio": 0.20,
-                "min_training_hull_area_ratio": 0.04,
-                "max_drawing_vertices_outside_training_bbox_ratio": 0.55,
-                "min_check_baseline_to_drawing_diagonal_ratio": 0.05,
-                "min_check_hull_area_ratio": 0.01,
-                "max_drawing_vertices_outside_training_hull_ratio": 0.70,
-                "corridor_min_cable_length_to_diagonal_ratio": 1.0,
-                "corridor_min_cable_arc_coverage_ratio": 0.70,
-                "corridor_max_device_to_training_along_cable_m": 150.0,
-            }
+            # Editing reference targets is not a review of looser engineering
+            # coverage thresholds. Preserve every bound policy unchanged.
             generated_source_profile = workspace / "web_source_profile.json"
             _write_json_atomic(
                 generated_source_profile, source_profile_payload,
@@ -2078,6 +2215,11 @@ def create_review_app(
                 if generated_source_profile is not None else None
             ),
             "source_run_modes": source_modes,
+            "coverage_policy": {
+                "preserved_from_source_profile": True,
+                "final_conversion_enforces_bound_coverage": True,
+                "preflight": "4 distinct non-collinear training controls and 3 distinct held-out checks",
+            },
             "next_run_dir": str(next_run),
             "registered_delivery": (
                 str(registered_delivery)
@@ -2132,7 +2274,7 @@ def create_review_app(
 
     @app.post("/api/review/features")
     async def upsert_review_feature(request: Request):
-        payload = await request.json()
+        payload = await _request_object(request)
         if not isinstance(payload, dict):
             raise HTTPException(400, "Request body must be an object")
         expected = payload.get("expected_revision")
@@ -2146,6 +2288,27 @@ def create_review_app(
             payload.get("feature"),
             expected_revision=expected,
             actor=str(payload.get("actor", "web-review")),
+        )
+        await hub.broadcast({"type": "review_event", "event": event})
+        return event
+
+    @app.post("/api/review/features/{feature_id}/adjust")
+    async def adjust_review_control(feature_id: str, request: Request):
+        payload = await _request_object(request)
+        if not isinstance(payload, dict):
+            raise HTTPException(400, "Request body must be an object")
+        expected = payload.get("expected_revision")
+        _expected_revision(expected, required=True)
+        if matching_lock.locked():
+            raise ReviewConflictError("Matching is running; wait before changing control points")
+        feature = next((item for item in store.feature_collection()["features"]
+                        if item["id"] == feature_id), None)
+        if feature is None:
+            raise HTTPException(404, "GCP not found; reload the control points")
+        event = store.upsert(
+            feature, expected_revision=expected,
+            actor=str(payload.get("actor", "registration-workspace")),
+            gcp_action=payload,
         )
         await hub.broadcast({"type": "review_event", "event": event})
         return event

@@ -32,7 +32,7 @@ DEFAULT_MATERIALIZATION_POLICY: dict[str, Any] = {
     "max_vertices_per_source_segment": 100_000,
 }
 
-_POLYLINE_PRIMITIVES = {"LINE", "LWPOLYLINE", "POLYLINE", "2DPOLYLINE", "3DPOLYLINE"}
+_POLYLINE_PRIMITIVES = {"LINE", "LWPOLYLINE", "POLYLINE", "2DPOLYLINE", "3DPOLYLINE", "ARC"}
 _READER_MATERIALIZED_PRIMITIVES = {
     "SPLINE", "ELLIPSE", "ARC", "CIRCLE", "3DPOLYLINE",
     "FITTED_POLYLINE", "MESH", "POLYFACE",
@@ -148,7 +148,7 @@ def _bulge_segment(
     """Return delivery points, exact native length, and source kind."""
     chord = math.dist(start, end)
     point_tolerance = float(policy["point_tolerance_native"])
-    if abs(bulge) <= point_tolerance:
+    if bulge == 0.0:
         if chord <= point_tolerance:
             raise ValueError("zero-length line source segment")
         return (start, end), chord, "line"
@@ -165,15 +165,16 @@ def _bulge_segment(
         (start[0] + end[0]) * 0.5 - unit_y * centre_offset,
         (start[1] + end[1]) * 0.5 + unit_x * centre_offset,
     )
-    start_angle = math.atan2(start[1] - centre[1], start[0] - centre[0])
+    if not all(math.isfinite(value) for value in (*centre, radius, native_length)):
+        raise ValueError("bulge arc parameters exceed finite drawing coordinates")
 
     sagitta = float(policy["max_sagitta_native"])
     chord_limit = float(policy["max_chord_native"])
     if sagitta >= 2.0 * radius:
         sagitta_angle = math.pi * 2.0
     else:
-        cosine = max(-1.0, min(1.0, 1.0 - sagitta / radius))
-        sagitta_angle = 2.0 * math.acos(cosine)
+        # Equivalent to 2*acos(1-s/r), without cancellation for shallow arcs.
+        sagitta_angle = 4.0 * math.asin(math.sqrt(sagitta / (2.0 * radius)))
     chord_angle = 2.0 * math.asin(min(1.0, chord_limit / (2.0 * radius)))
     step_angle = min(sagitta_angle, chord_angle)
     if not math.isfinite(step_angle) or step_angle <= 0.0:
@@ -187,17 +188,42 @@ def _bulge_segment(
         )
     points = [start]
     for index in range(1, interval_count):
-        angle = start_angle + theta * (index / interval_count)
+        angle = theta * (index / interval_count)
+        one_minus_cosine = 2.0 * math.sin(angle / 2.0) ** 2
+        sine = math.sin(angle)
+        # Evaluate relative to the start/chord frame.  Subtracting an enormous
+        # shallow-arc centre from an almost equal radius loses visible detail.
+        along = chord * 0.5 * one_minus_cosine + centre_offset * sine
+        across = centre_offset * one_minus_cosine - chord * 0.5 * sine
         points.append((
-            centre[0] + radius * math.cos(angle),
-            centre[1] + radius * math.sin(angle),
+            start[0] + unit_x * along - unit_y * across,
+            start[1] + unit_y * along + unit_x * across,
         ))
     points.append(end)
     return tuple(points), native_length, "bulge_arc"
 
 
+def _planar_bulges(facts: Mapping[str, Any], tolerance: float) -> tuple[float, ...]:
+    """Interpret preserved bulges in the WCS XY plane, without changing facts."""
+    normal = facts.get("normal") or facts.get("extrusion") or (0.0, 0.0, 1.0)
+    normal = tuple(_finite(value, "curve normal") for value in normal)
+    if len(normal) != 3 or math.hypot(*normal) == 0.0:
+        raise ValueError("curve normal must be a nonzero 3D vector")
+    magnitude = math.hypot(*normal)
+    if abs(normal[0] / magnitude) > tolerance or abs(normal[1] / magnitude) > tolerance:
+        raise ValueError("non-planar curve normal requires complete reader materialization (delivery_segments_wcs)")
+    bulges = tuple(_finite(value, "curve bulge") for value in facts.get("bulges", ()))
+    if normal[2] < 0.0 and any(value != 0.0 for value in bulges):
+        system = facts.get("primitive_parameters", {}).get("bulge_coordinate_system")
+        if system == "OCS":
+            return tuple(-value for value in bulges)
+        if system != "WCS":
+            raise ValueError("negative extrusion bulge orientation requires an explicit bulge coordinate system")
+    return bulges
+
+
 def _reader_materialized_segments(
-    feature: Feature,
+    feature: Feature | None,
     source: SourceEntity,
     parameters: Mapping[str, Any],
     policy: Mapping[str, Any],
@@ -220,6 +246,8 @@ def _reader_materialized_segments(
         points = _ordered_xy(raw.get("points_wcs"), f"delivery_segments_wcs[{expected_index}].points_wcs")
         if len(points) < 2:
             raise ValueError(f"delivery_segments_wcs[{expected_index}] requires at least two points")
+        if len(points) > int(policy["max_vertices_per_source_segment"]):
+            raise ValueError("reader-materialized curve exceeds max_vertices_per_source_segment")
         if previous_end is not None and not _points_close(previous_end, points[0], tolerance):
             raise ValueError("reader-materialized source segments are not endpoint-contiguous")
         native_length = _finite(
@@ -242,6 +270,12 @@ def _reader_materialized_segments(
         for value, name in ((start_index, "source_start_vertex_index"), (end_index, "source_end_vertex_index")):
             if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 0):
                 raise ValueError(f"delivery_segments_wcs[{expected_index}].{name} is invalid")
+        for vertex_index, point in ((start_index, points[0]), (end_index, points[-1])):
+            if vertex_index is not None and (
+                vertex_index >= len(source.points)
+                or not _points_close(point, source.points[vertex_index], tolerance)
+            ):
+                raise ValueError("reader-materialized source segment anchor differs from immutable WCS vertex")
         result.append({
             "source_segment_index": expected_index,
             "source_segment_kind": kind,
@@ -288,24 +322,16 @@ def _materialize_route(
     parameters = facts.get("primitive_parameters", {})
     reader_segments = parameters.get("delivery_segments_wcs") if isinstance(parameters, Mapping) else None
     z_values = [_finite(point[2], f"curve_facts.vertices_wcs[{index}].z") for index, point in enumerate(vertices3)]
-    normal = facts.get("normal") or facts.get("extrusion")
     if reader_segments is None:
         if z_values and max(z_values) - min(z_values) > tolerance:
             raise ValueError(
                 "non-planar 3D cable curve requires complete reader materialization "
                 "(delivery_segments_wcs)"
             )
-        if normal is not None and (
-            abs(float(normal[0])) > tolerance or abs(float(normal[1])) > tolerance
-            or abs(abs(float(normal[2])) - 1.0) > tolerance
-        ):
-            raise ValueError(
-                "non-planar curve normal requires complete reader materialization "
-                "(delivery_segments_wcs)"
-            )
     bulges = tuple(float(value) for value in facts.get("bulges", ()))
     if len(bulges) != len(vertices):
         raise ValueError("curve bulge/vertex cardinality mismatch")
+    skipped_zero_length_segments: list[dict[str, Any]] = []
     if reader_segments is not None:
         segments = _reader_materialized_segments(feature, source, parameters, policy)
         materialization_method = "reader-complete-curve-facts"
@@ -336,21 +362,13 @@ def _materialize_route(
                 )
         if primitive_type == "3DPOLYLINE" and any(abs(value - z_values[0]) > tolerance for value in z_values):
             raise ValueError("non-planar 3D POLYLINE is outside the 2D delivery contract")
-        if abs(float((normal or (0.0, 0.0, 1.0))[2]) + 1.0) <= tolerance and any(
-            abs(value) > tolerance for value in bulges[:-1]
-        ):
-            raise ValueError(
-                "negative extrusion bulge orientation requires complete reader materialization"
-            )
-        if abs(bulges[-1]) > tolerance:
-            raise ValueError("open curve has a trailing bulge without a source segment")
+        bulges = _planar_bulges(facts, tolerance)
 
         built_segments = []
-        skipped_zero_length_segments: list[dict[str, Any]] = []
         segment_index = 0
         for vertex_index, (start, end, bulge) in enumerate(zip(vertices, vertices[1:], bulges)):
             chord = math.dist(start, end)
-            if abs(bulge) <= tolerance and chord <= tolerance:
+            if bulge == 0.0 and chord <= tolerance:
                 # Repeated consecutive WCS vertices are CAD drafting artifacts:
                 # the segment contributes zero length and zero delivery
                 # geometry.  Record it in the audit payload but do not put it
@@ -410,6 +428,8 @@ def _materialize_route(
         joined.extend(points if not joined else points[1:])
     if not joined:
         raise ValueError("curve materialization produced no nonzero delivery segments")
+    if not _points_close(joined[0], vertices[0], tolerance) or not _points_close(joined[-1], vertices[-1], tolerance):
+        raise ValueError("reader-materialized curve endpoints do not match immutable WCS source vertices")
     payload: dict[str, Any] = {
         "schema_version": MATERIALIZATION_SCHEMA_VERSION,
         "policy": dict(policy),
@@ -426,10 +446,92 @@ def _materialize_route(
         "delivery_native_points": joined,
         "source_segments": list(segments),
         "skipped_zero_length_segments": skipped_zero_length_segments,
+        # DXF only assigns a trailing bulge to a closing segment.  Open
+        # polylines may retain a value here; it is evidence, not a segment.
+        "ignored_open_trailing_bulge": float(facts.get("bulges", [0.0])[-1]),
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
     payload["materialization_fingerprint"] = hashlib.sha256(canonical.encode("ascii")).hexdigest()
     return payload
+
+
+def source_display_points(
+    source: SourceEntity, *, policy: Mapping[str, Any] | None = None,
+) -> tuple[tuple[float, float], ...]:
+    """Derive a bounded XY display path while retaining immutable CAD vertices.
+
+    This is a source display projection, not native-length authority or cable
+    classification. Unsupported curves fail explicitly instead of rendering
+    their endpoints/control polygon as a plausible but false drawing.
+    """
+    resolved = _policy(policy)
+    facts = source.curve_facts
+    primitive = str(facts.get("primitive_type") or source.dwg_type).upper()
+    if not facts:
+        if (primitive == "CIRCLE" and source.closed and len(source.points) >= 4
+                and source.points[0] == source.points[-1]):
+            # Older import ports can already supply a sampled closed ring.
+            # Retain that explicit path; do not infer radius/native length.
+            return tuple(source.points)
+        if primitive in {"ARC", "CIRCLE", "ELLIPSE", "SPLINE", "HELIX"}:
+            raise ValueError(f"{primitive} has no complete source curve facts")
+        return tuple(source.points)
+    if canonical_curve_fingerprint(facts) != source.curve_fingerprint:
+        raise ValueError("source curve facts changed after ingestion")
+    vertices3 = facts.get("vertices_wcs", ())
+    vertices = _ordered_xy(vertices3, "curve_facts.vertices_wcs")
+    tolerance = float(resolved["point_tolerance_native"])
+    if len(vertices) != len(source.points) or any(
+        not _points_close(a, b, tolerance) for a, b in zip(vertices, source.points)
+    ):
+        raise ValueError("source curve WCS vertices do not match the source entity")
+    parameters = facts.get("primitive_parameters", {})
+    raw_segments = parameters.get("delivery_segments_wcs")
+    if raw_segments is not None:
+        # Reuse the validated complete-facts contract, including continuity,
+        # rather than assuming an arbitrary list of sampled points is a curve.
+        segments = _reader_materialized_segments(None, source, parameters, resolved)
+        result = []
+        for segment in segments:
+            segment_points = [tuple(p) for p in segment["delivery_native_points"]]
+            result.extend(segment_points if not result else segment_points[1:])
+        if vertices and (not _points_close(result[0], vertices[0], tolerance)
+                         or not _points_close(result[-1], vertices[-1], tolerance)):
+            raise ValueError("reader-materialized display endpoints differ from source vertices")
+        return tuple(result)
+    bulges = _planar_bulges(facts, tolerance)
+    z_values = [_finite(point[2], "curve vertex Z") for point in vertices3]
+    if z_values and max(z_values) - min(z_values) > tolerance:
+        raise ValueError("tilted or 3D source curve requires an explicit XY projection contract")
+    if primitive == "CIRCLE":
+        if len(vertices) != 1:
+            raise ValueError("source circle requires a WCS centre")
+        radius = _finite(
+            source.native_length / math.tau if source.native_length is not None else parameters.get("radius"),
+            "circle radius", positive=True,
+        )
+        center = vertices[0]
+        left, right = (center[0] - radius, center[1]), (center[0] + radius, center[1])
+        first, _, _ = _bulge_segment(left, right, 1.0, resolved)
+        second, _, _ = _bulge_segment(right, left, 1.0, resolved)
+        return first + second[1:]
+    if primitive not in _POLYLINE_PRIMITIVES or (
+        primitive == "POLYLINE" and int(parameters.get("flags", 0)) & 126
+    ):
+        raise ValueError(f"{primitive} requires complete reader-materialized source geometry")
+    if len(vertices) != len(bulges):
+        raise ValueError("curve bulge/vertex cardinality mismatch")
+    result = []
+    count = len(vertices) if facts.get("closed") or source.closed else len(vertices) - 1
+    for index in range(max(0, count)):
+        start, end = vertices[index], vertices[(index + 1) % len(vertices)]
+        if start == end and bulges[index] == 0.0:
+            if not result:
+                result.append(start)
+            continue
+        points, _, _ = _bulge_segment(start, end, bulges[index], resolved)
+        result.extend(points if not result else points[1:])
+    return tuple(result or vertices)
 
 
 def _diagnostics(policy: Mapping[str, Any], cables_total: int) -> dict[str, Any]:

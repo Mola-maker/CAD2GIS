@@ -235,6 +235,10 @@ def _xy(value: Any) -> tuple[float, float]:
     return float(value[0]), float(value[1])
 
 
+def _xyz(value: Any) -> list[float]:
+    return [float(value[0]), float(value[1]), float(value[2])]
+
+
 def _centroid(points: list[tuple[float, float]]) -> tuple[float, float]:
     if not points:
         return (0.0, 0.0)
@@ -273,6 +277,8 @@ def _curve_facts(
     bulges: list[float] | None,
     native_length: float | None,
     elevation: float | None = None,
+    vertices_wcs: list[list[float]] | None = None,
+    normal: list[float] | None = None,
     primitive_parameters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     normalized_bulges = list(bulges or [0.0] * len(points))
@@ -281,11 +287,12 @@ def _curve_facts(
         "schema_version": _CURVE_FACTS_SCHEMA,
         "coordinate_system": "WCS",
         "primitive_type": primitive_type,
-        "vertices_wcs": [[x, y, elevation or 0.0] for x, y in points],
+        "vertices_wcs": (vertices_wcs if vertices_wcs is not None
+                         else [[x, y, elevation or 0.0] for x, y in points]),
         "bulges": normalized_bulges,
         "elevation": elevation,
-        "normal": [0.0, 0.0, 1.0],
-        "extrusion": None,
+        "normal": normal,
+        "extrusion": normal,
         "closed": closed,
         "primitive_parameters": dict(primitive_parameters or {}),
         "native_length": native_length,
@@ -380,17 +387,22 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
 
     try:
         if type_name == "LINE":
-            points = [_xy(entity.dxf.start), _xy(entity.dxf.end)]
-            native_length = math.dist(points[0], points[1])
+            vertices_wcs = [_xyz(entity.dxf.start), _xyz(entity.dxf.end)]
+            points = [_xy(value) for value in vertices_wcs]
+            native_length = math.dist(*vertices_wcs)
             curve_facts = _curve_facts(
-                "line", points, closed=False, bulges=None, native_length=native_length
+                "line", points, closed=False, bulges=None, native_length=native_length,
+                vertices_wcs=vertices_wcs,
             )
         elif type_name == "LWPOLYLINE":
             values = list(entity.get_points("xyb"))
-            points = [(float(value[0]), float(value[1])) for value in values]
+            # DXF lightweight vertices and elevation are OCS values.  Even a
+            # horizontal mirrored plane changes X; tilted elevation changes XY.
+            vertices_wcs = [_xyz(value) for value in entity.vertices_in_wcs()]
+            points = [_xy(value) for value in vertices_wcs]
             bulges = [float(value[2]) for value in values]
             closed = bool(entity.closed)
-            native_length = _polyline_length(points, bulges, closed=closed)
+            native_length = _polyline_length([_xy(value) for value in values], bulges, closed=closed)
             elevation = float(getattr(entity.dxf, "elevation", 0.0) or 0.0)
             curve_facts = _curve_facts(
                 "lwpolyline",
@@ -399,30 +411,53 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
                 bulges=bulges,
                 native_length=native_length,
                 elevation=elevation,
+                vertices_wcs=vertices_wcs,
+                normal=_xyz(entity.dxf.extrusion),
+                primitive_parameters={"bulge_coordinate_system": "OCS"},
             )
         elif type_name == "POLYLINE":
-            points = [_xy(vertex.dxf.location) for vertex in entity.vertices]
+            vertices_wcs = [_xyz(value) for value in entity.points_in_wcs()]
+            points = [_xy(value) for value in vertices_wcs]
             closed = bool(entity.is_closed)
             bulges = [float(getattr(vertex.dxf, "bulge", 0.0) or 0.0) for vertex in entity.vertices]
-            native_length = _polyline_length(points, bulges, closed=closed)
+            is_2d = bool(entity.is_2d_polyline)
+            if is_2d:
+                native_length = _polyline_length(
+                    [_xy(vertex.dxf.location) for vertex in entity.vertices], bulges, closed=closed,
+                )
+            else:
+                path = vertices_wcs + (vertices_wcs[:1] if closed else [])
+                native_length = math.fsum(math.dist(a, b) for a, b in zip(path, path[1:]))
             curve_facts = _curve_facts(
                 "polyline",
                 points,
                 closed=closed,
                 bulges=bulges,
                 native_length=native_length,
+                vertices_wcs=vertices_wcs,
+                elevation=float(entity.dxf.elevation.z) if is_2d else None,
+                normal=_xyz(entity.dxf.extrusion) if is_2d else None,
+                primitive_parameters={
+                    "flags": int(entity.dxf.flags),
+                    "bulge_coordinate_system": "OCS" if is_2d else "WCS",
+                },
             )
         elif type_name in {"TEXT", "ATTRIB", "ATTDEF"}:
-            points = [_xy(entity.dxf.insert)]
+            points = [_xy(entity.ocs().to_wcs(entity.dxf.insert))]
             text = str(getattr(entity.dxf, "text", "") or "")
             rotation = math.radians(float(getattr(entity.dxf, "rotation", 0.0) or 0.0))
+            direction = entity.ocs().to_wcs((math.cos(rotation), math.sin(rotation), 0.0))
+            rotation = math.atan2(direction.y, direction.x)
+            if not entity.ocs().uz.isclose((0, 0, 1)):
+                reasons.append("libredwg_cli_text_ocs_glyph_orientation_requires_review")
         elif type_name == "MTEXT":
             points = [_xy(entity.dxf.insert)]
             text = str(getattr(entity, "text", "") or "")
             rotation = math.radians(float(getattr(entity.dxf, "rotation", 0.0) or 0.0))
         elif type_name == "INSERT":
             insertion = entity.dxf.insert
-            points = [_xy(insertion)]
+            insertion_wcs = entity.ocs().to_wcs(insertion)
+            points = [_xy(insertion_wcs)]
             block_name = str(entity.dxf.name or "")
             block_attributes = {
                 str(attribute.dxf.tag).upper(): str(attribute.dxf.text or "")
@@ -435,13 +470,15 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
                 float(getattr(entity.dxf, "zscale", 1.0) or 1.0),
             )
             rotation = math.radians(float(getattr(entity.dxf, "rotation", 0.0) or 0.0))
-            insertion_3d = [float(insertion[0]), float(insertion[1]), float(insertion[2])]
+            insertion_3d = _xyz(insertion_wcs)
             extrusion = getattr(entity.dxf, "extrusion", (0.0, 0.0, 1.0))
             normal = [float(extrusion[0]), float(extrusion[1]), float(extrusion[2])]
             block_base_point = _block_base_point(document, block_name)
             transform_facts = {
                 "schema_version": "cad2gis.reader-transform-facts.v1",
                 "insertion_point": insertion_3d,
+                "insertion_point_ocs": _xyz(insertion),
+                "coordinate_system": "WCS",
                 "insertion_point_status": "available",
                 "block_base_point": block_base_point,
                 "block_base_point_status": (
@@ -457,7 +494,7 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
                 "extrusion_status": "available",
             }
             transform_provenance = {
-                "insertion_point": "DWG_DIRECT:LibreDWG-CLI:DXF:INSERT.insert",
+                "insertion_point": "DWG_DERIVED:LibreDWG-CLI:DXF:INSERT.insert:OCS-to-WCS",
                 "block_base_point": "DWG_DIRECT:LibreDWG-CLI:DXF:BLOCK.base_point",
                 "scale": "DWG_DIRECT:LibreDWG-CLI:DXF:INSERT.scale",
                 "rotation": "DWG_DIRECT:LibreDWG-CLI:DXF:INSERT.rotation",
@@ -521,7 +558,9 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
         elif type_name == "POINT":
             points = [_xy(entity.dxf.location)]
         elif type_name == "CIRCLE":
-            points = [_xy(entity.dxf.center)]
+            center_wcs = _xyz(entity.ocs().to_wcs(entity.dxf.center))
+            points = [_xy(center_wcs)]
+            closed = True
             radius = float(entity.dxf.radius)
             native_length = 2.0 * math.pi * radius
             curve_facts = _curve_facts(
@@ -530,22 +569,42 @@ def _entity_geometry(document: Any, entity: Any, type_name: str) -> dict[str, An
                 closed=True,
                 bulges=[0.0],
                 native_length=native_length,
-                primitive_parameters={"center": list(points[0]), "radius": radius},
+                vertices_wcs=[center_wcs],
+                normal=_xyz(entity.dxf.extrusion),
+                primitive_parameters={"center": center_wcs, "center_wcs": center_wcs,
+                                      "radius": radius},
             )
         elif type_name == "ARC":
-            points = [_xy(entity.start_point), _xy(entity.end_point)]
+            from ezdxf.math import arc_angle_span_deg
+
+            vertices_wcs = [_xyz(entity.start_point), _xyz(entity.end_point)]
+            points = [_xy(value) for value in vertices_wcs]
             radius = float(entity.dxf.radius)
-            span = math.radians((float(entity.dxf.end_angle) - float(entity.dxf.start_angle)) % 360.0)
+            span = math.radians(arc_angle_span_deg(float(entity.dxf.start_angle), float(entity.dxf.end_angle)))
             native_length = radius * span
+            closed = span == math.tau
+            center_wcs = _xyz(entity.ocs().to_wcs(entity.dxf.center))
+            source_endpoints = vertices_wcs
+            if closed:
+                # A full revolution is not a zero-length arc.  The canonical
+                # circle representation keeps its centre; DXF endpoints and
+                # angles remain in primitive parameters for audit.
+                vertices_wcs = [center_wcs]
+                points = [_xy(center_wcs)]
             curve_facts = _curve_facts(
-                "arc",
+                "circle" if closed else "arc",
                 points,
-                closed=False,
-                bulges=[math.tan(span / 4.0), 0.0],
+                closed=closed,
+                bulges=[0.0] if closed else [math.tan(span / 4.0), 0.0],
                 native_length=native_length,
+                vertices_wcs=vertices_wcs,
+                normal=_xyz(entity.dxf.extrusion),
                 primitive_parameters={
-                    "center": list(_xy(entity.dxf.center)),
+                    "center": center_wcs,
+                    "center_wcs": center_wcs,
+                    "source_endpoints_wcs": source_endpoints,
                     "radius": radius,
+                    "bulge_coordinate_system": "OCS",
                     "start_angle_degrees": float(entity.dxf.start_angle),
                     "end_angle_degrees": float(entity.dxf.end_angle),
                 },
