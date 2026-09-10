@@ -1,6 +1,6 @@
 """User-facing adapter for the reviewed ground-control workflow.
 
-This module deliberately contains no calibration mathematics. It normalises
+This module deliberately contains no calibration fitting mathematics. It normalises
 results from an optional operator backend selected with
 ``CAD2GIS_GCP_TOOL_PATH`` for the canonical CLI. In particular:
 
@@ -10,6 +10,7 @@ results from an optional operator backend selected with
 * a project is verified only after a published manifest records an accepted
   calibration with independent checks and auditable absolute control sources.
 
+Web target edits use ellipsoidal geodesics and never move the source CAD pick.
 The operator backend is loaded lazily so lightweight commands such as
 ``cad2gis gcp status`` do not require GDAL.
 """
@@ -17,6 +18,7 @@ The operator backend is loaded lazily so lightweight commands such as
 from __future__ import annotations
 
 import hashlib
+import copy
 import importlib.util
 import json
 import math
@@ -37,6 +39,8 @@ PathLike = str | os.PathLike[str]
 DEFAULT_CANDIDATE_LAYERS = ("PTECH", "BOITE", "SITE")
 MIN_ACTIVE_TRAIN_CONTROLS = 3
 MIN_ACTIVE_CHECK_CONTROLS = 2
+GCP_NUDGE_STEPS_M = (0.01, 0.1, 1.0)
+GCP_UNDO_LIMIT = 128
 
 ABSOLUTE_ACCURACY_VERIFIED = "verified"
 ABSOLUTE_ACCURACY_NOT_VERIFIED = "not_verified"
@@ -64,6 +68,7 @@ __all__ = [
     "ExportProfileRequest",
     "ExportReviewedProfileRequest",
     "GCPWorkflowResult",
+    "GCP_NUDGE_STEPS_M",
     "PrepareCaptureRequest",
     "PrepareRequest",
     "RELATIVE_OSM_WARNING",
@@ -74,7 +79,135 @@ __all__ = [
     "prepare",
     "prepare_capture",
     "status_project",
+    "edit_web_control",
 ]
+
+
+def _web_number(value: Any, name: str) -> float:
+    # Unlike imported survey files, JSON editor coordinates must actually be
+    # numbers. Accepting True or a blank string conceals malformed picks.
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be a finite number")
+    try:
+        number = float(value)
+    except (ValueError, OverflowError) as exc:
+        raise ValueError(f"{name} must be a finite number") from exc
+    if not math.isfinite(number):
+        raise ValueError(f"{name} must be a finite number")
+    return number
+
+
+def _web_target(value: Any) -> list[float]:
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise ValueError("GCP target must contain exactly longitude and latitude")
+    lon, lat = [_web_number(item, "GCP target coordinate") for item in value]
+    if not -180 <= lon <= 180 or not -90 <= lat <= 90:
+        raise ValueError("GCP target must use EPSG:4326 longitude/latitude")
+    return [lon, lat]
+
+
+def edit_web_control(
+    feature: Mapping[str, Any],
+    previous: Mapping[str, Any] | None = None,
+    *,
+    action: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Validate and edit a stored CAD/map pair inside its store transaction.
+
+    ``previous`` must come from the store, never from the request. The store
+    checks the optimistic revision before calling this helper. Editor metadata
+    supplied by a client is ignored, preventing a reload or an old client from
+    erasing history or replacing the initial target. No native runtime loads.
+    """
+    result = copy.deepcopy(dict(feature))
+    properties = result.get("properties")
+    if not isinstance(properties, dict) or properties.get("_kind") != "cad_map_gcp":
+        raise ValueError("Only a cad_map_gcp feature can be adjusted")
+    geometry = result.get("geometry")
+    if not isinstance(geometry, dict) or geometry.get("type") != "Point":
+        raise ValueError("GCP geometry must be a Point")
+    target = _web_target(geometry.get("coordinates"))
+    for field in ("cad_x", "cad_y"):
+        properties[field] = _web_number(properties.get(field), field)
+    role = properties.get("role", "train")
+    if not isinstance(role, str) or role not in {"train", "check"}:
+        raise ValueError("GCP role must be train or check")
+    properties["role"] = role
+    if "enabled" in properties and type(properties["enabled"]) is not bool:
+        raise ValueError("GCP enabled must be boolean")
+    for field in ("weight", "accuracy_m"):
+        if field in properties and _web_number(properties[field], field) <= 0:
+            raise ValueError(f"{field} must be positive")
+
+    old = dict(previous.get("properties") or {}) if previous else {}
+    if previous:
+        if old.get("_kind") != "cad_map_gcp":
+            raise ValueError("An existing review feature cannot become a GCP; create a new pair")
+        for field in ("cad_x", "cad_y"):
+            if properties[field] != _web_number(old.get(field), field):
+                raise ValueError("Source CAD pick is immutable; create a new pair to select another source point")
+        # Preserve optional source provenance even when an older client omits it.
+        for field in ("cad_anchor", "cad_feature_id", "cad_layer", "cad_source",
+                      "source_entity_key", "source_handle"):
+            if field in old:
+                if field in properties and properties[field] != old[field]:
+                    raise ValueError("Source CAD pick provenance is immutable")
+                properties[field] = copy.deepcopy(old[field])
+        original = _web_target(previous["geometry"]["coordinates"])
+        state = copy.deepcopy(old.get("_gcp_edit") or {
+            "schema_version": 1, "initial_target": original, "undo_targets": [],
+        })
+        if not isinstance(state, dict) or state.get("schema_version") != 1:
+            raise ValueError("Stored GCP editor state is invalid")
+        state["initial_target"] = _web_target(state.get("initial_target"))
+        history = state.get("undo_targets")
+        if not isinstance(history, list) or len(history) > GCP_UNDO_LIMIT:
+            raise ValueError("Stored GCP undo history is invalid")
+        history = [_web_target(item) for item in history]
+    else:
+        if action is not None:
+            raise ValueError("Select and save a CAD/map pair before adjusting it")
+        original = target[:]
+        state = {"schema_version": 1, "initial_target": target[:], "undo_targets": []}
+        history = []
+
+    operation = "pick" if previous is None else "edit"
+    if action is not None:
+        if not isinstance(action, Mapping):
+            raise ValueError("GCP adjustment must be an object")
+        operation = action.get("operation")
+        if operation == "nudge":
+            azimuths = {"north": 0.0, "east": 90.0, "south": 180.0, "west": 270.0}
+            direction = action.get("direction")
+            if not isinstance(direction, str) or direction not in azimuths:
+                raise ValueError("GCP direction must be north, east, south, or west")
+            step = _web_number(action.get("step_m"), "step_m")
+            if step not in GCP_NUDGE_STEPS_M:
+                raise ValueError("step_m must be 0.01, 0.1, or 1 metre")
+            if abs(original[1]) == 90.0:
+                raise ValueError("Cardinal nudge directions are undefined at a geographic pole")
+            from pyproj import Geod
+
+            lon, lat, _ = Geod(ellps="WGS84").fwd(*original, azimuths[direction], step)
+            target = _web_target([lon, lat])
+            state["last_nudge"] = {"direction": direction, "step_m": step}
+        elif operation == "undo":
+            if not history:
+                raise ValueError("There is no GCP target edit to undo")
+            target = history.pop()
+        elif operation == "reset":
+            target = state["initial_target"][:]
+        else:
+            raise ValueError("GCP operation must be nudge, undo, or reset")
+    if target != original and operation != "undo":
+        history.append(original[:])
+    state.update(
+        undo_targets=history[-GCP_UNDO_LIMIT:], last_action=operation,
+        distance_method="WGS84_ellipsoidal_geodesic",
+    )
+    properties["_gcp_edit"] = state
+    result["geometry"] = {"type": "Point", "coordinates": target}
+    return result
 
 
 def _path(value: PathLike, field_name: str) -> Path:

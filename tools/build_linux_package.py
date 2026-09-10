@@ -11,6 +11,7 @@ import re
 import subprocess
 import tarfile
 import tempfile
+import tomllib
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 PACKAGING = REPOSITORY / "packaging/linux"
@@ -182,6 +183,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--payload", type=Path, required=True)
     parser.add_argument("--output", type=Path, default=REPOSITORY / "dist/linux")
-    parser.add_argument("--version", default="0.4.0")
+    parser.add_argument("--version", default=tomllib.loads(
+        (REPOSITORY / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"])
     args = parser.parse_args()
     print(json.dumps(build(args.payload, args.output, args.version), indent=2))

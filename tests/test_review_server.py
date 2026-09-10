@@ -341,7 +341,7 @@ def _run_fixture(tmp_path) -> tuple:
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
         },
         "artifacts": {
-            "delivery": {"path": str(delivery), "sha256": "fixture"},
+            "delivery": {"path": str(delivery), "sha256": hashlib.sha256(delivery.read_bytes()).hexdigest()},
         },
         "crs": {
             "source_crs": "EPSG:32749",
@@ -642,7 +642,7 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     assert run_summary["source_entity_count"] == 1538
     assert run_summary["delivery_counts"] == {"SITE": 1, "CABLE": 33}
     page = client.get("/").text
-    assert "图纸理解、配准与交付审查" in page
+    assert "核对源图，校正地图位置" in page
     assert "把不可信的" in page
     assert "DWG" in page
     assert 'id="hero-page"' in page
@@ -781,7 +781,7 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
     page = client.get("/")
     assert page.status_code == 200
     assert '<meta name="theme-color" content="#f5f8f7">' in page.text
-    assert 'aria-label="转换目录"' in page.text
+    assert 'aria-label="审查步骤"' in page.text
     assert 'data-tab="console"' in page.text
     assert 'id="copy-command"' in page.text
     assert 'id="copy-coordinate"' in page.text
@@ -909,3 +909,70 @@ def test_partition_review_rejects_unbound_or_inconsistent_manifest(tmp_path, mut
     partition_manifest.write_text(json.dumps(child), encoding="utf-8")
     with pytest.raises(ReviewServerError, match="(?i)partition"):
         create_review_app(partition, workspace_dir=tmp_path / "review-invalid")
+
+
+def test_matching_profile_preserves_initial_pick_and_undo_in_a_new_workspace(tmp_path, monkeypatch):
+    client, run, _, manifest, _ = _matching_fixture(tmp_path, monkeypatch)
+    original = client.get("/api/review/features").json()["features"][0]
+    target = original["geometry"]["coordinates"]
+    edited = client.post("/api/review/features/gcp:0/adjust", json={
+        "operation": "nudge", "direction": "east", "step_m": 0.1, "expected_revision": 1,
+    })
+    assert edited.status_code == 200, edited.text
+    result = client.post("/api/matching/rematch", json=_matching_request(client)).json()
+    assert result["status"] == "prepared", result
+    record = result["matching"]
+    assert record["controls"][0]["editor_state"]["initial_target"] == target
+    saved = tmp_path / "opened-result"
+    saved.mkdir()
+    delivery = saved / "delivery.gpkg"
+    delivery.write_bytes(b"new immutable result")
+    manifest["osm_matching"] = record
+    manifest["artifacts"]["delivery"] = {"path": str(delivery),
+        "sha256": hashlib.sha256(delivery.read_bytes()).hexdigest()}
+    (saved / "run_manifest.json").write_text(json.dumps(manifest))
+    reopened = TestClient(create_review_app(saved, workspace_dir=tmp_path / "new-workspace"))
+    restored = reopened.get("/api/review/features").json()["features"][0]
+    assert restored["properties"]["_gcp_edit"]["initial_target"] == target
+    undone = reopened.post("/api/review/features/gcp:0/adjust", json={
+        "operation": "undo", "expected_revision": 1,
+    })
+    assert undone.status_code == 200, undone.text
+    assert undone.json()["payload"]["geometry"]["coordinates"] == target
+    assert undone.json()["payload"]["properties"]["cad_x"] == original["properties"]["cad_x"]
+
+
+def test_registration_export_keeps_the_original_coverage_policy(tmp_path, monkeypatch):
+    run, _, manifest_path = _run_fixture(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    template = Path(__file__).resolve().parents[1] / "experiment/config/apd_source_profile.json"
+    source_profile = json.loads(template.read_text())
+    source_profile.update(source_sha256=manifest["source"]["sha256"],
+                          source_crs="EPSG:32749", target_crs="EPSG:32749")
+    source = tmp_path / "source-profile.json"
+    source.write_text(json.dumps(source_profile))
+    manifest["profiles"] = {"source_profile": {"path": str(source),
+        "sha256": hashlib.sha256(source.read_bytes()).hexdigest()}}
+    manifest_path.write_text(json.dumps(manifest))
+    client = TestClient(create_review_app(run, workspace_dir=tmp_path / "review"))
+    for index, (role, x, y) in enumerate([
+        ("train", 0, 0), ("train", 100, 0), ("train", 0, 100), ("train", 100, 100),
+        ("check", 20, 20), ("check", 80, 20), ("check", 50, 80),
+    ]):
+        response = client.post("/api/review/features", json={"expected_revision": 0,
+            "feature": {"type": "Feature", "id": f"gcp:{index}",
+                "geometry": {"type": "Point", "coordinates": [112.7 + x * 0.0001, -7.45 + y * 0.0001]},
+                "properties": {"_kind": "cad_map_gcp", "role": role, "cad_x": x, "cad_y": y}}})
+        assert response.status_code == 200, response.text
+    capture = client.get("/api/registration").json()
+    export = client.post("/api/registration/export", json={"activate": True,
+        "expected_controls_sha256": capture["controls_sha256"]})
+    assert export.status_code == 200, export.text
+    result = export.json()
+    emitted = json.loads(Path(result["source_profile"]).read_text())
+    assert emitted == source_profile
+    assert result["coverage_policy"]["final_conversion_enforces_bound_coverage"] is True
+    old_profile = Path(result["profile"]["path"]).read_bytes()
+    assert client.post("/api/registration/export", json={"activate": True,
+        "expected_controls_sha256": "stale"}).status_code == 409
+    assert Path(result["profile"]["path"]).read_bytes() == old_profile

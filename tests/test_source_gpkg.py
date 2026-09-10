@@ -6,10 +6,70 @@ import sqlite3
 from hashlib import sha256
 
 import pytest
+import ezdxf
 
 import cad2gis.cad2gis_v3.source_gpkg as source_gpkg
 from cad2gis.cad2gis_v3.model import CURVE_FACTS_SCHEMA, SourceEntity
 from cad2gis.cad2gis_v3.source_gpkg import write_source_gpkg
+from cad2gis.reader.libredwg_cli import _record
+
+
+def test_source_spatial_geometry_draws_bulges_without_changing_reader_vertices(tmp_path):
+    document = ezdxf.new()
+    msp = document.modelspace()
+    entities = [
+        msp.add_lwpolyline([(0, 0, 1), (10, 0, 0)], format="xyb"),
+        # Two vertices can form a valid closed boundary when one side is an arc.
+        msp.add_lwpolyline([(20, 0, 0), (30, 0, 1)], format="xyb", close=True),
+    ]
+    sources = [SourceEntity.from_record(_record(
+        document=document, entity=entity, source=tmp_path / "source.dwg",
+        source_sha256="a" * 64, layout="Model", layout_role="model", cad_role="model",
+    )) for entity in entities]
+    output = tmp_path / "curves.gpkg"
+    result = write_source_gpkg(output, sources, None)
+    assert result.layer_counts["source_lines"] == result.layer_counts["source_polygons"] == 1
+    dataset = source_gpkg.ogr.Open(str(output))
+    line = dataset.GetLayerByName("source_lines").GetNextFeature()
+    line_geometry = line.GetGeometryRef()
+    assert line_geometry.GetPointCount() > 16
+    assert min(line_geometry.GetY(i) for i in range(line_geometry.GetPointCount())) == pytest.approx(-5, abs=0.01)
+    assert json.loads(line["native_points"]) == [[0, 0], [10, 0]]
+    assert json.loads(line["curve_facts"])["bulges"] == [1, 0]
+    assert line["routing_reason"] == "source_tessellated_curve"
+    polygon = dataset.GetLayerByName("source_polygons").GetNextFeature()
+    assert polygon.GetGeometryRef().Area() == pytest.approx(math.pi * 25 / 2, abs=0.12)
+    assert json.loads(polygon["native_points"]) == [[20, 0], [30, 0]]
+    assert polygon["routing_reason"] == "source_tessellated_curve_boundary"
+    line = polygon = None
+    dataset.Close()
+
+
+def test_incomplete_spline_geometry_is_explicit_metadata_instead_of_control_polygon(tmp_path):
+    source = SourceEntity.from_record({
+        "entity_key": "spline", "dwg_type_name": "SPLINE",
+        "points": [(0, 0), (5, 10), (10, 0)],
+    })
+    output = tmp_path / "unsupported-curve.gpkg"
+    result = write_source_gpkg(output, [source], None)
+    assert result.layer_counts["source_metadata"] == 1
+    assert result.layer_counts["source_lines"] == 0
+    with sqlite3.connect(output) as connection:
+        reason, points = connection.execute("SELECT routing_reason, native_points FROM source_metadata").fetchone()
+    assert "source_curve_geometry_unavailable" in reason
+    assert json.loads(points) == [[0, 0], [5, 10], [10, 0]]
+
+
+def test_small_closed_boundary_survives_large_projected_coordinates(tmp_path):
+    offset = 1e9
+    points = [(offset + x, offset + y) for x, y in [(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5)]]
+    source = SourceEntity.from_record({
+        "entity_key": "small-boundary", "dwg_type_name": "LWPOLYLINE",
+        "points": points, "closed": True,
+    })
+    result = write_source_gpkg(tmp_path / "small-boundary.gpkg", [source], None)
+    assert result.layer_counts["source_polygons"] == 1
+    assert result.layer_counts["source_metadata"] == 0
 
 
 @pytest.fixture

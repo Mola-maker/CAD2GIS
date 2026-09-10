@@ -1,4 +1,4 @@
-"""Build and verify the data-free static CAD2GIS review demonstration."""
+"""Build and verify the static CAD2GIS review demo with derived map fixtures."""
 
 from __future__ import annotations
 
@@ -33,6 +33,8 @@ EXPECTED_PROJECT_IDS = (
 )
 PUBLIC_ASSET_DIR = SOURCE_ROOT / "assets"
 PUBLIC_ASSET_SUFFIXES = {".svg", ".json", ".woff2", ".txt", ".js", ".css", ".md"}
+# Generated decorative artwork is explicitly admitted; arbitrary project screenshots are not.
+PUBLIC_RASTER_ASSETS = {"onboarding-map-v1.png"}
 BUILD_SENTINEL = ".cad2gis-webdemo-build"
 BUILD_SENTINEL_VALUE = "cad2gis.webdemo_build.v1\n"
 FORBIDDEN_SUFFIXES = {
@@ -120,7 +122,8 @@ def _assert_source_boundary() -> tuple[str, ...]:
         raise ValueError("WebDemo hero assets are missing")
     hero_assets = sorted(
         path for path in PUBLIC_ASSET_DIR.rglob("*")
-        if path.is_file() and path.suffix.casefold() in PUBLIC_ASSET_SUFFIXES
+        if path.is_file() and (path.suffix.casefold() in PUBLIC_ASSET_SUFFIXES
+                              or path.relative_to(PUBLIC_ASSET_DIR).as_posix() in PUBLIC_RASTER_ASSETS)
     )
     if not hero_assets:
         raise ValueError("WebDemo hero asset directory is empty")
@@ -134,7 +137,8 @@ def build_webdemo(destination: Path) -> dict[str, object]:
     publish_files = PUBLIC_FILES + fixture_names
     hero_assets = sorted(
         path for path in PUBLIC_ASSET_DIR.rglob("*")
-        if path.is_file() and path.suffix.casefold() in PUBLIC_ASSET_SUFFIXES
+        if path.is_file() and (path.suffix.casefold() in PUBLIC_ASSET_SUFFIXES
+                              or path.relative_to(PUBLIC_ASSET_DIR).as_posix() in PUBLIC_RASTER_ASSETS)
     )
     target = destination.expanduser().resolve()
     if target == REPOSITORY_ROOT or REPOSITORY_ROOT not in target.parents:

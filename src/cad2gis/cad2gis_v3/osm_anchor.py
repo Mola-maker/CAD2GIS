@@ -166,17 +166,16 @@ def query_osm_place(place_name: str) -> dict[str, Any] | None:
 
 
 def _wgs84_to_3857(lon: float, lat: float) -> tuple[float, float]:
-    x = lon * 20037508.34 / 180.0
-    y = math.log(math.tan((90.0 + lat) * math.pi / 360.0)) / (math.pi / 180.0)
-    y = y * 20037508.34 / 180.0
+    # EPSG:3857 uses the exact WGS84 semi-major axis. A rounded half-world
+    # circumference introduced millimetre offsets against the PROJ operation.
+    x = 6378137.0 * math.radians(lon)
+    y = 6378137.0 * math.asinh(math.tan(math.radians(lat)))
     return x, y
 
 
 def _epsg3857_to_wgs84(x: float, y: float) -> tuple[float, float]:
-    lon = float(x) * 180.0 / 20037508.34
-    lat = math.degrees(2.0 * math.atan(math.exp(
-        float(y) / 20037508.34 * math.pi,
-    )) - math.pi / 2.0)
+    lon = math.degrees(float(x) / 6378137.0)
+    lat = math.degrees(math.atan(math.sinh(float(y) / 6378137.0)))
     return lon, lat
 
 
@@ -195,7 +194,7 @@ def query_osm_roads(
     query = (
         "[out:json][timeout:20];"
         f"way[highway]({south},{west},{north},{east});"
-        f"out tags geom {int(max_roads)};"
+        f"out body geom {int(max_roads)};"
     )
     request = urllib.request.Request(
         os.environ.get("CAD2GIS_OVERPASS_URL", _OVERPASS_URL).strip(),
@@ -214,12 +213,6 @@ def query_osm_roads(
     except Exception:
         return []
     elements = payload.get("elements", ()) if isinstance(payload, Mapping) else ()
-    node_use = Counter(
-        int(node)
-        for element in elements
-        if isinstance(element, Mapping)
-        for node in element.get("nodes", ())
-    )
     roads: list[dict[str, Any]] = []
     for element in elements:
         if not isinstance(element, Mapping):
@@ -232,20 +225,37 @@ def query_osm_roads(
                 _wgs84_to_3857(float(item["lon"]), float(item["lat"]))
                 for item in geometry
             ]
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, OverflowError):
             continue
-        nodes = [int(value) for value in element.get("nodes", ())]
-        endpoint_degree = sum(
-            max(0, node_use[node] - 1)
-            for node in ([nodes[0], nodes[-1]] if nodes else [])
+        if not all(math.isfinite(v) for point in points for v in point):
+            continue
+        raw_nodes = element.get("nodes", ())
+        nodes = (
+            list(raw_nodes)
+            if isinstance(raw_nodes, list) and len(raw_nodes) == len(points)
+            and all(isinstance(v, int) and not isinstance(v, bool) and v > 0 for v in raw_nodes)
+            else []
         )
+        tags = element.get("tags") or {}
+        if not isinstance(tags, Mapping):
+            tags = {}
         roads.append({
             "osm_way_id": int(element.get("id", 0)),
             "points": points,
-            "name": str((element.get("tags") or {}).get("name", "")),
-            "highway": str((element.get("tags") or {}).get("highway", "")),
-            "endpoint_degree": endpoint_degree,
+            "name": str(tags.get("name", "")),
+            "highway": str(tags.get("highway", "")),
+            **({"node_ids": nodes} if nodes else {}),
+            **{key: str(tags.get(key, "")) for key in ("layer", "bridge", "tunnel", "junction")},
         })
+    # Count distinct ways at an explicit OSM node. Repeated vertices in one
+    # closed way and line crossings without a shared node are not junctions.
+    node_use = Counter(node for road in roads for node in set(road.get("node_ids", ())))
+    for road in roads:
+        nodes = road.get("node_ids", ())
+        road["endpoint_degree"] = sum(
+            max(0, node_use[node] - 1)
+            for node in set((nodes[0], nodes[-1])) if nodes
+        ) if nodes else 0
     return roads
 
 

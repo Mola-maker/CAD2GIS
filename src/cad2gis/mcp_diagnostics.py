@@ -22,7 +22,7 @@ import uuid
 TRACE_SCHEMA = "cad2gis.mcp_trace.v1"
 DIAGNOSTIC_SCHEMA = "cad2gis.debug_mcp.v1"
 _TRACE_LOCK = threading.Lock()
-_MUTATING = frozenset({
+MUTATING_TOOLS = frozenset({
     "install_runtime", "bootstrap_project", "apply_ai_onboarding",
     "auto_onboard_and_convert", "run_conversion", "create_decision_pack",
     "prepare_review_workspace", "start_feedback_iteration",
@@ -31,7 +31,18 @@ _MUTATING = frozenset({
     "export_source", "prepare_semantic_batches", "commit_semantic_patch",
     "compile_semantic_revision", "initialize_semantic_store",
     "cancel_compile_job", "reconcile_compile_jobs",
+    "prepare_iteration_context",
 })
+
+_ERROR_RECOVERY = {
+    "PATH_OUTSIDE_ROOT": "Choose a path inside the configured project roots; do not widen the roots automatically.",
+    "ARTIFACT_NOT_FOUND": "Check the supplied file or run directory; create the required input with the preceding workflow step.",
+    "OUTPUT_EXISTS": "Inspect the existing immutable output. Use a new run directory for a new conversion.",
+    "VALIDATION_FAILED": "Inspect the tool input schema and project evidence, then correct the arguments before trying again.",
+    "ARTIFACT_BINDING_INVALID": "Recreate derived artifacts from the original source; do not change recorded hashes to bypass validation.",
+    "DATABASE_BUSY": "Wait for the active database operation to finish; inspect its status before retrying a mutation.",
+    "QUERY_BUDGET_EXCEEDED": "Narrow filters or page size and retry the read query; inspect status first for a mutation.",
+}
 
 
 def _digest(value: Any) -> str:
@@ -348,12 +359,13 @@ def traced_tool(name: str, handler: Callable[..., Any], server: Any,
 
     def finish(event: dict[str, Any], start: float, result: Any = None,
                failure: BaseException | None = None) -> None:
+        result_error = bool(getattr(result, "isError", False))
         terminal = {
-            **event, "phase": "succeeded" if failure is None else
+            **event, "phase": "failed" if result_error else "succeeded" if failure is None else
             ("cancelled" if error_code(failure) == "CANCELLED" else "failed"),
             "duration_ms": round((time.perf_counter() - start) * 1000, 3),
-            "error_code": error_code(failure) if failure else None,
-            "committed": "unknown" if name in _MUTATING else False,
+            "error_code": error_code(failure) if failure else "TOOL_EXECUTION_FAILED" if result_error else None,
+            "committed": "unknown" if name in MUTATING_TOOLS else False,
         }
         if failure is None and hasattr(result, "structuredContent"):
             result = result.structuredContent
@@ -375,11 +387,12 @@ def traced_tool(name: str, handler: Callable[..., Any], server: Any,
         if not isinstance(exc, Exception):
             return exc
         from mcp.server.fastmcp.exceptions import ToolError
+        code = error_code(exc)
         return ToolError(json.dumps({
-            "error_code": error_code(exc), "trace_id": event["trace_id"],
-            "retryable": error_code(exc) in {"DATABASE_BUSY", "QUERY_BUDGET_EXCEEDED"},
-            "committed": "unknown" if name in _MUTATING else False,
-            "recovery": "Inspect the operation status before retrying a mutation.",
+            "error_code": code, "trace_id": event["trace_id"],
+            "retryable": code in {"DATABASE_BUSY", "QUERY_BUDGET_EXCEEDED"} and name not in MUTATING_TOOLS,
+            "committed": "unknown" if name in MUTATING_TOOLS else False,
+            "recovery": _ERROR_RECOVERY.get(code, "Inspect the operation status and existing artifacts before attempting a recovery."),
         }))
 
     if inspect.iscoroutinefunction(handler):
