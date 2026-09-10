@@ -89,3 +89,16 @@ def test_benchmark_detects_mutated_input_vectors(tmp_path):
 
     with pytest.raises(ValueError, match="mutated"):
         benchmark.benchmark_case(SimpleNamespace(_match_routes=mutate), tmp_path)
+
+
+def test_taipa_numerical_candidates_converge_before_ambiguity_decision():
+    """A 20-iteration cap left 0.385 m duplicates of the same local optimum."""
+    from cad2gis.cad2gis_v3 import osm_matching
+
+    result = benchmark.benchmark_case(osm_matching, ROOT / "baselines/taipa/delivery")
+    fit = result["unperturbed"]
+    assert fit["accepted"] is True
+    assert fit["translation_3857"] == pytest.approx([-2.309862, 0.549932], abs=0.1)
+    assert fit["quality"]["candidates"][0]["refinement_converged"] is True
+    assert fit["quality"]["confidence_gap"] >= 0.06
+    assert result["absolute_accuracy_verified"] is False

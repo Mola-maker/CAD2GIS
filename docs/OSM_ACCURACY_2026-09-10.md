@@ -28,6 +28,13 @@ No earlier checkout, drawing, reviewed configuration or delivery was overwritten
    0.25 m. Exhausting the additional 256-seed budget forces abstention with
    `landmark_hypothesis_budget_exhausted`. Canonical axis ordering prevents
    near-parallel route permutations from changing landmark observability.
+4. **The iteration cap could create numerical duplicate candidates.** Taipa's
+   competing fits were only 0.385 m apart after 20 iterations; three additional
+   iterations brought them to the same optimum. The cap is now 100 iterations,
+   with the unchanged 0.01 m step tolerance. Acceptance requires convergence;
+   exhausted fits report `translation_refinement_not_converged`. Each retained
+   candidate records its iteration count and final step. Kletek's two leading
+   fits were already converged, so extending the budget does not approve them.
 
 The global placement remains a translation through the existing unit/CRS base
 operation. Native CAD vertices, shape, lengths, OSM topology and GCP approvals
@@ -76,31 +83,36 @@ The optional perturbation mode measures translation equivariance relative to an
 unperturbed fit; it cannot establish the original delivery's position accuracy.
 Geometry-only reference layers remain identified as such.
 
-The first complete replay of the reviewed implementation used byte-identical
+The final replay of the reviewed implementation used byte-identical
 input GeoPackages and identical projected vectors in both runs:
 
 | Drawing | Baseline → updated support coverage | Baseline → updated acceptance |
 | --- | --- | --- |
 | Kletek | 90.12% → 94.47% | Accepted → abstained |
-| Taipa | 92.72% → 99.99% | Accepted → abstained |
+| Taipa | 92.72% → 99.99% | Accepted → accepted |
 | Tinggede | 89.94% → 96.78% | Accepted → abstained |
 | Darat Sekip SF | 100% → 100% | Abstained → abstained |
 
-All updated rejections came from ambiguity, not the fine-seed cap. The best two
-translations are separated by approximately 2.28 m, 0.385 m, 33.60 m and 139.08 m
-respectively. A close pair can include partially converged fits, so these results
-do not prove that every competing candidate represents a different road. The
-replay took 120.6 s versus 53.2 s for the supplied algorithm on this machine.
+All updated rejections came from ambiguity, not the fine-seed cap. All 20
+retained candidates converged. Kletek's best two translations are separated by
+approximately 2.28 m, Tinggede's by 33.60 m and Darat's by 139.08 m. Taipa's
+initial 0.385 m numerical duplicate was resolved by the convergence fix; its
+final score gap is 0.382538. Distinct local optima do not by themselves prove
+different road identities. The final replay took **170.2 s versus 53.2 s** for
+the supplied algorithm on this machine: the broader search is more expensive.
 Direction-compatible p95 corridor residuals did not uniformly improve and are
 not directly equivalent to the old geometric-nearest residuals. No geographic
 accuracy improvement is claimed for these four specimens.
+Source hashes, implementation hashes and full per-candidate diagnostics are in
+[OSM_ACCURACY_BENCHMARK_2026-09-10.json](OSM_ACCURACY_BENCHMARK_2026-09-10.json).
 
 ## Validation
 
 - Complete imported-software regression: **1,145 passed, 11 skipped**. Skips
   cover opt-in complex DWGs, absent external evidence and platform capabilities.
 - Final matching, benchmark, GCP, GEODATA and stage regressions after the final
-  budget gate and correspondence optimization: **208 passed**.
+  budget, convergence and correspondence fixes: **209 passed**, including the
+  archived Taipa numerical-convergence regression.
 - A generated DWG passed real LibreDWG reading, conversion, OSM matching,
   GeoPackage writing and SVG extraction. Its authored point `(12600100, -799800)`
   was recovered within `1.2e-10` projected units. Reader warnings about the
@@ -109,8 +121,8 @@ accuracy improvement is claimed for these four specimens.
   builds passed. Independent exhaustive comparison covered 2,880 randomized
   correspondence queries; reviewed ambiguity/order/budget defects were fixed.
 
-The full regression run preceded the final narrow budget/fast-path fixes; the
-208-test run and generated-DWG smoke exercised their final implementation.
+The full regression run preceded the final narrow budget/fast-path/convergence
+fixes; the 209-test run and generated-DWG smoke exercised their final implementation.
 These checks do not constitute a fresh nine-DWG conversion, UI/browser acceptance,
 Linux installation, or independent surveyed-checkpoint validation.
 

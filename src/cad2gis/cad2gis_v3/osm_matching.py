@@ -711,6 +711,7 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
     hypotheses.extend(landmark_seeds)
     quality["landmark_search"] = landmark_search
     quality["correspondence_method"] = "nearest_direction_compatible_segment_within_radius"
+    quality["refinement"] = {"maximum_iterations": 100, "convergence_step_m": 0.01}
     # Several complete CAD routes independently propose candidates. Endpoints
     # supplement centroids because OSM ways and CAD spans can be split differently.
     proposers = sorted(routes, key=lambda route: -LineString(route).length)[:16]
@@ -731,7 +732,9 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
     candidates = []
     for hypothesis in unique.values():
         delta = hypothesis.copy()
-        for _ in range(20):
+        converged = False
+        last_step_m = None
+        for iteration in range(100):
             fitted = inspect(delta, tolerance * 4.0)
             eligible = (fitted["distances"] < tolerance * 4.0) & (fitted["directional"] >= 0.7)
             if np.count_nonzero(eligible) < 3:
@@ -747,7 +750,9 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
             gradient = normals.T @ (robust * signed)
             correction = np.linalg.lstsq(hessian, gradient, rcond=1e-8)[0]
             delta += correction
-            if np.linalg.norm(correction) * scale_to_ground < 0.01:
+            last_step_m = float(np.linalg.norm(correction)) * scale_to_ground
+            if last_step_m < 0.01:
+                converged = True
                 break
         fitted = inspect(delta, tolerance)
         distances, directional = fitted["distances"], fitted["directional"]
@@ -759,6 +764,8 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
         score = 0.55 * coverage + 0.20 * direction + 0.25 * residual_score
         structure = _observability(fitted["directions"][support], weights[support])
         candidates.append({"translation_3857": delta.tolist(), "score": score,
+                           "refinement_converged": converged, "refinement_iterations": iteration + 1,
+                           "last_refinement_step_m": last_step_m,
                            "coverage": coverage, "direction_consistency": direction,
                            "route_coverages": route_coverages, "observability": structure,
                            "supported_route_fraction": float(np.mean(np.asarray(route_coverages) >= 0.6)),
@@ -776,11 +783,14 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
     accepted = (best["coverage"] >= 0.75 and best["direction_consistency"] >= 0.70
                 and best["supported_route_fraction"] >= 0.75 and gap >= 0.06
                 and best["observability"]["observable"]
+                and best["refinement_converged"]
                 and not landmark_search["seed_budget_exhausted"])
     quality.update({"confidence_gap": gap, "hypothesis_count": len(unique), "candidates": distinct,
                     "reason": None if accepted else "weak_or_ambiguous_network_alignment"})
     if not best["observability"]["observable"]:
         quality["reason"] = "matched_geometry_unobservable"
+    elif not best["refinement_converged"]:
+        quality["reason"] = "translation_refinement_not_converged"
     if landmark_search["seed_budget_exhausted"]:
         quality["reason"] = "landmark_hypothesis_budget_exhausted"
     return best["translation_3857"] if accepted else None, quality
