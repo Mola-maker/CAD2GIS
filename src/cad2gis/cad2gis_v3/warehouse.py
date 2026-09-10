@@ -23,7 +23,7 @@ from ..native_runtime import ensure_osgeo_runtime
 from .schema_config import BOITE, CABLE, EMR, IMB, INFRASTRUCTURE_FC, PTECH, SITE, ZNRO, ZPM
 from .curve_geometry import delivery_points, delivery_segments
 from .georef import DirectTransformer
-from .gpkg_metadata import normalize_geopackage_metadata
+from .gpkg_metadata import compact_geopackage, normalize_geopackage_metadata
 from .model import Feature
 
 ensure_osgeo_runtime()
@@ -889,7 +889,7 @@ def write_delivery(path, features, transformer):
         connection = sqlite3.connect(staged)
         try:
             normalize_geopackage_metadata(
-                connection, contents_order=_active_layer_order(features),
+                connection, contents_order=_active_layer_order(features), vacuum=False,
             )
             integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
             layers = {
@@ -906,6 +906,7 @@ def write_delivery(path, features, transformer):
                 f"layers={sorted(layers)}, expected={sorted(expected_layers)}"
             )
         gc.collect()
+        compact_geopackage(staged)
         os.replace(staged, destination)
         return counts
     finally:

@@ -285,14 +285,25 @@ class CadSceneGraph:
                     f"CAD scene edge references missing nodes: {sorted(missing)}"
                 )
         canonical_diagnostics = _canonical(dict(diagnostics))
-        identity = {
-            "schema_version": CAD_SCENE_GRAPH_SCHEMA,
-            "source_sha256": source,
-            "nodes": [node.to_dict() for node in ordered_nodes],
-            "edges": [edge.to_dict() for edge in ordered_edges],
-            "diagnostics": canonical_diagnostics,
-        }
-        graph_sha256 = _sha256(_canonical_json(identity).encode("utf-8"))
+        # Preserve the exact sorted canonical JSON identity while hashing one
+        # record at a time. Large DWGs otherwise materialize the entire graph,
+        # a canonical deep copy, a JSON string and UTF-8 bytes simultaneously.
+        digest = hashlib.sha256()
+        digest.update(b'{"diagnostics":')
+        digest.update(_canonical_json(canonical_diagnostics).encode("utf-8"))
+        for name, records in (("edges", ordered_edges), ("nodes", ordered_nodes)):
+            digest.update(f',"{name}":['.encode("ascii"))
+            for index, record in enumerate(records):
+                if index:
+                    digest.update(b",")
+                digest.update(_canonical_json(record.to_dict()).encode("utf-8"))
+            digest.update(b"]")
+        digest.update(b',"schema_version":')
+        digest.update(_canonical_json(CAD_SCENE_GRAPH_SCHEMA).encode("utf-8"))
+        digest.update(b',"source_sha256":')
+        digest.update(_canonical_json(source).encode("utf-8"))
+        digest.update(b"}")
+        graph_sha256 = digest.hexdigest()
         return cls(
             source,
             ordered_nodes,

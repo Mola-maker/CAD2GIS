@@ -40,7 +40,8 @@ def worker(args):
     import cad2gis
     from cad2gis import pipeline
     from cad2gis.native_runtime import ensure_osgeo_runtime
-    from cad2gis.cad2gis_v3.project_profile import UNSUPPORTED_SCHEMA_VERSION
+    from cad2gis.cad2gis_v3.project_profile import UNSUPPORTED_SCHEMA_VERSION, inspect_source
+    from cad2gis.cad2gis_v3.source_replay import load_native_snapshot
 
     source = args.source.resolve()
     root = args.output.resolve()
@@ -71,10 +72,17 @@ def worker(args):
         report["configuration_sha256"] = {p.name: sha(p) for p in (project / "config").glob("*.json")}
         stage = "export_source"
         print(f"START {stage}: {args.drawing}", flush=True)
-        reused = args.reuse_exports / args.drawing / "source" if args.reuse_exports else None
+        if args.source_snapshots:
+            snapshots = read(args.source_snapshots)
+            if not isinstance(snapshots, dict) or not isinstance(snapshots.get(args.drawing), str):
+                raise ValueError(f"No source snapshot path for {args.drawing}")
+            reused = Path(snapshots[args.drawing]).expanduser().resolve()
+            if not (reused / "source_manifest.json").is_file():
+                raise ValueError(f"Missing declared native source snapshot: {reused}")
+        else:
+            reused = args.reuse_exports / args.drawing / "source" if args.reuse_exports else None
         source_run = reused if reused and (reused / "source_manifest.json").is_file() else root / "source"
         if source_run == reused:
-            from cad2gis.cad2gis_v3.source_replay import load_native_snapshot
             load_native_snapshot(source_run, local_source)
             snapshot = read(source_run / "source_manifest.json")
         else:
@@ -84,7 +92,13 @@ def worker(args):
         report["source_entity_count"] = snapshot.get("entity_count")
         report["source_conservation"] = snapshot.get("conservation")
         shutil.copytree(source_run / "review", project / "review")
-        inventory = read(project / "review/source_inventory.json")
+        # Inventories also bind the project filename. A byte-identical snapshot
+        # can have been extracted under the supplier's longer DWG filename.
+        # Rebuild from verified native records instead of editing its digest.
+        records, _ = load_native_snapshot(source_run, local_source)
+        inventory = inspect_source(source=local_source, records=records)
+        write(project / "review/source_inventory.json", inventory)
+        del records
         write(project / "review/unsupported_inventory.json", {
             "schema_version": UNSUPPORTED_SCHEMA_VERSION, "source": inventory["source"],
             "inventory_sha256": inventory["inventory_sha256"],
@@ -104,9 +118,12 @@ def worker(args):
         import faulthandler
         if args.trace_workers:
             faulthandler.dump_traceback_later(120, repeat=True)
+        osm_data = args.osm_data_dir / (args.drawing + ".json") if args.osm_data_dir else None
+        if osm_data is not None and not osm_data.is_file():
+            raise ValueError(f"Missing frozen OSM snapshot: {osm_data}")
         result = pipeline.convert_project(source=local_source, project_dir=project,
                     run_dir=root / "run", source_run=source_run, llm="off",
-                    matching=args.matching)
+                    matching=args.matching, osm_data=osm_data)
         write(root / "conversion-result.json", dataclasses.asdict(result) if dataclasses.is_dataclass(result) else result)
         manifest = read(root / "run/run_manifest.json")
         report["stages"][stage] = "PASS"
@@ -169,8 +186,11 @@ def main():
     parser.add_argument("--baselines", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source-names", type=Path, help="JSON baseline-id to original binding basename map")
-    parser.add_argument("--reuse-exports", type=Path, help="Reuse existing snapshots after full hash/reader identity validation")
+    snapshots = parser.add_mutually_exclusive_group()
+    snapshots.add_argument("--reuse-exports", type=Path, help="Reuse existing snapshots after full hash/reader identity validation")
+    snapshots.add_argument("--source-snapshots", type=Path, help="JSON baseline-id to existing native snapshot path map; missing entries fail closed")
     parser.add_argument("--matching", choices=("osm", "nominal"), default="osm")
+    parser.add_argument("--osm-data-dir", type=Path, help="Frozen OSM snapshots named <baseline-id>.json; missing files fail closed")
     parser.add_argument("--jobs", type=int, default=1, help="Concurrent drawings; large source graphs can need substantial memory")
     parser.add_argument("--drawing-id", action="append", help="Verify only these baseline IDs (repeatable)")
     parser.add_argument("--profile-worker", action="store_true", help="Record a cProfile file per drawing")
@@ -210,6 +230,10 @@ def main():
                "--output", str((args.output / item["id"]).resolve()), "--matching", args.matching]
         if args.reuse_exports:
             cmd.extend(["--reuse-exports", str(args.reuse_exports.resolve())])
+        if args.source_snapshots:
+            cmd.extend(["--source-snapshots", str(args.source_snapshots.resolve())])
+        if args.osm_data_dir:
+            cmd.extend(["--osm-data-dir", str(args.osm_data_dir.resolve())])
         if args.profile_worker:
             cmd.append("--profile-worker")
         if args.trace_workers:

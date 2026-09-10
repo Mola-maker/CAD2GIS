@@ -85,24 +85,38 @@ def _load_delivery_partitions(config_dir: Path | None) -> list[dict[str, Any]]:
     path = Path(config_dir) / "delivery_partitions.json"
     if not path.is_file():
         return []
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if (not isinstance(payload, dict)
+            or payload.get("schema_version", "cad2gis-delivery-partitions-v1") != "cad2gis-delivery-partitions-v1"
+            or not isinstance(payload.get("partitions"), list)):
+        raise ValueError("Invalid delivery_partitions.json contract")
     partitions = []
-    for item in payload.get("partitions", ()):
-        try:
-            bbox = [float(value) for value in item["bbox"]]
-            if len(bbox) != 4:
-                continue
-            partitions.append({
-                "region_id": str(item.get("region_id", "")).strip(),
-                "label": str(item.get("label", "")).strip(),
-                "bbox": bbox,
-            })
-        except (KeyError, TypeError, ValueError):
-            continue
-    return [item for item in partitions if item["region_id"]]
+    seen = {"main"}
+    for item in payload["partitions"]:
+        if not isinstance(item, dict):
+            raise ValueError("Delivery partition must be an object")
+        region = item.get("region_id")
+        if (not isinstance(region, str)
+                or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", region) is None
+                or region.casefold() in seen):
+            raise ValueError("Delivery partition identifier is unsafe, reserved or duplicated")
+        values = item.get("bbox")
+        if (not isinstance(values, list) or len(values) != 4
+                or any(type(v) not in (int, float) or not math.isfinite(v) for v in values)):
+            raise ValueError(f"Delivery partition {region} requires four finite bounds")
+        bbox = [float(v) for v in values]
+        if bbox[0] >= bbox[2] or bbox[1] >= bbox[3]:
+            raise ValueError(f"Delivery partition {region} has reversed or empty bounds")
+        for previous in partitions:
+            other = previous["bbox"]
+            if max(bbox[0], other[0]) <= min(bbox[2], other[2]) and max(bbox[1], other[1]) <= min(bbox[3], other[3]):
+                raise ValueError(f"Delivery partitions {region} and {previous['region_id']} overlap")
+        label = item.get("label", region)
+        if not isinstance(label, str) or not label.strip():
+            raise ValueError(f"Delivery partition {region} needs a non-empty label")
+        seen.add(region.casefold())
+        partitions.append({"region_id": region, "label": label, "bbox": bbox})
+    return partitions
 
 
 _MAIN_PARTITION_ID = "MAIN"
