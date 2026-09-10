@@ -2,12 +2,32 @@
   "crs": {
     "local_registration_reviewed": false,
     "local_registration_strategy": null,
-    "source_crs": "EPSG:3857",
-    "target_crs": "EPSG:3857"
+    "source_crs": "EPSG:21148",
+    "target_crs": "EPSG:3857",
+    "geodata_registration": {
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "coordinate_system_id": "Batavia_1.UTM-48S",
+      "target_crs": "EPSG:21148",
+      "design_point": [
+        0.0,
+        0.0
+      ],
+      "reference_point": [
+        631720.4416679794,
+        9312608.31126906
+      ],
+      "horizontal_unit_scale": 1.0,
+      "user_scale_factor": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "authority": "DWG_DIRECT:GEODATA"
+    }
   },
   "drawing": {
     "drawing_units": "metre",
-    "dwg_cgeocs": "WGS84.PseudoMercator",
+    "dwg_cgeocs": "Batavia_1.UTM-48S",
     "dwg_insunits": 6,
     "source_coordinate_scale_reviewed": true,
     "source_coordinate_scale_to_m": 1.0
@@ -27,9 +47,9 @@
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
-      "model_dimensions": 0,
-      "model_entities": 2845,
-      "model_inserts": 156
+      "model_entities": 2342,
+      "model_inserts": 108,
+      "model_dimensions": 0
     },
     "topology_gates": {}
   },
@@ -42,7 +62,7 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "5ce1a12e48fc970e0bb0775d515fe72a7af3f96f8022c1ac3204ee4f0dee61cf",
+    "inventory_sha256": "377234fd77820d3b6a37c30245fdb5de32599818783df9e2a2bec4d1917f1ef4",
     "source_sha256": "d4ebc3bbae4da60a1f367da6301e9ac0945607eb7c972b546ac0af9f4323b74f",
     "source_size_bytes": 2422076
   },
