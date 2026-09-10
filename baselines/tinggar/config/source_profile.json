@@ -23,7 +23,6 @@
     "local_registration_reviewed": false,
     "local_registration_strategy": null,
     "source_crs": "EPSG:21148",
-    "target_crs": "EPSG:21148"
   },
   "drawing": {
     "drawing_units": "metre",
@@ -90,9 +89,10 @@
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
-      "model_dimensions": 0,
       "model_entities": 2342,
-      "model_inserts": 108
+      "model_inserts": 108,
+      "model_dimensions": 0
+
     },
     "topology_gates": {}
   },

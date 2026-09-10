@@ -1,0 +1,133 @@
+{
+  "schema": "cad2gis.qgis-osm-review.v1",
+  "input_project_sha256": "8bd554a66094e898f2f2a82249e481748b9328be76e794795de8ac34256eed02",
+  "sha256": "58e49bc978abed7d99b522ddbc5aaf2608784b0ddda6b9e188c3be7cdf9ed178",
+  "standalone": false,
+  "cad_database_hashes": [
+    "37c3d9cb29a9e0249257dd71cddd7b0cf81439b584a5deced1fa084530637299"
+  ],
+  "cad_layers": {
+    "BOITE": 0,
+    "CABLE": 18,
+    "IMB": 0,
+    "INFRASTRUCTURE": 1,
+    "PTECH": 19,
+    "SITE": 1,
+    "ZNRO": 0,
+    "ZPM": 0
+  },
+  "svg_bindings": [
+    {
+      "layer": "PTECH",
+      "source_handle": "2090B",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20912",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20958",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A56",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A64",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A6B",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A79",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A80",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A87",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A8E",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A95",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A9C",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AA3",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AAA",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AB1",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AB8",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21ABF",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AC6",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21ACD",
+      "svg_sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d"
+    },
+    {
+      "layer": "SITE",
+      "source_handle": "2104E",
+      "svg_sha256": "2a86adb643851f8ba54e2f3bd21e363966373891f6f7eec520a617a6ca99b64a"
+    }
+  ],
+  "osm_layers": {
+    "OSM roads": 94,
+    "OSM buildings": 0,
+    "OSM water": 0,
+    "OSM land use": 0
+  },
+  "osm_database_sha256": "409f704cfeefaa9d4f2c8387693847be31bcd9432de0ee985588f5f559b56596",
+  "osm_source_sha256": "d6fdd215894979384a23ee4edfd15e0c9e5b6361f0c030919a8d272768d817a9",
+  "coordinate_review": null,
+  "absolute_accuracy_verified": false,
+  "geometry_and_attributes_unchanged": true,
+  "attribution": "© OpenStreetMap contributors | openstreetmap.org/copyright"
+}

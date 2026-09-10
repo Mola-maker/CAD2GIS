@@ -23,7 +23,6 @@
     "local_registration_reviewed": false,
     "local_registration_strategy": null,
     "source_crs": "EPSG:32749",
-    "target_crs": "EPSG:32749"
   },
   "drawing": {
     "drawing_units": "metre",
@@ -63,9 +62,11 @@
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
-      "model_dimensions": 18,
+
       "model_entities": 118,
-      "model_inserts": 28
+      "model_inserts": 28,
+      "model_dimensions": 18
+
     },
     "topology_gates": {}
   },
@@ -78,7 +79,9 @@
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
-    "inventory_sha256": "6b253aada3708977c7e8756a66bfde9bb7f25e5b08869a0290894db303e23605",
+
+    "inventory_sha256": "2c6bb2a7d26841111fa2297b1657aec498925034df5a3701a182053ccd905f94",
+
     "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
     "source_size_bytes": 423537
   },

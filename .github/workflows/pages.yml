@@ -59,6 +59,8 @@ jobs:
           python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py tests/test_webdemo_shared_assets.py -q
 
       - name: Fetch and verify authorized derived demonstration
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/fetch_derived_release.py
 
       - name: Build Pages with verified derived demonstrations
