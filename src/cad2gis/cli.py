@@ -54,6 +54,8 @@ def _parser() -> argparse.ArgumentParser:
     _add_database_commands(commands)
     from .batch import register as register_batch
     register_batch(commands)
+    from .match_delivery import register as register_match_delivery
+    register_match_delivery(commands)
     #若用户选择了doctor命令，则调用_doctor函数处理
     doctor.add_argument(
             "--profile",
