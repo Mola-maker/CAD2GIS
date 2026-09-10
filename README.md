@@ -330,6 +330,47 @@ cad2gis auto-convert "<SOURCE.dwg>" `
 密钥不会写入项目、日志或 manifest。New API 聚合网关可通过
 `--provider new-api` 及对应环境变量接入。
 
+## 项目目录与期望产物结构
+
+每张 DWG 对应 `baselines/<项目>/` 下的一套 source-bound 产物，本工作区十个基线
+即采用该结构：
+
+```text
+baselines/<project>/
+├── config/                        # 源绑定与语义映射，人工评审后冻结
+│   ├── source_profile.json        # 源配置：CRS/CGEOCS、GEODATA 配准、单位与图层门槛
+│   ├── mapping_registry.json      # 图层/实体 → 要素类映射与元素计数门禁
+│   ├── spatial_regions.json       # 独立分区契约（如 Manado 的 EMR 面板）；无分区时缺省
+│   ├── osm_anchor.json            # 可选：地点锚点，供缺少地理坐标的图纸定位
+│   ├── matching-manual-gcp.json   # 可选：冻结的人工匹配 revision 记录
+│   └── .osm-cache/                # 可选：Overpass 路网快照缓存（内容寻址命名）
+├── run/                           # 标准转换 run；不存放任何 QGZ
+│   ├── source.gpkg                # 原生 CAD 事实快照
+│   ├── evidence.gpkg              # 证据层
+│   ├── delivery.gpkg              # 交付几何与属性（权威字节，打包后字节不变）
+│   ├── osm_matching.json          # OSM 匹配记录：status/revision/translation/search_bbox
+│   ├── run_manifest.json          # 运行状态与全部产物的 SHA-256
+│   ├── qgis/styles/*.qml          # 每图层 QML 与 style_manifest.json
+│   ├── svg-candidates/            # 源 SVG 候选：correspondence.{json,html}、selection.json、
+│   │                              # manifest.json、index.html、symbols/、symbols.sqlite3
+│   ├── reasoning/                 # cad_scene_graph.json、evidence_graph.json.gz、
+│   │                              # evidence_index.sqlite3、visual/（分块渲染与命中索引）
+│   └── <PARTITION>/               # 独立分区 run：delivery.gpkg、partition_manifest.json、qgis/
+├── run.review/                    # 使用 Web 工作台后才出现
+│   ├── review.sqlite3             # 人工控制点 revision store
+│   ├── matching-active.json       # 当前生效匹配版本的指针
+│   └── matching/r<N>-<uuid>/      # 每轮二次匹配：match-profile.json、controls.json、run/
+└── delivery/                      # 便携交付包，QGZ 与其 GeoPackage 成组存放
+    ├── <6 个文件>                 # 标准 run 的交付
+    ├── r<N>/<6 个文件>            # 人工复核 revision 的交付（cad2gis publish-match）
+    └── <PARTITION>/<6 个文件>     # 分区交付，与主体同构
+```
+
+交付包固定为六个文件：`delivery.gpkg`、`delivery.qgz`、`delivery.review.json`、
+`osm-basemap.gpkg`、`view-with-source-SVG.qgz`、`view-with-source-SVG.review.json`。
+`delivery.gpkg` 与对应 run 的字节完全一致，QML/SVG 只是呈现层，不改写数据库值与几何精度。
+原始 DWG 不进入项目目录，保存在仓库 `raw/` 下；`run/` 与 `run.review/` 永不存放 QGZ 交付文件。
+
 ## 长度语义
 
 `CABLE_SEGMENT` 同时保留三种不同含义的长度：
