@@ -13,6 +13,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from .batch import digest, write_json
 from .presentation import LENGTH_EXPRESSION, configure_numeric_fields, csv_value
+from .delivery_scopes import delivery_scopes
 
 
 def _quote(name):
@@ -106,6 +107,58 @@ def qgis_project(gpkg: Path, styles: Path, destination: Path) -> list[dict]:
     with zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr(destination.stem + ".qgs", ET.tostring(root, encoding="utf-8", xml_declaration=True))
     return report
+
+
+def combined_qgis_project(output: Path, deliveries: list[dict]) -> str:
+    """Compose the canonical district projects with unique IDs and relative paths.
+
+    All districts in a conversion share its target CRS. No features or database
+    bytes are merged; each group remains an independently inspectable district.
+    """
+    result = None
+    extent = None
+    for entry in deliveries:
+        path = output / entry["project"]
+        with zipfile.ZipFile(path) as archive:
+            root = ET.fromstring(archive.read(path.stem + ".qgs"))
+        if result is None:
+            result = copy.deepcopy(root)
+            result.find("layer-tree-group").clear()
+            result.find("layer-tree-group").set("checked", "Qt::Checked")
+            result.find("projectlayers").clear()
+        elif root.findtext("projectCrs/spatialrefsys/authid") != result.findtext("projectCrs/spatialrefsys/authid"):
+            raise ValueError("District overview requires the conversion's shared target CRS")
+        scope = entry["scope"]
+        group = ET.SubElement(result.find("layer-tree-group"), "layer-tree-group", name=scope, checked="Qt::Checked", expanded="0")
+        for layer in root.findall("projectlayers/maplayer"):
+            layer = copy.deepcopy(layer)
+            identifier = scope + "_" + layer.findtext("id")
+            name = scope + " / " + layer.findtext("layername")
+            source = layer.findtext("datasource")
+            if not source.startswith("./"):
+                raise ValueError("District project contains a non-portable data source")
+            source = "./" + (path.parent.relative_to(output) / source[2:]).as_posix()
+            layer.find("id").text, layer.find("layername").text, layer.find("datasource").text = identifier, name, source
+            result.find("projectlayers").append(layer)
+            ET.SubElement(group, "layer-tree-layer", id=identifier, name=name, source=source, providerKey="ogr", checked="Qt::Checked")
+        bounds = root.find("mapcanvas/extent")
+        if bounds is not None:
+            box = [float(bounds.findtext(k)) for k in ("xmin", "ymin", "xmax", "ymax")]
+            extent = box if extent is None else [min(extent[0], box[0]), min(extent[1], box[1]), max(extent[2], box[2]), max(extent[3], box[3])]
+    if result is None:
+        raise ValueError("No district projects to combine")
+    result.set("projectname", "All GIS districts")
+    result.find("title").text = "All GIS districts"
+    if extent:
+        for path in ("mapcanvas/extent", "ProjectViewSettings/DefaultViewExtent"):
+            bounds = result.find(path)
+            if bounds is not None:
+                for key, value in zip(("xmin", "ymin", "xmax", "ymax"), extent):
+                    bounds.find(key).text = str(value)
+    name = "all-districts.qgz"
+    with zipfile.ZipFile(output / name, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("all-districts.qgs", ET.tostring(result, encoding="utf-8", xml_declaration=True))
+    return name
 
 
 def _validated_svg_candidates(run: Path, manifest: dict) -> tuple[dict, list[tuple[str, Path, str]]] | None:
@@ -214,9 +267,13 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
     run, output = run.resolve(), output.resolve()
     manifest = json.loads((run / "run_manifest.json").read_text(encoding="utf-8"))
     svg_candidates = _validated_svg_candidates(run, manifest)
+    choices = delivery_scopes(run)["scopes"]
+    for choice in choices:
+        if not choice["available"]:
+            raise ValueError(f"Cannot package district {choice['region_id']}: {choice['error']}")
     output.mkdir(parents=True, exist_ok=False)
     scopes = [("main", run)]
-    scopes.extend((p.parent.name, p.parent) for p in sorted(run.glob("*/delivery.gpkg")))
+    scopes.extend((item["region_id"], Path(item["run_dir"])) for item in choices[1:])
     deliveries = []
     for scope, origin in scopes:
         folder = output if scope == "main" else output / scope
@@ -240,6 +297,8 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
               "run_manifest_sha256": digest(run / "run_manifest.json"), "run_status": manifest.get("run_status", "UNKNOWN"),
               "absolute_accuracy_verified": False, "deliveries": deliveries,
               "source_dwg_included": False, "full_source_evidence_included": False}
+    if len(deliveries) > 1:
+        report["overview_project"] = combined_qgis_project(output, deliveries)
     report["numeric_presentation"] = {"decimal_places": 2, "csv": "presentation_not_lossless_reimport",
                                       "database_values": "unchanged", "geometry": "unchanged_full_precision",
                                       "business_length_sources": ["dwg_dimension"],
@@ -266,7 +325,9 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
         shutil.copytree(audit_dir, output / "visual")
         report["visual_audit_included"] = True
     write_json(output / "delivery-manifest.json", report)
-    (output / "README.md").write_text("# CAD2GIS QGIS delivery\n\nUnzip the entire package; open delivery.qgz. Keep delivery.gpkg and styles beside it.\n\n"
+    projects = "\n".join(f"- [{entry['scope']}]({entry['project']})" for entry in deliveries)
+    overview = "Open [all-districts.qgz](all-districts.qgz) to see every GIS district together. Each district has its own layer group.\n\n" if len(deliveries) > 1 else ""
+    (output / "README.md").write_text("# CAD2GIS QGIS delivery\n\nUnzip the entire package; keep the GeoPackages, styles and district folders together.\n\n" + overview + "Individual district projects:\n\n" + projects + "\n\n"
         "GeoPackage is SQLite. CSV files contain every non-geometry attribute; floating-point values are formatted to two decimals for viewing, so CSV is not a lossless re-import format. Use GeoPackage for full-precision values. CABLE length labels reproduce the original CAD dimension annotation (for example 42m) and are only present where the drawing annotates the span; spans without a DWG annotation are never given an invented length label.\n\n"
         f"Run status: **{report['run_status']}**. No independent surveyed GCP acceptance. A QGIS project and visual overlay do not certify absolute accuracy. UNSAFE or FAILED results require investigation before use. Partitions are separate projects and may share assets with the main project.\n\n"
         "Original GeoPackage bytes are preserved. QML label settings are presentation overrides. This portable delivery excludes raw DWG and full source/evidence databases; AI source-bound edits require the original reviewed run and project.\n", encoding="utf-8")

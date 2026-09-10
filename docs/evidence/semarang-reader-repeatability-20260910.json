@@ -1,0 +1,46 @@
+{
+  "source": "E:\\source_dwg\\SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG.dwg",
+  "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
+  "observations": [
+    {
+      "attempt": 1,
+      "entity_key": "ade01848dc9783d5ac63b3d576a120d818c3e45b8e24b5a19df805624f704511",
+      "handle": "21D6C",
+      "layout": "Model",
+      "layer": "0",
+      "text_sha256": "d37620a8bcdae3a87c4bed3edf6974f87fe8ed65fbb9a18100dc5d1903b43e30",
+      "text_suffix": "Monitoring^J^J^J^J^J           }",
+      "text_length": 420
+    },
+    {
+      "attempt": 2,
+      "entity_key": "ade01848dc9783d5ac63b3d576a120d818c3e45b8e24b5a19df805624f704511",
+      "handle": "21D6C",
+      "layout": "Model",
+      "layer": "0",
+      "text_sha256": "d37620a8bcdae3a87c4bed3edf6974f87fe8ed65fbb9a18100dc5d1903b43e30",
+      "text_suffix": "Monitoring^J^J^J^J^J           }",
+      "text_length": 420
+    },
+    {
+      "attempt": 3,
+      "entity_key": "ade01848dc9783d5ac63b3d576a120d818c3e45b8e24b5a19df805624f704511",
+      "handle": "21D6C",
+      "layout": "Model",
+      "layer": "0",
+      "text_sha256": "d37620a8bcdae3a87c4bed3edf6974f87fe8ed65fbb9a18100dc5d1903b43e30",
+      "text_suffix": "Monitoring^J^J^J^J^J           }",
+      "text_length": 420
+    }
+  ],
+  "independent_survey_accuracy_verified": false,
+  "earlier_snapshot_observation": {
+    "text_length": 421,
+    "text_suffix": "onitoring^J^J^J^J^J           }C",
+    "text_sha256": "29a1b6950778bab6e4954d3b8504aa827065ff48232e455a05e37d917be8013a",
+    "inventory_sha256": "6b253aada3708977c7e8756a66bfde9bb7f25e5b08869a0290894db303e23605"
+  },
+  "fresh_reinspection_outcome": "BLOCKED_STALE_INVENTORY_BINDING",
+  "bound_snapshot_replay_outcome": "CONVERTED_AND_AUDITED",
+  "cause": "Reader output discrepancy observed; underlying cause not isolated. No automatic text normalization or binding approval."
+}

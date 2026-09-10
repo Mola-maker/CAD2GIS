@@ -104,9 +104,6 @@ def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
     temporary = artifact.with_name(
         f".{artifact.name}.{os.getpid()}.{time.time_ns()}.tmp"
     )
-    encoded = json.dumps(
-        payload, ensure_ascii=False, indent=2,
-    ).encode("utf-8")
     try:
         if artifact.suffix == ".gz":
             # mtime=0 keeps compressed artifacts reproducible and therefore
@@ -115,9 +112,19 @@ def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
                 with gzip.GzipFile(
                     filename="", mode="wb", fileobj=raw, mtime=0,
                 ) as compressed:
-                    compressed.write(encoded)
+                    # Avoid TextIOWrapper.flush(), which emits an extra gzip
+                    # sync marker and changes existing content identities.
+                    buffer = bytearray()
+                    for chunk in json.JSONEncoder(ensure_ascii=False, indent=2).iterencode(payload):
+                        buffer.extend(chunk.encode("utf-8"))
+                        if len(buffer) >= 65536:
+                            compressed.write(buffer)
+                            buffer.clear()
+                    if buffer:
+                        compressed.write(buffer)
         else:
-            temporary.write_bytes(encoded)
+            with temporary.open("w", encoding="utf-8", newline="\n") as text:
+                json.dump(payload, text, ensure_ascii=False, indent=2)
         os.replace(temporary, artifact)
     finally:
         if temporary.exists():

@@ -146,7 +146,7 @@ def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
     status = (
         "CAD coordinate-label translation; original database unchanged"
         if correction
-        else "Nominal CAD registration retained; no unsupported road snapping"
+        else "Converted CAD coordinates retained; original database unchanged"
     )
     painter.drawText(20, 1392, status)
     painter.end()

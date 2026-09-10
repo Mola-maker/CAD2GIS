@@ -136,6 +136,53 @@ def test_legacy_area_hint_alone_cannot_authorize_an_inverse():
         inverse_operation(manifest)
 
 
+@pytest.mark.parametrize("status", ["abstained", "unavailable"])
+def test_unmatched_district_does_not_inherit_matched_sibling_shift(status):
+    manifest, main = manifest_fixture()
+    region = copy.deepcopy(manifest["crs"]["osm_matching"])
+    region.update(region_id="SECOND", status=status, translation_3857=[0.0, 0.0])
+    if status == "unavailable":
+        region["osm_snapshot"] = None
+    manifest["crs"]["osm_matching_by_region"]["SECOND"] = osm_matching._seal(region)
+    before = copy.deepcopy(manifest)
+    inverse = inverse_operation(manifest, partition="SECOND")
+    for native in [(0.0, 0.0), (125.0, -36.0)]:
+        delivered = main.nominal.point(native)
+        assert inverse(*delivered) == pytest.approx(native, abs=3e-6)
+    assert inverse.metadata["osm_relative_inverse_applied"] is False
+    assert inverse_operation(manifest).metadata["osm_relative_inverse_applied"] is True
+    assert manifest == before
+
+
+@pytest.mark.parametrize("change", [{"translation_3857": [2.0, 0.0]}, {"source_sha256": "b" * 64}, {"region_id": "OTHER"}])
+def test_unmatched_district_still_rejects_nonzero_shift_and_wrong_binding(change):
+    manifest, _ = manifest_fixture()
+    region = copy.deepcopy(manifest["crs"]["osm_matching"])
+    region.update(region_id="SECOND", status="abstained", translation_3857=[0.0, 0.0])
+    region.update(change)
+    manifest["crs"]["osm_matching_by_region"]["SECOND"] = osm_matching._seal(region)
+    with pytest.raises(UnsupportedAuditTransform):
+        inverse_operation(manifest, partition="SECOND")
+
+
+def test_nominal_main_and_matched_district_use_their_own_operations():
+    manifest, original = manifest_fixture()
+    secondary = copy.deepcopy(manifest["crs"]["osm_matching"])
+    secondary.update(region_id="SECOND", translation_3857=[41.0, -13.0])
+    secondary = osm_matching._seal(secondary)
+    manifest["crs"]["osm_matching"].update(status="abstained", translation_3857=[0.0, 0.0])
+    reseal_manifest(manifest)
+    manifest["crs"]["osm_matching_by_region"]["SECOND"] = secondary
+    main_inverse = inverse_operation(manifest)
+    secondary_inverse = inverse_operation(manifest, partition="SECOND")
+    secondary_transform = osm_matching.OSMMatchingTransformer(secondary, original.nominal)
+    point = (34.0, -21.0)
+    assert main_inverse(*original.nominal.point(point)) == pytest.approx(point, abs=3e-6)
+    assert secondary_inverse(*secondary_transform.point(point)) == pytest.approx(point, abs=3e-6)
+    assert not main_inverse.metadata["osm_relative_inverse_applied"]
+    assert secondary_inverse.metadata["osm_translation_3857"] == [41.0, -13.0]
+
+
 def test_explicit_pipeline_is_used_instead_of_selecting_a_new_crs_operation():
     contract = build_unit_crs_contract(6, "EPSG:3857", "EPSG:3857", source_coordinate_scale_reviewed=True)
     manifest = {"crs": {"source_crs": "EPSG:3857", "target_crs": "EPSG:3857",

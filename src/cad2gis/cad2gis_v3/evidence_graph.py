@@ -276,14 +276,25 @@ class EvidenceGraph:
             missing = referenced - node_ids
             if missing:
                 raise EvidenceGraphError(f"Evidence edge references missing nodes: {sorted(missing)}")
-        identity = {
-            "schema_version": EVIDENCE_GRAPH_SCHEMA,
-            "source_sha256": source,
-            "nodes": [node.to_dict() for node in ordered_nodes],
-            "edges": [edge.to_dict() for edge in ordered_edges],
-        }
-        digest = _sha256_bytes(_canonical_json(identity).encode("utf-8"))
-        return cls(source, ordered_nodes, ordered_edges, digest)
+        # Retain the canonical identity without materializing all fact dictionaries,
+        # a full JSON string and its UTF-8 copy at the same time.
+        digest = hashlib.sha256()
+        digest.update(b"{")
+        for name, records in (("edges", ordered_edges), ("nodes", ordered_nodes)):
+            if name == "nodes":
+                digest.update(b",")
+            digest.update(f'"{name}":['.encode("ascii"))
+            for index, record in enumerate(records):
+                if index:
+                    digest.update(b",")
+                digest.update(_canonical_json(record.to_dict()).encode("utf-8"))
+            digest.update(b"]")
+        digest.update(b',"schema_version":')
+        digest.update(_canonical_json(EVIDENCE_GRAPH_SCHEMA).encode("utf-8"))
+        digest.update(b',"source_sha256":')
+        digest.update(_canonical_json(source).encode("utf-8"))
+        digest.update(b"}")
+        return cls(source, ordered_nodes, ordered_edges, digest.hexdigest())
 
     @property
     def node_ids(self) -> frozenset[str]:
