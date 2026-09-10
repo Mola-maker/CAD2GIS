@@ -12,15 +12,16 @@
   <link rel="preload" href="./assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="./assets/noto-sans-sc-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="./assets/smiley-sans-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./assets/styles.css?v=font-system-20260829">
+  <link rel="stylesheet" href="./assets/styles.css?v=precision-workspace-20260909">
 </head>
 <body>
+  <a class="skip-link" href="#console-app">跳到地图工作台</a>
   <section id="hero-page" class="hero-page" aria-labelledby="hero-title">
     <div class="hero-grid-layer" aria-hidden="true"></div>
     <header class="hero-nav">
       <a class="hero-brand" href="#hero-page" aria-label="CAD2GIS 首页"><span class="hero-brand-mark">C2G</span><span>CAD2GIS <i>/</i> EVIDENCE FIRST</span></a>
       <nav class="hero-nav-links" aria-label="Landing page navigation">
-        <a href="#product-infinite">PRODUCT INFINITE</a>
+        <a href="#console-app">打开地图工作台</a><a href="#product-infinite">PRODUCT INFINITE</a>
         <a href="#validation-tunnel">VALIDATION</a>
         <a href="#plugin-guide">PLUGIN GUIDE</a>
         <a href="#process-terminal">RUN REPLAY</a>
@@ -358,26 +359,27 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
     </section>
   </section>
 
-  <div id="console-app">
+  <div id="console-app" tabindex="-1">
   <header class="topbar">
     <div class="brand-lockup">
       <span class="brand-mark" aria-hidden="true">C2G</span>
       <div>
         <span class="eyebrow">CAD2GIS / SPATIAL DELIVERY CONSOLE</span>
-        <h1>图纸理解、配准与交付审查</h1>
+        <h1>核对源图，校正地图位置</h1><p id="review-current-source" class="review-current-source">正在读取当前图纸…</p>
       </div>
     </div>
     <div class="run-state" aria-label="服务状态">
       <span id="connection-dot" class="status-dot pending"></span>
       <span id="connection-label">正在连接</span>
-      <span id="run-status" class="badge">—</span>
+      <span id="run-status" class="badge">—</span><button id="toggle-evidence" class="ghost" aria-expanded="false" aria-controls="review-inspector">证据与工具</button>
     </div>
   </header>
 
+  <details id="review-guide" class="review-guide"><summary>第一次配准？查看操作提示</summary><div class="review-guide-content"><img src="./assets/onboarding-map-v1.png" width="1536" height="1024" alt="" aria-hidden="true" loading="lazy"><div><strong>选同一个真实位置，分别落在两张图上。</strong><ol><li>先核对左侧源几何，放大并选择设施或清晰拐点。</li><li>在右图选相同位置，或输入测量得到的经纬度。</li><li>用下方方向按钮微调目标点；检查残差后再生成新结果。</li></ol><p>训练点用于拟合。独立检查点只用于验证，不能与训练点重复。OSM 是地图参考，测量精度需要独立证据。</p><button id="start-guided-correction" class="primary">开始选择控制点</button></div></div></details>
   <main class="workspace">
     <aside class="panel navigation-panel">
       <section class="project-card">
-        <div class="project-picker-heading"><span class="section-kicker">真实转换案例</span><span id="demo-project-loading" class="project-loading" hidden>LOADING</span></div>
+        <div class="project-picker-heading"><span class="section-kicker">当前图纸</span><span id="demo-project-loading" class="project-loading" hidden>LOADING</span></div>
         <label class="project-picker-label" for="demo-project-select">选择图纸与地图预览</label>
         <select id="demo-project-select" class="project-picker" aria-label="选择真实转换案例">
           <option value="hutabohu">Hutabohu / Gorontalo</option>
@@ -397,21 +399,21 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
         <span id="project-source" class="muted truncate">等待 run manifest…</span>
       </section>
 
-      <nav class="workflow-nav" aria-label="转换目录">
+      <nav class="workflow-nav" aria-label="审查步骤">
         <button class="workflow-step is-active" data-stage="source">
-          <span>01</span><span><strong>源事实</strong><small>实体、样式与标签</small></span>
+          <span>01</span><span><strong>核对源图</strong><small>图层、实体与曲线</small></span>
         </button>
         <button class="workflow-step" data-stage="semantic">
           <span>02</span><span><strong>语义映射</strong><small>证据约束的分类</small></span>
         </button>
         <button class="workflow-step" data-stage="registration">
-          <span>03</span><span><strong>空间配准</strong><small>OSM 匹配与人工校正</small></span>
+          <span>03</span><span><strong>选择与微调 GCP</strong><small>源图和地图对应选点</small></span>
         </button>
         <button class="workflow-step" data-stage="validation">
-          <span>04</span><span><strong>独立校验</strong><small>几何、拓扑、长度、坐标</small></span>
+          <span>04</span><span><strong>检查残差</strong><small>训练与独立检查分开</small></span>
         </button>
         <button class="workflow-step" data-stage="delivery">
-          <span>05</span><span><strong>GIS 交付</strong><small>GeoPackage、QML、manifest</small></span>
+          <span>05</span><span><strong>生成新结果</strong><small>保留原结果与控制点</small></span>
         </button>
       </nav>
 
@@ -426,33 +428,38 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
 
       <section id="stage-registration" class="stage-card registration-card">
         <div class="section-heading">
-          <div><span class="section-kicker">Registration</span><h2>OSM 匹配与人工校正</h2></div>
+          <div><span class="section-kicker">CONTROL POINTS</span><h2>选择与微调控制点</h2></div>
           <span class="step-chip">GCP</span>
         </div>
-        <ol class="steps">
-          <li>右图默认显示当前 GIS 匹配结果，与 OSM 底图对照。</li>
-          <li>位置不准时，在左侧 CAD 图吸附真实设施或拐点，再在地图选同一位置或输入经纬度。</li>
-          <li>保存人工点后自动预览校正；二次匹配生成新结果后，可继续修改同一组点。</li>
-        </ol>
+        <p class="muted">先在 CAD 上选点，再指定地图上的同一位置。已保存的点可选中后微调。</p>
         <label class="field-label">控制点角色
           <select id="gcp-role">
-            <option value="train">训练点</option>
-            <option value="check">独立检查点</option>
+            <option value="train">训练点 · 参与校正拟合</option>
+            <option value="check">独立检查点 · 只评估残差</option>
           </select>
         </label>
         <div class="coordinate-inputs">
-          <label>经度 <input id="target-lon" type="number" step="any" placeholder="112.700000"></label>
-          <label>纬度 <input id="target-lat" type="number" step="any" placeholder="-7.450000"></label>
+          <label>经度 <input id="target-lon" type="number" step="any" placeholder="例如 112.70000000" required inputmode="decimal"></label>
+          <label>纬度 <input id="target-lat" type="number" step="any" placeholder="例如 -7.45000000" required inputmode="decimal"></label>
         </div>
-        <button id="send-coordinate" class="wide primary">传送坐标并保存</button>
+        <button id="send-coordinate" class="wide primary">保存这组控制点</button>
         <div class="button-row">
           <button id="use-map-center" class="secondary">使用地图中心</button>
           <button id="clear-pending" class="ghost">取消选择</button>
         </div>
-        <div id="gcp-list" class="gcp-list"></div>
+        <div class="gcp-list-heading"><strong>已保存的控制点</strong><span>点选后微调</span></div>
+        <div id="gcp-list" class="gcp-list" aria-label="已保存的控制点"></div>
+        <section id="gcp-adjust" class="gcp-adjust" hidden aria-labelledby="gcp-adjust-title">
+          <div class="section-heading"><h3 id="gcp-adjust-title">微调目标位置</h3><span id="gcp-adjust-role" class="step-chip"></span></div>
+          <p id="gcp-adjust-coordinate" class="gcp-coordinate-readout"></p>
+          <label class="field-label" for="gcp-step">每次移动的实际距离<select id="gcp-step"><option value="0.01">0.01 m · 1 cm</option><option value="0.1" selected>0.1 m · 10 cm</option><option value="1">1 m</option></select></label>
+          <div class="nudge-pad" role="group" aria-label="按实际距离微调目标位置"><button data-adjust-gcp="north" aria-label="向北微调">↑<small>北</small></button><button data-adjust-gcp="west" aria-label="向西微调">←<small>西</small></button><button id="center-gcp" class="nudge-center" aria-label="在两张地图中定位这个控制点">⌖<small>定位</small></button><button data-adjust-gcp="east" aria-label="向东微调">→<small>东</small></button><button data-adjust-gcp="south" aria-label="向南微调">↓<small>南</small></button></div>
+          <div class="button-row"><button id="undo-gcp" class="secondary">撤销上次微调</button><button id="reset-gcp" class="ghost">恢复最初选点</button></div>
+          <p id="gcp-adjust-status" class="muted" role="status" aria-live="polite">仅移动地图目标点，CAD 源点保持不变。</p>
+        </section>
         <div class="metric-card">
           <span>当前预览</span><strong id="fit-model">等待 GIS 匹配结果</strong>
-          <span>预览残差 RMSE</span><strong id="fit-rmse">—</strong>
+          <span>残差 RMSE</span><strong id="fit-rmse">—</strong>
           <span>控制点</span><strong id="fit-coverage">0 个训练点；0 个独立检查点</strong>
           <span>已应用匹配</span><strong id="matching-version">—</strong>
           <span>目标坐标</span><strong id="target-coordinate">—</strong>
@@ -461,35 +468,38 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
         <button id="preview-gcp" class="wide secondary">预览人工校正</button>
         <button id="export-gcp" class="wide primary" disabled>二次匹配并生成新结果</button>
         <p id="matching-status" class="muted" role="status" aria-live="polite">正在读取当前匹配版本与人工控制点…</p>
-        <p class="warning">OSM 只能提供相对地图参考；绝对精度必须使用测量或权威控制点证明。</p>
-        <p class="warning">训练点用于人工平移校正，独立检查点只用于评估残差。二次匹配可在有效校正后生成新结果；绝对精度验收仍需分布合理的训练点与独立检查点。静态演示仅记录选点。</p>
+        <details class="accuracy-explainer"><summary>怎样判断位置是否足够准确？</summary><p>训练残差反映拟合效果；独立检查残差才评估未参与拟合的位置。请把点分布在项目范围内，避免全部落在同一直线。</p><p>OSM 仅提供相对地图参考。0.01 m 是移动步长，不代表达到 1 cm 精度；绝对精度需测量或权威控制点验证。</p><p>每次二次匹配生成新的结果。静态演示仅记录选点，不执行校正。</p></details>
       </section>
     </aside>
 
     <section class="map-workspace" aria-label="CAD 与地图叠加工作区">
       <div class="map-toolbar">
-        <div class="mode-switch"><span class="mode-label">DUAL VIEW</span><strong>源几何 ↔ 地理预览</strong></div>
+        <div class="mode-switch"><span class="mode-label">DUAL VIEW</span><strong>源几何 ↔ 地图位置</strong></div>
         <div class="map-actions">
           <span id="map-reference-note" class="map-reference-note">等待地图参考…</span>
           <span class="legend-dot train"></span><span>训练点</span>
           <span class="legend-dot check"></span><span>检查点</span>
-          <button id="open-visual" class="ghost">CAD 视觉证据</button>
+          <label class="basemap-switch"><input id="online-basemap" type="checkbox">在线 OSM 底图</label><button id="fit-both" class="ghost" title="缩放到两张图的全部要素">显示全部</button><button id="open-visual" class="ghost">源图证据</button>
+          <details id="evidence-layer-menu" class="evidence-layer-menu"><summary>配准证据层</summary><div class="evidence-layer-options"><p>当前已应用匹配的矢量证据</p><label><input type="checkbox" data-evidence-layer="cad_routes" disabled><i class="evidence-swatch cad"></i>CAD 路线</label><label><input type="checkbox" data-evidence-layer="osm_roads" disabled><i class="evidence-swatch osm"></i>OSM 路网</label><label><input type="checkbox" data-evidence-layer="cad_nodes" disabled><i class="evidence-swatch node"></i>CAD 连接节点</label><label><input type="checkbox" data-evidence-layer="osm_nodes" disabled><i class="evidence-swatch osm-node"></i>OSM 连接节点</label><label><input type="checkbox" data-evidence-layer="residuals" disabled><i class="evidence-swatch residual"></i>匹配残差线</label><p id="evidence-layer-status" role="status">展开后读取当前匹配证据。</p></div></details>
         </div>
       </div>
+      <p id="basemap-status" class="basemap-status">在线底图未加载。启用后会向 OpenStreetMap 请求当前视野的地图瓦片。</p>
+      <div class="precision-summary" aria-label="校正精度状态"><div><span>当前视图</span><strong id="precision-view">已应用结果</strong></div><div><span>训练 RMSE</span><strong id="precision-train">—</strong></div><div><span>独立检查 RMSE</span><strong id="precision-check">尚未验证</strong></div><div><span>精度依据</span><strong id="precision-evidence">等待控制点</strong></div></div>
+      <div id="pick-guide" class="pick-guide" role="status" aria-live="polite"><b>下一步</b><span id="pick-guide-text">在左侧 CAD 中放大并选择一个真实设施或拐点。</span><button id="pick-guide-action" class="ghost" type="button">选择控制点</button></div>
       <section class="map-grid">
         <article class="map-pane">
           <header><span><b>CAD</b> 原始坐标</span><code id="cad-coordinate">—</code></header>
-          <div id="local-map" class="map"></div>
+          <div id="local-map" class="map" tabindex="0" aria-label="CAD 源几何地图，可用方向键平移，加减键缩放"></div>
         </article>
         <article class="map-pane">
           <header><span><b>GIS</b> OSM 匹配与人工校正预览</span><code id="map-coordinate">—</code></header>
-          <div id="map" class="map"></div>
+          <div id="map" class="map" tabindex="0" aria-label="OSM 地图与 GIS 结果，可用方向键平移，加减键缩放"></div>
         </article>
         <div id="toast" class="toast" aria-live="polite"></div>
       </section>
     </section>
 
-    <aside class="panel inspector-panel">
+    <aside id="review-inspector" class="panel inspector-panel" hidden aria-label="运行证据与高级工具"><div class="inspector-heading"><strong>证据与工具</strong><button id="close-inspector" class="ghost" aria-label="关闭证据与工具">×</button></div>
       <div class="tab-list" role="tablist" aria-label="审查工具">
         <button class="tab-button is-active" role="tab" aria-selected="true" data-tab="evidence">证据</button>
         <button class="tab-button" role="tab" aria-selected="false" data-tab="console">控制台</button>
@@ -549,6 +559,6 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
   <script src="./assets/vendor/ol.js"></script>
   <script src="./assets/demo-fixture.js?v=runtime-fix-20260901"></script>
   <script type="module" src="./assets/hero-motion.js?v=font-system-20260829"></script>
-  <script type="module" src="./assets/app.js?v=svg-rematch-20260908"></script>
+  <script type="module" src="./assets/app.js?v=precision-workspace-20260909"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@ def _package_version() -> str:
     try:
         return version("cad2gis")
     except PackageNotFoundError:  # Running from a partial source archive.
-        return "0.4.0"
+        return "0+unknown"
 
 
 __version__ = _package_version()

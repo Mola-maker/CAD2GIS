@@ -2,7 +2,7 @@ name: CAD2GIS CI
 
 on:
   push:
-    branches: [main, robustness]
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 
@@ -14,6 +14,63 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  precision-agent:
+    name: Offline precision and Agent protocol gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install test and portable GIS dependencies
+        run: python -m pip install -e ".[agent,test]"
+      - name: Check dependency compatibility
+        run: python -m pip check
+      - name: Verify deterministic matching, GCP and MCP failures
+        # These fixtures do not call a public OSM/LLM endpoint or open private
+        # DWG drawings. The full platform/runtime matrix remains below.
+        env:
+          CAD2GIS_FULL_DWG_TESTS: "0"
+        run: >-
+          python -m pytest -q
+          tests/test_agent_tool_bridge.py
+          tests/test_desktop_agent.py
+          tests/test_mcp_diagnostics.py
+          tests/test_mcp_stdio.py
+          tests/test_plugin_contracts.py
+          tests/test_database_mcp.py
+          tests/test_osm_matching.py
+          tests/test_osm_accuracy.py
+          tests/test_osm_benchmark.py
+          tests/test_osm_anchor.py
+          tests/test_osm_pipeline.py
+          tests/test_osm_topology_ingest.py
+          tests/test_osm_evidence.py
+          tests/test_geometry_fidelity.py
+          tests/test_source_gpkg.py
+          tests/test_source_gpkg_field_indices.py
+          tests/test_source_replay.py
+          tests/test_source_relocation.py
+          tests/test_visual_audit_transforms.py
+          tests/test_stage_contracts_hash_streaming.py
+          tests/test_gcp_editing.py
+          tests/test_gcp_workflow.py
+          tests/test_review_native_geometry.py
+          tests/test_runtime_archive_permissions.py
+          --junitxml=test-results/precision-agent.xml
+      - name: Preserve precision and protocol results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: precision-agent-${{ github.sha }}
+          path: test-results/precision-agent.xml
+          if-no-files-found: warn
+          retention-days: 14
+
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
@@ -43,6 +100,9 @@ jobs:
       - name: Install portable agent runtime and quality tools
         run: python -m pip install --upgrade pip && python -m pip install -e ".[agent,test]"
 
+      - name: Check dependency compatibility
+        run: python -m pip check
+
       - name: Install portable LibreDWG reader
         run: cad2gis runtime install
 
@@ -55,8 +115,8 @@ jobs:
       - name: Compile Python modules
         run: python -m compileall -q src/cad2gis plugins/cad2gis-agent/scripts tools/build_webdemo.py tools/build_hero_font.py
 
-      - name: Check WebDemo JavaScript
-        run: node --check src/cad2gis/webdemo/app.js && node --check src/cad2gis/webdemo/demo-fixture.js && node --check src/cad2gis/webdemo/hero-motion.js && node --check tools/build_hero_assets.mjs
+      - name: Check desktop and WebDemo JavaScript
+        run: node --check src/cad2gis/desktop/app.js && node --check src/cad2gis/webdemo/app.js && node --check src/cad2gis/webdemo/demo-fixture.js && node --check src/cad2gis/webdemo/hero-motion.js && node --check tools/build_hero_assets.mjs
 
       - name: Generate repo-native SVG geometry
         if: runner.os == 'Linux' && matrix.python == '3.12'
@@ -65,12 +125,21 @@ jobs:
       - name: Run contract and regression tests
         env:
           CAD2GIS_FULL_DWG_TESTS: "0"
-        run: python -m pytest -q
+        run: python -m pytest -q --junitxml=test-results/regression.xml
+
+      - name: Preserve platform regression results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-${{ matrix.os }}-py${{ matrix.python }}-${{ github.sha }}
+          path: test-results/regression.xml
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Build Python distribution
         if: runner.os == 'Linux' && matrix.python == '3.12'
         run: python -m build
 
-      - name: Build data-free WebDemo artifact
+      - name: Build WebDemo with derived map fixtures
         if: runner.os == 'Linux' && matrix.python == '3.12'
         run: python tools/build_webdemo.py --output _site

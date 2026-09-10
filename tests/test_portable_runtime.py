@@ -80,7 +80,7 @@ def test_posix_runtime_builds_pinned_source_into_user_cache(
     monkeypatch.setattr(
         native_runtime.shutil,
         "which",
-        lambda name: f"/usr/bin/{name}" if name in {"make", "cc"} else None,
+        lambda name: f"/usr/bin/{name}" if name in {"make", "cc", "pkg-config"} else None,
     )
     monkeypatch.setattr(
         native_runtime,
@@ -281,3 +281,36 @@ def test_libredwg_cli_prefers_dxf_actual_dimension_measurement() -> None:
     geometry = libredwg_cli._entity_geometry(None, entity, "DIMENSION")
 
     assert geometry["dimension_value"] == 89.0
+
+
+@pytest.mark.parametrize("block_name,text,expected", [
+    ("", "42m", 42.0), ("*MISSING", "42m", 42.0), ("*MISSING", "", 42.4),
+])
+def test_dimension_missing_block_retains_explicit_text_and_raw_fallback(block_name, text, expected):
+    import ezdxf
+    from cad2gis.reader import libredwg_cli
+
+    document = ezdxf.new()
+    entity = SimpleNamespace(dxf=SimpleNamespace(
+        defpoint2=(0, 0, 0), defpoint3=(42.4, 0, 0), geometry=block_name,
+        actual_measurement=42.4, text=text,
+    ))
+    geometry = libredwg_cli._entity_geometry(document, entity, "DIMENSION")
+    assert geometry["dimension_text_override"] == text
+    assert geometry["dimension_value"] == expected
+    assert not geometry["reasons"]
+
+
+def test_dimension_rendered_annotation_still_takes_precedence():
+    import ezdxf
+    from cad2gis.reader import libredwg_cli
+
+    document = ezdxf.new()
+    document.blocks.new("*D1").add_text("42m")
+    entity = SimpleNamespace(dxf=SimpleNamespace(
+        defpoint2=(0, 0, 0), defpoint3=(42.4, 0, 0), geometry="*D1",
+        actual_measurement=42.4, text="41m",
+    ))
+    geometry = libredwg_cli._entity_geometry(document, entity, "DIMENSION")
+    assert geometry["dimension_text_override"] == "42m"
+    assert geometry["dimension_value"] == 42.0

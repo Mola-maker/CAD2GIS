@@ -4,10 +4,12 @@ from __future__ import annotations
 import math
 import xml.etree.ElementTree as ET
 
-LENGTH_EXPRESSION = ('CASE WHEN "length_value_m" IS NOT NULL THEN '
-                     'format_number("length_value_m", 2) || \' m\' || '
-                     'CASE WHEN "length_source" = \'dwg_dimension\' THEN \'\' '
-                     'WHEN "length_source" = \'dwg_curve_geometry\' THEN \' [CAD curve]\' ELSE \' [unverified source]\' END END')
+# QGIS CABLE labels reproduce the DWG annotation itself (for example ``42m``)
+# and nothing else: spans without a DWG DIMENSION annotation carry an empty
+# ``length_label`` and are not labelled, so geometry-derived lengths never
+# become visible text.
+LENGTH_EXPRESSION = ('CASE WHEN coalesce("length_label", \'\') <> \'\' '
+                     'THEN "length_label" END')
 
 
 def csv_value(value):

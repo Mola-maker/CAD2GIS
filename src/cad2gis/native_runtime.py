@@ -226,10 +226,18 @@ def _safe_extract_tar(archive: Path, destination: Path) -> None:
                 raise RuntimeError(f"Unsafe path in LibreDWG archive: {member.name}")
             if member.issym() or member.islnk():
                 raise RuntimeError(f"Unsafe link in LibreDWG archive: {member.name}")
+            if not (member.isfile() or member.isdir()):
+                raise RuntimeError(f"Unsafe special entry in LibreDWG archive: {member.name}")
         try:
-            bundle.extractall(destination, filter="fully_trusted")  # noqa: S202 - members validated above
+            bundle.extractall(destination, filter="data")
         except TypeError:  # Python versions before extraction filters.
             bundle.extractall(destination)  # noqa: S202 - members validated above
+        # Some extraction environments intentionally omit archive mode bits.
+        # Restore only ordinary executable/read permissions, never ownership,
+        # setuid/setgid or world-write flags, for this checksum-pinned source.
+        for member in bundle.getmembers():
+            target = destination / member.name
+            target.chmod(0o755 if member.isdir() or member.mode & 0o111 else 0o644)
 
 
 def _download_pinned_asset(url: str, sha256: str, destination: Path) -> None:
@@ -253,11 +261,11 @@ def _download_pinned_asset(url: str, sha256: str, destination: Path) -> None:
 def _install_posix_from_source(destination: Path) -> None:
     """Build the official release into the user cache without root access."""
 
-    required = ("make", "cc")
+    required = ("make", "cc", "pkg-config")
     missing = [tool for tool in required if shutil.which(tool) is None]
     if missing:
         raise RuntimeError(
-            "Portable LibreDWG source installation needs a C compiler and make; "
+            "Portable LibreDWG source installation needs a C compiler, make and pkg-config; "
             f"missing: {', '.join(missing)}. Install the platform build tools or "
             "provide CAD2GIS_LIBREDWG_CLI. AutoCAD and Conda are not required."
         )

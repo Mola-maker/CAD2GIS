@@ -62,9 +62,20 @@ def extract(archive: Path, destination: Path) -> None:
                 if not (root / item.filename).resolve().is_relative_to(root):
                     raise ValueError(f"Unsafe archive path: {item.filename}")
             bundle.extractall(root)
+            if os.name != "nt":
+                for item in bundle.infolist():
+                    target = root / item.filename
+                    mode = (item.external_attr >> 16) & 0o777
+                    target.chmod(0o755 if item.is_dir() or mode & 0o111 else 0o644)
     else:
         with tarfile.open(archive) as bundle:
             bundle.extractall(root, filter="data")
+            for item in bundle.getmembers():
+                # Keep data_filter's validated symlink policy; only restore
+                # safe modes on ordinary entries, including configure scripts.
+                if item.isfile() or item.isdir():
+                    target = root / item.name
+                    target.chmod(0o755 if item.isdir() or item.mode & 0o111 else 0o644)
 
 
 def clean_environment() -> dict[str, str]:
