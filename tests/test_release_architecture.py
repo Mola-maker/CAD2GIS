@@ -5,7 +5,25 @@ from types import SimpleNamespace
 
 import pytest
 
-from scripts.fetch_derived_release import unpack
+from scripts.fetch_derived_release import pinned_asset_endpoint, unpack
+
+
+def test_pinned_release_url_resolves_through_the_release_api():
+    endpoint, name = pinned_asset_endpoint(
+        'https://github.com/Mola-maker/CAD2GIS/releases/download/demo-tag/bundle.zip')
+    assert endpoint == 'https://api.github.com/repos/Mola-maker/CAD2GIS/releases/tags/demo-tag'
+    assert name == 'bundle.zip'
+
+
+@pytest.mark.parametrize('origin', [
+    'https://example.com/Mola-maker/CAD2GIS/releases/download/tag/bundle.zip',
+    'https://github.com/Mola-maker/CAD2GIS/releases/download/tag',
+    'https://github.com/other/CAD2GIS/releases/download/tag/bundle.zip',
+    'https://github.com/Mola-maker/CAD2GIS/releases/download/tag/nested/bundle.zip',
+])
+def test_foreign_or_malformed_release_origins_are_rejected(origin):
+    with pytest.raises(ValueError, match='Unexpected release origin'):
+        pinned_asset_endpoint(origin)
 
 
 @pytest.mark.parametrize('name', ['../escape', '/escape', 'C:/escape', 'folder\\escape', 'raw.dwg'])

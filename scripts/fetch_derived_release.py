@@ -5,9 +5,50 @@ import json
 import os
 import subprocess
 import tempfile
+import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path, PurePosixPath
+
+_RELEASE_PREFIX = 'https://github.com/Mola-maker/CAD2GIS/releases/download/'
+_API_PREFIX = 'https://api.github.com/repos/Mola-maker/CAD2GIS/releases/tags/'
+
+
+def pinned_asset_endpoint(origin: str) -> tuple[str, str]:
+    """Return the release API endpoint and asset name for a pinned URL."""
+    if not origin.startswith(_RELEASE_PREFIX):
+        raise ValueError('Unexpected release origin')
+    tag, separator, asset = origin[len(_RELEASE_PREFIX):].partition('/')
+    if not separator or not tag or not asset or '/' in asset:
+        raise ValueError('Unexpected release origin')
+    return _API_PREFIX + urllib.parse.quote(tag, safe=''), asset
+
+
+def _request(url: str, accept: str) -> urllib.request.Request:
+    headers = {'Accept': accept, 'X-GitHub-Api-Version': '2022-11-28'}
+    token = os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_TOKEN')
+    if token:
+        headers['Authorization'] = 'Bearer ' + token
+    return urllib.request.Request(url, headers=headers)
+
+
+def open_pinned_asset(origin: str):
+    """Resolve the pinned release asset through the release API.
+
+    Private repositories do not serve ``releases/download`` URLs to token
+    clients, so the asset is resolved by name and streamed from the API.
+    The manifest SHA-256 still decides what may be unpacked.
+    """
+    release_endpoint, name = pinned_asset_endpoint(origin)
+    with urllib.request.urlopen(_request(release_endpoint, 'application/vnd.github+json'), timeout=60) as response:
+        release = json.loads(response.read().decode('utf-8'))
+    assets = release.get('assets', ()) if isinstance(release, dict) else ()
+    matches = [entry for entry in assets
+               if isinstance(entry, dict) and entry.get('name') == name
+               and isinstance(entry.get('url'), str)]
+    if len(matches) != 1:
+        raise ValueError('Release asset is missing or ambiguous')
+    return urllib.request.urlopen(_request(matches[0]['url'], 'application/octet-stream'), timeout=120)
 
 
 def unpack(archive: Path, destination: Path) -> None:
@@ -44,11 +85,9 @@ def unpack(archive: Path, destination: Path) -> None:
 
 def fetch(manifest: Path, destination: Path) -> None:
     spec = json.loads(manifest.read_text(encoding='utf-8'))
-    if not spec['url'].startswith('https://github.com/Mola-maker/CAD2GIS/releases/download/'):
-        raise ValueError('Unexpected release origin')
     with tempfile.TemporaryDirectory() as temporary:
         archive = Path(temporary) / 'release.zip'
-        with urllib.request.urlopen(spec['url'], timeout=120) as response, archive.open('wb') as stream:
+        with open_pinned_asset(spec['url']) as response, archive.open('wb') as stream:
             size = 0
             while chunk := response.read(1024 * 1024):
                 size += len(chunk)
