@@ -1,10 +1,10 @@
 {
   "schema": "cad2gis.qgis-osm-review.v1",
-  "input_project_sha256": "3d973624c50f8666d5f19ad9894593cbb066eeca0217d01643d77bcc16a5b9c5",
-  "sha256": "4d69b82b04db27a060740a57f2706c36595f66926f66d57518db287e18ea58c3",
+  "input_project_sha256": "25e8ea40218be30c5731d696e0d77face61c67052159a0eb61c8288394e93015",
+  "sha256": "1dd2220719e729e26463d96ee32d3a7a2a640cd3cccea81402fdf15aeab0885f",
   "standalone": true,
   "cad_database_hashes": [
-    "fec832889704ccb628e9a0a1b3d91860e2a31c9b7a941472b4723b34f6507575"
+    "07543e1327df94ae874969694339614a9ef151e0dafa7d8315d88af29a89510f"
   ],
   "cad_layers": {
     "BOITE": 26,
@@ -719,8 +719,8 @@
     "OSM water": 0,
     "OSM land use": 0
   },
-  "osm_database_sha256": "f644a685798bbe8c4df5d6688a29de137579c79ea5f6b1d8bc8a99e5208d21f6",
-  "osm_source_sha256": "0cfb0137d312ef1aaee8de57e6025467ac5ad6df763416c3965dc68417142e2b",
+  "osm_database_sha256": "98548a9013bceb28ae7326d44569ea4a4b80cab13efe60056230926c535053bf",
+  "osm_source_sha256": "be18f64aa99ad11c78a443ae7b9a9ab9276b6c2bad1909e158769f087d4e1116",
   "coordinate_review": null,
   "absolute_accuracy_verified": false,
   "geometry_and_attributes_unchanged": true,

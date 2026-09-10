@@ -1,0 +1,328 @@
+{
+  "schema": "cad2gis.qgis-osm-review.v1",
+  "input_project_sha256": "20a0689881945586374a9d6c9dc817cee972a74f0483bbd0c9c669d1e5d31b97",
+  "sha256": "f3b46d1af6cdf7158dfad0e53ca861161807193177b9072613aab3841bb15a82",
+  "standalone": true,
+  "cad_database_hashes": [
+    "eaadd3cf4600e7406cb475bc2df83ad8be3a9b8ea5adfba6ceeed577351815dd"
+  ],
+  "cad_layers": {
+    "BOITE": 15,
+    "CABLE": 44,
+    "IMB": 243,
+    "INFRASTRUCTURE": 13,
+    "PTECH": 43,
+    "SITE": 1,
+    "ZNRO": 1,
+    "ZPM": 15
+  },
+  "svg_bindings": [
+    {
+      "layer": "BOITE",
+      "source_handle": "2198",
+      "svg_sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21A7",
+      "svg_sha256": "8dc0fbfaf8b378e0d3930b8b9ad35317a1573f0af82fff636fd2605bb61aff9c"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21AA",
+      "svg_sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21AD",
+      "svg_sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B0",
+      "svg_sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B3",
+      "svg_sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B6",
+      "svg_sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B9",
+      "svg_sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21BC",
+      "svg_sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21BF",
+      "svg_sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21C2",
+      "svg_sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21C5",
+      "svg_sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21CB",
+      "svg_sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21CE",
+      "svg_sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "2E21",
+      "svg_sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1933",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1942",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1949",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1957",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "196D",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1974",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "197B",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1989",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1990",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1997",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19A5",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19C8",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19DD",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19F2",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1A00",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1A15",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1A31",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B77",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B85",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B8C",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B93",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1BA1",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1BAF",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1BB6",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1D58",
+      "svg_sha256": "6bb20b25c285bf8968dec2c87203e56889ac8ad215472d93cda3e3222511a57b"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1D79",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2075",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "207C",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2083",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20B1",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20EC",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20F4",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3027",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "303F",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "31B9",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "320A",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3218",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3229",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "394E",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3955",
+      "svg_sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "395C",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4339",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4340",
+      "svg_sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944"
+    },
+    {
+      "layer": "SITE",
+      "source_handle": "3144",
+      "svg_sha256": "1ecda5f9fca541904a35ece6b4640435b4b5b9c3ff21f218aaf496f4825609e8"
+    }
+  ],
+  "osm_layers": {
+    "OSM roads": 10,
+    "OSM buildings": 0,
+    "OSM water": 0,
+    "OSM land use": 0
+  },
+  "osm_database_sha256": "6e6f925f188948cf443259127325077db9d31f587f976d03b47be67f0d1b5312",
+  "osm_source_sha256": "38e4ab099409bf2029d811abeddf23fd383635664f8e931c8fcd3ab9749af7e5",
+  "coordinate_review": null,
+  "absolute_accuracy_verified": false,
+  "geometry_and_attributes_unchanged": true,
+  "attribution": "© OpenStreetMap contributors | openstreetmap.org/copyright"
+}
