@@ -578,6 +578,102 @@ def _sample_weights(routes, route_ids):
     return np.asarray(per_route)[route_ids]
 
 
+def _landmark_independence(axes):
+    """Best two-direction constraint; duplicate nearby axes add no vote."""
+    if len(axes) < 2:
+        return 0.0
+    axes = np.asarray(axes)
+    return (1.0 - float(np.min(np.abs(axes @ axes.T)))) * 0.5
+
+
+def _geometric_landmarks(routes):
+    """Return two-direction geometric anchors, without asserting connectivity.
+
+    Coincident endpoints allow split ways to propose the same translation as
+    an unsplit polyline. These are geometric hypotheses only: bridges and
+    coincident but disconnected ways do not become connected OSM nodes.
+    """
+    incident = {}
+    for route in routes:
+        for left, right in zip(route, route[1:]):
+            vector = np.subtract(right, left)
+            length = float(np.linalg.norm(vector))
+            if length <= 1e-8:
+                continue
+            unit = vector / length
+            if unit[0] < 0 or (unit[0] == 0 and unit[1] < 0):
+                unit = -unit
+            for point in (left, right):
+                incident.setdefault(tuple(point), set()).add(tuple(unit))
+    landmarks = []
+    for point, raw_axes in sorted(incident.items()):
+        axes = []
+        # Canonical ordering precedes near-parallel deduplication: greedy
+        # grouping in input order can change observability at a threshold.
+        for unit in sorted(raw_axes):
+            if all(abs(float(np.dot(unit, axis))) < 0.9999 for axis in axes):
+                axes.append(unit)
+        if len(axes) < 2:
+            continue
+        axes = np.asarray(axes)
+        independence = _landmark_independence(axes)
+        if independence >= 0.04:
+            landmarks.append((point, axes, independence))
+    return landmarks
+
+
+def _landmark_hypotheses(routes, roads, scale_to_ground):
+    """Vote for translations across the snapshot, independent of way lengths.
+
+    Whole-way shape ranking can exclude every correct road when OSM ways are
+    short fragments. Two nonparallel directions supply a translation anchor;
+    repeated anchors vote for the same displacement. Five-metre bins rank
+    search areas only; distinct translations inside a bin remain separate.
+    """
+    source = _geometric_landmarks(routes)
+    reference = _geometric_landmarks([road["points"] for road in roads])
+    selected = sorted(source, key=lambda item: (-item[2], item[0]))[:32]
+    votes = {}
+    pair_count = 0
+    for source_id, (point, axes, _) in enumerate(selected):
+        for target, target_axes, _ in reference:
+            similarities = np.abs(axes @ target_axes.T)
+            compatible = similarities >= 0.95
+            source_supported = axes[np.any(compatible, axis=1)]
+            target_supported = target_axes[np.any(compatible, axis=0)]
+            if (_landmark_independence(source_supported) < 0.04
+                    or _landmark_independence(target_supported) < 0.04):
+                continue
+            delta = np.subtract(target, point)
+            key = tuple(np.rint(delta * scale_to_ground / 5.0).astype(np.int64))
+            entry = votes.setdefault(key, {"sources": set(), "translations": {}})
+            entry["sources"].add(source_id)
+            fine_key = tuple(np.rint(delta * scale_to_ground / 0.05).astype(np.int64))
+            previous = entry["translations"].get(fine_key)
+            if previous is None or tuple(delta) < tuple(previous):
+                entry["translations"][fine_key] = delta
+            pair_count += 1
+    ordered = sorted(votes.items(), key=lambda item: (-len(item[1]["sources"]), item[0]))
+    # Averaging distinct votes could turn two nearby exact road networks into
+    # one seed and manufacture a confidence gap. Retain each numerical seed.
+    selected_bins = ordered[:64]
+    seeds = [entry["translations"][key] for _, entry in selected_bins
+             for key in sorted(entry["translations"])]
+    seed_count = len(seeds)
+    seeds = seeds[:256]
+    return seeds, {"method": "two_direction_geometric_translation_votes",
+                   "source_landmark_count": len(source), "selected_source_landmarks": len(selected),
+                   "reference_landmark_count": len(reference), "compatible_pair_count": pair_count,
+                   "translation_bin_count": len(votes), "selected_translation_bins": len(selected_bins),
+                   "distinct_seed_count": seed_count, "selected_seed_count": len(seeds),
+                   "source_limit": 32, "bin_limit": 64, "hypothesis_limit": 256, "seed_bin_m": 5.0,
+                   "numerical_seed_merge_m": 0.05,
+                   "direction_consistency": 0.95,
+                   "seed_budget_exhausted": seed_count > 256,
+                   "truncated": len(source) > 32 or len(votes) > 64 or seed_count > 256,
+                   "topology_connections_inferred": False}
+
+
 def _match_routes(routes, roads, scale_to_ground, initial_translation):
     """Fit bounded translation hypotheses using robust point-to-line consensus."""
     index = RoadSegmentIndex(roads)
@@ -605,12 +701,16 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
         return None, {**quality, "reason": "source_geometry_unobservable", "candidates": []}
     tolerance = 25.0 / scale_to_ground
 
-    def inspect(delta):
-        result = index.inspect(samples + delta, directions)
+    def inspect(delta, radius):
+        result = index.inspect(samples + delta, directions, max_distance=radius)
         result["directional"] = np.abs(np.sum(directions * result["directions"], axis=1))
         return result
 
     hypotheses = [np.asarray(initial_translation, dtype=float)]
+    landmark_seeds, landmark_search = _landmark_hypotheses(routes, roads, scale_to_ground)
+    hypotheses.extend(landmark_seeds)
+    quality["landmark_search"] = landmark_search
+    quality["correspondence_method"] = "nearest_direction_compatible_segment_within_radius"
     # Several complete CAD routes independently propose candidates. Endpoints
     # supplement centroids because OSM ways and CAD spans can be split differently.
     proposers = sorted(routes, key=lambda route: -LineString(route).length)[:16]
@@ -632,7 +732,7 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
     for hypothesis in unique.values():
         delta = hypothesis.copy()
         for _ in range(20):
-            fitted = inspect(delta)
+            fitted = inspect(delta, tolerance * 4.0)
             eligible = (fitted["distances"] < tolerance * 4.0) & (fitted["directional"] >= 0.7)
             if np.count_nonzero(eligible) < 3:
                 break
@@ -649,7 +749,7 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
             delta += correction
             if np.linalg.norm(correction) * scale_to_ground < 0.01:
                 break
-        fitted = inspect(delta)
+        fitted = inspect(delta, tolerance)
         distances, directional = fitted["distances"], fitted["directional"]
         support = (distances <= tolerance) & (directional >= 0.7)
         route_coverages = [float(np.mean(support[route_ids == i])) for i in range(len(routes))]
@@ -675,11 +775,14 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
     gap = best["score"] - distinct[1]["score"] if len(distinct) > 1 else best["score"]
     accepted = (best["coverage"] >= 0.75 and best["direction_consistency"] >= 0.70
                 and best["supported_route_fraction"] >= 0.75 and gap >= 0.06
-                and best["observability"]["observable"])
+                and best["observability"]["observable"]
+                and not landmark_search["seed_budget_exhausted"])
     quality.update({"confidence_gap": gap, "hypothesis_count": len(unique), "candidates": distinct,
                     "reason": None if accepted else "weak_or_ambiguous_network_alignment"})
     if not best["observability"]["observable"]:
         quality["reason"] = "matched_geometry_unobservable"
+    if landmark_search["seed_budget_exhausted"]:
+        quality["reason"] = "landmark_hypothesis_budget_exhausted"
     return best["translation_3857"] if accepted else None, quality
 
 
