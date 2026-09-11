@@ -39,6 +39,68 @@ def test_candidates_account_for_unresolved_points_without_changing_delivery(tmp_
         prepare(source, [gpkg], tmp_path / 'assets')
 
 
+def test_curated_overrides_bind_polyline_and_composed_symbols(tmp_path):
+    """A project may declare what to render for features that are not block inserts."""
+    ezdxf = pytest.importorskip('ezdxf')
+    document = ezdxf.new()
+    msp = document.modelspace()
+    frame = msp.add_lwpolyline([(0, 0), (4, 0), (4, 3), (0, 3)], close=True,
+                               dxfattribs={'layer': 'FAT', 'color': 40})
+    anchor = msp.add_point((10, 0))
+    pole_block = document.blocks.new('POLE7')
+    pole_block.add_circle((0, 0), 1, dxfattribs={'color': 3})
+    pole = msp.add_blockref('POLE7', (12, 0))
+    source = tmp_path / 'source.dxf'
+    document.saveas(source)
+    database = tmp_path / 'delivery.gpkg'
+    with sqlite3.connect(database) as db:
+        db.execute('CREATE TABLE gpkg_geometry_columns(table_name,geometry_type_name)')
+        db.execute("INSERT INTO gpkg_geometry_columns VALUES('BOITE','POINT')")
+        db.execute('CREATE TABLE BOITE(source_handle)')
+        db.executemany('INSERT INTO BOITE VALUES(?)', [(frame.dxf.handle,), (anchor.dxf.handle,)])
+    overrides = tmp_path / 'svg_symbols.json'
+    overrides.write_text(json.dumps({
+        'schema_version': 'cad2gis.svg-symbol-overrides.v1',
+        'instance_sources': [
+            {'feature_class': 'BOITE', 'mode': 'self',
+             'overlay_text': {'text': 'FAT', 'fill': '#ff0000', 'outline': '#ffffff'}},
+            {'feature_class': 'BOITE', 'source_handle': anchor.dxf.handle, 'mode': 'handles',
+             'render_handles': [pole.dxf.handle], 'label': 'BOITE / borrowed pole'},
+        ],
+        'extra_legend': [{'symbol_id': 'legend-green', 'render_handles': [pole.dxf.handle]}],
+    }), encoding='utf-8')
+    report = prepare(source, [database], tmp_path / 'assets', overrides=overrides)
+    # The own-frame handle renders itself; the anchor renders the pole block instead.
+    assert report['dispositions'] == {'CURATED_OVERRIDE': 2}
+    assert report['overrides']['rule_count'] == 2 and report['overrides']['legend_count'] == 1
+    frame_symbol = f"instance-{frame.dxf.handle.lower()}"
+    anchor_symbol = f"instance-{anchor.dxf.handle.lower()}"
+    bindings = {binding['symbol_id']: binding['source_handle'] for binding in report['source_instance_bindings']}
+    assert bindings == {frame_symbol: frame.dxf.handle, anchor_symbol: anchor.dxf.handle}
+    with sqlite3.connect(tmp_path / 'assets/symbols.sqlite3') as db:
+        statuses = dict(db.execute('SELECT symbol_id,status FROM symbols'))
+        handles = dict(db.execute('SELECT symbol_id,source_handles_json FROM symbols'))
+        svgs = dict(db.execute('SELECT symbol_id,svg FROM symbols'))
+        diagnostics = json.loads(db.execute('SELECT diagnostics_json FROM symbols WHERE symbol_id=?',
+                                            (frame_symbol,)).fetchone()[0])
+    assert statuses[frame_symbol] == statuses[anchor_symbol] == statuses['legend-green'] == 'candidate'
+    # The curated label is rendered to vector outlines inside the frame: white halo behind
+    # the coloured glyph, and never a <text> element (the rasteriser only accepts geometry).
+    assert '<text' not in svgs[frame_symbol]
+    assert '#ff0000' in svgs[frame_symbol] and '#ffffff' in svgs[frame_symbol]
+    assert svgs[frame_symbol].count('<path') > svgs[anchor_symbol].count('<path')
+    assert diagnostics['overlay_text']['text'] == 'FAT'
+    # A rule without overlay_text renders geometry only.
+    assert 'overlay_text' not in json.loads(
+        db.execute('SELECT diagnostics_json FROM symbols WHERE symbol_id=?', (anchor_symbol,)).fetchone()[0]) \
+        or json.loads(db.execute('SELECT diagnostics_json FROM symbols WHERE symbol_id=?',
+                                 (anchor_symbol,)).fetchone()[0])['overlay_text'] is None
+    # Binding identity stays one-to-one with the delivered handle, while the rendered
+    # geometry of the anchor is recorded as the pole block it borrows.
+    assert json.loads(handles[anchor_symbol]) == [anchor.dxf.handle]
+    assert json.loads(handles['legend-green']) == [pole.dxf.handle]
+
+
 def test_failed_inventory_has_no_published_directory(tmp_path, monkeypatch):
     import cad2gis.symbol_workflow as workflow
     source = tmp_path / 'source.dxf'

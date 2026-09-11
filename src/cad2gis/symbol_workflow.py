@@ -8,11 +8,92 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import re
 import sqlite3
 from contextlib import closing
 import subprocess
 import tempfile
 from pathlib import Path
+
+OVERRIDE_SCHEMA = 'cad2gis.svg-symbol-overrides.v1'
+# Entity types whose own geometry is a meaningful symbol outline. POINT carries no
+# outline and TEXT glyphs are annotation, so neither may be bound as self geometry.
+SELF_GEOMETRY_TYPES = frozenset({'LWPOLYLINE', 'POLYLINE', 'LINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE'})
+
+
+def load_overrides(path) -> dict | None:
+    """Read a project's curated SVG symbol overrides, if the file exists.
+
+    The default inventory binds symbols only to block INSERTs. A drawing may draw a
+    delivered feature as a closed polyline and its visible pole symbol as a block that
+    is inserted at the origin, so a project can declare what to render per feature.
+    Every rule is explicit and recorded in the correspondence report.
+    """
+    if path is None:
+        return None
+    path = Path(path)
+    if not path.is_file():
+        return None
+    document = json.loads(path.read_text(encoding='utf-8'))
+    if document.get('schema_version') != OVERRIDE_SCHEMA:
+        raise ValueError(f'Unsupported SVG symbol override schema: {document.get("schema_version")!r}')
+    rules = []
+    for entry in document.get('instance_sources', ()):  # 每个规则控制一类（或一个）已交付要素
+        feature_class = str(entry.get('feature_class', '')).strip()
+        mode = str(entry.get('mode', 'handles'))
+        if not feature_class or mode not in {'self', 'handles'}:
+            raise ValueError('SVG symbol overrides require feature_class and mode self|handles')
+        render_handles = [str(handle).upper() for handle in entry.get('render_handles', ())]
+        if mode == 'handles' and not render_handles:
+            raise ValueError(f'SVG symbol override for {feature_class} needs render_handles')
+        overlay = entry.get('overlay_text')
+        if overlay is not None:
+            if not isinstance(overlay, dict) or not str(overlay.get('text', '')).strip():
+                raise ValueError(f'SVG symbol override for {feature_class} has an invalid overlay_text block')
+            rationalised = {
+                'text': str(overlay['text']).strip(),
+                'fill': str(overlay.get('fill', '#ff0000')),
+                'outline': str(overlay.get('outline', '#ffffff')),
+                'font_family': str(overlay.get('font_family', 'Arial, Helvetica, Liberation Sans, sans-serif')),
+                'font_weight': str(overlay.get('font_weight', 'bold')),
+                'height_ratio': float(overlay.get('height_ratio', 0.52)),
+            }
+            if not 0 < rationalised['height_ratio'] <= 1:
+                raise ValueError('overlay_text height_ratio must be within (0, 1]')
+            overlay = rationalised
+        rules.append(dict(
+            feature_class=feature_class, mode=mode,
+            source_handle=str(entry['source_handle']).upper() if entry.get('source_handle') else None,
+            render_handles=render_handles, label=entry.get('label'), overlay_text=overlay,
+            rationale=str(entry.get('rationale', '')),
+        ))
+    legend = []
+    for entry in document.get('extra_legend', ()):
+        symbol_id = str(entry.get('symbol_id', '')).strip().lower()
+        render_handles = [str(handle).upper() for handle in entry.get('render_handles', ())]
+        if not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,79}', symbol_id) or not render_handles:
+            raise ValueError('Legend overrides need a filename-safe symbol_id and render_handles')
+        legend.append(dict(symbol_id=symbol_id, render_handles=render_handles,
+                           label=entry.get('label') or symbol_id))
+    return {'rules': rules, 'legend': legend, 'path': str(path)}
+
+
+def _override_rule(overrides: dict | None, feature_class: str, handle: str) -> dict | None:
+    """Return the rule for one delivered handle; an exact handle beats a class rule."""
+    if not overrides:
+        return None
+    upper = str(handle).upper()
+    fallback = None
+    for rule in overrides['rules']:
+        if rule['feature_class'] != feature_class:
+            continue
+        if rule['source_handle'] is not None:
+            if rule['source_handle'] == upper:
+                return rule
+            continue
+        if fallback is None:
+            fallback = rule
+    return fallback
 
 
 def preflight(output: Path, *, font_dirs=()) -> None:
@@ -28,7 +109,7 @@ def preflight(output: Path, *, font_dirs=()) -> None:
 
 
 def prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
-            database_paths=None, expected_source_sha256=None) -> dict:
+            database_paths=None, expected_source_sha256=None, overrides=None) -> dict:
     """Publish an independent inventory atomically, never a partial candidate."""
     output = Path(output).resolve()
     preflight(output, font_dirs=font_dirs)
@@ -52,14 +133,16 @@ def prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.svg-stage-', dir=output.parent) as temporary:
         staged = Path(temporary) / 'inventory'
-        report = _prepare(source, databases, staged, font_dirs=font_dirs, database_paths=published_paths)
+        report = _prepare(source, databases, staged, font_dirs=font_dirs,
+                          database_paths=published_paths, overrides=overrides)
         from .cad2gis_v3.artifact_io import inherit_output_permissions
         inherit_output_permissions(Path(temporary))
         staged.rename(output)
     return report
 
 
-def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(), database_paths=None) -> dict:
+def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(), database_paths=None,
+             overrides=None) -> dict:
     from .runtime import configure_numeric_threads
     configure_numeric_threads()
     import ezdxf
@@ -68,6 +151,8 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
         fonts.font_manager.build([str(Path(p).resolve()) for p in font_dirs])
     from .symbol_assets import SCHEMA, extract, _render, _create_symbol_schema
     from .cad2gis_v3.legend_detector import detect_legend_clusters
+
+    overrides = load_overrides(overrides)
 
     source, output = Path(source).resolve(), Path(output).resolve()
     if not databases:
@@ -160,6 +245,27 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
         for point in points:
             handle = point['source_handle']
             entity = document.entitydb.get(handle)
+            rule = _override_rule(overrides, point['layer'], handle)
+            if rule is not None:
+                # Curated rule wins over the block-instance default.
+                if rule['mode'] == 'self':
+                    render_handles = [handle] if entity is not None and entity.dxftype() in SELF_GEOMETRY_TYPES else []
+                else:
+                    render_handles = list(rule['render_handles'])
+                if render_handles:
+                    symbol_id = 'instance-' + handle.lower()
+                    item = dict(symbol_id=symbol_id,
+                                label=rule['label'] or f"{point['layer']} / {handle}",
+                                handles=[handle], render_handles=render_handles)
+                    if rule.get('overlay_text'):
+                        item['overlay_text'] = rule['overlay_text']
+                    selected[symbol_id] = item
+                    point.update(symbol_id=symbol_id,
+                                 source_type=entity.dxftype() if entity is not None else 'missing',
+                                 legend_handles=[], status='CURATED_OVERRIDE',
+                                 override=dict(mode=rule['mode'], render_handles=render_handles,
+                                               rationale=rule['rationale']))
+                    continue
             if entity is None or entity.dxftype() != 'INSERT':
                 point.update(status=('UNRESOLVED_NESTED_HANDLE' if '/' in handle else
                                      'UNRESOLVED_MISSING_HANDLE' if entity is None else 'UNRESOLVED_NON_BLOCK'),
@@ -177,6 +283,12 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
         for handle in sorted({h for p in points for h in p['legend_handles']}):
             key = 'legend-' + handle.lower()
             selected[key] = dict(symbol_id=key, label='Legend candidate / ' + handle, handles=[handle])
+        # Curated legend samples named by the project (for example a coloured pole type
+        # whose model instances are not block inserts).
+        for item in (overrides or {}).get('legend', ()):
+            selected[item['symbol_id']] = dict(symbol_id=item['symbol_id'], label=item['label'],
+                                               handles=list(item['render_handles']),
+                                               render_handles=list(item['render_handles']))
         selection = Path(temp) / 'selection.json'
         selection.write_text(json.dumps(dict(source_sha256=digest, symbols=list(selected.values()))), encoding='utf-8')
         if selected:
@@ -215,6 +327,11 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                       complete_legend_correspondence_verified=False, auto_applied=False,
                       source_instance_bindings=bindings, points=points, legend_clusters=clusters,
                       inventory_blocks=len(inserts), input_databases_sha256=published_hashes,
+                      overrides=(None if overrides is None else dict(
+                          path=overrides['path'], rule_count=len(overrides['rules']),
+                          legend_count=len(overrides['legend']),
+                          overlay_text_rules=[rule['feature_class'] + (f" / {rule['source_handle']}" if rule['source_handle'] else '')
+                                              for rule in overrides['rules'] if rule.get('overlay_text')])),
                       database_scopes={str(published_paths[path]): scope_names[path] for path in databases})
         (output / 'correspondence.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
         rows = ''.join('<tr><td>' + html.escape(p['layer'] + ' / ' + p['source_handle']) + '</td><td>' +

@@ -1527,8 +1527,12 @@ def _prepare_svg_candidates(request, source, source_hash, staged_run_dir, run_di
     output = staged_run_dir / "svg-candidates"
     published_output = run_dir / "svg-candidates"
     final_paths = {path: run_dir / path.relative_to(staged_run_dir) for path in delivery_paths}
+    # A project may curate SVG symbol sources next to its frozen configuration; the
+    # file is optional and every rule is recorded in the correspondence report.
+    overrides = Path(request.mapping_registry).parent / "svg_symbols.json"
     report = prepare(source, delivery_paths, output, font_dirs=request.svg_font_dirs,
-                     database_paths=final_paths, expected_source_sha256=source_hash)
+                     database_paths=final_paths, expected_source_sha256=source_hash,
+                     overrides=overrides if overrides.is_file() else None)
     files = {path.relative_to(output).as_posix(): _sha256(path)
              for path in sorted(output.rglob("*")) if path.is_file()}
     return {

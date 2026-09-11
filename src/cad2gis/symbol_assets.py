@@ -113,6 +113,61 @@ def _render(document, entities):
     return result, skipped
 
 
+def _overlay_text_entities(document, entities, spec: dict) -> list:
+    """Build synthetic CAD text entities for a curated type label (for example FAT/FDT).
+
+    The label is added as drawing entities so it is rendered to vector outlines by the
+    same pipeline as everything else: no font is required when QGIS or the rasteriser
+    draws the symbol, and the label cannot be replaced by layer styling. A slightly
+    larger white glyph is drawn first, which reads as the white halo the reviewed layer
+    labels use.
+    """
+    from ezdxf.bbox import extents
+    from ezdxf.colors import rgb2int
+    from ezdxf.enums import TextEntityAlignment
+
+    label = str(spec.get("text", "")).strip()
+    if not label:
+        raise ValueError("Overlay text needs a non-empty text value")
+    box = extents(entities)
+    if box.size.x <= 0 or box.size.y <= 0:
+        raise ValueError("Curated overlay text needs a measurable symbol extent")
+    ratio = float(spec.get("height_ratio", 0.45))
+    if not 0 < ratio <= 1:
+        raise ValueError("Overlay text height_ratio must be within (0, 1]")
+    # DXF text height is the nominal cap height. Capitals in Arial/Liberation Sans advance
+    # roughly 0.88 cap heights each, and the white halo widens the label by halo_scale, so
+    # the widest allowed label keeps a visible margin inside the frame.
+    advance = float(spec.get("advance", 0.88))
+    halo_scale = float(spec.get("halo_scale", 1.14))
+    width_factor = float(spec.get("width_factor", 0.82))
+    if advance <= 0 or halo_scale < 1 or not 0 < width_factor <= 1:
+        raise ValueError("Overlay text advance/halo_scale/width_factor are invalid")
+    height = min(box.size.y * ratio,
+                 box.size.x * width_factor / (halo_scale * advance * max(len(label), 1)))
+    style_name = "CAD2GIS_OVERLAY"
+    if style_name not in document.styles:
+        bold = str(spec.get("font_weight", "")).lower().startswith("bold")
+        document.styles.new(style_name, dxfattribs={"font": "arialbd.ttf" if bold else "arial.ttf"})
+    center = box.center
+    layers = []
+    for scale, color in ((halo_scale, spec.get("outline", "#ffffff")), (1.0, spec.get("fill", "#ff0000"))):
+        text = document.modelspace().add_text(
+            label, height=height * scale,
+            dxfattribs={"style": style_name, "true_color": rgb2int(_rgb(color))},
+        )
+        text.set_placement((center.x, center.y), align=TextEntityAlignment.MIDDLE_CENTER)
+        layers.append(text)
+    return layers
+
+
+def _rgb(value) -> tuple[int, int, int]:
+    raw = str(value).strip().lstrip("#")
+    if len(raw) != 6:
+        raise ValueError(f"Overlay text colour must be #rrggbb, got {value!r}")
+    return tuple(int(raw[index:index + 2], 16) for index in (0, 2, 4))
+
+
 def _closure(document, entities):
     """Record definition dependencies too, including unrendered dynamic variants."""
     facts, visited = [], set()
@@ -205,11 +260,18 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
         assets = []
         for item in items:
             handles = item.get("handles", [])
+            # A curated override may render geometry other than the bound entity
+            # (for example a feature drawn as a POINT whose visible style is a
+            # neighbouring polyline frame or a pole block). The bound handle keeps
+            # the one-to-one binding contract; render_handles records what was drawn.
+            render_handles = item.get("render_handles") or handles
             if not handles or len(handles) != len(set(handles)):
                 raise ValueError("Each symbol requires a nonempty list of unique source handles")
-            entities = [document.entitydb.get(str(handle).upper()) for handle in handles]
+            if not render_handles or len(render_handles) != len(set(render_handles)):
+                raise ValueError("Each symbol requires a nonempty list of unique render handles")
+            entities = [document.entitydb.get(str(handle).upper()) for handle in render_handles]
             if any(entity is None or not entity.is_alive for entity in entities):
-                raise ValueError(f"Unresolved source handle in {item['symbol_id']}")
+                raise ValueError(f"Unresolved render handle in {item['symbol_id']}")
             facts = _closure(document, entities)
             text_facts = [fact for fact in facts if fact["type"] in {"TEXT", "MTEXT", "ATTRIB", "ATTDEF"}]
             if text_facts:
@@ -217,8 +279,11 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
                     fonts.font_manager.fallback_font_name()
                 except fonts.FontNotFoundError as exc:
                     raise ValueError("No fonts available for source text; provide --font-dir before extracting symbols") from exc
-            rendered, skipped = _render(document, entities)
-            selected_handles = {str(handle).upper() for handle in handles}
+            overlay = item.get("overlay_text")
+            overlay_entities = _overlay_text_entities(document, entities, overlay) if overlay else []
+            # The curated label is drawn after the frame geometry, so it stays on top.
+            rendered, skipped = _render(document, [*entities, *overlay_entities])
+            selected_handles = {str(handle).upper() for handle in [*handles, *render_handles]}
             errors = [entry for entry in skipped if entry["reason"] != "invisible"
                       or str(entry.get("handle", "")).upper() in selected_handles]
             warnings = ["Candidate only: compare with the original CAD legend before use.",
@@ -237,10 +302,19 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
                                       "available": bool(requested_font and fonts.font_manager.has_font(requested_font))})
             if any(not item["available"] for item in font_evidence):
                 warnings.append("One or more source fonts are unavailable; substituted glyphs require review.")
+            if overlay:
+                diagnostics_overlay = {
+                    "text": str(overlay.get("text", "")).strip(),
+                    "fill": overlay.get("fill", "#ff0000"), "outline": overlay.get("outline", "#ffffff"),
+                    "source": "curated overlay_entities rendered to vector outlines",
+                }
+            else:
+                diagnostics_overlay = None
             assets.append({"symbol_id": item["symbol_id"], "label": str(item.get("label", item["symbol_id"])),
                            "handles": handles, "svg": rendered, "svg_sha256": _sha(rendered.encode()),
                            "status": "incomplete" if errors else "candidate", "warnings": warnings,
-                           "fonts": font_evidence, "skipped": skipped, "source_entities": facts})
+                           "fonts": font_evidence, "skipped": skipped, "source_entities": facts,
+                           "overlay_text": diagnostics_overlay})
     if _sha(source.read_bytes()) != source_hash:
         raise ValueError("CAD source changed during extraction")
     output.mkdir(parents=True)
@@ -257,7 +331,8 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
             db.execute("INSERT INTO symbols VALUES (?,?,?,?,?,?,?,?)", (
                 asset["symbol_id"], asset["label"], asset["status"], asset["svg"], asset["svg_sha256"],
                 _json(asset["handles"]), _json(asset["source_entities"]),
-                _json({"warnings": asset["warnings"], "skipped": asset["skipped"], "fonts": asset["fonts"]})))
+                _json({"warnings": asset["warnings"], "skipped": asset["skipped"], "fonts": asset["fonts"],
+                       "overlay_text": asset.get("overlay_text")})))
             (output / "symbols" / f"{asset['symbol_id']}.svg").write_text(asset["svg"], encoding="utf-8")
     for asset in assets:
         png = rasterize_svg(asset["svg"])
