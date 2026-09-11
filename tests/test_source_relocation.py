@@ -33,7 +33,7 @@ def test_relocation_preserves_seal_and_does_not_upgrade_reader_authority(copied_
     previous = (original / "source_manifest.json").read_bytes()
     receipt = relocator.relocate(copied)
     relocated = json.loads((copied / "source_manifest.json").read_text())
-    assert len(receipt["changes"]) == 5
+    assert {entry["artifact"] for entry in receipt["changes"]} == set(manifest["artifacts"])
     assert relocated["snapshot_sha256"] == manifest["snapshot_sha256"]
     assert relocated["reader_provenance"] == manifest["reader_provenance"]
     assert relocated["reader_provenance"]["mode"] == "injected_records"
@@ -42,7 +42,7 @@ def test_relocation_preserves_seal_and_does_not_upgrade_reader_authority(copied_
     assert relocator.relocate(copied)["changes"] == []
 
 
-@pytest.mark.parametrize("artifact", ["reader_records.jsonl", "source.gpkg", "review/source_inventory.json"])
+@pytest.mark.parametrize("artifact", ["reader_records.jsonl", "source.gpkg", "review/source_inventory.json", "reasoning/scene_visual/manifest.json"])
 def test_corruption_never_reseals_or_overwrites_manifest(copied_snapshot, artifact):
     _, copied, _ = copied_snapshot
     previous = (copied / "source_manifest.json").read_bytes()
