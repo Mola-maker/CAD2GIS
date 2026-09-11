@@ -122,3 +122,19 @@ def test_explicitly_selected_hidden_entity_is_not_silently_complete(tmp_path):
 def test_no_external_or_active_svg(payload):
     with pytest.raises(ValueError):
         _plain_svg(payload)
+
+
+def test_png_preview_keeps_aspect_ratio_center_and_blocks_external_content():
+    import io
+    import pytest
+    from PIL import Image, ImageChops
+    from cad2gis.symbol_assets import rasterize_svg
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"><rect width="200" height="100" fill="black"/></svg>'
+    png = rasterize_svg(svg)
+    image = Image.open(io.BytesIO(png)).convert("RGB")
+    assert image.size == (512, 512)
+    bounds = ImageChops.difference(image, Image.new("RGB", image.size, "white")).getbbox()
+    assert bounds == (0, 128, 512, 384)
+    assert rasterize_svg(svg) == png
+    with pytest.raises(ValueError):
+        rasterize_svg('<svg><image href="https://example.com/private.png"/></svg>')

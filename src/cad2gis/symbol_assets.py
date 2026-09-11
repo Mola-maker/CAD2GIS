@@ -68,6 +68,23 @@ def _plain_svg(raw: str) -> str:
     return ET.tostring(root, encoding="unicode")
 
 
+
+def rasterize_svg(svg_text: str) -> bytes:
+    """Rasterize the validated SVG on a centered, bounded 512px review canvas.
+
+    resvg API: https://resvg-py.readthedocs.io/en/latest/api.html
+    Glyphs are already paths; no remote assets or additional fonts are loaded.
+    """
+    import resvg_py
+    root = ET.fromstring(_plain_svg(svg_text))
+    root.set("width", "512")
+    root.set("height", "512")
+    root.set("preserveAspectRatio", "xMidYMid meet")
+    return resvg_py.svg_to_bytes(svg_string=ET.tostring(root, encoding="unicode"),
+                                 width=512, height=512, skip_system_fonts=True,
+                                 background="#ffffff")
+
+
 def _render(document, entities):
     from ezdxf.addons.drawing import Frontend, RenderContext, layout, svg
     from ezdxf.addons.drawing.config import BackgroundPolicy, Configuration
@@ -242,12 +259,17 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
                 _json(asset["handles"]), _json(asset["source_entities"]),
                 _json({"warnings": asset["warnings"], "skipped": asset["skipped"], "fonts": asset["fonts"]})))
             (output / "symbols" / f"{asset['symbol_id']}.svg").write_text(asset["svg"], encoding="utf-8")
+    for asset in assets:
+        png = rasterize_svg(asset["svg"])
+        png_path = f"symbols/{asset['symbol_id']}.png"
+        (output / png_path).write_bytes(png)
+        asset.update(png_path=png_path, png_sha256=_sha(png), png_size=[512, 512])
     manifest = {**metadata, "symbols": [{key: value for key, value in asset.items() if key not in {"svg", "source_entities"}}
                                       for asset in assets]}
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
     (output / "selection.json").write_bytes(selection_bytes)
-    cards = "".join(f'<article><h2>{html.escape(asset["label"])}</h2><img src="symbols/{asset["symbol_id"]}.svg" '
-                    f'alt="{html.escape(asset["label"], quote=True)}"><p>{asset["status"]} · '
+    cards = "".join(f'<article><h2>{html.escape(asset["label"])}</h2><a href="symbols/{asset["symbol_id"]}.svg"><img src="symbols/{asset["symbol_id"]}.png" '
+                    f'alt="{html.escape(asset["label"], quote=True)}"></a><p>{asset["status"]} · '
                     f'{html.escape(", ".join(asset["handles"]))}</p><p>{html.escape(" ".join(asset["warnings"]))}</p></article>'
                     for asset in assets)
     (output / "index.html").write_text('<!doctype html><html lang="en"><meta charset="utf-8">'

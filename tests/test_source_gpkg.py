@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import sqlite3
+from contextlib import closing
 from hashlib import sha256
 
 import pytest
@@ -280,7 +281,7 @@ def test_driver_timestamps_are_canonical_and_caller_clock_is_restored(
     output.write_bytes(b"previous destination")
 
     def inspect_before_normalization(staged, *args):
-        with sqlite3.connect(staged) as connection:
+        with closing(sqlite3.connect(staged)) as connection:
             timestamps = connection.execute(
                 "SELECT DISTINCT last_change FROM gpkg_contents"
             ).fetchall()

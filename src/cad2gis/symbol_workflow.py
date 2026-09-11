@@ -218,8 +218,8 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                       database_scopes={str(published_paths[path]): scope_names[path] for path in databases})
         (output / 'correspondence.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
         rows = ''.join('<tr><td>' + html.escape(p['layer'] + ' / ' + p['source_handle']) + '</td><td>' +
-                       (f'<img src="symbols/{p["symbol_id"]}.svg">' if p['symbol_id'] else '保留原样式') + '</td><td>' +
-                       ''.join(f'<img src="symbols/legend-{h.lower()}.svg">{h}' for h in p['legend_handles']) +
+                       (f'<a href="symbols/{p["symbol_id"]}.svg"><img src="symbols/{p["symbol_id"]}.png" alt="Source instance"></a>' if p['symbol_id'] else '保留原样式') + '</td><td>' +
+                       ''.join(f'<a href="symbols/legend-{h.lower()}.svg"><img src="symbols/legend-{h.lower()}.png" alt="Legend candidate"></a>{h}' for h in p['legend_handles']) +
                        '</td><td>' + p['status'] + '</td></tr>' for p in points)
         (output / 'correspondence.html').write_text('<!doctype html><html lang="zh"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width"><title>SVG 对应复核</title>'

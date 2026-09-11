@@ -18,7 +18,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from .calibration import GCPProfile, fit_profile
-from .artifact_io import inherit_output_permissions, write_json_object
+from .artifact_io import write_graph_object, inherit_output_permissions, write_json_object
 from .cad_scene_graph import build_cad_scene_graph
 from .accounting import account_entities, summarize_accounting
 from .config import MappingRegistry, SourceProfile
@@ -2511,8 +2511,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 "node_count": len(evidence_graph.nodes),
                 "edge_count": len(evidence_graph.edges),
             },
-            operation=lambda: _write_manifest(
-                staged_evidence_graph_path, evidence_graph.to_dict(),
+            operation=lambda: write_graph_object(
+                staged_evidence_graph_path, evidence_graph,
             ),
             fingerprint=lambda _result: _sha256(staged_evidence_graph_path),
             summarize=lambda _result: {
@@ -2528,7 +2528,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
         staged_cad_scene_graph_path = (
             staged_run_dir / "reasoning" / "cad_scene_graph.json"
         )
-        _write_manifest(staged_cad_scene_graph_path, cad_scene_graph.to_dict())
+        write_graph_object(staged_cad_scene_graph_path, cad_scene_graph)
         staged_visual_manifest_path = visual_evidence.write(staged_run_dir)
         staged_decision_execution_path = None
         staged_derived_network_path = None

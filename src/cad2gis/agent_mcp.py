@@ -24,6 +24,10 @@ from .contracts import (
     mcp_tool_contract,
 )
 from .cad2gis_v3.cad_scene_graph import CadSceneGraph
+from .cad2gis_v3.scene_interpretation import (
+    SceneInterpretationError, SceneInterpretationPlan, SceneRoleAssignment,
+    scene_interpretation_json_schema,
+)
 from .cad2gis_v3.artifact_io import read_json_object
 from .cad2gis_v3.evidence_graph import EvidenceGraph, EvidenceNode
 from .cad2gis_v3.evidence_index import (
@@ -96,6 +100,11 @@ def get_capabilities() -> dict[str, Any]:
         ),
         "filesystem_roots": [str(root) for root in _roots()],
         "runtime": _runtime_status(),
+        "scene_evidence": {
+            "visual_schema": "cad2gis.scene_visual_bundle.v1",
+            "role_plan_schema": "cad2gis.scene_interpretation_plan.v1",
+            "authority": "hash-bound proposals only; no automatic source exclusion",
+        },
         "workflow": [
             "inspect_source",
             "bootstrap_project",
@@ -795,6 +804,214 @@ def get_cad_scene_node(graph_path: str, node_id: str) -> dict[str, Any]:
     raise MCPServiceError(f"Unknown CAD scene node ID: {node_id}")
 
 
+def _file_sha256(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+
+def _relative_artifact(manifest_path: Path, relative_path: str) -> Path:
+    relative = Path(str(relative_path))
+    if relative.is_absolute() or ".." in relative.parts:
+        raise MCPServiceError("Artifact path must be a safe relative path")
+    for ancestor in manifest_path.parents:
+        candidate = (ancestor / relative).resolve()
+        if candidate.is_file():
+            return _path(candidate)
+    raise MCPServiceError(
+        f"Artifact referenced by manifest does not exist: {relative_path}"
+    )
+
+
+
+def list_scene_visual_regions(
+    manifest_path: str,
+    *,
+    layout: str = "",
+    cursor: int = 0,
+    limit: int = 25,
+) -> dict[str, Any]:
+    """Page through layout-aware visual regions bound to a CAD Scene Graph."""
+
+    if isinstance(cursor, bool) or not isinstance(cursor, int) or cursor < 0:
+        raise MCPServiceError("cursor must be a non-negative integer")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
+        raise MCPServiceError("limit must be between 1 and 100")
+    path = _path(manifest_path)
+    manifest = _json_object(path)
+    if manifest.get("schema_version") != "cad2gis.scene_visual_bundle.v1":
+        raise MCPServiceError("Unsupported scene visual manifest schema")
+    values = [
+        dict(item) for item in manifest.get("regions", ())
+        if isinstance(item, dict) and (not layout or item.get("layout") == layout)
+    ]
+    page = values[cursor:cursor + limit]
+    next_cursor = cursor + len(page)
+    return {
+        "schema_version": "cad2gis.scene_visual_regions_page.v1",
+        "source_sha256": manifest.get("source_sha256"),
+        "cad_scene_graph_sha256": manifest.get("cad_scene_graph_sha256"),
+        "scene_visual_manifest_sha256": _file_sha256(path),
+        "authority": manifest.get("authority"),
+        "total": len(values),
+        "cursor": cursor,
+        "next_cursor": next_cursor if next_cursor < len(values) else None,
+        "regions": page,
+    }
+
+
+
+def get_scene_visual_region_context(
+    manifest_path: str,
+    region_id: str,
+    *,
+    cursor: int = 0,
+    limit: int = 100,
+) -> dict[str, Any]:
+    """Read one visual region's CAD facts without sending all drawing nodes."""
+
+    if isinstance(cursor, bool) or not isinstance(cursor, int) or cursor < 0:
+        raise MCPServiceError("cursor must be a non-negative integer")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
+        raise MCPServiceError("limit must be between 1 and 200")
+    path = _path(manifest_path)
+    manifest = _json_object(path)
+    region = next(
+        (
+            item for item in manifest.get("regions", ())
+            if isinstance(item, dict) and item.get("region_id") == region_id
+        ),
+        None,
+    )
+    if region is None:
+        raise MCPServiceError(f"Unknown scene visual region ID: {region_id}")
+    context_path = _relative_artifact(path, str(region.get("context_path", "")))
+    if _file_sha256(context_path) != region.get("context_sha256"):
+        raise MCPServiceError("Scene region context digest mismatch")
+    context = _json_object(context_path)
+    node_ids = context.get("entity_node_ids")
+    if not isinstance(node_ids, list):
+        raise MCPServiceError("Scene region context has no entity_node_ids array")
+    layout_context_path = _relative_artifact(
+        path, str(region.get("layout_context_path", ""))
+    )
+    if _file_sha256(layout_context_path) != region.get("layout_context_sha256"):
+        raise MCPServiceError("Scene layout context digest mismatch")
+    layout_context = _json_object(layout_context_path)
+    layout_entities = layout_context.get("entities")
+    if not isinstance(layout_entities, list):
+        raise MCPServiceError("Scene layout context has no entities array")
+    by_node_id = {
+        str(item.get("node_id")): item
+        for item in layout_entities if isinstance(item, dict) and item.get("node_id")
+    }
+    missing = set(str(item) for item in node_ids) - set(by_node_id)
+    if missing:
+        raise MCPServiceError(
+            f"Scene region references nodes absent from layout context: {sorted(missing)}"
+        )
+    entities = [by_node_id[str(node_id)] for node_id in node_ids]
+    page = entities[cursor:cursor + limit]
+    next_cursor = cursor + len(page)
+    render_path = _relative_artifact(path, str(region["render_path"]))
+    hit_map_path = _relative_artifact(path, str(region["hit_map_path"]))
+    if _file_sha256(render_path) != region.get("render_sha256"):
+        raise MCPServiceError("Scene visual render digest mismatch")
+    if _file_sha256(hit_map_path) != region.get("hit_map_sha256"):
+        raise MCPServiceError("Scene visual hit-map digest mismatch")
+    return {
+        "schema_version": "cad2gis.scene_region_context_page.v1",
+        "region": region,
+        "render_path": str(render_path),
+        "hit_map_path": str(hit_map_path),
+        "total": len(entities),
+        "cursor": cursor,
+        "next_cursor": next_cursor if next_cursor < len(entities) else None,
+        "entities": page,
+    }
+
+
+
+def create_scene_interpretation_plan(
+    graph_path: str,
+    visual_manifest_path: str,
+    assignments: list[dict[str, Any]],
+    *,
+    producer: dict[str, Any] | None = None,
+    output_path: str = "",
+) -> dict[str, Any]:
+    """Bind host-AI scene-role rankings to immutable graph and visual hashes."""
+
+    graph = _load_cad_scene_graph(graph_path)
+    manifest_path = _path(visual_manifest_path)
+    manifest = _json_object(manifest_path)
+    try:
+        plan = SceneInterpretationPlan.create(
+            source_sha256=graph.source_sha256,
+            cad_scene_graph_sha256=graph.graph_sha256,
+            scene_visual_manifest_sha256=_file_sha256(manifest_path),
+            assignments=(SceneRoleAssignment.from_dict(item) for item in assignments),
+            producer=dict(producer or {"provider": "host-agent"}),
+        )
+        validation = plan.validate_against(
+            graph,
+            manifest,
+            visual_manifest_sha256=_file_sha256(manifest_path),
+        )
+    except SceneInterpretationError as exc:
+        raise MCPServiceError(str(exc)) from exc
+    written_path = None
+    if output_path:
+        destination = _path(output_path, must_exist=False)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_name(f".{destination.name}.{os.getpid()}.tmp")
+        try:
+            temporary.write_text(
+                json.dumps(plan.to_dict(), ensure_ascii=False, sort_keys=True, indent=2)
+                + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, destination)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+        written_path = str(destination)
+    return {
+        "plan": plan.to_dict(),
+        "validation": validation,
+        "output_path": written_path,
+        "proposal_schema": scene_interpretation_json_schema(),
+    }
+
+
+
+def validate_scene_interpretation_plan(
+    graph_path: str,
+    visual_manifest_path: str,
+    plan: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate a persisted AI scene plan against current immutable evidence."""
+
+    graph = _load_cad_scene_graph(graph_path)
+    manifest_path = _path(visual_manifest_path)
+    manifest = _json_object(manifest_path)
+    try:
+        parsed = SceneInterpretationPlan.from_dict(plan)
+        return parsed.validate_against(
+            graph,
+            manifest,
+            visual_manifest_sha256=_file_sha256(manifest_path),
+        )
+    except SceneInterpretationError as exc:
+        raise MCPServiceError(str(exc)) from exc
+
+
+
 def _stage_objects_from_nodes(
     nodes: tuple[EvidenceNode, ...] | list[EvidenceNode],
     *,
@@ -1444,6 +1661,10 @@ def create_server(
         ("export_iteration_learning", export_iteration_learning),
         ("get_cad_scene_node", get_cad_scene_node),
         ("inspect_iteration", inspect_iteration),
+        ("list_scene_visual_regions", list_scene_visual_regions),
+        ("get_scene_visual_region_context", get_scene_visual_region_context),
+        ("create_scene_interpretation_plan", create_scene_interpretation_plan),
+        ("validate_scene_interpretation_plan", validate_scene_interpretation_plan),
         ("list_cad_scene_nodes", list_cad_scene_nodes),
         ("list_label_candidates", list_label_candidates),
         ("list_legend_catalog_candidates", list_legend_catalog_candidates),

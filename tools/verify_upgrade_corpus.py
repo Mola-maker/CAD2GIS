@@ -254,6 +254,22 @@ def main():
           "blocked": sum(r["status"] == "BLOCKED" for r in reports),
           "audited": sum(r["status"] == "CONVERTED" for r in reports),
           "absolute_accuracy_verified": False, "reports": reports})
+    from cad2gis.batch import report_runs, write_index
+    completed = [args.output / r["id"] / "run" for r in reports
+                 if (args.output / r["id"] / "run/run_manifest.json").is_file()]
+    review = args.output / "review"
+    if completed:
+        batch_report = report_runs(completed, review)
+    else:
+        review.mkdir()
+        batch_report = {"schema_version": "cad2gis.batch-report.v1", "drawings": []}
+    for report in reports:
+        if not (args.output / report["id"] / "run/run_manifest.json").is_file():
+            batch_report["drawings"].append({"id": report["id"], "status": report["status"],
+                "error": report.get("error", "Conversion did not publish a run"), "links": {}})
+    batch_report["status"] = "COMPLETED" if success else "FAILED"
+    write(review / "batch-report.json", batch_report)
+    write_index(review, batch_report)
     return 0 if success else 1
 
 

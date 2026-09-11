@@ -97,7 +97,7 @@ def read_json_object(
     return payload
 
 
-def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
+def write_json_object(path: str | Path, payload: dict[str, Any], *, default=None) -> None:
     """Write canonical human-readable JSON, gzip-compressed for ``.gz``."""
     artifact = Path(path)
     artifact.parent.mkdir(parents=True, exist_ok=True)
@@ -115,7 +115,7 @@ def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
                     # Avoid TextIOWrapper.flush(), which emits an extra gzip
                     # sync marker and changes existing content identities.
                     buffer = bytearray()
-                    for chunk in json.JSONEncoder(ensure_ascii=False, indent=2).iterencode(payload):
+                    for chunk in json.JSONEncoder(ensure_ascii=False, indent=2, default=default).iterencode(payload):
                         buffer.extend(chunk.encode("utf-8"))
                         if len(buffer) >= 65536:
                             compressed.write(buffer)
@@ -124,7 +124,7 @@ def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
                         compressed.write(buffer)
         else:
             with temporary.open("w", encoding="utf-8", newline="\n") as text:
-                json.dump(payload, text, ensure_ascii=False, indent=2)
+                json.dump(payload, text, ensure_ascii=False, indent=2, default=default)
         os.replace(temporary, artifact)
     finally:
         if temporary.exists():
@@ -134,3 +134,21 @@ def write_json_object(path: str | Path, payload: dict[str, Any]) -> None:
 __all__ = [
     "file_cache_identity", "inherit_output_permissions", "read_json_object", "write_json_object",
 ]
+
+
+def write_graph_object(path, graph) -> None:
+    """Serialize one immutable graph record at a time, without a duplicate fact tree."""
+    from .evidence_graph import EvidenceGraph, EVIDENCE_GRAPH_SCHEMA
+    from .cad_scene_graph import CadSceneGraph, CAD_SCENE_GRAPH_SCHEMA
+    if not isinstance(graph, (EvidenceGraph, CadSceneGraph)):
+        raise TypeError("Expected an immutable CAD or evidence graph")
+    payload = {
+        "schema_version": EVIDENCE_GRAPH_SCHEMA if isinstance(graph, EvidenceGraph) else CAD_SCENE_GRAPH_SCHEMA,
+        "source_sha256": graph.source_sha256,
+        "graph_sha256": graph.graph_sha256,
+        "nodes": graph.nodes,
+        "edges": graph.edges,
+    }
+    if isinstance(graph, CadSceneGraph):
+        payload["diagnostics"] = graph.diagnostics
+    write_json_object(path, payload, default=lambda record: record.to_dict())
