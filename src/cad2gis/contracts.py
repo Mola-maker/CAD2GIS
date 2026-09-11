@@ -27,6 +27,7 @@ MCP_TOOL_NAMES = (
     "commit_semantic_patch",
     "compile_semantic_revision",
     "create_decision_pack",
+    "create_scene_interpretation_plan",
     "debug_mcp",
     "decide_iteration_candidate",
     "evaluate_iteration_candidate",
@@ -37,6 +38,7 @@ MCP_TOOL_NAMES = (
     "get_entity_context_batch",
     "get_evidence_node",
     "get_runtime_status",
+    "get_scene_visual_region_context",
     "initialize_semantic_store",
     "inspect_iteration",
     "inspect_run",
@@ -50,6 +52,7 @@ MCP_TOOL_NAMES = (
     "list_legend_catalog_candidates",
     "list_network_repair_candidates",
     "list_registered_operations",
+    "list_scene_visual_regions",
     "list_visual_regions",
     "prepare_ai_onboarding",
     "prepare_iteration_context",
@@ -65,6 +68,7 @@ MCP_TOOL_NAMES = (
     "start_feedback_iteration",
     "validate_decision_pack",
     "validate_project",
+    "validate_scene_interpretation_plan",
 )
 
 

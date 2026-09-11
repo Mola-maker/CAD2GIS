@@ -43,6 +43,8 @@ def ingest(
             f"skips cannot enter conversion: {reader_protocol}"
         )
     entities = [SourceEntity.from_record(record) for record in records]
+    # Materialized entities own their facts; discard the duplicate reader inventory.
+    del records
     model = [entity for entity in entities if entity.cad_role == "model"]
     metadata = next((entity.text for entity in entities if entity.dwg_type == "DOCUMENT_METADATA"), "")
     if profile.dwg_cgeocs is not None:

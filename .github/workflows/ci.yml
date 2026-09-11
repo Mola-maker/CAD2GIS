@@ -62,14 +62,19 @@ jobs:
           tests/test_review_native_geometry.py
           tests/test_runtime_archive_permissions.py
           --junitxml=test-results/precision-agent.xml
+      - name: Summarize precision results
+        if: always()
+        run: python tools/summarize_junit.py test-results/precision-agent.xml
       - name: Preserve precision and protocol results
         if: always()
+        # JUnit is also summarized below; storage quota must not mask test/build results.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: precision-agent-${{ github.sha }}
           path: test-results/precision-agent.xml
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
 
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python }}
@@ -127,14 +132,20 @@ jobs:
           CAD2GIS_FULL_DWG_TESTS: "0"
         run: python -m pytest -q --junitxml=test-results/regression.xml
 
+      - name: Summarize platform results
+        if: always()
+        run: python tools/summarize_junit.py test-results/regression.xml
+
       - name: Preserve platform regression results
         if: always()
+        # JUnit is also summarized below; storage quota must not mask test/build results.
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: regression-${{ matrix.os }}-py${{ matrix.python }}-${{ github.sha }}
           path: test-results/regression.xml
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
 
       - name: Build Python distribution
         if: runner.os == 'Linux' && matrix.python == '3.12'

@@ -522,7 +522,13 @@ def vertex_graph(values):
 def render(path, source, delivered, comparisons, report, focus=False):
     image = Image.new("RGB", (2160, 1400), "#f6f8fc")
     draw = ImageDraw.Draw(image)
-    font_path = Path("C:/Windows/Fonts/arial.ttf")
+    font_path = next((p for p in (
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+        Path("C:/Windows/Fonts/msyh.ttc"),
+        Path("/System/Library/Fonts/PingFang.ttc"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("C:/Windows/Fonts/arial.ttf"),
+    ) if p.is_file()), Path("__no_system_font__"))
     font = ImageFont.truetype(str(font_path), 18) if font_path.exists() else ImageFont.load_default()
     small = ImageFont.truetype(str(font_path), 13) if font_path.exists() else font
     title = ImageFont.truetype(str(font_path), 28) if font_path.exists() else font
@@ -610,7 +616,13 @@ def render_changes(path, source, delivered, comparisons, report):
     source_by_key = {entity["entity_key"]: entity for entity, _ in source}
     canvas = Image.new("RGB", (2160, 1750), "#f6f8fc")
     draw = ImageDraw.Draw(canvas)
-    font_path = Path("C:/Windows/Fonts/arial.ttf")
+    font_path = next((p for p in (
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+        Path("C:/Windows/Fonts/msyh.ttc"),
+        Path("/System/Library/Fonts/PingFang.ttc"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("C:/Windows/Fonts/arial.ttf"),
+    ) if p.is_file()), Path("__no_system_font__"))
     font = ImageFont.truetype(str(font_path), 20) if font_path.exists() else ImageFont.load_default()
     small = ImageFont.truetype(str(font_path), 16) if font_path.exists() else font
     draw.text((30, 20), "Largest source-relative geometry changes | gray: source; blue: delivered", fill="#183653", font=font)

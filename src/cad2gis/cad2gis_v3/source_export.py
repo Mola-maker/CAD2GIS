@@ -130,7 +130,13 @@ def export_source(
         result = write_source_gpkg(staging / "source.gpkg", entities, source_crs)
         _write_json(review / "source_inventory.json", inventory)
         _write_json(review / "cad_scene_graph.json", graph.to_dict())
-        artifacts = {}
+        from .scene_visual import build_scene_visual_bundle
+        visual = build_scene_visual_bundle(graph=graph, entities=entities,
+            scene_candidates=(inventory.get("plan_domain") or {}).get("scene_partition", {}))
+        visual.write(staging)
+        artifacts = {"scene_visual_manifest": {
+            "path": str(root / visual.manifest_relative_path), "sha256": visual.manifest_file.sha256,
+        }}
         for name, relative in {
             "reader_records": "reader_records.jsonl", "source_gpkg": "source.gpkg",
             "plan_entities": "plan_entities.jsonl",

@@ -15,6 +15,7 @@ dependencies = [
   "pyproj>=3.6,<4",
   "shapely>=2.0",
   "ezdxf>=1.4,<2",
+  "resvg-py==0.5.0",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
