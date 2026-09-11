@@ -1,0 +1,2740 @@
+{
+  "schema_version": "cad2gis.real-environment-verification.v1",
+  "date": "2026-09-10",
+  "base_main_commit": "32ad71ec1cb94838291a3f6706fdadb5586dcf27",
+  "drawing_count": 9,
+  "district_count": 11,
+  "qgis_project_count": 12,
+  "feature_instances": 3704,
+  "absolute_accuracy_verified": false,
+  "conversion_method": "Installed package, native LibreDWG source snapshots extracted during this verification, immutable source and reader identity checked on replay, frozen real OSM snapshots.",
+  "runtime": {
+    "python": "3.12.13",
+    "platform": "Windows x86_64",
+    "native_reader": "LibreDWG 0.14",
+    "qgis": "4.0.3",
+    "doctor_status": "ready",
+    "mcp_stdio_status": "PASS"
+  },
+  "tests": {
+    "passed": 1204,
+    "skipped": 11,
+    "warnings": 3,
+    "log_sha256": "ceedae23996bb9a1d0616020098411e6fd00fa4e7c5bc835666f5af2f4ce6737",
+    "mode": "checkout source suite; installed conversion/MCP/QGIS validated separately"
+  },
+  "browser": {
+    "surface": "actual local application in browser",
+    "source_run": "Manado native-source conversion",
+    "observed_district_sequence": [
+      "MAIN",
+      "EMR28560",
+      "EMR29619",
+      "MAIN"
+    ],
+    "observed_feature_counts": {
+      "MAIN": 375,
+      "EMR28560": 14,
+      "EMR29619": 26
+    },
+    "emr29619_observed_layers": {
+      "BOITE": 1,
+      "PTECH": 12,
+      "EMR": 1,
+      "INFRASTRUCTURE": 1,
+      "CABLE": 11
+    },
+    "selector_visible_in_expanded_workspace": true,
+    "online_osm_tiles_enabled": false,
+    "scope": "Manual browser interaction with installed local server; no claim of responsive-browser matrix or live QGIS GUI automation."
+  },
+  "reader_discrepancy_receipt": "semarang-reader-repeatability-20260910.json",
+  "generic_snapshot_replay": {
+    "status": "PASS",
+    "drawing": "semarang_sf"
+  },
+  "drawings": [
+    {
+      "id": "drawing-01",
+      "baseline": "lamteh_sf",
+      "source_filename": "APD - KELURAHAN LAMTEH DAYAH ACEH - SF.dwg",
+      "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+      "source_unchanged": true,
+      "native_inventory_sha256": "71dd024f808886bfa64cc63bb4ea2e943ae3f751f2bd07db622ed61474e7bbf5",
+      "source_model_record_count": 250,
+      "named_paper_layout_record_counts": {
+        "APD - SF": 217
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:23846",
+      "target_crs": "EPSG:3857",
+      "run_manifest_sha256": "b53083852e499ed340a78c7ac747bd6ba0baf42d47b3e3ac5cb1a609b023ab06",
+      "configuration_sha256": {
+        "mapping_registry.json": "40b70212183cb33a52d8f187de3034029101ae1c353414c6a2f671840869d1d0",
+        "osm_anchor.json": "e8067e105e063ce3f1d80a52fe903b2cb876f6a0c1011a08868c8e8ac617baf7",
+        "source_profile.json": "0f7446887846a98c70552f2e7d30aa3962c590cdea30e62d08f0facce7318565",
+        "spatial_regions.json": "7fe043ad7af5276e6678179db10d428d0fabe0caf5b76f30fc0dc5628f350fe3"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-01",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 2,
+            "CABLE": 25,
+            "IMB": 0,
+            "INFRASTRUCTURE": 1,
+            "PTECH": 26,
+            "SITE": 2,
+            "ZNRO": 0,
+            "ZPM": 0
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 2,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-01/OSM-review.qgz",
+          "png": "drawing-01/OSM-review.png",
+          "qgz_sha256": "cc07b86cb52ac762bf751bcfb5ffbd9e79b55ee4f29ee2fbb0840ec0a2beed15",
+          "png_sha256": "3713b680ac1306a3f3f41c61f716179abb10f146796606563f1ff0f00591b0c5",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "cc07b86cb52ac762bf751bcfb5ffbd9e79b55ee4f29ee2fbb0840ec0a2beed15",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 133,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "3713b680ac1306a3f3f41c61f716179abb10f146796606563f1ff0f00591b0c5",
+            "sampled_map_colors": 442,
+            "map_samples": {
+              "BOITE:1CB380/15AA06": [
+                10616815.105798341,
+                609488.670433078
+              ],
+              "BOITE:1CB380/15AA07": [
+                10616815.105798341,
+                609488.670433078
+              ],
+              "CABLE:1B15D2": [
+                10616340.84480511,
+                609576.6663337268
+              ],
+              "INFRASTRUCTURE:1B15D2": [
+                10616187.508080132,
+                609581.0290801576
+              ],
+              "PTECH:1AC878": [
+                10616317.578522451,
+                609576.9751638633
+              ],
+              "PTECH:1AE9F0": [
+                10616281.203845855,
+                609576.6160549052
+              ],
+              "PTECH:1AE9F8": [
+                10616219.178565836,
+                609575.8328428435
+              ],
+              "PTECH:1AEA00": [
+                10616166.932013372,
+                609576.5724256368
+              ],
+              "PTECH:1AEA08": [
+                10616104.68285244,
+                609576.0051949117
+              ],
+              "PTECH:1AEA10": [
+                10616031.746213578,
+                609579.5673225267
+              ],
+              "PTECH:1AEA88": [
+                10615898.85136229,
+                609562.1333974494
+              ],
+              "PTECH:1AEA90": [
+                10615860.646320177,
+                609564.1381600414
+              ],
+              "PTECH:1AEA98": [
+                10615821.720540434,
+                609570.8643751028
+              ],
+              "PTECH:1AEAA0": [
+                10615756.756137582,
+                609594.4297662253
+              ],
+              "SITE:1BA661": [
+                10616318.372192163,
+                609573.6493755488
+              ],
+              "SITE:1BABB4": [
+                10615560.704072073,
+                609670.0619265124
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-02",
+      "baseline": "lamteh_main",
+      "source_filename": "APD - KELURAHAN LAMTEH DAYAH ACEH.dwg",
+      "source_sha256": "d71ad87e6c0c81811725cf6238dd883621f0d09c03815c81eebd067eec1f8e78",
+      "source_unchanged": true,
+      "native_inventory_sha256": "b19303a98ce5a57f591f90ae1a3124ab0aefd4f3a0c29d301eb6af4bd155ea1d",
+      "source_model_record_count": 3489,
+      "named_paper_layout_record_counts": {
+        "APD": 214,
+        "SALES VALIDASI SND KASAR": 78,
+        "SALES VALIDASI SND KASAR Keuchik": 90
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:23846",
+      "target_crs": "EPSG:3857",
+      "run_manifest_sha256": "c456eec003bfb9378587e4ec0afcc673964a7eaeb6f651addb975263bc106577",
+      "configuration_sha256": {
+        "mapping_registry.json": "186799fb4b75a943fa2a1067d03350c11032b70165efaa5e3de79909ba3c46d6",
+        "osm_anchor.json": "c5af817fbaf6af519763cda1214d960a427d84ecd46f3ec79a4ae504abcfc60d",
+        "source_profile.json": "3433f8bdf65336e84a5df77fb7592bff616f0e2813012e5d46d3bbde476222b6",
+        "spatial_regions.json": "d8ab1a3d955fc6323d6ba9b742db2e3cb458db135aff26b08ad58140c5c1c929"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-02",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 38,
+            "CABLE": 237,
+            "IMB": 423,
+            "INFRASTRUCTURE": 53,
+            "PTECH": 208,
+            "SITE": 2,
+            "ZNRO": 1,
+            "ZPM": 38
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 41,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-02/OSM-review.qgz",
+          "png": "drawing-02/OSM-review.png",
+          "qgz_sha256": "72acb96479369663e6ca0d109b624a94235db0d63acc9939b78428f6328328dd",
+          "png_sha256": "8b259a2be75d7d4b3fca6d686c83a927212b69c6503542423ef89dc9c5b268f0",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "72acb96479369663e6ca0d109b624a94235db0d63acc9939b78428f6328328dd",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 587,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "8b259a2be75d7d4b3fca6d686c83a927212b69c6503542423ef89dc9c5b268f0",
+            "sampled_map_colors": 1388,
+            "map_samples": {
+              "BOITE:1B6B33": [
+                10616320.344445786,
+                609622.1022785747
+              ],
+              "BOITE:1B6B38": [
+                10616335.324078508,
+                609730.7346950107
+              ],
+              "BOITE:1B6B3D": [
+                10616264.981699338,
+                609771.6770886775
+              ],
+              "BOITE:1B6B42": [
+                10616304.143878035,
+                610269.6008526972
+              ],
+              "BOITE:1B6B47": [
+                10616249.084643053,
+                610444.5612081012
+              ],
+              "BOITE:1B6B4C": [
+                10616333.405879986,
+                610469.0098896506
+              ],
+              "BOITE:1B6B51": [
+                10616286.554340398,
+                610552.1288224163
+              ],
+              "BOITE:1B6B56": [
+                10616212.257852554,
+                610608.5264928658
+              ],
+              "BOITE:1B6B5B": [
+                10616219.027683932,
+                609789.1980415639
+              ],
+              "BOITE:1B6B60": [
+                10616098.296612443,
+                609813.6336024755
+              ],
+              "CABLE:1B0BD8": [
+                10616271.473836005,
+                609825.095086944
+              ],
+              "IMB:1706DF": [
+                10615633.60855353,
+                609891.4493457389
+              ],
+              "IMB:1706E1": [
+                10615642.614144221,
+                609883.7581677424
+              ],
+              "IMB:1706E3": [
+                10615623.789528944,
+                609652.1800172178
+              ],
+              "IMB:1706E5": [
+                10615927.137523957,
+                610386.8560983802
+              ],
+              "IMB:1706E7": [
+                10616099.239826031,
+                610254.0733868437
+              ],
+              "IMB:1706E9": [
+                10615433.57546249,
+                609935.99792403
+              ],
+              "IMB:1706EB": [
+                10616021.394615773,
+                609555.8500794211
+              ],
+              "IMB:1706ED": [
+                10616196.083823621,
+                610268.4016352005
+              ],
+              "IMB:1706EF": [
+                10615908.255718641,
+                610398.11164086
+              ],
+              "IMB:1706F1": [
+                10615943.33675479,
+                609539.6681043063
+              ],
+              "INFRASTRUCTURE:1B0BD8": [
+                10616270.3088479,
+                610092.7166199561
+              ],
+              "INFRASTRUCTURE:1B10D5": [
+                10616109.409507912,
+                610033.3726273382
+              ],
+              "INFRASTRUCTURE:1B15D2": [
+                10616089.083655726,
+                609503.3309750988
+              ],
+              "INFRASTRUCTURE:1B1ACF": [
+                10615477.925672632,
+                609884.9337996782
+              ],
+              "INFRASTRUCTURE:1B1FCC": [
+                10616309.557205047,
+                609559.7388361332
+              ],
+              "INFRASTRUCTURE:1B1FCD": [
+                10616365.23669472,
+                609729.174182686
+              ],
+              "INFRASTRUCTURE:1B1FCE": [
+                10616284.348983342,
+                609707.2558549172
+              ],
+              "INFRASTRUCTURE:1B1FCF": [
+                10616264.281908393,
+                609731.0858013523
+              ],
+              "INFRASTRUCTURE:1B1FD0": [
+                10616290.95290312,
+                610309.815709589
+              ],
+              "INFRASTRUCTURE:1B1FD1": [
+                10616283.607220136,
+                610422.6089221314
+              ],
+              "PTECH:1AC878": [
+                10616317.578522451,
+                609576.9751638633
+              ],
+              "PTECH:1AC880": [
+                10616320.344445786,
+                609622.1022785747
+              ],
+              "PTECH:1AC888": [
+                10616330.994395047,
+                609671.398869588
+              ],
+              "PTECH:1AC890": [
+                10616333.042338537,
+                609694.2511024737
+              ],
+              "PTECH:1AC898": [
+                10616335.324078508,
+                609730.7346950107
+              ],
+              "PTECH:1AC8A0": [
+                10616355.154175049,
+                609725.3660838371
+              ],
+              "PTECH:1AC8A8": [
+                10616365.06829854,
+                609732.982281535
+              ],
+              "PTECH:1AC8B0": [
+                10616395.14931093,
+                609731.6346602937
+              ],
+              "PTECH:1AC8B8": [
+                10616301.902732404,
+                609738.5655982168
+              ],
+              "PTECH:1AC8C0": [
+                10616273.225999396,
+                609739.7656205188
+              ],
+              "SITE:1BA661": [
+                10616318.372192163,
+                609573.6493755488
+              ],
+              "SITE:1BABB4": [
+                10615560.704072073,
+                609670.0619265124
+              ],
+              "ZNRO:18837E": [
+                10615826.925128983,
+                610084.802787378
+              ],
+              "ZPM:194198": [
+                10616276.508703576,
+                609802.6377901079
+              ],
+              "ZPM:194694": [
+                10616273.96724054,
+                610277.5981516702
+              ],
+              "ZPM:194695": [
+                10616190.09756359,
+                610284.3295010907
+              ],
+              "ZPM:194B91": [
+                10616247.656075152,
+                610436.107748267
+              ],
+              "ZPM:19508D": [
+                10616316.803357182,
+                610480.0457548727
+              ],
+              "ZPM:195589": [
+                10616245.765114462,
+                610547.0679577817
+              ],
+              "ZPM:195A86": [
+                10616197.027114691,
+                610610.3878195928
+              ],
+              "ZPM:195F82": [
+                10616193.902295088,
+                609782.2324890005
+              ],
+              "ZPM:19647E": [
+                10616089.715526737,
+                609809.9786399717
+              ],
+              "ZPM:19647F": [
+                10616106.34472572,
+                609897.6215543405
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-03",
+      "baseline": "manado-tomohon_uplink",
+      "source_filename": "APD - MANADO-UPLINK_FWA_OLT_TOMOHON_TO_EMR- 46478_FO_24C.dwg",
+      "source_sha256": "100a90e5f8332e333ffc6a8a7c1ef51a719707836a5e836140115200b6048977",
+      "source_unchanged": true,
+      "native_inventory_sha256": "90f0ae4d6922a3459d1cdc54d669edd99a23976fa8aadc5949cbffca1073d993",
+      "source_model_record_count": 2849,
+      "named_paper_layout_record_counts": {
+        "APD": 198
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:3857",
+      "target_crs": "EPSG:3857",
+      "run_manifest_sha256": "46bce431a7687337250cbdf395983b6e6b728d47145ba69ddf7f0d944c9de344",
+      "configuration_sha256": {
+        "delivery_partitions.json": "102283bb6b1dcaed26cc8c1cd59b1b0abaa23f0211229df93a4fc45beccf4f44",
+        "mapping_registry.json": "3e1fb81734a4dd834ae98e039219a84906a82ad03952d8dfece3f98340c1edc4",
+        "source_profile.json": "6c42155064d3a72fe048d09fcb03a48b57ad26544227d0939f576d92bef071aa",
+        "spatial_regions.json": "ca24349935a2a2a1eecaaeab97c24672d27f41393cc6d85e3f8bb41f0c3548ac"
+      },
+      "osm_by_district": {
+        "EMR28560": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        },
+        "EMR29619": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        },
+        "MAIN": {
+          "status": "matched",
+          "translation_3857": [
+            2.111659483381882,
+            -0.2974103885846666
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-03",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 15,
+            "CABLE": 44,
+            "IMB": 243,
+            "INFRASTRUCTURE": 13,
+            "PTECH": 43,
+            "SITE": 1,
+            "ZNRO": 1,
+            "ZPM": 15
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 15,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        },
+        {
+          "drawing": "drawing-03",
+          "district": "EMR28560",
+          "delivery_counts": {
+            "BOITE": 0,
+            "CABLE": 6,
+            "EMR": 1,
+            "IMB": 0,
+            "INFRASTRUCTURE": 1,
+            "PTECH": 6,
+            "SITE": 0,
+            "ZNRO": 0,
+            "ZPM": 0
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 2,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        },
+        {
+          "drawing": "drawing-03",
+          "district": "EMR29619",
+          "delivery_counts": {
+            "BOITE": 1,
+            "CABLE": 11,
+            "EMR": 1,
+            "IMB": 0,
+            "INFRASTRUCTURE": 1,
+            "PTECH": 12,
+            "SITE": 0,
+            "ZNRO": 0,
+            "ZPM": 0
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 1,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-03/OSM-review.qgz",
+          "png": "drawing-03/OSM-review.png",
+          "qgz_sha256": "244e306a6262cbb985e5ef61e077227602567ac6093a9afd68041816564fdaba",
+          "png_sha256": "87297ea1c55478edcb10fc411efc47359d829cf5d74449da4fb2f00fec15d4ec",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "244e306a6262cbb985e5ef61e077227602567ac6093a9afd68041816564fdaba",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 4591,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "87297ea1c55478edcb10fc411efc47359d829cf5d74449da4fb2f00fec15d4ec",
+            "sampled_map_colors": 1264,
+            "map_samples": {
+              "BOITE:2198": [
+                13901954.690977285,
+                146009.040919564
+              ],
+              "BOITE:21A7": [
+                13902292.518701864,
+                145940.9512636551
+              ],
+              "BOITE:21AA": [
+                13902212.990353383,
+                145926.8523575179
+              ],
+              "BOITE:21AD": [
+                13902165.590659104,
+                145939.56185569722
+              ],
+              "BOITE:21B0": [
+                13902151.932205314,
+                145868.99933174852
+              ],
+              "BOITE:21B3": [
+                13902064.623884164,
+                145875.0321470126
+              ],
+              "BOITE:21B6": [
+                13902079.280120824,
+                145958.7563633062
+              ],
+              "BOITE:21B9": [
+                13901991.161337214,
+                146069.1177218031
+              ],
+              "BOITE:21BC": [
+                13901994.962560223,
+                145984.90409745052
+              ],
+              "BOITE:21BF": [
+                13901896.223360123,
+                145953.1070839457
+              ],
+              "CABLE:31B1": [
+                13902016.899044555,
+                145888.01657548547
+              ],
+              "IMB:1598": [
+                13902000.232164804,
+                146047.0792484593
+              ],
+              "IMB:1599": [
+                13902051.433891233,
+                145977.3027345325
+              ],
+              "IMB:159A": [
+                13902091.518456524,
+                145945.1648641674
+              ],
+              "IMB:159B": [
+                13901909.735892493,
+                145927.8427966904
+              ],
+              "IMB:159C": [
+                13902096.632027455,
+                145861.4345029803
+              ],
+              "IMB:159D": [
+                13902107.287760664,
+                145860.7584879659
+              ],
+              "IMB:159E": [
+                13902118.559208194,
+                145861.8606957465
+              ],
+              "IMB:159F": [
+                13902128.484634085,
+                145859.87803667752
+              ],
+              "IMB:15A0": [
+                13901889.758492094,
+                146113.8669812961
+              ],
+              "IMB:15A1": [
+                13901884.801041175,
+                146121.5391986206
+              ],
+              "INFRASTRUCTURE:31B1": [
+                13902075.34695112,
+                145999.50861553816
+              ],
+              "INFRASTRUCTURE:323E": [
+                13901848.969680306,
+                146137.46835319098
+              ],
+              "INFRASTRUCTURE:323F": [
+                13901816.555450004,
+                146149.595377578
+              ],
+              "INFRASTRUCTURE:3240": [
+                13901989.41244511,
+                146089.223414244
+              ],
+              "INFRASTRUCTURE:3242": [
+                13901966.171462398,
+                146022.53596529714
+              ],
+              "INFRASTRUCTURE:3244": [
+                13901911.905005043,
+                145970.70128900377
+              ],
+              "INFRASTRUCTURE:3245": [
+                13902170.579913713,
+                145862.57975345987
+              ],
+              "INFRASTRUCTURE:3246": [
+                13902267.568116274,
+                145950.3076685563
+              ],
+              "INFRASTRUCTURE:3247": [
+                13902068.582222939,
+                145895.24384160285
+              ],
+              "INFRASTRUCTURE:3248": [
+                13901790.319594614,
+                146005.435048662
+              ],
+              "PTECH:1933": [
+                13901991.161337214,
+                146069.1177218031
+              ],
+              "PTECH:1942": [
+                13902097.441782754,
+                146032.859056229
+              ],
+              "PTECH:1949": [
+                13902087.289540764,
+                146000.89682693122
+              ],
+              "PTECH:1957": [
+                13901954.690977285,
+                146009.040919564
+              ],
+              "PTECH:196D": [
+                13902128.311664725,
+                145950.15346172132
+              ],
+              "PTECH:1974": [
+                13902036.420737425,
+                145969.1029765084
+              ],
+              "PTECH:197B": [
+                13901994.962560223,
+                145984.90409745052
+              ],
+              "PTECH:1989": [
+                13902165.590659104,
+                145939.56185569722
+              ],
+              "PTECH:1990": [
+                13902151.932205314,
+                145868.99933174852
+              ],
+              "PTECH:1997": [
+                13902189.227622114,
+                145856.16017517122
+              ],
+              "SITE:3144": [
+                13902319.832955593,
+                145939.646133053
+              ],
+              "ZNRO:ZPM-COMPONENT-1": [
+                13902048.271563895,
+                146008.83757809235
+              ],
+              "ZPM:218C": [
+                13901840.676808644,
+                146130.42332586012
+              ],
+              "ZPM:31F5": [
+                13902137.873223793,
+                145956.09638974775
+              ],
+              "ZPM:31F8": [
+                13902073.623811428,
+                145973.61907476795
+              ],
+              "ZPM:31FA": [
+                13902170.580150768,
+                145876.25853178004
+              ],
+              "ZPM:31FC": [
+                13902089.429878943,
+                145887.8223425397
+              ],
+              "ZPM:3202": [
+                13901812.327604719,
+                146032.42196006037
+              ],
+              "ZPM:3209": [
+                13902229.63260163,
+                145933.8079180413
+              ],
+              "ZPM:3224": [
+                13901984.056679424,
+                145903.2858177189
+              ],
+              "ZPM:38F7": [
+                13902293.618764069,
+                145953.53187148832
+              ],
+              "ZPM:3A1E": [
+                13901886.797838394,
+                146072.5805764522
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        },
+        {
+          "scope": "EMR28560",
+          "qgz": "drawing-03/EMR28560/OSM-review.qgz",
+          "png": "drawing-03/EMR28560/OSM-review.png",
+          "qgz_sha256": "d3c6b9ceb68a5806374dc53b95c4e47abe05596008f25dfc0dd850ad80f75e20",
+          "png_sha256": "4496aae5c9837ff6bd9ac719e8d1503a13922dde206a6ddbf0ce78c98dca4af4",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "d3c6b9ceb68a5806374dc53b95c4e47abe05596008f25dfc0dd850ad80f75e20",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 4591,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "4496aae5c9837ff6bd9ac719e8d1503a13922dde206a6ddbf0ce78c98dca4af4",
+            "sampled_map_colors": 212,
+            "map_samples": {
+              "CABLE:75E1": [
+                13896397.26091429,
+                145620.44667771307
+              ],
+              "EMR:75E3": [
+                13896390.22071092,
+                145624.525254783
+              ],
+              "INFRASTRUCTURE:75E1": [
+                13896437.042730805,
+                145584.8304944801
+              ],
+              "PTECH:75A2": [
+                13896483.98902274,
+                145566.6158118551
+              ],
+              "PTECH:75AB": [
+                13896467.96664949,
+                145545.1357341772
+              ],
+              "PTECH:75C1": [
+                13896421.69706254,
+                145573.9328243993
+              ],
+              "PTECH:75C9": [
+                13896412.4485157,
+                145586.83412949
+              ],
+              "PTECH:75D1": [
+                13896418.77381794,
+                145611.2629356061
+              ],
+              "PTECH:75D9": [
+                13896404.30111766,
+                145616.3681006432
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        },
+        {
+          "scope": "EMR29619",
+          "qgz": "drawing-03/EMR29619/OSM-review.qgz",
+          "png": "drawing-03/EMR29619/OSM-review.png",
+          "qgz_sha256": "4dd850cb1ddf7bdf34682118f522c660151f05a719f0a12445ad6391a1e2cec1",
+          "png_sha256": "df4dbaa82f9b7a7f0c354a83858d78a995b5925b5e091bb5f6d41797bd521da7",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "4dd850cb1ddf7bdf34682118f522c660151f05a719f0a12445ad6391a1e2cec1",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 4591,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "df4dbaa82f9b7a7f0c354a83858d78a995b5925b5e091bb5f6d41797bd521da7",
+            "sampled_map_colors": 427,
+            "map_samples": {
+              "BOITE:79D1": [
+                13901050.64940948,
+                143691.5730754751
+              ],
+              "CABLE:794B": [
+                13901034.76648042,
+                143720.42289066495
+              ],
+              "EMR:785B": [
+                13901031.96542339,
+                143667.9689206726
+              ],
+              "INFRASTRUCTURE:794B": [
+                13901094.48567209,
+                143734.07484230172
+              ],
+              "PTECH:76EA": [
+                13901194.93739918,
+                143692.0836633652
+              ],
+              "PTECH:78F3": [
+                13901166.66467707,
+                143708.5471240652
+              ],
+              "PTECH:78FB": [
+                13901150.62191857,
+                143718.5609395761
+              ],
+              "PTECH:7903": [
+                13901106.83182436,
+                143744.9764732309
+              ],
+              "PTECH:7913": [
+                13901058.64951283,
+                143766.1298867157
+              ],
+              "PTECH:791B": [
+                13901026.25939215,
+                143774.9847146756
+              ],
+              "PTECH:7923": [
+                13900993.9666828,
+                143776.5766091283
+              ],
+              "PTECH:792B": [
+                13900995.5215971,
+                143755.9051562791
+              ],
+              "PTECH:7933": [
+                13901022.20774341,
+                143733.1389326814
+              ],
+              "PTECH:793B": [
+                13901047.32521743,
+                143707.7068486485
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        },
+        {
+          "scope": "all-districts",
+          "qgz": "drawing-03/All-districts-OSM.qgz",
+          "png": "drawing-03/All-districts-OSM.png",
+          "qgz_sha256": "dc4c937bf89a9a364bbd89382052a56815cf858ca3455a69f102d0feadb886ce",
+          "png_sha256": "7450449261c74f1eba8ed43f0d08ac7885c5d8a488746db35dc11fadeaea9c90",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "dc4c937bf89a9a364bbd89382052a56815cf858ca3455a69f102d0feadb886ce",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 4591,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "7450449261c74f1eba8ed43f0d08ac7885c5d8a488746db35dc11fadeaea9c90",
+            "sampled_map_colors": 881,
+            "map_samples": {
+              "EMR28560 / CABLE:75E1": [
+                13896397.26091429,
+                145620.44667771307
+              ],
+              "EMR28560 / EMR:75E3": [
+                13896390.22071092,
+                145624.525254783
+              ],
+              "EMR28560 / INFRASTRUCTURE:75E1": [
+                13896437.042730805,
+                145584.8304944801
+              ],
+              "EMR28560 / PTECH:75A2": [
+                13896483.98902274,
+                145566.6158118551
+              ],
+              "EMR28560 / PTECH:75AB": [
+                13896467.96664949,
+                145545.1357341772
+              ],
+              "EMR28560 / PTECH:75C1": [
+                13896421.69706254,
+                145573.9328243993
+              ],
+              "EMR28560 / PTECH:75C9": [
+                13896412.4485157,
+                145586.83412949
+              ],
+              "EMR28560 / PTECH:75D1": [
+                13896418.77381794,
+                145611.2629356061
+              ],
+              "EMR28560 / PTECH:75D9": [
+                13896404.30111766,
+                145616.3681006432
+              ],
+              "EMR29619 / BOITE:79D1": [
+                13901050.64940948,
+                143691.5730754751
+              ],
+              "EMR29619 / CABLE:794B": [
+                13901034.76648042,
+                143720.42289066495
+              ],
+              "EMR29619 / EMR:785B": [
+                13901031.96542339,
+                143667.9689206726
+              ],
+              "EMR29619 / INFRASTRUCTURE:794B": [
+                13901094.48567209,
+                143734.07484230172
+              ],
+              "EMR29619 / PTECH:76EA": [
+                13901194.93739918,
+                143692.0836633652
+              ],
+              "EMR29619 / PTECH:78F3": [
+                13901166.66467707,
+                143708.5471240652
+              ],
+              "EMR29619 / PTECH:78FB": [
+                13901150.62191857,
+                143718.5609395761
+              ],
+              "EMR29619 / PTECH:7903": [
+                13901106.83182436,
+                143744.9764732309
+              ],
+              "EMR29619 / PTECH:7913": [
+                13901058.64951283,
+                143766.1298867157
+              ],
+              "EMR29619 / PTECH:791B": [
+                13901026.25939215,
+                143774.9847146756
+              ],
+              "EMR29619 / PTECH:7923": [
+                13900993.9666828,
+                143776.5766091283
+              ],
+              "EMR29619 / PTECH:792B": [
+                13900995.5215971,
+                143755.9051562791
+              ],
+              "EMR29619 / PTECH:7933": [
+                13901022.20774341,
+                143733.1389326814
+              ],
+              "EMR29619 / PTECH:793B": [
+                13901047.32521743,
+                143707.7068486485
+              ],
+              "main / BOITE:2198": [
+                13901954.690977285,
+                146009.040919564
+              ],
+              "main / BOITE:21A7": [
+                13902292.518701864,
+                145940.9512636551
+              ],
+              "main / BOITE:21AA": [
+                13902212.990353383,
+                145926.8523575179
+              ],
+              "main / BOITE:21AD": [
+                13902165.590659104,
+                145939.56185569722
+              ],
+              "main / BOITE:21B0": [
+                13902151.932205314,
+                145868.99933174852
+              ],
+              "main / BOITE:21B3": [
+                13902064.623884164,
+                145875.0321470126
+              ],
+              "main / BOITE:21B6": [
+                13902079.280120824,
+                145958.7563633062
+              ],
+              "main / BOITE:21B9": [
+                13901991.161337214,
+                146069.1177218031
+              ],
+              "main / BOITE:21BC": [
+                13901994.962560223,
+                145984.90409745052
+              ],
+              "main / BOITE:21BF": [
+                13901896.223360123,
+                145953.1070839457
+              ],
+              "main / CABLE:31B1": [
+                13902016.899044555,
+                145888.01657548547
+              ],
+              "main / IMB:1598": [
+                13902000.232164804,
+                146047.0792484593
+              ],
+              "main / IMB:1599": [
+                13902051.433891233,
+                145977.3027345325
+              ],
+              "main / IMB:159A": [
+                13902091.518456524,
+                145945.1648641674
+              ],
+              "main / IMB:159B": [
+                13901909.735892493,
+                145927.8427966904
+              ],
+              "main / IMB:159C": [
+                13902096.632027455,
+                145861.4345029803
+              ],
+              "main / IMB:159D": [
+                13902107.287760664,
+                145860.7584879659
+              ],
+              "main / IMB:159E": [
+                13902118.559208194,
+                145861.8606957465
+              ],
+              "main / IMB:159F": [
+                13902128.484634085,
+                145859.87803667752
+              ],
+              "main / IMB:15A0": [
+                13901889.758492094,
+                146113.8669812961
+              ],
+              "main / IMB:15A1": [
+                13901884.801041175,
+                146121.5391986206
+              ],
+              "main / INFRASTRUCTURE:31B1": [
+                13902075.34695112,
+                145999.50861553816
+              ],
+              "main / INFRASTRUCTURE:323E": [
+                13901848.969680306,
+                146137.46835319098
+              ],
+              "main / INFRASTRUCTURE:323F": [
+                13901816.555450004,
+                146149.595377578
+              ],
+              "main / INFRASTRUCTURE:3240": [
+                13901989.41244511,
+                146089.223414244
+              ],
+              "main / INFRASTRUCTURE:3242": [
+                13901966.171462398,
+                146022.53596529714
+              ],
+              "main / INFRASTRUCTURE:3244": [
+                13901911.905005043,
+                145970.70128900377
+              ],
+              "main / INFRASTRUCTURE:3245": [
+                13902170.579913713,
+                145862.57975345987
+              ],
+              "main / INFRASTRUCTURE:3246": [
+                13902267.568116274,
+                145950.3076685563
+              ],
+              "main / INFRASTRUCTURE:3247": [
+                13902068.582222939,
+                145895.24384160285
+              ],
+              "main / INFRASTRUCTURE:3248": [
+                13901790.319594614,
+                146005.435048662
+              ],
+              "main / PTECH:1933": [
+                13901991.161337214,
+                146069.1177218031
+              ],
+              "main / PTECH:1942": [
+                13902097.441782754,
+                146032.859056229
+              ],
+              "main / PTECH:1949": [
+                13902087.289540764,
+                146000.89682693122
+              ],
+              "main / PTECH:1957": [
+                13901954.690977285,
+                146009.040919564
+              ],
+              "main / PTECH:196D": [
+                13902128.311664725,
+                145950.15346172132
+              ],
+              "main / PTECH:1974": [
+                13902036.420737425,
+                145969.1029765084
+              ],
+              "main / PTECH:197B": [
+                13901994.962560223,
+                145984.90409745052
+              ],
+              "main / PTECH:1989": [
+                13902165.590659104,
+                145939.56185569722
+              ],
+              "main / PTECH:1990": [
+                13902151.932205314,
+                145868.99933174852
+              ],
+              "main / PTECH:1997": [
+                13902189.227622114,
+                145856.16017517122
+              ],
+              "main / SITE:3144": [
+                13902319.832955593,
+                145939.646133053
+              ],
+              "main / ZNRO:ZPM-COMPONENT-1": [
+                13902048.271563895,
+                146008.83757809235
+              ],
+              "main / ZPM:218C": [
+                13901840.676808644,
+                146130.42332586012
+              ],
+              "main / ZPM:31F5": [
+                13902137.873223793,
+                145956.09638974775
+              ],
+              "main / ZPM:31F8": [
+                13902073.623811428,
+                145973.61907476795
+              ],
+              "main / ZPM:31FA": [
+                13902170.580150768,
+                145876.25853178004
+              ],
+              "main / ZPM:31FC": [
+                13902089.429878943,
+                145887.8223425397
+              ],
+              "main / ZPM:3202": [
+                13901812.327604719,
+                146032.42196006037
+              ],
+              "main / ZPM:3209": [
+                13902229.63260163,
+                145933.8079180413
+              ],
+              "main / ZPM:3224": [
+                13901984.056679424,
+                145903.2858177189
+              ],
+              "main / ZPM:38F7": [
+                13902293.618764069,
+                145953.53187148832
+              ],
+              "main / ZPM:3A1E": [
+                13901886.797838394,
+                146072.5805764522
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-04",
+      "baseline": "tinggar",
+      "source_filename": "APD - TINGGAR RW 04 SERANG.dwg",
+      "source_sha256": "d4ebc3bbae4da60a1f367da6301e9ac0945607eb7c972b546ac0af9f4323b74f",
+      "source_unchanged": true,
+      "native_inventory_sha256": "377234fd77820d3b6a37c30245fdb5de32599818783df9e2a2bec4d1917f1ef4",
+      "source_model_record_count": 2342,
+      "named_paper_layout_record_counts": {
+        "DIST3 (2)": 15,
+        "FDT_1": 520,
+        "FDT_2": 587,
+        "FULL FDT": 278
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:21148",
+      "target_crs": "EPSG:21148",
+      "run_manifest_sha256": "b2739b251ffe6eae7ac0c2aea69cf365d69e014e6e63b52bb4dcb03f3c600278",
+      "configuration_sha256": {
+        "mapping_registry.json": "b2add4341a19de9faf726efdfa4ae331f8f8eb96872c27f9f7f53b68af42afa7",
+        "osm_anchor.json": "5fb1d8c81eb966cba9d01bbf6b0b1035633789dee37db1037194bd6a87e4d19b",
+        "source_profile.json": "7a355f7294de0ca8d513888a82896a905658b60f77ba69c4061fb0ba37dca52b",
+        "spatial_regions.json": "b3bff606e3a9fe9ff32c754ae70c5d7b5e8ea8fe1124402570af51f49dbf1b59"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-04",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 31,
+            "CABLE": 119,
+            "IMB": 435,
+            "INFRASTRUCTURE": 17,
+            "PTECH": 109,
+            "SITE": 2,
+            "ZNRO": 2,
+            "ZPM": 0
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 33,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-04/OSM-review.qgz",
+          "png": "drawing-04/OSM-review.png",
+          "qgz_sha256": "d66e78483ba8affa8d81fbf2a30d4b4e4364d484839eaa421e7bcf09b667e11f",
+          "png_sha256": "a2df2e1371b841c95a3593cf78353f4a7a579ceba353f18aaf0e21ad0033d45a",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "d66e78483ba8affa8d81fbf2a30d4b4e4364d484839eaa421e7bcf09b667e11f",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 542,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "a2df2e1371b841c95a3593cf78353f4a7a579ceba353f18aaf0e21ad0033d45a",
+            "sampled_map_colors": 809,
+            "map_samples": {
+              "BOITE:A5B72": [
+                11819881.35051062,
+                -691895.2661969627
+              ],
+              "BOITE:A5B75": [
+                11819830.356211487,
+                -691890.5573689055
+              ],
+              "BOITE:A5B79": [
+                11819780.371841216,
+                -691902.3389554336
+              ],
+              "BOITE:A5B7D": [
+                11819792.110367695,
+                -691743.252610763
+              ],
+              "BOITE:A5B81": [
+                11819759.81781822,
+                -691679.5550773629
+              ],
+              "BOITE:A5B85": [
+                11819747.913520934,
+                -691619.1325790782
+              ],
+              "BOITE:A5B8A": [
+                11819712.801886784,
+                -691587.7906548209
+              ],
+              "BOITE:A5B8E": [
+                11819727.85302496,
+                -691547.302406678
+              ],
+              "BOITE:A5B92": [
+                11819756.12786275,
+                -691553.3128050534
+              ],
+              "BOITE:A5B96": [
+                11819683.459787268,
+                -691662.4679482332
+              ],
+              "CABLE:A5B6A": [
+                11819792.672385314,
+                -691758.3567795414
+              ],
+              "IMB:A47D3": [
+                11819919.804978553,
+                -691932.649537567
+              ],
+              "IMB:A47D5": [
+                11819926.299563918,
+                -691927.8834945066
+              ],
+              "IMB:A47D7": [
+                11819929.845532581,
+                -691916.1302778537
+              ],
+              "IMB:A47D9": [
+                11819933.76930461,
+                -691901.4909016722
+              ],
+              "IMB:A47DB": [
+                11819943.433901817,
+                -691883.7408320553
+              ],
+              "IMB:A47DD": [
+                11819892.021932928,
+                -691925.9565097974
+              ],
+              "IMB:A47DF": [
+                11819880.522163877,
+                -691924.0042305471
+              ],
+              "IMB:A47E1": [
+                11819903.225612307,
+                -691912.1965291076
+              ],
+              "IMB:A47E3": [
+                11819893.585358374,
+                -691907.2542437467
+              ],
+              "IMB:A47E5": [
+                11819886.417170774,
+                -691906.2626286811
+              ],
+              "INFRASTRUCTURE:A5B6A": [
+                11819787.470574517,
+                -691728.0002662333
+              ],
+              "INFRASTRUCTURE:A5B6B": [
+                11819827.636053234,
+                -691902.2161117189
+              ],
+              "INFRASTRUCTURE:A5B6C": [
+                11819777.72792024,
+                -691923.913025766
+              ],
+              "INFRASTRUCTURE:A5B6D": [
+                11819766.912575932,
+                -691648.3813525283
+              ],
+              "INFRASTRUCTURE:A5B6E": [
+                11819765.86229599,
+                -691617.1665156794
+              ],
+              "INFRASTRUCTURE:A5B6F": [
+                11819790.309911324,
+                -691552.9685091838
+              ],
+              "INFRASTRUCTURE:A5E85": [
+                11819223.307776585,
+                -692140.9364269963
+              ],
+              "INFRASTRUCTURE:A5E86": [
+                11819623.048645493,
+                -692026.3615504808
+              ],
+              "INFRASTRUCTURE:A5E87": [
+                11819497.2515434,
+                -692004.7005862478
+              ],
+              "INFRASTRUCTURE:A5E88": [
+                11819566.278821966,
+                -692124.6647810207
+              ],
+              "PTECH:A4B6F": [
+                11819916.852080252,
+                -691909.2450852994
+              ],
+              "PTECH:A5A25": [
+                11819881.35051062,
+                -691895.2661969627
+              ],
+              "PTECH:A5A2C": [
+                11819830.356211487,
+                -691890.5573689055
+              ],
+              "PTECH:A5A33": [
+                11819824.915894324,
+                -691913.8748568685
+              ],
+              "PTECH:A5A3A": [
+                11819823.402381882,
+                -691940.9197789624
+              ],
+              "PTECH:A5A41": [
+                11819774.187335491,
+                -691959.6327328646
+              ],
+              "PTECH:A5A4F": [
+                11819780.371841216,
+                -691902.3389554336
+              ],
+              "PTECH:A5A56": [
+                11819824.0708655,
+                -691859.3940882261
+              ],
+              "PTECH:A5A5D": [
+                11819815.132950934,
+                -691830.2619294549
+              ],
+              "PTECH:A5A64": [
+                11819793.287894735,
+                -691797.6776319141
+              ],
+              "SITE:A4B71": [
+                11819556.784364725,
+                -692049.2697582752
+              ],
+              "SITE:A4BEC": [
+                11819917.073089398,
+                -691908.673444673
+              ],
+              "ZNRO:A5FAD": [
+                11819784.077686096,
+                -691760.7247195884
+              ],
+              "ZNRO:A5FAE": [
+                11819234.056276204,
+                -692139.6609105662
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-05",
+      "baseline": "taipa",
+      "source_filename": "as_plan_drawing_dwg_PAL000406_20260728171751_APD  TAIPA RW 05 PALU.dwg",
+      "source_sha256": "57cc7756b55aa10b6d18a7986b9c55cf0e7796a451e9e220c7d8ef4856e40614",
+      "source_unchanged": true,
+      "native_inventory_sha256": "b8f38332184bc1066b724c4cbb1d748f0763ebdd7ffb1a2acaca47c82195d1a2",
+      "source_model_record_count": 1324,
+      "named_paper_layout_record_counts": {
+        "FULL FDT": 625
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:32750",
+      "target_crs": "EPSG:32750",
+      "run_manifest_sha256": "e0a7568d417428d9652660c3ea11fad6a86687605e364c49ca573d8f12c4f53c",
+      "configuration_sha256": {
+        "mapping_registry.json": "f7e5315a41445f61771e9dfe6842396e310f96f6e618d66e59e11e06dd4da6ab",
+        "matching-manual-gcp.json": "fa9a3f71cffcb138b330f439c1bb87d91147af852423af35cd642c325134aea1",
+        "osm_anchor.json": "b7d05007670bafa11aa55b7388390b3f7a402f6c92c77c9fe48d4a74237cc7e9",
+        "source_profile.json": "a19b1be9b884da2983411180a863ba350fcb9a01794a6260c62793663faac681",
+        "spatial_regions.json": "922cca615980ca90724b6b061254e85ed6939f910c96abf11a884d0b29109c39"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "matched",
+          "translation_3857": [
+            18.771466021459837,
+            -12.652311524013943
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-05",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 26,
+            "CABLE": 118,
+            "IMB": 369,
+            "INFRASTRUCTURE": 17,
+            "PTECH": 112,
+            "SITE": 1,
+            "ZNRO": 4,
+            "ZPM": 26
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 27,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-05/OSM-review.qgz",
+          "png": "drawing-05/OSM-review.png",
+          "qgz_sha256": "be8d748bc4a9b73c9cb764edf4b53a7d6abdf927c031bc174e0f413cfe4e8056",
+          "png_sha256": "4aaef86dcbd3a287375bf375788709de6c378a9369c711d7a4ca68919952d5f5",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "be8d748bc4a9b73c9cb764edf4b53a7d6abdf927c031bc174e0f413cfe4e8056",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 1958,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "4aaef86dcbd3a287375bf375788709de6c378a9369c711d7a4ca68919952d5f5",
+            "sampled_map_colors": 1533,
+            "map_samples": {
+              "BOITE:4D1B8": [
+                13342622.47034476,
+                -85220.72266485015
+              ],
+              "BOITE:4D1BC": [
+                13342661.659384517,
+                -85298.55210010888
+              ],
+              "BOITE:4D1C0": [
+                13342660.447482727,
+                -85384.40810302686
+              ],
+              "BOITE:4D1C4": [
+                13342663.931794403,
+                -85500.69686534005
+              ],
+              "BOITE:4D1C8": [
+                13342743.721559426,
+                -85587.75145881565
+              ],
+              "BOITE:4D1CC": [
+                13342769.857326254,
+                -85439.83250102619
+              ],
+              "BOITE:4D1D0": [
+                13342884.52316555,
+                -85458.92201078079
+              ],
+              "BOITE:4D1D4": [
+                13343253.685884465,
+                -85517.52378732247
+              ],
+              "BOITE:4D1D8": [
+                13343533.159920124,
+                -85574.02323019384
+              ],
+              "BOITE:4D1DC": [
+                13343564.984996436,
+                -85273.50780272519
+              ],
+              "CABLE:4D17B": [
+                13342659.990766848,
+                -85443.93041455283
+              ],
+              "IMB:4C561": [
+                13342670.037783649,
+                -85275.30618552178
+              ],
+              "IMB:4C98B": [
+                13342687.038214097,
+                -85278.61814712752
+              ],
+              "IMB:4C98C": [
+                13342698.529227948,
+                -85281.00390323106
+              ],
+              "IMB:4C98D": [
+                13342708.780703692,
+                -85283.13507564878
+              ],
+              "IMB:4C98E": [
+                13342720.419513287,
+                -85285.63455706912
+              ],
+              "IMB:4C98F": [
+                13342733.013774863,
+                -85286.36574040056
+              ],
+              "IMB:4C990": [
+                13342743.072002145,
+                -85285.18158599203
+              ],
+              "IMB:4C991": [
+                13342749.656006202,
+                -85284.95643026197
+              ],
+              "IMB:4C992": [
+                13342756.461614506,
+                -85288.04249930571
+              ],
+              "IMB:4C993": [
+                13342764.925808921,
+                -85292.27409260022
+              ],
+              "INFRASTRUCTURE:4D17B": [
+                13343117.259300621,
+                -85368.5904529449
+              ],
+              "INFRASTRUCTURE:4D17C": [
+                13342769.96061562,
+                -85220.84751761831
+              ],
+              "INFRASTRUCTURE:4D17D": [
+                13342829.02000349,
+                -84816.86483572354
+              ],
+              "INFRASTRUCTURE:4D9D0": [
+                13342612.695562517,
+                -85135.41197121862
+              ],
+              "INFRASTRUCTURE:4D9D1": [
+                13342606.313991068,
+                -85249.09214967872
+              ],
+              "INFRASTRUCTURE:4D9EB": [
+                13342631.877474943,
+                -85459.95059654006
+              ],
+              "INFRASTRUCTURE:4D9EC": [
+                13342743.13716573,
+                -85629.41835631659
+              ],
+              "INFRASTRUCTURE:4D9F0": [
+                13342787.15105004,
+                -85335.95857403723
+              ],
+              "INFRASTRUCTURE:4D9F5": [
+                13342843.831616357,
+                -85432.59679743568
+              ],
+              "INFRASTRUCTURE:4D9F7": [
+                13342789.110257529,
+                -85293.11799604607
+              ],
+              "PTECH:4CDAD": [
+                13342742.287215399,
+                -85651.47104947566
+              ],
+              "PTECH:4CDB5": [
+                13342743.699831318,
+                -85671.24771078346
+              ],
+              "PTECH:4CDBD": [
+                13342743.721559426,
+                -85587.75145881565
+              ],
+              "PTECH:4CDC5": [
+                13342751.81003654,
+                -85529.34216083781
+              ],
+              "PTECH:4CDCD": [
+                13342757.690400751,
+                -85494.96677269762
+              ],
+              "PTECH:4CDDD": [
+                13342707.270062763,
+                -85498.73164763938
+              ],
+              "PTECH:4CDE5": [
+                13342663.931794403,
+                -85500.69686534005
+              ],
+              "PTECH:4CDED": [
+                13342659.681907373,
+                -85460.79912459373
+              ],
+              "PTECH:4CDF5": [
+                13342660.225360436,
+                -85426.84859876502
+              ],
+              "PTECH:4CDFD": [
+                13342604.112209471,
+                -85458.88631087552
+              ],
+              "SITE:4D9B7": [
+                13342656.145627005,
+                -85154.05289328533
+              ],
+              "ZNRO:ZPM-COMPONENT-1": [
+                13342842.04416894,
+                -85081.54461209926
+              ],
+              "ZNRO:ZPM-COMPONENT-2": [
+                13343339.467633734,
+                -85569.7412381216
+              ],
+              "ZNRO:ZPM-COMPONENT-3": [
+                13343548.812222335,
+                -85307.99719327447
+              ],
+              "ZNRO:ZPM-COMPONENT-4": [
+                13342832.642540073,
+                -85197.99782231118
+              ],
+              "ZPM:4CBFA": [
+                13342795.86036009,
+                -84536.22206307286
+              ],
+              "ZPM:4CBFB": [
+                13342867.853684586,
+                -84612.92879711583
+              ],
+              "ZPM:4CBFC": [
+                13342741.137041193,
+                -84627.85339636574
+              ],
+              "ZPM:4CBFD": [
+                13342728.511471597,
+                -84726.23086207996
+              ],
+              "ZPM:4CBFE": [
+                13342816.748037884,
+                -84780.79596438228
+              ],
+              "ZPM:4CBFF": [
+                13342697.982366187,
+                -84837.3995750477
+              ],
+              "ZPM:4CC00": [
+                13342789.350278435,
+                -84938.37950725545
+              ],
+              "ZPM:4CC01": [
+                13342659.204935905,
+                -84930.54829976425
+              ],
+              "ZPM:4CC02": [
+                13342990.252233487,
+                -84997.09012127353
+              ],
+              "ZPM:4CC03": [
+                13342672.064490458,
+                -85041.87124466337
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-06",
+      "baseline": "tinggede",
+      "source_filename": "as_plan_drawing_dwg_PAL000465_20260728102504_APD   PERUMAHAN TINGGEDE VIEW PALU.dwg",
+      "source_sha256": "f71526ec36d503d07f883d22fdadaa9c3ccdc30be804402df4c533309f664a5b",
+      "source_unchanged": true,
+      "native_inventory_sha256": "3bedaf6b8d5bf3b1ac13c9501ec76fc4b464d80acacb616f341b8b69299e1942",
+      "source_model_record_count": 941,
+      "named_paper_layout_record_counts": {
+        "FULL FDT": 601
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:23890",
+      "target_crs": "EPSG:23890",
+      "run_manifest_sha256": "8dee901db9f0624a5d0e697d126f7ac5528b9c8be539eb035c99dced9c25b591",
+      "configuration_sha256": {
+        "mapping_registry.json": "128a64a957949baa1d1d7bf64480b0a85fe76ed6547e8eaf7e2cd9cf2d09909b",
+        "matching-manual-gcp.json": "8bd9b77307438255d680e4380327ca1642d2d299aefdc1931402b8b30609e024",
+        "osm_anchor.json": "7b944e81b1f8bffd1d0570156a3179e82ea1e1e66835ae40966d526916c2e7ae",
+        "source_profile.json": "f98db2377c3a678bb3d1893d7fd108360a07729c836bdba3a88e1768f93c6dd2",
+        "spatial_regions.json": "f8942b40827b7db152f318127fed5f41f45e37544861e8ff3a8401190a2f8e62"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-06",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 22,
+            "CABLE": 65,
+            "IMB": 337,
+            "INFRASTRUCTURE": 16,
+            "PTECH": 51,
+            "SITE": 1,
+            "ZNRO": 1,
+            "ZPM": 22
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 26,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-06/OSM-review.qgz",
+          "png": "drawing-06/OSM-review.png",
+          "qgz_sha256": "340d5c854f16368ef5eab1a1f383b9a36ec891b68652346caf118bc78e51d3c2",
+          "png_sha256": "d71370a4f33a5ef5a17c64eae3e0659428d1b4f8135f1388e15f184769938129",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "340d5c854f16368ef5eab1a1f383b9a36ec891b68652346caf118bc78e51d3c2",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 577,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "d71370a4f33a5ef5a17c64eae3e0659428d1b4f8135f1388e15f184769938129",
+            "sampled_map_colors": 1185,
+            "map_samples": {
+              "BOITE:4D2F1": [
+                13344382.071716798,
+                -104378.11283408456
+              ],
+              "BOITE:4D2F5": [
+                13344382.274219178,
+                -104334.61911743264
+              ],
+              "BOITE:4D2F9": [
+                13344420.359759184,
+                -104336.3846344188
+              ],
+              "BOITE:4D2FD": [
+                13344419.834268913,
+                -104378.37428700125
+              ],
+              "BOITE:4D301": [
+                13344447.303808333,
+                -104381.00217776935
+              ],
+              "BOITE:4D305": [
+                13344456.025645314,
+                -104333.63545458355
+              ],
+              "BOITE:4D309": [
+                13344449.82947313,
+                -104464.88716890216
+              ],
+              "BOITE:4D30D": [
+                13344447.50347007,
+                -104507.98781172335
+              ],
+              "BOITE:4D311": [
+                13344488.37323814,
+                -104547.44406422415
+              ],
+              "BOITE:4D315": [
+                13344409.969758209,
+                -104498.91349857464
+              ],
+              "CABLE:4D0A2": [
+                13344456.046054216,
+                -104344.77839409525
+              ],
+              "IMB:4C618": [
+                13344462.873625033,
+                -104539.8418141926
+              ],
+              "IMB:4C61B": [
+                13344468.471531216,
+                -104539.20288597707
+              ],
+              "IMB:4C61E": [
+                13344476.644761201,
+                -104538.63655958153
+              ],
+              "IMB:4C621": [
+                13344482.318130966,
+                -104539.04260739716
+              ],
+              "IMB:4C624": [
+                13344453.76691878,
+                -104539.88636337226
+              ],
+              "IMB:4C627": [
+                13344453.94830153,
+                -104533.20545409483
+              ],
+              "IMB:4C62A": [
+                13344453.819085125,
+                -104526.853892251
+              ],
+              "IMB:4C62D": [
+                13344453.738799926,
+                -104519.65067257966
+              ],
+              "IMB:4C630": [
+                13344454.031829268,
+                -104512.55912480183
+              ],
+              "IMB:4C633": [
+                13344454.25012557,
+                -104505.35566818807
+              ],
+              "INFRASTRUCTURE:4D0A2": [
+                13344418.447175635,
+                -104441.4961523974
+              ],
+              "INFRASTRUCTURE:4D0A3": [
+                13344324.614208642,
+                -104360.6173456608
+              ],
+              "INFRASTRUCTURE:4D0A4": [
+                13344421.055109184,
+                -104316.19655983221
+              ],
+              "INFRASTRUCTURE:4D0A5": [
+                13344457.018923206,
+                -104317.24724090473
+              ],
+              "INFRASTRUCTURE:4D0A6": [
+                13344471.907350915,
+                -104355.40053798647
+              ],
+              "INFRASTRUCTURE:4D0A7": [
+                13344456.894998172,
+                -104443.712411941
+              ],
+              "INFRASTRUCTURE:4D0A8": [
+                13344416.542164966,
+                -104396.31056385764
+              ],
+              "INFRASTRUCTURE:4D0AA": [
+                13344381.91418492,
+                -104483.75976288995
+              ],
+              "INFRASTRUCTURE:4D0AB": [
+                13344348.352358632,
+                -104511.64606199825
+              ],
+              "INFRASTRUCTURE:4D0AD": [
+                13344335.801420357,
+                -104396.28563967522
+              ],
+              "PTECH:4CDBC": [
+                13344445.873435551,
+                -104544.14130755176
+              ],
+              "PTECH:4CDC4": [
+                13344406.34249402,
+                -104541.46883525855
+              ],
+              "PTECH:4CDCC": [
+                13344409.969758209,
+                -104498.91349857464
+              ],
+              "PTECH:4CDD4": [
+                13344410.765653238,
+                -104462.8836017483
+              ],
+              "PTECH:4CDDC": [
+                13344449.82947313,
+                -104464.88716890216
+              ],
+              "PTECH:4CDE4": [
+                13344460.769282237,
+                -104421.98319508262
+              ],
+              "PTECH:4CDEC": [
+                13344463.664404433,
+                -104463.35759072867
+              ],
+              "PTECH:4CDF4": [
+                13344447.50347007,
+                -104507.98781172335
+              ],
+              "PTECH:4CE04": [
+                13344383.4866581,
+                -104461.46150847325
+              ],
+              "PTECH:4CE14": [
+                13344413.711878156,
+                -104413.5985397943
+              ],
+              "SITE:4D0B5": [
+                13344382.854631247,
+                -104419.62196784682
+              ],
+              "ZNRO:ZPM-COMPONENT-1": [
+                13344381.933231976,
+                -104404.40254957725
+              ],
+              "ZPM:4D026": [
+                13344454.141597873,
+                -104454.18653585436
+              ],
+              "ZPM:4D027": [
+                13344445.613078002,
+                -104512.81572904564
+              ],
+              "ZPM:4D028": [
+                13344481.678878838,
+                -104554.65288012422
+              ],
+              "ZPM:4D029": [
+                13344410.687116727,
+                -104514.15438136812
+              ],
+              "ZPM:4D02B": [
+                13344374.187387772,
+                -104470.90223020242
+              ],
+              "ZPM:4D02C": [
+                13344413.903536756,
+                -104454.17778063446
+              ],
+              "ZPM:4D02D": [
+                13344346.097960467,
+                -104505.05017137928
+              ],
+              "ZPM:4D02E": [
+                13344326.690974718,
+                -104467.0360716053
+              ],
+              "ZPM:4D02F": [
+                13344287.146624655,
+                -104385.97773153357
+              ],
+              "ZPM:4D030": [
+                13344330.993272442,
+                -104385.8213923611
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-07",
+      "baseline": "darat_sekip_sf",
+      "source_filename": "as_plan_drawing_subfeeder_dwg_PTK000022_20260808191628_PTK000022 APD DWG SUB FEEDER DARAT SEKIP RW 12 PONTIANAK.dwg",
+      "source_sha256": "524aa257bdbe706a3175337e5722787c269c8ebe44dca4f5525c0092046c77a8",
+      "source_unchanged": true,
+      "native_inventory_sha256": "72cf2128bbb012be7ed0a7e3025329893418bc22eb209c27a1f054a8d7c0dfac",
+      "source_model_record_count": 2462,
+      "named_paper_layout_record_counts": {
+        "APD MAP LAYOUT": 542,
+        "FDT LAYOUT": 307,
+        "SPLICING CONFIGURATION": 307,
+        "TOPOLOGY": 307
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:3857",
+      "target_crs": "EPSG:3857",
+      "run_manifest_sha256": "60d5e02846816b2405a6e468500afc722042790fbd5356cd3ee17f3f9d0dd05b",
+      "configuration_sha256": {
+        "mapping_registry.json": "5a5f663bc6f81445171ea63ce195f6bce83ab8c9bf58279ca4e18388d36b19fb",
+        "source_profile.json": "fa85211da248d8f9a51f0af0986ecdad4d2fbc5a044ddd3779779208180063f1",
+        "spatial_regions.json": "157939d9b767212ab6e1a672f66844426ff549228f12d126a1cdf958395be089"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-07",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 1,
+            "CABLE": 12,
+            "IMB": 0,
+            "INFRASTRUCTURE": 1,
+            "PTECH": 13,
+            "SITE": 1,
+            "ZNRO": 0,
+            "ZPM": 0
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 1,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-07/OSM-review.qgz",
+          "png": "drawing-07/OSM-review.png",
+          "qgz_sha256": "a0cf26f47ddaf6bac1e38eda45b14b022bf6fa6e7884af5b28a1afc7a3e862b3",
+          "png_sha256": "ff95ffa854d9f722d6c66fe3971e2f7e2ff026db4c9a803262ed3a5ce65530fd",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "a0cf26f47ddaf6bac1e38eda45b14b022bf6fa6e7884af5b28a1afc7a3e862b3",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 1453,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "ff95ffa854d9f722d6c66fe3971e2f7e2ff026db4c9a803262ed3a5ce65530fd",
+            "sampled_map_colors": 627,
+            "map_samples": {
+              "BOITE:2988D": [
+                12170605.59091272,
+                -3532.055766755755
+              ],
+              "CABLE:29896": [
+                12170892.859172985,
+                -3526.142343002005
+              ],
+              "INFRASTRUCTURE:29896": [
+                12170782.87418907,
+                -3576.6875144253618
+              ],
+              "PTECH:278E6": [
+                12170960.28795836,
+                -3467.68246355208
+              ],
+              "PTECH:28601": [
+                12170934.97905268,
+                -3489.174288397795
+              ],
+              "PTECH:28635": [
+                12170904.50550255,
+                -3515.813966358397
+              ],
+              "PTECH:2867C": [
+                12170881.21284342,
+                -3536.470719645613
+              ],
+              "PTECH:286C3": [
+                12170844.49005887,
+                -3568.319571072941
+              ],
+              "PTECH:2870A": [
+                12170808.84027015,
+                -3599.272153110582
+              ],
+              "PTECH:2873E": [
+                12170775.66153498,
+                -3628.241745905305
+              ],
+              "PTECH:28772": [
+                12170753.72790348,
+                -3646.918355251305
+              ],
+              "PTECH:287A6": [
+                12170704.21251144,
+                -3685.779312838235
+              ],
+              "PTECH:287DA": [
+                12170692.64487692,
+                -3668.042085798894
+              ],
+              "SITE:2793C": [
+                12170963.23240421,
+                -3469.795890362244
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-08",
+      "baseline": "kletek",
+      "source_filename": "KLETEK RW 05 SIDOARJO.dwg",
+      "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
+      "source_unchanged": true,
+      "native_inventory_sha256": "4d46349de06afb40412fe6f7313f3b5affb830322325941d01f9ed240536cd04",
+      "source_model_record_count": 578,
+      "named_paper_layout_record_counts": {
+        "Layout2": 196,
+        "SNDK": 3
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:32749",
+      "target_crs": "EPSG:3857",
+      "run_manifest_sha256": "9c25dcf36569ab4747b9c6f4dd9a1a8d693bd4b6fc0df6f9d67efb51e6eb85bb",
+      "configuration_sha256": {
+        "mapping_registry.json": "dd3e9ef681d225e5242383ab05848bfa4dedd0dfe639e45109700dee7d8eb9f3",
+        "osm_anchor.json": "77559f5dde8c28ed7a402e05fbd292cb51e0446b343c619f728857fbb1ed1147",
+        "source_profile.json": "e6720e7c280a31e0cbd08b2e1789107e6812027b100f4cb840ac2f1f0d577c7b"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "matched",
+          "translation_3857": [
+            -5.965666733627641,
+            1.672171634607934
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-08",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 9,
+            "CABLE": 33,
+            "IMB": 167,
+            "INFRASTRUCTURE": 9,
+            "PTECH": 33,
+            "SITE": 1,
+            "ZNRO": 2,
+            "ZPM": 9
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 9,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-08/OSM-review.qgz",
+          "png": "drawing-08/OSM-review.png",
+          "qgz_sha256": "0a50c95bb1f109becd3b69ba693f45a1ad0353485a93cad7038fcb84d9645aa5",
+          "png_sha256": "47e7e802bc945c02a7b36007e46622fb1888c65568ab38d865e228bbb12088e2",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "0a50c95bb1f109becd3b69ba693f45a1ad0353485a93cad7038fcb84d9645aa5",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 1331,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "47e7e802bc945c02a7b36007e46622fb1888c65568ab38d865e228bbb12088e2",
+            "sampled_map_colors": 973,
+            "map_samples": {
+              "BOITE:133E": [
+                12543714.310941366,
+                -821517.6435587452
+              ],
+              "BOITE:1343": [
+                12543707.613837313,
+                -821569.5264506263
+              ],
+              "BOITE:1348": [
+                12543615.337681716,
+                -821597.2877692545
+              ],
+              "BOITE:134D": [
+                12543773.664774185,
+                -821631.5065972229
+              ],
+              "BOITE:1352": [
+                12543583.368399622,
+                -821565.7938499504
+              ],
+              "BOITE:1357": [
+                12543624.627942119,
+                -821462.9436154041
+              ],
+              "BOITE:135C": [
+                12543768.085666947,
+                -821466.7170966923
+              ],
+              "BOITE:1361": [
+                12543851.113326013,
+                -821470.493714155
+              ],
+              "BOITE:CD8": [
+                12543671.100308243,
+                -821513.8680241329
+              ],
+              "CABLE:133B": [
+                12543603.723301023,
+                -821587.6607113496
+              ],
+              "IMB:4BD": [
+                12543615.946426475,
+                -821950.2171309341
+              ],
+              "IMB:4BE": [
+                12543593.848843737,
+                -821620.4228846771
+              ],
+              "IMB:569": [
+                12543621.128631026,
+                -821924.9812701751
+              ],
+              "IMB:56A": [
+                12543625.143387381,
+                -821901.4385002714
+              ],
+              "IMB:56B": [
+                12543628.54738079,
+                -821879.4708054272
+              ],
+              "IMB:56C": [
+                12543751.50186506,
+                -821977.178589487
+              ],
+              "IMB:56D": [
+                12543754.33680069,
+                -821955.1590104841
+              ],
+              "IMB:56E": [
+                12543824.704447282,
+                -821984.4819443662
+              ],
+              "IMB:56F": [
+                12543825.354162926,
+                -821963.204276704
+              ],
+              "IMB:570": [
+                12543828.196384793,
+                -821943.1410168676
+              ],
+              "INFRASTRUCTURE:133B": [
+                12543676.341489464,
+                -821546.3106021497
+              ],
+              "INFRASTRUCTURE:133C": [
+                12543619.88929595,
+                -821513.4542285135
+              ],
+              "INFRASTRUCTURE:133D": [
+                12543753.761759145,
+                -821465.8041606159
+              ],
+              "INFRASTRUCTURE:13D4": [
+                12543737.25422404,
+                -821519.3862680708
+              ],
+              "INFRASTRUCTURE:13D6": [
+                12543576.428514361,
+                -821600.3783257281
+              ],
+              "INFRASTRUCTURE:13D7": [
+                12543790.766722677,
+                -821628.2525434189
+              ],
+              "INFRASTRUCTURE:13D9": [
+                12543598.326249385,
+                -821485.4143732026
+              ],
+              "INFRASTRUCTURE:13DA": [
+                12543608.26846243,
+                -821494.1479398625
+              ],
+              "INFRASTRUCTURE:13DB": [
+                12543794.455483768,
+                -821489.818681992
+              ],
+              "PTECH:127E": [
+                12543583.368399622,
+                -821565.7938499504
+              ],
+              "PTECH:1281": [
+                12543591.2710313,
+                -821521.8311997094
+              ],
+              "PTECH:1284": [
+                12543594.533262823,
+                -821502.8290394646
+              ],
+              "PTECH:1287": [
+                12543600.673665993,
+                -821467.5840783027
+              ],
+              "PTECH:128A": [
+                12543619.39657088,
+                -821496.6551037179
+              ],
+              "PTECH:128D": [
+                12543624.627942119,
+                -821462.9436154041
+              ],
+              "PTECH:1290": [
+                12543656.410192277,
+                -821461.1146070766
+              ],
+              "PTECH:1296": [
+                12543699.97265254,
+                -821462.6671701447
+              ],
+              "PTECH:1299": [
+                12543734.426227374,
+                -821464.7539927647
+              ],
+              "PTECH:129C": [
+                12543768.085666947,
+                -821466.7170966923
+              ],
+              "SITE:C35": [
+                12543653.764801448,
+                -821458.3151001579
+              ],
+              "ZNRO:ZPM-COMPONENT-1": [
+                12543725.858541016,
+                -821535.6903347094
+              ],
+              "ZNRO:ZPM-COMPONENT-2": [
+                12543697.352585401,
+                -821618.7862360331
+              ],
+              "ZPM:1325": [
+                12543629.217298374,
+                -821611.0187380782
+              ],
+              "ZPM:1326": [
+                12543752.14247419,
+                -821629.9773079284
+              ],
+              "ZPM:1327": [
+                12543606.32312493,
+                -821546.1904614919
+              ],
+              "ZPM:132E": [
+                12543647.177476961,
+                -821488.6038099718
+              ],
+              "ZPM:132F": [
+                12543747.945670586,
+                -821491.7958488625
+              ],
+              "ZPM:1330": [
+                12543833.186574219,
+                -821503.8664871296
+              ],
+              "ZPM:1331": [
+                12543741.334628748,
+                -821524.0035205232
+              ],
+              "ZPM:1332": [
+                12543674.663800087,
+                -821516.0860097738
+              ],
+              "ZPM:1333": [
+                12543703.214649372,
+                -821574.9858021641
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "drawing-09",
+      "baseline": "semarang_sf",
+      "source_filename": "SMG001830 - SUBFEEDER BULU LOR RW 05 SEMARANG.dwg",
+      "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
+      "source_unchanged": true,
+      "native_inventory_sha256": "6b253aada3708977c7e8756a66bfde9bb7f25e5b08869a0290894db303e23605",
+      "source_model_record_count": 145,
+      "named_paper_layout_record_counts": {
+        "APD": 457
+      },
+      "conversion_status": "CONVERTED",
+      "run_status": "CONDITIONAL",
+      "source_crs": "EPSG:32749",
+      "target_crs": "EPSG:32749",
+      "run_manifest_sha256": "449c750f3f07dc00e0c9cd2aad25e7cc88df51dcef922e7875e3e95f9958480c",
+      "configuration_sha256": {
+        "mapping_registry.json": "e7d3c437d34b1ad750384fa957ac49b797c905bde9f074de551ad6f4b2e21b20",
+        "osm_anchor.json": "8b763bca01aacaca829c8425dd46f30b14a3184a05ce5957666983ec522a10ad",
+        "source_profile.json": "5ede44d5331dddb79dabee137504e54593db77de3e19d96aedae3bf4c004be3e",
+        "spatial_regions.json": "032008121e685e632ae3eacf031453dd57e63ef1e186ced135faa6559214b3ab"
+      },
+      "osm_by_district": {
+        "MAIN": {
+          "status": "abstained",
+          "translation_3857": [
+            0.0,
+            0.0
+          ],
+          "authority": "relative_osm",
+          "absolute_accuracy_verified": false
+        }
+      },
+      "districts": [
+        {
+          "drawing": "drawing-09",
+          "district": "MAIN",
+          "delivery_counts": {
+            "BOITE": 0,
+            "CABLE": 18,
+            "IMB": 0,
+            "INFRASTRUCTURE": 1,
+            "PTECH": 19,
+            "SITE": 1,
+            "ZNRO": 0,
+            "ZPM": 0
+          },
+          "run_status": "CONDITIONAL",
+          "unexplained_geometry_changes": 0,
+          "unexpected_field_value_mismatches": 0,
+          "labels_without_verified_source_text": 0,
+          "geometry_review_required_count": 0,
+          "immutable_artifacts_unchanged": true,
+          "absolute_accuracy_verified": false
+        }
+      ],
+      "maps": [
+        {
+          "scope": "main",
+          "qgz": "drawing-09/OSM-review.qgz",
+          "png": "drawing-09/OSM-review.png",
+          "qgz_sha256": "56b20b7ebf1319649bf7c9fe4865951205d7525eb52489ca30fa97c7b213ce65",
+          "png_sha256": "8dbedddf862186df75c356b7e7e8546a209b7e365abd2883970f3af031ac9ede",
+          "verification": {
+            "schema": "cad2gis.qgis-osm-verification.v1",
+            "project_sha256": "56b20b7ebf1319649bf7c9fe4865951205d7525eb52489ca30fa97c7b213ce65",
+            "qgis_read": true,
+            "all_layers_valid": true,
+            "cad_bytes_unchanged": true,
+            "svg_bindings_verified": 0,
+            "osm_features": 2400,
+            "control_residuals_map_m": [],
+            "snapshot_sha256": "8dbedddf862186df75c356b7e7e8546a209b7e365abd2883970f3af031ac9ede",
+            "sampled_map_colors": 721,
+            "map_samples": {
+              "CABLE:21B6C": [
+                12290076.937689029,
+                -778040.4897192545
+              ],
+              "INFRASTRUCTURE:21B6C": [
+                12290071.33246443,
+                -778119.0066664929
+              ],
+              "PTECH:2090B": [
+                12290285.163968693,
+                -778135.6212200992
+              ],
+              "PTECH:20912": [
+                12290279.67164924,
+                -778093.919630603
+              ],
+              "PTECH:20958": [
+                12290273.551570658,
+                -778053.6183503917
+              ],
+              "PTECH:21A56": [
+                12289861.658273745,
+                -778199.2981720597
+              ],
+              "PTECH:21A64": [
+                12289860.161903683,
+                -778143.1015595895
+              ],
+              "PTECH:21A6B": [
+                12289859.938012594,
+                -778100.4002598415
+              ],
+              "PTECH:21A79": [
+                12289857.649722787,
+                -778053.7738120091
+              ],
+              "PTECH:21A80": [
+                12289888.338465009,
+                -778053.2194455146
+              ],
+              "PTECH:21A87": [
+                12289933.296734584,
+                -778052.6672703262
+              ],
+              "PTECH:21A8E": [
+                12289966.792802742,
+                -778052.4856149709
+              ],
+              "SITE:2104E": [
+                12290285.772615194,
+                -778139.0966579792
+              ]
+            },
+            "absolute_accuracy_verified": false
+          }
+        }
+      ]
+    }
+  ]
+}

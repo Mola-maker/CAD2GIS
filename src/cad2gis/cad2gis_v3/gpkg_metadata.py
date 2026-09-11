@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 import sqlite3
+import tempfile
 
 
 # GeoPackage ``last_change`` values use the ISO 8601 UTC representation below.
@@ -22,6 +25,7 @@ def _table_columns(connection: sqlite3.Connection, table_name: str) -> set[str]:
 def normalize_geopackage_metadata(
     connection: sqlite3.Connection,
     contents_order: list[str] | tuple[str, ...] | None = None,
+    *, vacuum: bool = True,
 ) -> None:
     """Replace writer-clock metadata using deterministic primary-key order.
 
@@ -101,4 +105,37 @@ def normalize_geopackage_metadata(
                     (index, table_name),
                 )
 
-    connection.execute("VACUUM")
+    if vacuum:
+        connection.execute("VACUUM")
+
+
+def compact_geopackage(path: Path) -> None:
+    """Compact a closed, staged database using space on its destination drive.
+
+    VACUUM INTO avoids an equally large transient database on the system TEMP
+    drive. The original survives any failure; replacement occurs only after
+    SQLite closes and validates the compacted file. No global temp setting is
+    changed, so independent conversions can use different output volumes.
+    """
+    path = Path(path).resolve()
+    descriptor, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".compact", dir=path.parent)
+    os.close(descriptor)
+    compacted = Path(name)
+    try:
+        connection = sqlite3.connect(path)
+        try:
+            connection.execute("VACUUM INTO ?", (str(compacted),))
+        finally:
+            connection.close()
+        connection = sqlite3.connect(compacted)
+        try:
+            if connection.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                raise RuntimeError("Compacted GeoPackage failed its integrity check")
+        finally:
+            connection.close()
+        with compacted.open("r+b") as stream:
+            os.fsync(stream.fileno())
+        os.chmod(compacted, path.stat().st_mode)
+        os.replace(compacted, path)
+    finally:
+        compacted.unlink(missing_ok=True)

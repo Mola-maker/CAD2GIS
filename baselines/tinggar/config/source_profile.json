@@ -1,29 +1,28 @@
 {
   "crs": {
-    "local_registration_reviewed": false,
-    "local_registration_strategy": null,
-    "source_crs": "EPSG:21148",
-    "target_crs": "EPSG:3857",
     "geodata_registration": {
-      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "authority": "DWG_DIRECT:GEODATA",
       "coordinate_system_id": "Batavia_1.UTM-48S",
-      "target_crs": "EPSG:21148",
       "design_point": [
         0.0,
         0.0
+      ],
+      "horizontal_unit_scale": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
       ],
       "reference_point": [
         631720.4416679794,
         9312608.31126906
       ],
-      "horizontal_unit_scale": 1.0,
-      "user_scale_factor": 1.0,
-      "north_direction": [
-        0.0,
-        1.0
-      ],
-      "authority": "DWG_DIRECT:GEODATA"
-    }
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "target_crs": "EPSG:21148",
+      "user_scale_factor": 1.0
+    },
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "source_crs": "EPSG:21148",
   },
   "drawing": {
     "drawing_units": "metre",
@@ -33,15 +32,58 @@
     "source_coordinate_scale_to_m": 1.0
   },
   "expectations": {
-    "annotation_families": {},
+    "annotation_families": {
+      "observed_49684fcfa473183b8d54272946116613": {
+        "assigned": 0
+      },
+      "observed_49b6a7b3f2d77a935801abceb1c74350": {
+        "assigned": 1
+      },
+      "observed_5577636e76166b75274f71dfba514704": {
+        "assigned": 21
+      },
+      "observed_57e087a37b05a51b896df9d2fe7f9e6e": {
+        "assigned": 31
+      },
+      "observed_6c5965c1cfa966b6287de2130ac4df3e": {
+        "assigned": 2
+      },
+      "observed_7a0cd45381e5622d117427eb889ec999": {
+        "assigned": 47
+      },
+      "observed_8f75a35fb5f1d65c797bda444f709364": {
+        "assigned": 5
+      },
+      "observed_9ddca31eb0538363b8d5538cd30ca3b0": {
+        "assigned": 5
+      },
+      "observed_9f37f3c9596acb6eadc4cedfb35b4a08": {
+        "assigned": 0
+      },
+      "observed_ad19ec9e6de41af6f0aa086b9f6bf587": {
+        "assigned": 1
+      },
+      "observed_b5e7c3dbd238208b9b173c27c062ccec": {
+        "assigned": 0
+      },
+      "observed_dce8b23195c1da5078f8454eadffcdc2": {
+        "assigned": 0
+      },
+      "observed_f6b8bd116445737ba00fb1d03ffcfb6f": {
+        "assigned": 26
+      },
+      "pole_label_semantic": {
+        "assigned": 3
+      }
+    },
     "delivery_counts": {},
     "feature_counts": {
       "BOITE": 31,
       "CABLE": 17,
       "IMB": 435,
+      "INFRASTRUCTURE": 17,
       "PTECH": 109,
       "SITE": 2,
-      "INFRASTRUCTURE": 17,
       "ZNRO": 2
     },
     "segment_gates": {},
@@ -50,14 +92,15 @@
       "model_entities": 2342,
       "model_inserts": 108,
       "model_dimensions": 0
+
     },
     "topology_gates": {}
   },
   "project_id": "source-d4ebc3bbae4d",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:232f34fc2ded317b764c9314570d89381077ff97fe3ca8a3793cea1f2c5ca02a",
-    "reviewed_at": "2026-08-20T17:38:08.723166Z",
-    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "provenance": "cad2gis.ai_onboarding_proposal.v2:62cb76d6f05682b6cc4550a319229856f9f9ba9b15ef9526515ff6f8244171b5",
+    "reviewed_at": "2026-09-10T12:39:50.145037Z",
+    "reviewed_by": "codex-host-agent/codex",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-project-profile-v1",

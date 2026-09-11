@@ -1,0 +1,95 @@
+{
+  "schema_version": "cad2gis.ai_onboarding_proposal.v2",
+  "bundle_sha256": "4114f0100d01d1cd63cde8d94c55874eac48cbe6dce4a80b386b02b97fa0dc60",
+  "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
+  "inventory_sha256": "6b253aada3708977c7e8756a66bfde9bb7f25e5b08869a0290894db303e23605",
+  "crs_candidate_id": "CAD-METADATA:UTM84-49S:INSUNITS-6:GEODATA",
+  "route_layers": [
+    "FO 12 CORE",
+    "FO 144 CORE",
+    "FO 24 CORE",
+    "FO 288 CORE",
+    "FO 36 CORE",
+    "FO 48 CORE",
+    "FO 72 CORE",
+    "FO 96 CORE"
+  ],
+  "block_families": {
+    "BOITE": [
+      "FAT Info"
+    ],
+    "PTECH": [],
+    "SITE": [
+      "FDT-Info",
+      "HUT-HUB",
+      "OLT",
+      "OLT-SUB",
+      "OLT-SUB 2"
+    ]
+  },
+  "insert_layer_families": {
+    "BOITE": [
+      "CLOSURE",
+      "FAT CODE",
+      "FAT_Info"
+    ],
+    "PTECH": [
+      "EXT FM POLE",
+      "EXT POLE",
+      "NEW POLE 7m(4 inches)",
+      "NEW POLE 7m(5 inches)",
+      "NEW POLE 9m(4 inches)",
+      "NEW POLE 9m(5 inches)",
+      "NEW POLE HC"
+    ],
+    "SITE": [
+      "FDT",
+      "FDT-Info",
+      "HUB",
+      "OLT"
+    ]
+  },
+  "confidence": {
+    "semantics": 0.9,
+    "crs": 0.99
+  },
+  "rationale": "Source-bound reader-layout migration. Exact DWG SHA and native coordinates are unchanged. Carry forward only observed identifiers from the prior mapping. Named paper layouts contain title blocks, design summaries and printable viewports; retain them as evidence rather than geographic features. Select the observed DWG_DIRECT:GEODATA metadata candidate. Retain geographic delivery partitions and local OSM anchors. Confidence applies to metadata and identifier continuity, not surveyed positional accuracy. Recompute admission counts from current source facts; no old acceptance or GCP approval is inherited. Additionally select the complete observed pole-code families on EXT POLE: native source samples explicitly identify the missing EXT/MR route and EMR pole codes. Preserve L1/L2 structural validation; no threshold relaxation.",
+  "homepass_layers": [
+    "Homepass Number"
+  ],
+  "span_dimension_layers": [
+    "SPAN KU"
+  ],
+  "sling_wire_layers": [
+    "SLING WIRE"
+  ],
+  "zpm_boundary_layers": [
+    "FAT AREA"
+  ],
+  "annotation_family_selections": [
+    {
+      "candidate_id": "annotation-family:a1008033bf2576e3b5160ac133cd41e54226faab847e7c59607073c7ec868cc1",
+      "policy_id": "cad2gis.annotation_assignment.native_metres15.v1"
+    },
+    {
+      "candidate_id": "annotation-family:9dfcee081e23cb3ad0c9e5f2d4c2e130486fe25416e922a8dea5f9929f7da906",
+      "policy_id": "cad2gis.annotation_assignment.native_metres15.v1"
+    },
+    {
+      "candidate_id": "annotation-family:3a1f4e60fa39447228a22e5b17e4498c8c4aa39cc16f2b2b58c21ca0035a542a",
+      "policy_id": "cad2gis.annotation_assignment.native_metres15.v1"
+    },
+    {
+      "candidate_id": "annotation-family:621a527b87543d1d3ce58a7c31370abd8d86727a1ef0eeb7a6c1a69c89ec0386",
+      "policy_id": "cad2gis.annotation_assignment.native_metres15.v1"
+    },
+    {
+      "candidate_id": "annotation-family:0093010b1f6fd7a537ba2f1787ee06db73eeeefc3a18627df0edc768f0c1fddd",
+      "policy_id": "cad2gis.annotation_assignment.native_metres15.v1"
+    },
+    {
+      "candidate_id": "annotation-family:15fc7c2c3b16c5113858194406c24e02187b5b4fea17f884b24d1b066fd20ec9",
+      "policy_id": "cad2gis.annotation_assignment.native_metres15.v1"
+    }
+  ]
+}

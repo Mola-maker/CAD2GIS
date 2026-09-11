@@ -12,6 +12,10 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 [九图旧配置兼容性](docs/UPGRADE_BASELINE_COMPATIBILITY.md)。本次源码归档和安装包的
 验证记录随交付提供；上方远端 badge 不代表这些本地改动已在 GitHub 发布。
 
+**多分区与九图复核**：[真实 DWG 验证说明](docs/MULTI_DISTRICT_VERIFICATION_2026-09-10.md)。
+地图工作区可切换同一 DWG 的 GIS 分区；多分区交付包含 `all-districts.qgz`。
+缺失分区会明确报错，纸空间图框和设计汇总不会自动变成地理分区。
+
 [产品首页](https://mola-maker.github.io/CAD2GIS/) ·
 [九图交付与演示](https://mola-maker.github.io/CAD2GIS/deliveries/) ·
 [OSM 标准匹配与二次校正](docs/OSM_STANDARD_MATCHING.md) ·

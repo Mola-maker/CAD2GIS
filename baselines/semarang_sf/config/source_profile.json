@@ -1,29 +1,28 @@
 {
   "crs": {
-    "local_registration_reviewed": false,
-    "local_registration_strategy": null,
-    "source_crs": "EPSG:32749",
-    "target_crs": "EPSG:3857",
     "geodata_registration": {
-      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "authority": "DWG_DIRECT:GEODATA",
       "coordinate_system_id": "UTM84-49S",
-      "target_crs": "EPSG:32749",
       "design_point": [
         8572.16079958115,
         -1081.4506035242105
+      ],
+      "horizontal_unit_scale": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
       ],
       "reference_point": [
         434463.69913667015,
         9229174.128892416
       ],
-      "horizontal_unit_scale": 1.0,
-      "user_scale_factor": 1.0,
-      "north_direction": [
-        0.0,
-        1.0
-      ],
-      "authority": "DWG_DIRECT:GEODATA"
-    }
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "target_crs": "EPSG:32749",
+      "user_scale_factor": 1.0
+    },
+    "local_registration_reviewed": false,
+    "local_registration_strategy": null,
+    "source_crs": "EPSG:32749",
   },
   "drawing": {
     "drawing_units": "metre",
@@ -33,34 +32,56 @@
     "source_coordinate_scale_to_m": 1.0
   },
   "expectations": {
-    "annotation_families": {},
+    "annotation_families": {
+      "observed_0093010b1f6fd7a537ba2f1787ee06db": {
+        "assigned": 3
+      },
+      "observed_15fc7c2c3b16c5113858194406c24e02": {
+        "assigned": 1
+      },
+      "observed_3a1f4e60fa39447228a22e5b17e4498c": {
+        "assigned": 0
+      },
+      "observed_621a527b87543d1d3ce58a7c31370abd": {
+        "assigned": 0
+      },
+      "observed_9dfcee081e23cb3ad0c9e5f2d4c2e130": {
+        "assigned": 4
+      },
+      "observed_a1008033bf2576e3b5160ac133cd41e5": {
+        "assigned": 11
+      }
+    },
     "delivery_counts": {},
     "feature_counts": {
       "CABLE": 1,
-      "PTECH": 19,
-      "SITE": 1,
       "INFRASTRUCTURE": 1,
-      "ZNRO": 0
+      "PTECH": 19,
+      "SITE": 1
     },
     "segment_gates": {},
     "source_geometry_gates": {},
     "source_inventory": {
+
       "model_entities": 118,
       "model_inserts": 28,
       "model_dimensions": 18
+
     },
     "topology_gates": {}
   },
   "project_id": "source-a03aacdc2846",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:9b3ad6f9b9649db65b2546b18619d228fc2715d15199cc312e6908b48b3edc39",
-    "reviewed_at": "2026-08-20T05:58:30.357142Z",
-    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "provenance": "cad2gis.ai_onboarding_proposal.v2:c4c4c576ef16a09838e1720f62988cec433b11c36c3682bce88ce17fbc202e5d",
+    "reviewed_at": "2026-09-10T12:40:16.606007Z",
+    "reviewed_by": "codex-host-agent/codex",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-project-profile-v1",
   "source_binding": {
+
     "inventory_sha256": "2c6bb2a7d26841111fa2297b1657aec498925034df5a3701a182053ccd905f94",
+
     "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
     "source_size_bytes": 423537
   },
