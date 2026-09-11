@@ -18,11 +18,11 @@ from typing import Any
 from ..native_runtime import ensure_osgeo_runtime
 from .accounting import EntityAccounting, account_entities
 from .curve_geometry import source_display_points
-from .gpkg_metadata import normalize_geopackage_metadata
+from .gpkg_metadata import CANONICAL_GPKG_TIMESTAMP, normalize_geopackage_metadata
 from .model import SourceEntity
 
 ensure_osgeo_runtime()
-from osgeo import ogr, osr  # noqa: E402
+from osgeo import gdal, ogr, osr  # noqa: E402
 
 SOURCE_GPKG_SCHEMA_VERSION = "cad2gis-source-gpkg-v1"
 
@@ -688,7 +688,12 @@ def write_source_gpkg(
     staged = Path(staged_name)
     staged.unlink()
     try:
-        _write_staged(staged, routed_entities, spatial_reference)
+        # Freeze the driver's clock before creation as well as normalizing
+        # metadata afterward: timestamp updates can otherwise change SQLite's
+        # commit counters even when the final table contents are identical.
+        # Thread-local scope keeps concurrent writers' configuration isolated.
+        with gdal.config_option("OGR_CURRENT_DATE", CANONICAL_GPKG_TIMESTAMP):
+            _write_staged(staged, routed_entities, spatial_reference)
         _write_reconciliation_tables(staged, routed_entities, layer_counts)
         _validate_staged(staged, routed_entities, layer_counts)
         byte_sha256 = _sha256_path(staged)

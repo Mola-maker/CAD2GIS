@@ -577,11 +577,13 @@ def test_structurally_invalid_selected_candidate_never_mutates_live_config(
     monkeypatch.setattr(onboarding, "prepare_onboarding_bundle", lambda _root: bundle)
     from cad2gis.cad2gis_v3 import family_validation
     monkeypatch.setattr(family_validation, "l1_validate_family", lambda *_args: {"passed": False})
-    with pytest.raises(onboarding.OnboardingError, match="structural validation"):
+    with pytest.raises(onboarding.AnnotationSelectionError, match="structural validation") as failure:
         onboarding.compile_onboarding_proposal(
             source=source, project_dir=root, proposal=proposal,
             proposer={"provider": "test", "model": "fixture"},
         )
+    assert failure.value.candidate_id == proposal["annotation_family_selections"][0]["candidate_id"]
+    assert failure.value.code == "ONBOARDING_ANNOTATION_INVALID"
     assert [path.read_bytes() for path in paths] == before
     assert not list((root / "config").glob("*.staged"))
 
