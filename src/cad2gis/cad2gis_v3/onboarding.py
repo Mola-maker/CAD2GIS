@@ -57,6 +57,16 @@ class OnboardingError(ValueError):
     """An AI onboarding proposal escaped its source-bound evidence contract."""
 
 
+class AnnotationSelectionError(OnboardingError):
+    """A known candidate failed before any project configuration was staged."""
+
+    code = "ONBOARDING_ANNOTATION_INVALID"
+
+    def __init__(self, family_id: str, candidate_id: str):
+        super().__init__(f"Selected annotation candidate failed structural validation: {family_id}")
+        self.candidate_id = candidate_id
+
+
 def _canonical_sha256(value: Any) -> str:
     payload = json.dumps(
         value,
@@ -1103,9 +1113,11 @@ def compile_onboarding_proposal(
         )
         family_validation["results"].append({"l1": l1, "l2": l2})
         if not l1["passed"] or not l2["passed"]:
-            raise OnboardingError(
-                f"Selected annotation candidate failed structural validation: {family['family_id']}"
+            candidate_id = next(
+                item["candidate_id"] for item in bundle["annotation_family_candidates"]
+                if item["family"]["family_id"] == family["family_id"]
             )
+            raise AnnotationSelectionError(family["family_id"], candidate_id)
 
     profile_path = root / "config" / "source_profile.json"
     registry_path = root / "config" / "mapping_registry.json"

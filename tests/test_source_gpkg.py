@@ -271,6 +271,37 @@ def test_source_gpkg_is_byte_deterministic(tmp_path, sample_entities):
     assert first_result.logical_sha256 == second_result.logical_sha256
 
 
+@pytest.mark.parametrize("fail_validation", [False, True])
+def test_driver_timestamps_are_canonical_and_caller_clock_is_restored(
+    tmp_path, sample_entities, monkeypatch, fail_validation
+):
+    validate = source_gpkg._validate_staged
+    output = tmp_path / "source.gpkg"
+    output.write_bytes(b"previous destination")
+
+    def inspect_before_normalization(staged, *args):
+        with sqlite3.connect(staged) as connection:
+            timestamps = connection.execute(
+                "SELECT DISTINCT last_change FROM gpkg_contents"
+            ).fetchall()
+        assert timestamps == [(source_gpkg.CANONICAL_GPKG_TIMESTAMP,)]
+        if fail_validation:
+            raise RuntimeError("validation interrupted")
+        return validate(staged, *args)
+
+    monkeypatch.setattr(source_gpkg, "_validate_staged", inspect_before_normalization)
+    caller_clock = "2031-06-15T10:20:30.000Z"
+    with source_gpkg.gdal.config_option("OGR_CURRENT_DATE", caller_clock):
+        if fail_validation:
+            with pytest.raises(RuntimeError, match="validation interrupted"):
+                write_source_gpkg(output, sample_entities, "EPSG:3857")
+            assert output.read_bytes() == b"previous destination"
+        else:
+            write_source_gpkg(output, sample_entities, "EPSG:3857")
+        assert source_gpkg.gdal.GetConfigOption("OGR_CURRENT_DATE") == caller_clock
+    assert list(tmp_path.glob(".source.gpkg.*.tmp.gpkg")) == []
+
+
 def test_closed_circle_stays_in_line_layer(tmp_path, sample_entities):
     circle = SourceEntity.from_record(
         {

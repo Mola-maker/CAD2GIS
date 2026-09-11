@@ -15,6 +15,30 @@ class _Server:
         return SimpleNamespace(request_id="request-1")
 
 
+@pytest.mark.parametrize("candidate_id,tool_name,precommit", [
+    ("annotation-family:" + "a" * 64, "apply_ai_onboarding", True),
+    ("private CAD text", "apply_ai_onboarding", False),
+    ("annotation-family:" + "a" * 64, "auto_onboard_and_convert", False),
+])
+def test_annotation_failure_returns_only_safe_precommit_candidate(capsys, candidate_id, tool_name, precommit):
+    from cad2gis.cad2gis_v3.onboarding import AnnotationSelectionError
+
+    def apply():
+        raise AnnotationSelectionError("private-family-text", candidate_id)
+
+    wrapped = mcp_diagnostics.traced_tool(tool_name, apply, _Server())
+    with pytest.raises(Exception) as failure:
+        wrapped()
+    payload = json.loads(str(failure.value))
+    captured = capsys.readouterr()
+    assert "private-family-text" not in captured.err + str(failure.value)
+    assert "private CAD text" not in captured.err + str(failure.value)
+    assert payload["error_code"] == "ONBOARDING_ANNOTATION_INVALID"
+    assert payload["committed"] is False if precommit else payload["committed"] == "unknown"
+    assert payload.get("failed_candidate_id") == (candidate_id if precommit else None)
+    assert json.loads(captured.err.splitlines()[-1])["committed"] == payload["committed"]
+
+
 def test_packaged_manifest_version_drift_is_detected_without_expected_identity(monkeypatch):
     monkeypatch.setattr(mcp_diagnostics, "_plugin_manifests", lambda: {
         "status": "available", "manifests": {".codex-plugin/plugin.json": {"version": "0.0.1"}},
