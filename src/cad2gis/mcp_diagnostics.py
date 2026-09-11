@@ -11,6 +11,7 @@ from importlib.metadata import PackageNotFoundError, version
 import inspect
 import json
 from pathlib import Path
+import re
 import sqlite3
 import sys
 import threading
@@ -42,7 +43,20 @@ _ERROR_RECOVERY = {
     "ARTIFACT_BINDING_INVALID": "Recreate derived artifacts from the original source; do not change recorded hashes to bypass validation.",
     "DATABASE_BUSY": "Wait for the active database operation to finish; inspect its status before retrying a mutation.",
     "QUERY_BUDGET_EXCEEDED": "Narrow filters or page size and retry the read query; inspect status first for a mutation.",
+    "ONBOARDING_ANNOTATION_INVALID": "Review the failed candidate in prepare_ai_onboarding. Select only structurally supported candidates; keep omitted annotations unresolved. Inspect current project state before retrying.",
 }
+
+
+def _precommit_annotation_failure(exc: BaseException | None) -> dict[str, Any]:
+    if exc is None or getattr(exc, "code", None) != "ONBOARDING_ANNOTATION_INVALID":
+        return {}
+    from .cad2gis_v3.onboarding import AnnotationSelectionError
+
+    if isinstance(exc, AnnotationSelectionError) and re.fullmatch(
+        r"annotation-family:[0-9a-f]{64}", exc.candidate_id,
+    ):
+        return {"committed": False, "failed_candidate_id": exc.candidate_id}
+    return {}
 
 
 def _digest(value: Any) -> str:
@@ -366,6 +380,7 @@ def traced_tool(name: str, handler: Callable[..., Any], server: Any,
             "duration_ms": round((time.perf_counter() - start) * 1000, 3),
             "error_code": error_code(failure) if failure else "TOOL_EXECUTION_FAILED" if result_error else None,
             "committed": "unknown" if name in MUTATING_TOOLS else False,
+            **(_precommit_annotation_failure(failure) if name == "apply_ai_onboarding" else {}),
         }
         if failure is None and hasattr(result, "structuredContent"):
             result = result.structuredContent
@@ -393,6 +408,7 @@ def traced_tool(name: str, handler: Callable[..., Any], server: Any,
             "retryable": code in {"DATABASE_BUSY", "QUERY_BUDGET_EXCEEDED"} and name not in MUTATING_TOOLS,
             "committed": "unknown" if name in MUTATING_TOOLS else False,
             "recovery": _ERROR_RECOVERY.get(code, "Inspect the operation status and existing artifacts before attempting a recovery."),
+            **(_precommit_annotation_failure(exc) if name == "apply_ai_onboarding" else {}),
         }))
 
     if inspect.iscoroutinefunction(handler):

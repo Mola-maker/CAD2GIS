@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
@@ -539,6 +540,54 @@ def test_review_store_rejects_non_wgs84_or_nonfinite_geometry(tmp_path) -> None:
     invalid["geometry"]["coordinates"][0][0] = 500.0
     with pytest.raises(ReviewServerError, match="EPSG:4326"):
         store.upsert(invalid, expected_revision=0, actor="tester")
+
+
+def test_sqlite_review_connections_close_after_reads_writes_and_conflicts(tmp_path, monkeypatch):
+    original = sqlite3.connect
+    connections = []
+
+    def tracked(*args, **kwargs):
+        connection = original(*args, **kwargs)
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(review_server.sqlite3, "connect", tracked)
+    store = SQLiteReviewStore(tmp_path / "review.sqlite3", session_id="one")
+    store.upsert(_feature(), expected_revision=0, actor="tester")
+    with pytest.raises(ReviewConflictError):
+        store.upsert(_feature(), expected_revision=0, actor="stale")
+    assert len(store.feature_collection()["features"]) == 1
+    assert len(store.events()) == 1
+    store.delete("review:1", expected_revision=1, actor="tester")
+    for connection in connections:
+        with pytest.raises(sqlite3.ProgrammingError, match="closed database"):
+            connection.execute("SELECT 1")
+    restored = SQLiteReviewStore(store.path, session_id="one")
+    assert [event["revision"] for event in restored.events()] == [1, 2]
+    assert restored.feature_collection()["features"] == []
+
+
+def test_review_event_replay_uses_insertion_order_across_sessions_and_restart(tmp_path):
+    from contextlib import closing
+
+    store = SQLiteReviewStore(tmp_path / "review.sqlite3", session_id="active")
+    with closing(sqlite3.connect(store.path)) as connection, connection:
+        connection.executemany("INSERT INTO review_events VALUES(?,?,?,?,?,?,?)", (
+            (f"event:{i}", "active" if i % 3 == 0 else "other", "f", "upsert", 1, "{}", str(3000-i))
+            for i in range(3000)
+        ))
+        plan = connection.execute(
+            "EXPLAIN QUERY PLAN SELECT event_id FROM review_events WHERE session_id=? ORDER BY rowid LIMIT ?",
+            ("active", 200),
+        ).fetchall()
+    assert not any("TEMP B-TREE" in row[3] for row in plan)
+    restored = SQLiteReviewStore(store.path, session_id="active")
+    collected, after = [], ""
+    while batch := restored.events(after=after, limit=137):
+        collected.extend(event["event_id"] for event in batch)
+        after = batch[-1]["event_id"]
+    assert collected == [f"event:{i}" for i in range(0, 3000, 3)]
+    assert restored.events(after="event:1") == []
 
 
 def test_review_relocates_copied_run_artifact_only_by_matching_hash(

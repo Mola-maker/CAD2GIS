@@ -96,12 +96,16 @@ def write_index(output: Path, report: dict) -> None:
             '<title>CAD2GIS 批次交付</title><style>body{font:16px/1.6 system-ui;margin:40px;'
             'background:#f5f7fa;color:#16334b}table{border-collapse:collapse;width:100%}'
             'td,th{padding:14px;border:1px solid #bbc8d5;text-align:left}a{color:#005ea8;margin-right:12px}'
-            'td{overflow-wrap:anywhere}</style><h1>CAD2GIS 批次交付</h1>'
+            'td{overflow-wrap:anywhere}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:24px}'
+            'article{background:white;border:1px solid #d7e0e8;border-radius:12px;padding:20px;min-width:0}article p{overflow-wrap:anywhere}'
+            'details{margin-top:32px}.table-scroll{overflow-x:auto}table{min-width:850px}td:first-child,td:nth-child(2){white-space:nowrap}'
+            '@media(max-width:700px){body{margin:16px}article{padding:12px}}</style><h1>CAD2GIS 批次交付</h1>'
             '<p>每张图独立保留运行、来源与失败记录。CONDITIONAL 不代表工程验收通过；'
             '没有独立 GCP 时，叠图一致不能证明绝对定位精度。</p>'
             '<p><a href="batch-report.json">机器可读批次报告</a></p>'
+            + '<main>' + "".join(cards) + '</main><details><summary>结构化索引与全部证据</summary><div class="table-scroll">'
             '<table><tr><th>图纸</th><th>状态</th><th>异常</th><th>交付 / 证据</th></tr>'
-            + "".join(rows) + '</table>' + "".join(cards) + '</html>')
+            + "".join(rows) + '</table></div></details></html>')
     if report.get("status") == "RUNNING":
         page = page.replace('<title>', '<meta http-equiv="refresh" content="10"><title>', 1)
     (output / "index.html").write_text(page, encoding="utf-8")
@@ -204,8 +208,10 @@ def run_batch(contract_path: Path, output: Path, *, timeout: int = 1800) -> dict
             record.update(status=delivery["run_status"], delivery=delivery)
             record["links"]["QGIS 交付包"] = f'{item["id"]}/delivery.zip'
             record["links"]["交付清单"] = f'{item["id"]}/delivery/delivery-manifest.json'
-            if (folder / "visual" / "source-delivery-overlay.png").exists():
-                record["preview"] = f'{item["id"]}/visual/source-delivery-overlay.png'
+            for preview in ("source-delivery-focus.png", "source-delivery-overlay.png"):
+                if (folder / "visual" / preview).exists():
+                    record["preview"] = f'{item["id"]}/visual/{preview}'
+                    break
             record["stage"] = "finished"
         except Exception as exc:
             record.update(status="FAILED", error=str(exc), error_type=type(exc).__name__)
@@ -218,9 +224,77 @@ def run_batch(contract_path: Path, output: Path, *, timeout: int = 1800) -> dict
     return report
 
 
+def report_runs(runs: list[Path], output: Path) -> dict:
+    """Collect completed runs into one reviewable HTML/JSON report with copied previews.
+
+    Missing audit evidence remains explicit; collecting never grants approval.
+    Run manifests and source artifacts are only read, never rewritten.
+    """
+    output = output.resolve()
+    resolved = [Path(run).resolve() for run in runs]
+    if not resolved or len(set(resolved)) != len(resolved):
+        raise ValueError("Provide distinct, existing run directories")
+    manifests = [json.loads((run / "run_manifest.json").read_text(encoding="utf-8")) for run in resolved]
+    output.mkdir(parents=True, exist_ok=False)
+    report = {"schema_version": "cad2gis.batch-report.v1", "status": "COMPLETED",
+              "absolute_accuracy_verified": False, "drawings": []}
+    from .symbol_assets import rasterize_svg
+    for number, (run, manifest) in enumerate(zip(resolved, manifests), 1):
+        identifier = f"{number:02d}-{run.parent.name}"
+        folder = output / identifier
+        folder.mkdir()
+        record = {"id": identifier, "name": manifest.get("source", {}).get("name", run.parent.name),
+                  "status": manifest.get("run_status", "UNKNOWN"), "run": str(run),
+                  "source_sha256": manifest.get("source", {}).get("sha256"),
+                  "delivery_counts": manifest.get("delivery_counts", {}),
+                  "matching": manifest.get("matching", {}), "audit_status": "MISSING",
+                  "links": {"运行清单": f"{identifier}/run_manifest.json"}}
+        shutil.copy2(run / "run_manifest.json", folder / "run_manifest.json")
+        visual = next((run.parent / name for name in ("audit", "visual", "visual-audit")
+                       if (run.parent / name / "report.json").is_file()), None)
+        if visual:
+            audit = json.loads((visual / "report.json").read_text(encoding="utf-8"))
+            shutil.copy2(visual / "report.json", folder / "visual-audit.json")
+            record["audit_status"] = audit.get("status", "RECORDED")
+            record["links"]["视觉审查报告"] = f"{identifier}/visual-audit.json"
+            for name in ("source-delivery-focus.png", "source-delivery-overlay.png", "geometry-change-details.png"):
+                if (visual / name).is_file():
+                    shutil.copy2(visual / name, folder / name)
+                    record["links"][name] = f"{identifier}/{name}"
+                    record.setdefault("preview", f"{identifier}/{name}")
+        symbols = run / "svg-candidates"
+        if symbols.is_dir():
+            target = folder / "svg-candidates"
+            shutil.copytree(symbols, target)
+            pngs = []
+            for svg in sorted((target / "symbols").glob("*.svg")):
+                png = svg.with_suffix(".png")
+                png.write_bytes(rasterize_svg(svg.read_text(encoding="utf-8")))
+                pngs.append({"svg": svg.relative_to(target).as_posix(), "svg_sha256": digest(svg),
+                             "png": png.relative_to(target).as_posix(), "png_sha256": digest(png)})
+            write_json(target / "png-previews.json", {"derived_from": "validated_local_svg", "symbols": pngs})
+            for page in ("index.html", "correspondence.html"):
+                if (target / page).is_file():
+                    text = (target / page).read_text(encoding="utf-8")
+                    text = re.sub(r'(<img\b[^>]*\bsrc="symbols/[^"<>]+)\.svg(")', r'\1.png\2', text)
+                    text = text.replace("</style>", "img{object-fit:contain}</style>", 1)
+                    (target / page).write_text(text, encoding="utf-8")
+                    record["links"]["SVG / PNG " + page] = f"{identifier}/svg-candidates/{page}"
+            record["links"]["PNG 索引"] = f"{identifier}/svg-candidates/png-previews.json"
+            record["png_count"] = len(pngs)
+        report["drawings"].append(record)
+    write_json(output / "batch-report.json", report)
+    write_index(output, report)
+    return report
+
+
 def register(commands: argparse._SubParsersAction) -> None:
     batch = commands.add_parser("batch", help="Portable directory conversion and delivery contract")
     sub = batch.add_subparsers(dest="batch_command", required=True)
+    report = sub.add_parser("report", help="Collect existing runs into HTML, PNG and structured JSON")
+    report.add_argument("--run-dir", type=Path, action="append", required=True)
+    report.add_argument("--output", type=Path, required=True)
+    report.set_defaults(handler=lambda a: (report_runs(a.run_dir, a.output), 0))
     init = sub.add_parser("prepare")
     init.add_argument("--inputs", type=Path, required=True)
     init.add_argument("--output", type=Path, required=True)

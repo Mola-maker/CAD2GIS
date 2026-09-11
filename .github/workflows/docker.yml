@@ -11,6 +11,12 @@ on:
       - src/**
       - tools/container_smoke.py
   workflow_dispatch:
+    inputs:
+      export_image:
+        description: "Export tested image as an artifact (requires available storage)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -47,13 +53,26 @@ jobs:
           docker image inspect cad2gis:${{ steps.package.outputs.version }} > docker-artifacts/image-inspect.json
       - name: Exercise CAD export, indexed SQLite and optional SVG
         run: docker run --rm --entrypoint python -v "$PWD/tools/container_smoke.py:/tmp/container_smoke.py:ro" cad2gis:${{ steps.package.outputs.version }} /tmp/container_smoke.py > docker-artifacts/conversion-smoke.json
+      - name: Summarize tested container
+        run: |
+          python - <<'PY_SUMMARY'
+          import json
+          import os
+          from pathlib import Path
+          result = json.loads(Path("docker-artifacts/conversion-smoke.json").read_text())
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+              output.write("Container smoke result: " + str(result["status"]) + "\n\n")
+              output.write("CAD export, indexed SQLite and SVG/QML completed. Image export is available through workflow_dispatch.\n")
+          PY_SUMMARY
       - name: Export tested image
+        if: github.event_name == 'workflow_dispatch' && inputs.export_image
         run: |
           docker save cad2gis:${{ steps.package.outputs.version }} cad2gis:latest | gzip > docker-artifacts/cad2gis-image.tar.gz
           cd docker-artifacts && sha256sum cad2gis-image.tar.gz > SHA256SUMS
       - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.export_image
         with:
           name: cad2gis-docker-${{ steps.package.outputs.version }}-${{ github.sha }}
           path: docker-artifacts/
           compression-level: 0
-          retention-days: 7
+          retention-days: 1

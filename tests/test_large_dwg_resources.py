@@ -137,3 +137,26 @@ def test_failed_compaction_keeps_original_and_removes_partial_file(tmp_path, mon
         gpkg_metadata.compact_geopackage(path)
     assert path.read_bytes() == before
     assert list(tmp_path.iterdir()) == [path]
+
+
+@pytest.mark.parametrize("kind", ["evidence", "scene"])
+@pytest.mark.parametrize("suffix", [".json", ".json.gz"])
+def test_graph_record_stream_preserves_bytes_without_materializing_facts(tmp_path, kind, suffix):
+    from cad2gis.cad2gis_v3.artifact_io import write_graph_object
+    node_cls = evidence.EvidenceNode if kind == "evidence" else scene.CadSceneNode
+    graph_cls = evidence.EvidenceGraph if kind == "evidence" else scene.CadSceneGraph
+    nodes = [node_cls.create(source_sha256="a" * 64, kind="source_entity" if kind == "evidence" else "layout", logical_id=str(i),
+                            facts={"text": "图纸", "data": "x" * 4096}) for i in range(1000)]
+    kwargs = {} if kind == "evidence" else {"diagnostics": {"status": "ok"}}
+    graph = graph_cls.create(source_sha256="a" * 64, nodes=nodes, edges=[], **kwargs)
+    reference = tmp_path / ("reference" + suffix)
+    write_json_object(reference, graph.to_dict())
+    output = tmp_path / ("streamed" + suffix)
+    tracemalloc.start()
+    try:
+        write_graph_object(output, graph)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert output.read_bytes() == reference.read_bytes()
+    assert peak < 2_000_000

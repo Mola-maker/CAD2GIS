@@ -461,6 +461,9 @@ def build_stage_evidence_graph(
     # Unresolved records remain nodes because their shape is source/profile
     # specific; they are selectable as evidence but never executable targets.
     _ = unresolved_nodes
+    # Release construction-only indexes before canonical validation and hashing.
+    node_by_logical.clear()
+    del feature_source_pairs, unresolved_nodes
     return EvidenceGraph.create(source_sha256=source, nodes=nodes, edges=edges)
 
 
