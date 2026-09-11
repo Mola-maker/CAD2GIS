@@ -1,48 +1,76 @@
 {
   "annotation_families": [
     {
-      "family_id": "auto_new_pole_7m_2_5inch",
+      "aci_color": 16,
+      "family_id": "observed_a1008033bf2576e3b5160ac133cd41e5",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
-      "require_same_layer": false,
-      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_7M_2_5INCH-001",
-      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7M\\ 2\\.5INCH$",
-      "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
-      "text_pattern": "^NP\\d+$"
-    },
-    {
-      "family_id": "auto_new_pole_9m_4inch",
-      "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
-      "require_same_layer": false,
-      "rule_id": "AI-ANNOTATION-AUTO_NEW_POLE_9M_4INCH-001",
-      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
-      "target_class": "PTECH",
-      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
-      "text_pattern": "^NP\\d+$"
-    },
-    {
-      "family_id": "auto_ext_pole",
-      "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_EXT_POLE-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_A1008033BF2576E3B5160AC133CD41E5-001",
       "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_EXT_POLE-001",
+      "rule_id": "AI-ANNOTATION-OBSERVED_A1008033BF2576E3B5160AC133CD41E5-001",
       "source_layer_pattern": "(?i)^EXT\\ POLE$",
       "target_class": "PTECH",
       "target_layer_pattern": "(?i)^EXT\\ POLE$",
       "text_pattern": "^EXT[^A-Za-z0-9]+LN[^A-Za-z0-9]+P\\d+$"
     },
     {
-      "family_id": "auto_ext_pole_2",
+      "aci_color": 16,
+      "family_id": "observed_9dfcee081e23cb3ad0c9e5f2d4c2e130",
       "max_distance_native_m": 15.0,
-      "provenance": "DWG_DERIVED:AI-ANNOTATION-AUTO_EXT_POLE_2-001",
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_9DFCEE081E23CB3AD0C9E5F2D4C2E130-001",
       "require_same_layer": true,
-      "rule_id": "AI-ANNOTATION-AUTO_EXT_POLE_2-001",
+      "rule_id": "AI-ANNOTATION-OBSERVED_9DFCEE081E23CB3AD0C9E5F2D4C2E130-001",
       "source_layer_pattern": "(?i)^EXT\\ POLE$",
       "target_class": "PTECH",
       "target_layer_pattern": "(?i)^EXT\\ POLE$",
       "text_pattern": "^MQM[^A-Za-z0-9]+GJM[^A-Za-z0-9]+BLOR\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "aci_color": 212,
+      "family_id": "observed_3a1f4e60fa39447228a22e5b17e4498c",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_3A1F4E60FA39447228A22E5B17E4498C-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-OBSERVED_3A1F4E60FA39447228A22E5B17E4498C-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 7M\\ 2\\.5INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^NP\\d+$"
+    },
+    {
+      "aci_color": 1,
+      "family_id": "observed_621a527b87543d1d3ce58a7c31370abd",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_621A527B87543D1D3CE58A7C31370ABD-001",
+      "require_same_layer": false,
+      "rule_id": "AI-ANNOTATION-OBSERVED_621A527B87543D1D3CE58A7C31370ABD-001",
+      "source_layer_pattern": "(?i)^NEW\\ POLE\\ 9M\\ 4INCH$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^(?:EXT\\ FM\\ POLE|EXT\\ POLE|NEW\\ POLE\\ 7m\\(4\\ inches\\)|NEW\\ POLE\\ 7m\\(5\\ inches\\)|NEW\\ POLE\\ 9m\\(4\\ inches\\)|NEW\\ POLE\\ 9m\\(5\\ inches\\)|NEW\\ POLE\\ HC)$",
+      "text_pattern": "^NP\\d+$"
+    },
+    {
+      "aci_color": 16,
+      "family_id": "observed_0093010b1f6fd7a537ba2f1787ee06db",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_0093010B1F6FD7A537BA2F1787EE06DB-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-OBSERVED_0093010B1F6FD7A537BA2F1787EE06DB-001",
+      "source_layer_pattern": "(?i)^EXT\\ POLE$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^EXT\\ POLE$",
+      "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+GJM[^A-Za-z0-9]+S\\d+[^A-Za-z0-9]+P\\d+$"
+    },
+    {
+      "aci_color": 16,
+      "family_id": "observed_15fc7c2c3b16c5113858194406c24e02",
+      "max_distance_native_m": 15.0,
+      "provenance": "DWG_DERIVED:AI-ANNOTATION-OBSERVED_15FC7C2C3B16C5113858194406C24E02-001",
+      "require_same_layer": true,
+      "rule_id": "AI-ANNOTATION-OBSERVED_15FC7C2C3B16C5113858194406C24E02-001",
+      "source_layer_pattern": "(?i)^EXT\\ POLE$",
+      "target_class": "PTECH",
+      "target_layer_pattern": "(?i)^EXT\\ POLE$",
+      "text_pattern": "^EXT[^A-Za-z0-9]+MR[^A-Za-z0-9]+BLOR[^A-Za-z0-9]+\\d+[^A-Za-z0-9]+P\\d+$"
     }
   ],
   "block_families": {
@@ -145,9 +173,9 @@
   "positive_route_layer_regex": "(?i)^(?:FO\\ 12\\ CORE|FO\\ 144\\ CORE|FO\\ 24\\ CORE|FO\\ 288\\ CORE|FO\\ 36\\ CORE|FO\\ 48\\ CORE|FO\\ 72\\ CORE|FO\\ 96\\ CORE)$",
   "project_id": "source-a03aacdc2846",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:9b3ad6f9b9649db65b2546b18619d228fc2715d15199cc312e6908b48b3edc39",
-    "reviewed_at": "2026-08-20T05:58:30.357142Z",
-    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "provenance": "cad2gis.ai_onboarding_proposal.v2:c4c4c576ef16a09838e1720f62988cec433b11c36c3682bce88ce17fbc202e5d",
+    "reviewed_at": "2026-09-10T12:40:16.606007Z",
+    "reviewed_by": "codex-host-agent/codex",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-mapping-registry-v2",

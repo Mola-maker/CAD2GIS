@@ -18,7 +18,7 @@ from typing import Any
 from ..native_runtime import ensure_osgeo_runtime
 from .accounting import EntityAccounting, account_entities
 from .curve_geometry import source_display_points
-from .gpkg_metadata import normalize_geopackage_metadata
+from .gpkg_metadata import compact_geopackage, normalize_geopackage_metadata
 from .model import SourceEntity
 
 ensure_osgeo_runtime()
@@ -556,7 +556,7 @@ def _validate_staged(
     }
     connection = sqlite3.connect(path)
     try:
-        normalize_geopackage_metadata(connection)
+        normalize_geopackage_metadata(connection, vacuum=False)
         integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
         if integrity != "ok":
             raise RuntimeError(
@@ -691,6 +691,7 @@ def write_source_gpkg(
         _write_staged(staged, routed_entities, spatial_reference)
         _write_reconciliation_tables(staged, routed_entities, layer_counts)
         _validate_staged(staged, routed_entities, layer_counts)
+        compact_geopackage(staged)
         byte_sha256 = _sha256_path(staged)
         os.replace(staged, destination)
         return SourceGeoPackageResult(

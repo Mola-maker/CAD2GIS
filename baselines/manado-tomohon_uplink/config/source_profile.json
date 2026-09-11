@@ -1,5 +1,25 @@
 {
   "crs": {
+    "geodata_registration": {
+      "authority": "DWG_DIRECT:GEODATA",
+      "coordinate_system_id": "WGS84.PseudoMercator",
+      "design_point": [
+        0.0,
+        0.0
+      ],
+      "horizontal_unit_scale": 1.0,
+      "north_direction": [
+        0.0,
+        1.0
+      ],
+      "reference_point": [
+        0.0,
+        0.0
+      ],
+      "schema_version": "cad2gis.dwg_geodata_registration.v1",
+      "target_crs": "EPSG:3857",
+      "user_scale_factor": 1.0
+    },
     "local_registration_reviewed": false,
     "local_registration_strategy": null,
     "source_crs": "EPSG:3857",
@@ -13,18 +33,49 @@
     "source_coordinate_scale_to_m": 1.0
   },
   "expectations": {
-    "annotation_families": {},
+    "annotation_families": {
+      "observed_0344ed6754b9ef043fba9f449d123582": {
+        "assigned": 0
+      },
+      "observed_18ca03c80d56f7f319f4848ed74c28dd": {
+        "assigned": 0
+      },
+      "observed_407690f1a95f6f710c644b9e7721ed9e": {
+        "assigned": 0
+      },
+      "observed_5988a2cdf4d42c678e221981f8aa2687": {
+        "assigned": 0
+      },
+      "observed_74b4d139096e8b5c087bf8feb456fd5f": {
+        "assigned": 0
+      },
+      "observed_7848d61c9fa76e9039ccce5057ec5770": {
+        "assigned": 0
+      },
+      "observed_a4eefdbe25593c93e5f91b4a4b3e18de": {
+        "assigned": 0
+      },
+      "observed_acb1b90e2b426ce489669b0aa715d152": {
+        "assigned": 0
+      },
+      "observed_cea8e8ea12a5c1bdf673a579f66de024": {
+        "assigned": 0
+      },
+      "pole_label_semantic": {
+        "assigned": 60
+      }
+    },
     "delivery_counts": {},
     "feature_counts": {
       "BOITE": 16,
-      "CABLE": 16,
+      "CABLE": 15,
+      "EMR": 2,
       "IMB": 243,
+      "INFRASTRUCTURE": 15,
       "PTECH": 61,
       "SITE": 1,
-      "ZPM": 15,
-      "EMR": 2,
-      "INFRASTRUCTURE": 16,
-      "ZNRO": 1
+      "ZNRO": 1,
+      "ZPM": 15
     },
     "segment_gates": {},
     "source_geometry_gates": {},
@@ -37,9 +88,9 @@
   },
   "project_id": "source-100a90e5f833",
   "review": {
-    "provenance": "cad2gis.ai_onboarding_proposal.v1:c8d472f8bf06c642676eea3ee9afee75a32eaf2e986a5d1efe45c8ece8c82fff",
-    "reviewed_at": "2026-08-20T17:35:58.588056Z",
-    "reviewed_by": "deepseek/deepseek-v4-flash",
+    "provenance": "cad2gis.ai_onboarding_proposal.v2:aed88c97f84c66d087b2e8cf2882d1be36ab70c1e88579ef9cd61672212bb9d9",
+    "reviewed_at": "2026-09-10T12:39:33.091556Z",
+    "reviewed_by": "codex-host-agent/codex",
     "status": "auto_accepted"
   },
   "schema_version": "cad2gis-project-profile-v1",

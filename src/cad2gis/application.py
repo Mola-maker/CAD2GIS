@@ -564,6 +564,11 @@ class Application:
             # immutable run files. A root consisting only of a run is too narrow.
             workspace = config.path(str(directory.parent / f"{directory.name}.review"), exists=False)
             config.admit_run(directory, workspace)
+            from .delivery_scopes import delivery_scopes
+
+            district_choices = await run_in_threadpool(delivery_scopes, directory)
+            for district in district_choices["scopes"]:
+                config.path(district["run_dir"], exists=False)
             async with self.review_lock:
                 key = str(directory)
                 if key not in self.review_cache:
@@ -584,7 +589,7 @@ class Application:
                 session.review = self.review_cache[key]
                 session.run_dir = key
             return {"url": f"/?review={session.review_id}#console-app", "run_dir": str(directory),
-                    "review_id": session.review_id}
+                    "review_id": session.review_id, "districts": district_choices}
 
         @manager.post("/_app/api/shutdown")
         async def shutdown():

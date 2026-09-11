@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from ..native_runtime import ensure_osgeo_runtime
-from .gpkg_metadata import normalize_geopackage_metadata
+from .gpkg_metadata import compact_geopackage, normalize_geopackage_metadata
 from .warehouse import LAYER_CONFIGS
 from .curve_geometry import delivery_points
 
@@ -1039,13 +1039,14 @@ def write_evidence(
         )
         connection = sqlite3.connect(staged)
         try:
-            normalize_geopackage_metadata(connection)
+            normalize_geopackage_metadata(connection, vacuum=False)
             integrity = connection.execute("PRAGMA integrity_check").fetchone()[0]
             conserved = connection.execute("SELECT SUM(entity_count) FROM conservation_ledger").fetchone()[0]
         finally:
             connection.close()
         if integrity != "ok" or conserved != len(entities):
             raise RuntimeError(f"Evidence validation failed: integrity={integrity}, conserved={conserved}")
+        compact_geopackage(staged)
         os.replace(staged, destination)
     except BaseException as error:
         primary_error = error

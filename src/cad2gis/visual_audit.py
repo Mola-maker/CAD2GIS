@@ -228,7 +228,12 @@ def _audit_matching_record(manifest, partition):
         raise UnsupportedAuditTransform("OSM matching record hash mismatch")
     if record.get("source_sha256") != manifest["source"]["sha256"]:
         raise UnsupportedAuditTransform("OSM matching source hash mismatch")
-    if record.get("status") not in {"matched", "coarse"}:
+    nominal_scope = record.get("status") in {"abstained", "unavailable"} and (
+        partition or any(key != "MAIN" and isinstance(value, dict)
+                         and value.get("status") in {"matched", "coarse"}
+                         for key, value in regions.items())
+    )
+    if record.get("status") not in {"matched", "coarse"} and not nominal_scope:
         raise UnsupportedAuditTransform("An abstained or unavailable OSM candidate cannot be an applied transform")
     if record.get("authority") != "relative_osm" or record.get("absolute_accuracy_verified") is not False:
         raise UnsupportedAuditTransform("OSM matching authority must remain relative-only")
@@ -236,8 +241,29 @@ def _audit_matching_record(manifest, partition):
         if _crs_identity(record.get(key)) != _crs_identity(crs[key]):
             raise UnsupportedAuditTransform(f"OSM matching {key} binding mismatch")
     snapshot = record.get("osm_snapshot")
-    if not isinstance(snapshot, dict) or snapshot.get("sha256") != _canonical_sha256(snapshot.get("roads")):
+    if not (nominal_scope and record.get("status") == "unavailable" and snapshot is None) and (
+        not isinstance(snapshot, dict) or snapshot.get("sha256") != _canonical_sha256(snapshot.get("roads"))
+    ):
         raise UnsupportedAuditTransform("OSM snapshot hash mismatch")
+    if nominal_scope:
+        # A run's aggregate lineage can be OSM because a sibling matched.
+        # This scope retained the nominal transformer; never subtract either
+        # the sibling's translation or an unaccepted candidate's displacement.
+        base = record.get("base") or {}
+        contract = crs["unit_crs_contract"]
+        registration = contract.get("coordinate_registration")
+        identity = {"source_crs": _crs_identity(crs["source_crs"]),
+                    "target_crs": _crs_identity(crs["target_crs"]),
+                    "unit_contract": {key: value for key, value in contract.items() if key != "coordinate_registration"},
+                    "geodata_registration": registration,
+                    "lineage_model": "dwg_geodata_nominal" if registration else "nominal_direct"}
+        if (base.get("mode") != "nominal"
+                or _audit_pair(record.get("translation_3857"), "Unapplied OSM translation") != (0.0, 0.0)
+                or base.get("nominal_operation_sha256") != _canonical_sha256(identity)
+                or base.get("scale_to_3857") != 1.0
+                or base.get("source_unit_to_m") != contract.get("source_coordinate_scale_to_m")):
+            raise UnsupportedAuditTransform("Unapplied district match does not bind a zero-shift nominal operation")
+        return None
     return record
 
 
