@@ -39,10 +39,13 @@ def relocate(root: Path) -> dict:
             or manifest.get("status") != "SOURCE_EXPORTED"
             or manifest.get("snapshot_sha256") != snapshot_digest(manifest)):
         raise ValueError("Invalid source snapshot seal")
-    if set(manifest["artifacts"]) != set(ARTIFACTS):
+    paths = dict(ARTIFACTS)
+    if "scene_visual_manifest" in manifest["artifacts"]:
+        paths["scene_visual_manifest"] = "reasoning/scene_visual/manifest.json"
+    if set(manifest["artifacts"]) != set(paths):
         raise ValueError("Unknown or missing source artifacts; use a compatible relocator")
     changes = []
-    for name, relative in ARTIFACTS.items():
+    for name, relative in paths.items():
         path = (root / relative).resolve()
         if not path.is_relative_to(root) or not path.is_file():
             raise ValueError(f"Artifact is missing or outside snapshot: {name}")

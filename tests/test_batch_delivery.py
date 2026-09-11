@@ -191,3 +191,37 @@ def test_batch_subprocesses_follow_real_cli_source_contract(tmp_path, monkeypatc
     assert result["status"] == ("FAILED" if partition_failure else "COMPLETED")
     assert result["drawings"][0]["partition_audits"]["EMR28560"] == ("FAILED" if partition_failure else "EXECUTED")
     assert seen == ["export-source", "index-source", "convert", "export-source", "index-source", "convert"]
+
+
+def test_existing_run_report_copies_previews_and_preserves_source(tmp_path):
+    from cad2gis.batch import report_runs
+    run = tmp_path / "drawing" / "run"
+    run.mkdir(parents=True)
+    original = json.dumps({"run_status": "CONDITIONAL", "source": {"sha256": "a" * 64}}).encode()
+    (run / "run_manifest.json").write_bytes(original)
+    audit = run.parent / "audit"
+    audit.mkdir()
+    (audit / "report.json").write_text('{"status":"PASS"}')
+    (audit / "source-delivery-focus.png").write_bytes(b"focus-preview")
+    (audit / "source-delivery-overlay.png").write_bytes(b"full-preview")
+    symbols = run / "svg-candidates" / "symbols"
+    symbols.mkdir(parents=True)
+    (symbols / "one.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>')
+    output = tmp_path / "review"
+    result = report_runs([run], output)
+    item = result["drawings"][0]
+    assert item["preview"].endswith("source-delivery-focus.png")
+    assert item["png_count"] == 1
+    assert item["status"] == "CONDITIONAL"
+    assert result["absolute_accuracy_verified"] is False
+    assert (output / "01-drawing/svg-candidates/symbols/one.png").read_bytes().startswith(b"\x89PNG")
+    assert (run / "run_manifest.json").read_bytes() == original
+    assert not (symbols / "one.png").exists()
+    with pytest.raises(FileExistsError):
+        report_runs([run], output)
+
+
+def test_all_committed_baseline_configuration_is_valid_json():
+    from pathlib import Path
+    for path in (Path(__file__).parents[1] / "baselines").glob("*/config/*.json"):
+        assert isinstance(json.loads(path.read_text(encoding="utf-8")), dict), path
