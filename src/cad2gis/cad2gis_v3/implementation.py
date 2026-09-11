@@ -17,7 +17,7 @@ from typing import Any
 
 IMPLEMENTATION_SCHEMA_VERSION = "cad2gis-implementation-provenance-v1"
 PRODUCTION_CONVERSION_SCOPE = "production-conversion"
-PRODUCTION_CONVERSION_SCOPE_VERSION = 12
+PRODUCTION_CONVERSION_SCOPE_VERSION = 13
 CONVERSION_SNAPSHOT_SCHEMA_VERSION = "cad2gis-conversion-snapshot-v1"
 
 # Paths are relative to src/cad2gis.  Keep this list explicit: adding
@@ -68,6 +68,7 @@ PRODUCTION_CONVERSION_FILES = (
     "cad2gis_v3/runtime_provenance.py",
     "cad2gis_v3/schema_config.py",
     "cad2gis_v3/scene_partition.py",
+    "cad2gis_v3/scene_visual.py",
     "cad2gis_v3/semantics.py",
     "cad2gis_v3/semantic_delivery.py",
     "cad2gis_v3/semantic_stage.py",

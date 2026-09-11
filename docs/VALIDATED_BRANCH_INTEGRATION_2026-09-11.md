@@ -32,3 +32,22 @@ The existing Claude configuration remains available. This integration does not c
 Run `34574052332` showed successful Linux/macOS tests but artifact quota failures, plus two Windows timestamp-test failures caused by unclosed test SQLite connections. The fixture now closes its connection. JUnit summaries are persisted to the Actions job summary; artifact upload alone is best-effort with three-day retention. Test, runtime, lint, packaging and WebDemo build failures remain fatal. No existing remote artifacts are deleted and no branch protection is bypassed.
 
 Local evidence and the latest CI links are recorded in the final verification receipt after the integrated run completes. Survey-grade absolute registration and Android device execution remain separate from local regression and rendering checks.
+
+## Integrated verification receipt
+
+- Commit `ef9daf3`: full Linux regression **1,227 passed, 14 skipped**. Skips identify unavailable external fixtures and Windows-specific checks; the Windows Actions job passed separately.
+- All nine user DWGs completed using the previously reviewed Linux project configurations and hash-verified native snapshots. **3,794 delivered features, 759 SVG/PNG pairs**, nine independent audits with zero unexplained geometry changes and zero unexpected field mismatches; all original source hashes unchanged. Run statuses remain CONDITIONAL, not survey-verified.
+- Some main example profiles were reviewed against a different native inventory (notably Manado); those bindings correctly fail closed on this machine. The final Linux run uses the already reviewed session projects, preserving their configuration hashes, rather than fabricating matching inventory approvals. `nine-dwg-v2` retains the rejected examples; `nine-linux-final` records the successful explicit configuration selection.
+- Streamed graph benchmark: identical gzip bytes for 2,000 records with 8KiB facts each. Peak traced allocation fell from **17,927,749** to **544,511** bytes (~97%); measured time 0.204s versus 0.211s. This is a serialization benchmark, not a whole-application speedup claim.
+- Installed wheel (independent Claude environment): MCP connected; 50 advertised tools. Real Semarang native export preserved all **1,455** source entities and produced **84** scene visual regions; hash-checked region context retrieval succeeded without an LLM request.
+- Browser review found and corrected CSS image distortion with `object-fit: contain`. The review homepage now opens directly on drawing previews, with the full evidence table in an expandable horizontal-scroll section. Presentation-only corrections do not alter converted geometry. Scene visualization is explicitly included in production provenance scope version 13.
+
+Local outputs (relative to repository root):
+
+- `tmp/integration-20260911/final-review/index.html` — nine-drawing review homepage.
+- `tmp/integration-20260911/final-review/batch-report.json` — structured report and per-drawing PNG indexes.
+- `tmp/integration-20260911/nine-linux-final/summary.json` — conversion and independent audit results; per-drawing folders retain full run artifacts.
+- `tmp/integration-20260911/final-regression.xml` — complete local test evidence.
+- `tmp/integration-20260911/graph-memory-benchmark.json` — measured serialization allocation and time.
+
+Integration PR: https://github.com/Mola-maker/CAD2GIS/pull/9. CI links and final merge commit are delivered with the completion message after checks finish.
