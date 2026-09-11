@@ -96,12 +96,16 @@ def write_index(output: Path, report: dict) -> None:
             '<title>CAD2GIS 批次交付</title><style>body{font:16px/1.6 system-ui;margin:40px;'
             'background:#f5f7fa;color:#16334b}table{border-collapse:collapse;width:100%}'
             'td,th{padding:14px;border:1px solid #bbc8d5;text-align:left}a{color:#005ea8;margin-right:12px}'
-            'td{overflow-wrap:anywhere}</style><h1>CAD2GIS 批次交付</h1>'
+            'td{overflow-wrap:anywhere}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:24px}'
+            'article{background:white;border:1px solid #d7e0e8;border-radius:12px;padding:20px;min-width:0}article p{overflow-wrap:anywhere}'
+            'details{margin-top:32px}.table-scroll{overflow-x:auto}table{min-width:850px}td:first-child,td:nth-child(2){white-space:nowrap}'
+            '@media(max-width:700px){body{margin:16px}article{padding:12px}}</style><h1>CAD2GIS 批次交付</h1>'
             '<p>每张图独立保留运行、来源与失败记录。CONDITIONAL 不代表工程验收通过；'
             '没有独立 GCP 时，叠图一致不能证明绝对定位精度。</p>'
             '<p><a href="batch-report.json">机器可读批次报告</a></p>'
+            + '<main>' + "".join(cards) + '</main><details><summary>结构化索引与全部证据</summary><div class="table-scroll">'
             '<table><tr><th>图纸</th><th>状态</th><th>异常</th><th>交付 / 证据</th></tr>'
-            + "".join(rows) + '</table>' + "".join(cards) + '</html>')
+            + "".join(rows) + '</table></div></details></html>')
     if report.get("status") == "RUNNING":
         page = page.replace('<title>', '<meta http-equiv="refresh" content="10"><title>', 1)
     (output / "index.html").write_text(page, encoding="utf-8")
@@ -272,8 +276,8 @@ def report_runs(runs: list[Path], output: Path) -> dict:
             for page in ("index.html", "correspondence.html"):
                 if (target / page).is_file():
                     text = (target / page).read_text(encoding="utf-8")
-                    text = re.sub(r'(<img\b[^>]*\bsrc="symbols/[^"<>]+)\.svg(" )', r'\1.png\2', text)
                     text = re.sub(r'(<img\b[^>]*\bsrc="symbols/[^"<>]+)\.svg(")', r'\1.png\2', text)
+                    text = text.replace("</style>", "img{object-fit:contain}</style>", 1)
                     (target / page).write_text(text, encoding="utf-8")
                     record["links"]["SVG / PNG " + page] = f"{identifier}/svg-candidates/{page}"
             record["links"]["PNG 索引"] = f"{identifier}/svg-candidates/png-previews.json"

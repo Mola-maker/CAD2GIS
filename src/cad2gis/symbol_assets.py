@@ -275,7 +275,7 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
     (output / "index.html").write_text('<!doctype html><html lang="en"><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width"><title>CAD symbol candidates</title>'
         '<style>body{font:16px system-ui;margin:2rem;background:#eef2f5}main{display:flex;flex-wrap:wrap;gap:1rem}'
-        'article{background:white;padding:1.5rem;width:22rem}img{width:100%;height:220px}p{overflow-wrap:anywhere}</style>'
+        'article{background:white;padding:1.5rem;width:22rem}img{width:100%;height:220px;object-fit:contain}p{overflow-wrap:anywhere}</style>'
         '<h1>CAD symbol candidates</h1><p>Optional assets; conversion outputs remain unchanged. '
         'Review CAD visibility, text and shape before assigning a symbol.</p><main>' + cards + '</main></html>', encoding="utf-8")
     return {"output": str(output), "store": str(output / "symbols.sqlite3"), "symbols": len(assets),

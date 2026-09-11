@@ -223,7 +223,7 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                        '</td><td>' + p['status'] + '</td></tr>' for p in points)
         (output / 'correspondence.html').write_text('<!doctype html><html lang="zh"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width"><title>SVG 对应复核</title>'
-            '<style>body{font:16px system-ui;margin:2rem}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:1rem}img{width:110px;height:110px}</style>'
+            '<style>body{font:16px system-ui;margin:2rem}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:1rem}img{width:110px;height:110px;object-fit:contain}</style>'
             '<h1>源实体与图例候选对应复核</h1><p>每个交付点均列出处理状态。候选尚未获得完整图例验收；未确认项保留原样式。'
             '归一化形状相同是对应证据，不替代动态状态和原图字体核验。</p><p><a href="symbols.sqlite3">独立 SQLite</a> · '
             '<a href="correspondence.json">全部源句柄、检测范围与覆盖率</a></p>'
