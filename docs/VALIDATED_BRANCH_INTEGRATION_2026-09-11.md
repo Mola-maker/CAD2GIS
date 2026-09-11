@@ -51,3 +51,5 @@ Local outputs (relative to repository root):
 - `tmp/integration-20260911/graph-memory-benchmark.json` — measured serialization allocation and time.
 
 Integration PR: https://github.com/Mola-maker/CAD2GIS/pull/9. CI links and final merge commit are delivered with the completion message after checks finish.
+
+Docker CI still builds and exercises every relevant main update, but archives the large image only on explicit `workflow_dispatch` with `export_image=true` (one-day retention). Normal validation preserves its smoke summary without repeatedly filling Actions artifact storage.
