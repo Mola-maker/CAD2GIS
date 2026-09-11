@@ -94,7 +94,22 @@ raw/
 /pages-delivery/
 /experiment/*.dwg
 !scripts/fetch_derived_release.py
-baselines/*/config/.osm-cache/
+
+# baselines: version only the frozen project config and the SVG review project.
+# Every other generated artifact (run/, reviews/, delivery GeoPackages and review
+# receipts) stays local. config/.osm-cache is part of the frozen config: the
+# content-addressed Overpass snapshots keep offline OSM matching reproducible.
+# Order matters - later patterns win - so the SVG review project is re-included
+# explicitly and everything else is ignored again.
+/baselines/*/*
+!/baselines/*/config
+!/baselines/*/config/**
+!/baselines/*/delivery
+/baselines/*/delivery/*
+!/baselines/*/delivery/view-with-source-SVG.qgz
+!/baselines/*/delivery/*/
+/baselines/*/delivery/*/*
+!/baselines/*/delivery/*/view-with-source-SVG.qgz
 
 # Tool state can be created below any working directory.
 **/.omc/

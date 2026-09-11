@@ -1,0 +1,97 @@
+{
+  "schema_version": "cad2gis.svg-symbol-overrides.v1",
+  "rationale": "Tinggar draws delivered features as plain CAD primitives instead of block references: FAT boxes (BOITE) are closed LWPOLYLINEs on layer FAT (ACI 40 amber), FDT boxes (SITE) are two nested closed LWPOLYLINEs on layer FDT (ACI 12 dark red), and the pole symbols (green ACI 3 four-inch, purple ACI 212 2.5-inch) live in blocks whose definitions sit far from the model. The block-instance inventory therefore produced no SVG for 31 BOITE, 2 SITE and 3 PTECH features. Each rule below names the CAD geometry that visually represents the delivered handle; FAT and FDT type labels are baked into the BOITE/SITE symbols with the same Arial family as the PTECH layer labels, a white halo, FAT red and FDT yellow.",
+  "instance_sources": [
+    {
+      "feature_class": "BOITE",
+      "mode": "self",
+      "overlay_text": {
+        "text": "FAT",
+        "fill": "#ff0000",
+        "outline": "#ffffff",
+        "font_family": "Arial, Helvetica, Liberation Sans, sans-serif"
+      },
+      "rationale": "The FAT box is the delivered closed LWPOLYLINE itself (layer FAT, ACI 40 amber). The red FAT label with a white halo is part of the symbol artwork, so it survives marker scaling and cannot be replaced by QGIS layer styling."
+    },
+    {
+      "feature_class": "SITE",
+      "source_handle": "A4BEC",
+      "mode": "handles",
+      "render_handles": [
+        "A5B9D",
+        "A5B9E"
+      ],
+      "label": "SITE / FDT box (SRG.100.0402.TGGR04-1.022)",
+      "overlay_text": {
+        "text": "FDT",
+        "fill": "#ffff00",
+        "outline": "#ffffff",
+        "font_family": "Arial, Helvetica, Liberation Sans, sans-serif"
+      },
+      "rationale": "A5B9D/A5B9E are the paired FDT frame on the dark red layer. The green four-inch pole circle at this node is the separate PTECH feature A4B6F and is not part of the SITE symbol. The yellow FDT label is drawn above the frame."
+    },
+    {
+      "feature_class": "SITE",
+      "source_handle": "A4B71",
+      "mode": "handles",
+      "render_handles": [
+        "A5BA1",
+        "A5BA2"
+      ],
+      "label": "SITE / FDT box (SRG.100.0402.TGGR04-2.023)",
+      "overlay_text": {
+        "text": "FDT",
+        "fill": "#ffff00",
+        "outline": "#ffffff",
+        "font_family": "Arial, Helvetica, Liberation Sans, sans-serif"
+      },
+      "rationale": "A5BA1/A5BA2 are the paired FDT frame on the dark red layer. The green four-inch pole circle at this node is the separate PTECH feature A5C9A and is not part of the SITE symbol."
+    },
+    {
+      "feature_class": "PTECH",
+      "source_handle": "A4B6F",
+      "mode": "handles",
+      "render_handles": [
+        "A5B68"
+      ],
+      "label": "PTECH / NP7 4\" pole (MR.TGGR04-1.P001)",
+      "rationale": "Green four-inch pole marker for this label point; the delivered handle is a POINT on BASIC MAP_PT."
+    },
+    {
+      "feature_class": "PTECH",
+      "source_handle": "A5C9A",
+      "mode": "handles",
+      "render_handles": [
+        "A5BA5"
+      ],
+      "label": "PTECH / NP7 4\" pole (MR.TGGR04-2.P001)",
+      "rationale": "Green four-inch pole marker for this label point; the delivered handle is a POINT on BASIC MAP_PT."
+    },
+    {
+      "feature_class": "PTECH",
+      "source_handle": "A5BF2",
+      "mode": "handles",
+      "render_handles": [
+        "A5B05"
+      ],
+      "label": "PTECH / NP7 2.5\" pole (MR.TGGR04-2.P011, style absent in the drawing)",
+      "rationale": "The purple 2.5-inch pole at MR.TGGR04-2.P011 has a legal label point but no drawn symbol; the symbol is borrowed from A5B05, an identical 2.5-inch pole instance (block *U70, layer colour ACI 212)."
+    }
+  ],
+  "extra_legend": [
+    {
+      "symbol_id": "legend-np74-green",
+      "render_handles": [
+        "99EAA"
+      ],
+      "label": "Legend / NEW POLE 7M 4\" (green circle, NP7 4')"
+    },
+    {
+      "symbol_id": "legend-np725-purple",
+      "render_handles": [
+        "99EAF"
+      ],
+      "label": "Legend / NEW POLE 7M 2.5\" (purple circle, NP7 2,5')"
+    }
+  ]
+}
