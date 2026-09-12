@@ -135,7 +135,20 @@ class MCPToolBridge:
 
         self.uncertain_mutations.discard(fingerprint)
         self.event("tool_result", name, result)
+        # Preserve the small, machine-readable conversion receipt even if a
+        # detailed onboarding report exceeds the model's text budget.
+        conversion = {}
+        if name in {"run_conversion", "auto_onboard_and_convert"}:
+            try:
+                body = json.loads(result)
+                if isinstance(body, dict):
+                    conversion = {key: body[key] for key in (
+                        "run_status", "run_manifest", "source", "evidence", "delivery", "styles", "counts",
+                    ) if key in body}
+            except ValueError:
+                pass
         truncated = len(result) > MAX_RESULT_CHARS
         if truncated:
             result = result[:MAX_RESULT_CHARS] + "\n[结果已截断，请用分页或更具体的查询继续]"
-        return {"is_error": False, "result": result, "truncated": truncated}
+        return {"is_error": False, "result": result, "truncated": truncated,
+                **({"conversion": conversion} if conversion else {})}

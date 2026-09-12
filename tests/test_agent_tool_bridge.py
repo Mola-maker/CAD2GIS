@@ -63,6 +63,15 @@ def test_is_error_takes_priority_over_success_looking_structured_data():
     assert [event[0] for event in events] == ["tool_call", "tool_error"]
 
 
+def test_long_onboarding_report_keeps_parseable_conversion_receipt():
+    payload = {'onboarding': {'detail': 'x' * 100000}, 'run_manifest': '/run/run_manifest.json',
+               'delivery': '/run/delivery.gpkg', 'run_status': 'CONDITIONAL', 'counts': {'CABLE': 2}}
+    adapter, _ = bridge(Session(CallToolResult(content=[], structuredContent=payload)))
+    result = asyncio.run(adapter.call('auto_onboard_and_convert', {}))
+    assert result['truncated']
+    assert result['conversion'] == {key: value for key, value in payload.items() if key != 'onboarding'}
+
+
 def test_unknown_mutation_is_never_replayed_with_reordered_arguments():
     session = Session(failure())
     adapter, events = bridge(session)

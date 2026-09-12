@@ -218,3 +218,37 @@ html[data-motion-paused=true] *,html[data-motion-paused=true] *::before,html[dat
   button.motion-button::after{transform:translateY(-50%)!important}
   .ambient,.ambient::before,.ambient::after,.story-art img,.companion-portrait{animation:none!important;transform:none!important}
 }
+
+/* Chat owns a bounded viewport; only messages and tool details scroll. */
+.main-workspace:has(#tab-chat.tab-active){overflow:hidden;padding-top:18px;padding-bottom:96px}
+.main-workspace:has(#tab-chat.tab-active)>.tabs{height:100%;min-height:0;overflow:hidden}
+#tab-chat.tab-active{display:flex;flex-direction:column;height:100%;min-height:0;min-width:0}
+#tab-chat .page-heading{margin-bottom:12px}
+#tab-chat .context-strip{margin-bottom:10px}
+#tab-chat .chat-layout{flex:1;min-height:0;height:auto;grid-template-rows:minmax(0,1fr);overflow:hidden}
+#tab-chat .chat-messages{min-height:0;max-width:100%;overscroll-behavior:contain}
+#tab-chat .activity-panel{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+#tab-chat .activity-panel>.section-head,#agent-status,#agent-usage{flex-shrink:0}
+#agent-plan{flex-shrink:0;max-height:120px;overflow:auto;overflow-wrap:anywhere}
+#agent-events{flex:1;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain}
+#agent-events .event{margin:0 0 8px;padding:5px 6px 5px 8px;max-width:100%}
+#agent-events summary{cursor:pointer;overflow-wrap:anywhere;color:#547b9f}
+#agent-events summary strong{display:inline;font-size:11px}
+#agent-events .tool_error summary{color:#a74758}
+#agent-events pre{max-height:200px;margin:7px 0 0;padding:8px;font-size:10px}
+#tab-chat pre{max-width:100%;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal}
+#tab-chat .message-content pre{max-height:260px}
+#tab-chat .message-row,#tab-chat .message-content{max-width:100%}
+#tab-chat .stream-text{flex-shrink:0;max-height:80px;overflow-wrap:anywhere}
+#tab-chat .composer,#tab-chat .composer-note,#older-messages,.chat-result{flex-shrink:0}
+.composer-bottom>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.composer-bottom>div{flex-shrink:0}
+.chat-result{margin-top:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+@media(max-height:850px){
+  #tab-chat .page-heading .eyebrow,#tab-chat .page-heading .muted{display:none}
+  #tab-chat .page-heading h1{font-size:24px;margin:0}
+  #tab-chat .composer{padding-top:9px;margin-top:6px}
+  #tab-chat .composer textarea{min-height:42px;height:42px}
+  #tab-chat .composer-note{margin-top:5px;font-size:9px}
+}
+@media(max-width:900px){#tab-chat .activity-panel{display:none}}

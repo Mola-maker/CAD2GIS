@@ -8,7 +8,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from . import __version__
 from .runtime import configure_numeric_threads
@@ -496,7 +496,7 @@ def auto_onboard_and_convert(
     from .pipeline import auto_onboard_project, convert_project
 
     source_path = _path(source)
-    project_path = _path(project_dir, must_exist=not force_bootstrap)
+    project_path = _path(project_dir, must_exist=False)
     run_path = _path(run_dir, must_exist=False)
     onboarding = auto_onboard_project(
         source=source_path,
@@ -1602,10 +1602,10 @@ def create_server(
         return install_runtime()
 
     async def debug_tool(
-        scope: str = "identity", graph_path: str = "", run_dir: str = "",
+        scope: Literal["identity", "runtime", "artifacts", "query"] = "identity", graph_path: str = "", run_dir: str = "",
         expected_identity: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """Inspect code/schema identity, runtime or artifact/query binding without mutation."""
+        """Inspect identity/runtime, or artifacts/query for an EXISTING run; project config directories are not run_dir."""
         from .mcp_diagnostics import diagnose
 
         schemas = [tool.model_dump(mode="json", exclude_none=True)

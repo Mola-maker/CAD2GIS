@@ -199,6 +199,20 @@ def _discover_config(
     return match
 
 
+def has_project_configuration(project_dir: str | Path) -> bool:
+    """Detect existing configuration without treating unrelated files as config.
+
+    Partial and malformed configurations count as existing: callers must use
+    the resolver's error, never silently replace them by bootstrapping again.
+    """
+    project = Path(project_dir).expanduser().resolve()
+    return any((directory / name).is_file()
+               for directory in _config_directories(project)
+               for name in _PROJECT_MANIFEST_NAMES) or any(
+        next(iter(_config_candidates(project, kind)), None) is not None
+        for kind in _REQUIRED_CONFIGS)
+
+
 def resolve_project_configuration(
     *,
     project_dir: str | Path | None = None,
