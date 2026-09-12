@@ -674,6 +674,41 @@ def test_mcp_run_audit_verifies_hashes_counts_and_source_replay(
     assert "artifact:delivery" in failed["failures"]
 
 
+@pytest.mark.parametrize("query", ["?review=selected-result", "?review=selected-result&demo=1"])
+def test_selected_review_serves_map_without_historical_demo_before_javascript(
+    tmp_path, query,
+) -> None:
+    run_dir, _, _ = _run_fixture(tmp_path)
+    client = TestClient(create_review_app(run_dir, workspace_dir=tmp_path / "review"))
+    response = client.get("/" + query)
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    page = response.text
+    # Assert against the response itself: hiding after scripts run still flashes
+    # the old page and lets ?demo=1 replace real API requests with fixture data.
+    assert '<body class="live-review">' in page
+    for retained in ('id="console-app"', 'id="local-map"', 'id="map"',
+                     'id="gcp-role"', 'id="preview-gcp"', 'id="export-gcp"',
+                     'id="visual-dialog"', "./assets/vendor/ol.js", "./assets/app.js"):
+        assert retained in page
+    for removed in ('id="hero-page"', 'id="plugin-guide"', 'id="process-terminal"',
+                    "hero-motion.js", "demo-fixture.js", "Hutabohu", "Gorontalo",
+                    "9,717", "557e01413c39", "public-demo-only"):
+        assert removed not in page
+    assert page.count('id="cad2gis-review-theme"') == 1
+    assert client.get("/api/run").json()["source_entity_count"] == 1538
+    assert 'id="hero-page"' in client.get("/").text  # standalone surface is preserved
+
+
+def test_review_workspace_rejects_broken_template_boundaries():
+    with pytest.raises(ReviewServerError, match="boundaries"):
+        review_server._application_review_html('<body><section id="hero-page"></section></body>')
+    with pytest.raises(ReviewServerError, match="boundaries"):
+        review_server._application_review_html(
+            '<body><!-- public-demo-only:start --><section id="hero-page"></section></body>',
+        )
+
+
 def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None:
     monkeypatch.delenv("CAD2GIS_REVIEW_POSTGIS_DSN", raising=False)
     run_dir, delivery, manifest_path = _run_fixture(tmp_path)
@@ -691,7 +726,7 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     assert run_summary["source_entity_count"] == 1538
     assert run_summary["delivery_counts"] == {"SITE": 1, "CABLE": 33}
     page = client.get("/").text
-    assert "核对源图，校正地图位置" in page
+    assert "核对源图与地图位置" in page
     assert "把不可信的" in page
     assert "DWG" in page
     assert 'id="hero-page"' in page
