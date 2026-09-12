@@ -3,10 +3,77 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 class Launcher
 {
+    [StructLayout(LayoutKind.Sequential)]
+    struct BasicJobLimits
+    {
+        public long PerProcessUserTimeLimit, PerJobUserTimeLimit;
+        public uint LimitFlags;
+        public UIntPtr MinimumWorkingSetSize, MaximumWorkingSetSize;
+        public uint ActiveProcessLimit;
+        public UIntPtr Affinity;
+        public uint PriorityClass, SchedulingClass;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct JobIoCounters
+    {
+        public ulong ReadOperationCount, WriteOperationCount, OtherOperationCount;
+        public ulong ReadTransferCount, WriteTransferCount, OtherTransferCount;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct ExtendedJobLimits
+    {
+        public BasicJobLimits BasicLimitInformation;
+        public JobIoCounters IoInfo;
+        public UIntPtr ProcessMemoryLimit, JobMemoryLimit, PeakProcessMemoryUsed, PeakJobMemoryUsed;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern IntPtr CreateJobObject(IntPtr attributes, string name);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool SetInformationJobObject(IntPtr job, int informationClass, IntPtr information, uint length);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+    [DllImport("kernel32.dll")]
+    static extern bool CloseHandle(IntPtr handle);
+
+    // Intentionally owned until OS process teardown, not a finalizable handle:
+    // closing this handle while Main is running would also terminate this launcher.
+    static IntPtr desktopJob;
+
+    static void OwnDesktopProcessTree()
+    {
+        IntPtr job = CreateJobObject(IntPtr.Zero, null);
+        if (job == IntPtr.Zero) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        try
+        {
+            var limits = new ExtendedJobLimits();
+            limits.BasicLimitInformation.LimitFlags = 0x2000; // JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            int size = Marshal.SizeOf(typeof(ExtendedJobLimits));
+            IntPtr buffer = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.StructureToPtr(limits, buffer, false);
+                if (!SetInformationJobObject(job, 9, buffer, (uint)size))
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            }
+            finally { Marshal.FreeHGlobal(buffer); }
+            // Bind the launcher BEFORE starting Python. Descendants inherit
+            // membership, including during startup; there is no unowned-child gap.
+            using (var current = Process.GetCurrentProcess())
+                if (!AssignProcessToJobObject(job, current.Handle))
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            desktopJob = job;
+        }
+        catch { CloseHandle(job); throw; }
+    }
+
     // CommandLineToArgvW-compatible quoting, including trailing backslashes.
     static string Quote(string value)
     {
@@ -54,6 +121,7 @@ class Launcher
         start.EnvironmentVariables.Remove("PYTHONHOME");
         try
         {
+            if (desktop) OwnDesktopProcessTree();
             using (var process = new Process())
             {
                 process.StartInfo = start;
