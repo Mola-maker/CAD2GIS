@@ -170,6 +170,7 @@ def _roots() -> tuple[Path, ...]:
 
 
 def _runtime_status() -> dict[str, Any]:
+    from .native_diagnostics import selected_cli_has_known_text_defect
     from .native_runtime import portable_runtime_status
     from .reader.resolver import (
         configured_reader,
@@ -180,7 +181,11 @@ def _runtime_status() -> dict[str, Any]:
     portable = portable_runtime_status()
     selected_reader = configured_reader()
     capabilities = reader_capabilities()
-    reader_ready = selected_reader_capability().available
+    selected_capability = selected_reader_capability()
+    cli_text_fidelity = portable.get("libredwg", {}).get("text_fidelity")
+    reader_ready = selected_capability.available and not selected_cli_has_known_text_defect(
+        selected_capability.backend, cli_text_fidelity,
+    )
     gdal = portable.get("gdal", {})
     conversion_ready = bool(
         isinstance(gdal, dict)

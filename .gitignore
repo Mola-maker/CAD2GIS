@@ -113,3 +113,7 @@ raw/
 
 # Tool state can be created below any working directory.
 **/.omc/
+
+# Local browser acceptance artifacts and Chromium diagnostics.
+/output/
+/debug.log

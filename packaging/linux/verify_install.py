@@ -54,7 +54,8 @@ def verify(bundle: Path, output: Path) -> dict:
     announcements = queue.Queue()
     with (output / "application.stderr.log").open("w", encoding="utf-8") as stderr:
         process = subprocess.Popen([str(desktop_entry), "--no-browser",
-                                    "--project-root", str(project)], cwd=output, env=env,
+                                    "--project-root", str(project),
+                                    "--state-dir", str(output / "application-state")], cwd=output, env=env,
                                    stdout=subprocess.PIPE, stderr=stderr, text=True, encoding="utf-8")
         def reader():
             for line in process.stdout:
@@ -88,6 +89,11 @@ def verify(bundle: Path, output: Path) -> dict:
                     "--bundle", str(bundle), "--output", str(output / "application-workflow"),
                     "--conversion", str(output / "conversion"),
                 ], cwd=output, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=300, check=True)
+            workflow = json.loads((output / "application-workflow/application-report.json").read_text())
+            assert workflow["real_semantic_extraction"] == "passed", workflow
+            assert workflow["semantic_stages_completed"] == 3, workflow
+            assert workflow["semantic_artifact_download_hashes_verified"] is True, workflow
+            assert workflow["automatic_semantic_commit"] is False, workflow
             result = {
                 "schema": "cad2gis.linux_install_verification.v1", "bundle": str(bundle),
                 "wheel_sha256": manifest["wheel_sha256"],
@@ -95,7 +101,11 @@ def verify(bundle: Path, output: Path) -> dict:
                 "python": sys.executable, "native_smoke": "passed", "canonical_conversion": "passed",
                 "application": {"assets": "passed", "unauthenticated_denied": True,
                                 "login_status_shutdown": "passed", "one_use_launch_token": True,
-                                "upload_inspect_svg_gcp_rematch": "passed"},
+                                "upload_inspect_svg_gcp_rematch": "passed",
+                                "real_semantic_extraction": "passed", "semantic_stages_completed": 3,
+                                "semantic_artifact_download_hashes_verified": True,
+                                "automatic_semantic_commit": False,
+                                "state_dir": str(output / "application-state")},
                 "host": Path("/etc/os-release").read_text(), "verified_at": time.time(),
                 "desktop_browser_window": "headless WSL; browser auto-open not exercised",
             }

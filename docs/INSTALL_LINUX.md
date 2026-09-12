@@ -8,7 +8,7 @@
 
 ```sh
 sha256sum --check SHA256SUMS --ignore-missing
-sudo apt install ./cad2gis_0.4.0_amd64.deb
+sudo apt install ./cad2gis_0.7.0_amd64.deb
 ```
 
 在应用菜单打开 **CAD2GIS**，默认浏览器会显示本地工作台。也可以运行 `cad2gis-desktop`。工作台与智能体调用共用同一转换引擎，支持既有 OSM 匹配、人工 GCP 预览与二次匹配，以及 SVG 候选提取。需要联网的 OSM 搜索、地图底图或 AI 服务仍需网络和相应配置。
@@ -17,7 +17,7 @@ sudo apt install ./cad2gis_0.4.0_amd64.deb
 
 ## 无管理员权限的运行方式
 
-将 `cad2gis-0.4.0-linux-x86_64.tar.gz` 解压到自己拥有的目录，运行解压目录里的 `bin/cad2gis-desktop`。该运行时可以移动目录，不依赖构建机的 Python 路径。便携包要求系统已提供 `libstdc++6`、`libgomp1`、CA 证书与可用字体；桌面打开功能需要默认浏览器。可用 `bin/cad2gis doctor --deep --strict --profile full --json` 检查运行时。
+将 `cad2gis-0.7.0-linux-x86_64.tar.gz` 解压到自己拥有的目录，运行解压目录里的 `bin/cad2gis-desktop`。该运行时可以移动目录，不依赖构建机的 Python 路径。便携包要求系统已提供 `libstdc++6`、`libgomp1`、CA 证书与可用字体；桌面打开功能需要默认浏览器。可用 `bin/cad2gis doctor --deep --strict --profile full --json` 检查运行时。
 
 ## 智能体插件接口
 
@@ -40,7 +40,7 @@ Android 安装版连接 HTTPS 服务器上的工作台；转换由服务器或�
 python3 packaging/linux/prepare_runtime.py
 python3 tools/build_runtime_bundle.py \
   --runtime-source tmp/packaging-linux/standalone/python \
-  --wheel dist/python/cad2gis-0.4.0-py3-none-any.whl \
+  --wheel dist/semantic-upgrade/cad2gis-0.7.0-py3-none-any.whl \
   --libredwg tmp/packaging-linux/libredwg-runtime \
   --output tmp/packaging-linux/payload
 python3 tools/build_linux_package.py \
@@ -59,3 +59,7 @@ python3 tools/build_linux_package.py \
 ```
 
 该验证只生成自造图纸，覆盖原生 CAD/GIS、MCP、完整 OSM+SVG 转换、本地工作台入口、上传、SVG 审查、GCP 预览和实际二次匹配；原交付文件的哈希必须保持不变。无图形桌面的 WSL 仅验证服务与页面响应，默认浏览器窗口的自动打开需在实际 Linux 桌面中检查。
+
+## 可选 Redis 查询缓存
+
+安装包带有 Redis Python 客户端、`config/redis.compose.yaml` 和 `docs/REDIS_RUNTIME_2026-09-11.md`。Redis 服务不会自动启动；未配置时仍直接使用 SQLite。需要启用时，从安装包根目录启动 Compose，并为后端进程设置 `CAD2GIS_REDIS_URL=redis://127.0.0.1:16379/0`。默认 TTL 为 120 秒，Redis 不可用时源要素摘要查询会回退 SQLite。`doctor --deep` 和 MCP runtime 诊断会报告真实连接状态；语义提交、源图和编译产物的权威仍在本地持久化文件/SQLite，Redis Streams 队列未启用。
