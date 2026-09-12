@@ -200,6 +200,7 @@ class ProjectExpectations:
     topology_gates: tuple[DiagnosticGate, ...]
     segment_gates: tuple[DiagnosticGate, ...]
     delivery_counts: dict[str, int]
+    geometry_repairs: str | None = None
 
     @classmethod
     def from_mapping(
@@ -212,11 +213,20 @@ class ProjectExpectations:
             "source_geometry_gates", "topology_gates", "segment_gates",
             "delivery_counts",
         }
-        missing, unknown = expected - set(value), set(value) - expected
+        missing = expected - set(value)
+        unknown = set(value) - expected - {"geometry_repairs"}
         if missing or unknown:
             raise ValueError(
                 "Invalid expectations keys; "
                 f"missing={sorted(missing)}, unknown={sorted(unknown)}"
+            )
+        geometry_repairs = value.get("geometry_repairs")
+        if geometry_repairs is not None and (
+            not isinstance(geometry_repairs, str)
+            or geometry_repairs not in {"legacy", "candidate-only"}
+        ):
+            raise ValueError(
+                "expectations.geometry_repairs must be legacy or candidate-only"
             )
         return cls(
             source_inventory=_count_mapping(
@@ -243,6 +253,7 @@ class ProjectExpectations:
             delivery_counts=_count_mapping(
                 value["delivery_counts"], "expectations.delivery_counts",
             ),
+            geometry_repairs=geometry_repairs,
         )
 
 

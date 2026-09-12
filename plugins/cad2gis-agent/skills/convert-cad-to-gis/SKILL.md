@@ -34,6 +34,10 @@ or CRS algorithms inside the host agent or plugin.
 
 ## New drawing workflow
 
+First check whether the supplied DWG SHA-256 already identifies a reviewed
+project or a user-selected baseline. If it does, use the existing-project
+workflow below instead of generating a replacement mapping from layer guesses.
+
 1. `inspect_source`
 2. `bootstrap_project`
 3. `prepare_ai_onboarding`
@@ -48,6 +52,38 @@ or CRS algorithms inside the host agent or plugin.
 
 Provider-backed onboarding may use `auto_onboard_and_convert`, but its proposal
 still passes deterministic compilation and admission gates.
+
+## Reviewed baseline replay and delivery
+
+1. Bind the DWG bytes and complete reader inventory to the selected baseline.
+   Reconstruct an inventory under the documented historical basename when
+   needed; accept it only if its computed digest matches. A validated complete
+   native snapshot may be replayed. Changed reader facts require a separate
+   source-bound review, never an edited digest or a mixture of snapshot records.
+2. Copy reviewed configuration into a new project with the original project
+   directory name. Preserve mapping, CRS, spatial partitions, pinned matching
+   profiles, frozen OSM evidence and geometry repair mode. SF policy can depend
+   on that directory name as well as project_id. Use the same explicit
+   geometry_repairs value when compiling new onboarding and converting it.
+3. Run canonical conversion into a new directory. For OSM-reviewed baselines,
+   use matching="osm" so pinned project corrections are selected. Never replace
+   a reviewed correction with a nominal run just to make conversion finish.
+4. For the standard baseline six-file delivery, run `cad2gis publish-match`
+   with a verified QGIS Python and the source-bound frozen review basemap.
+   Preserve its matching gates and partition directories. `batch package` and
+   `package_delivery` alone do not produce this SVG/OSM delivery contract.
+   An unmatched scope may instead use the public `qgis-review` workflow as an
+   explicitly uncorrected reference view. Bind its actual matching record to
+   the exact displayed database; retain abstained/unavailable titles and never
+   present such a scope as an accepted matching revision.
+5. Reopen both QGZ files in a separate QGIS process. Verify embedded datasets,
+   source SVG bindings, layer/partition identities, feature counts and actual
+   rendering. Compare logical source entities separately from cable segments;
+   transform both datasets into the same CRS before evaluating offsets.
+6. Prepare and launch the actual local review workspace and open its URL.
+   Verify a live run-bound page and its SVG resources; a static batch index is
+   not the conversion review console. Keep unresolved SVG points and all
+   CONDITIONAL statuses visible in the delivery report.
 
 ## Source database and semantic revision workflow (package 0.4+)
 

@@ -58,7 +58,9 @@ def worker(args):
         profiler.enable()
     try:
         report["runtime"] = ensure_osgeo_runtime()
-        project = root / "project"
+        # The reviewed baseline slug participates in source-bound SF rules.
+        # Preserve it in the project path as well as in the corpus manifest.
+        project = root
         shutil.copytree(args.baselines / args.drawing / "config", project / "config")
         profile = read(project / "config/source_profile.json")
         assert profile["source_binding"]["source_sha256"] == report["source_sha256_before"]
@@ -184,7 +186,7 @@ def worker(args):
             profiler.disable()
             profiler.dump_stats(root / "worker.prof")
         report["configuration_sha256_after"] = {
-            p.name: sha(p) for p in (root / "project/config").glob("*.json")
+            p.name: sha(p) for p in (root / "config").glob("*.json")
         }
         report["source_sha256_after"] = sha(source)
         report["conversion_completed"] = report["stages"].get("convert_project") == "PASS"

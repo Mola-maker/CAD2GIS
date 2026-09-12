@@ -368,6 +368,93 @@ def test_corrupt_optional_road_cache_is_replaced_from_provider(tmp_path, monkeyp
     assert cached == fetched
 
 
+def _manado_cache_fixture(tmp_path, *, south=1.3056462598500456, road_id=1):
+    # Actual Manado main-scope cache bounds. Recomputed south is one ULP
+    # higher (1.3056462598500458), despite representing the same search box.
+    bbox = {"east": 124.89112869382708, "north": 1.3172993359600529,
+            "south": south, "west": 124.87726270582644}
+    roads = matching._normalise_roads([
+        {"osm_way_id": road_id, "points": [[13901400., 145900.], [13901500., 145900.]],
+         "name": "road", "highway": "residential"},
+    ])
+    path = tmp_path / f"osm-roads-{matching._digest(bbox)}.json"
+    path.write_bytes(matching._canonical({"bbox": bbox, "roads": roads, "sha256": matching._digest(roads)}))
+    return bbox, roads, path
+
+
+def test_road_cache_reuses_real_manado_one_ulp_bbox_without_rewriting_snapshot(tmp_path, monkeypatch):
+    cached_bbox, roads, path = _manado_cache_fixture(tmp_path)
+    requested = {**cached_bbox, "south": 1.3056462598500458}
+    assert requested["south"] == math.nextafter(cached_bbox["south"], math.inf)
+    assert matching._digest(cached_bbox) == "8aabb6af6570b259ecba40fb016207bd3a6545d64506c3a62ecb0931e03ea2f0"
+    assert matching._digest(requested) == "81376a6e19876dce4cba8d2fd0124f1ae2611c471fe045840359428ce4d2464c"
+    before = path.read_bytes()
+    monkeypatch.setattr(matching.osm_anchor, "query_osm_roads", lambda _: pytest.fail("roundoff cache must avoid network"))
+
+    fetched, origin = matching._fetch_roads(requested, tmp_path)
+
+    assert origin == "cache_bbox_roundoff"
+    assert fetched == roads
+    assert path.read_bytes() == before
+    assert list(tmp_path.iterdir()) == [path]
+
+
+@pytest.mark.parametrize("edge,delta", [(edge, delta) for edge in ("west", "east", "south", "north")
+                                      for delta in (-1e-8, 1e-8)])
+def test_road_cache_does_not_substitute_different_query_coverage(tmp_path, monkeypatch, edge, delta):
+    cached_bbox, _, _ = _manado_cache_fixture(tmp_path)
+    requested = {**cached_bbox, edge: cached_bbox[edge] + delta}
+    queries = []
+    monkeypatch.setattr(matching.osm_anchor, "query_osm_roads", lambda bbox: queries.append(bbox) or [])
+
+    assert matching._fetch_roads(requested, tmp_path) == ([], "overpass")
+    assert queries == [requested]
+
+
+@pytest.mark.parametrize("corruption", ["road_hash", "bbox_key", "malformed_roads"])
+def test_roundoff_road_cache_preserves_content_and_bbox_key_validation(tmp_path, monkeypatch, corruption):
+    cached_bbox, _, path = _manado_cache_fixture(tmp_path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if corruption == "road_hash":
+        payload["sha256"] = "0" * 64
+    elif corruption == "bbox_key":
+        renamed = path.with_name("osm-roads-" + "0" * 64 + ".json")
+        path.rename(renamed)
+        path = renamed
+    else:
+        payload["roads"] = ["invalid road"]
+        payload["sha256"] = matching._digest(payload["roads"])
+    path.write_bytes(matching._canonical(payload))
+    queries = []
+    monkeypatch.setattr(matching.osm_anchor, "query_osm_roads", lambda bbox: queries.append(bbox) or [])
+    requested = {**cached_bbox, "south": 1.3056462598500458}
+
+    assert matching._fetch_roads(requested, tmp_path) == ([], "overpass")
+    assert queries == [requested]
+
+
+def test_roundoff_road_cache_ambiguity_requires_explicit_snapshot(tmp_path, monkeypatch):
+    cached_bbox, _, first = _manado_cache_fixture(tmp_path)
+    requested = {**cached_bbox, "south": 1.3056462598500458}
+    _, _, second = _manado_cache_fixture(
+        tmp_path, south=math.nextafter(requested["south"], math.inf), road_id=2,
+    )
+    before = {path.name: path.read_bytes() for path in (first, second)}
+    monkeypatch.setattr(matching.osm_anchor, "query_osm_roads", lambda _: pytest.fail("ambiguous cache must fail closed"))
+
+    assert matching._fetch_roads(requested, tmp_path) == ([], "cache_ambiguous")
+    assert {path.name: path.read_bytes() for path in tmp_path.iterdir()} == before
+
+
+def test_exact_road_cache_keeps_precedence_over_roundoff_candidate(tmp_path, monkeypatch):
+    cached_bbox, _, _ = _manado_cache_fixture(tmp_path)
+    requested, exact_roads, _ = _manado_cache_fixture(
+        tmp_path, south=math.nextafter(cached_bbox["south"], math.inf), road_id=2,
+    )
+    monkeypatch.setattr(matching.osm_anchor, "query_osm_roads", lambda _: pytest.fail("exact cache must avoid network"))
+    assert matching._fetch_roads(requested, tmp_path) == (exact_roads, "cache")
+
+
 def test_osm_provider_endpoint_and_user_agent_are_configurable(monkeypatch):
     requests = []
 

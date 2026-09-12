@@ -430,6 +430,7 @@ def apply_ai_onboarding(
     project_dir: str | Path,
     proposal: dict[str, Any],
     proposer: dict[str, Any],
+    geometry_repairs: str = "legacy",
 ) -> Any:
     """Compile a source-bound AI proposal and derive exact admission gates."""
 
@@ -440,6 +441,7 @@ def apply_ai_onboarding(
         project_dir=Path(project_dir).expanduser().resolve(),
         proposal=proposal,
         proposer=proposer,
+        geometry_repairs=geometry_repairs,
     )
 
 

@@ -1070,11 +1070,24 @@ def compile_onboarding_proposal(
     proposal: Mapping[str, Any],
     proposer: Mapping[str, Any],
     llm_mode: str = "off",
+    geometry_repairs: str = "legacy",
 ) -> dict[str, Any]:
-    """Compile one validated proposal and derive exact source/feature gates."""
+    """Compile a proposal with exact gates bound to the geometry repair mode."""
 
     source_path = Path(source).expanduser().resolve()
     root = Path(project_dir).expanduser().resolve()
+    from .pipeline import ConversionRequest, _denoise_plan_entities
+
+    # Validate and reuse the canonical classification policy before admitting
+    # a proposal. The run path is only a request context; no run is published.
+    dry_request = ConversionRequest(
+        source=source_path,
+        run_dir=root / "run",
+        source_profile=root / "config" / "source_profile.json",
+        mapping_registry=root / "config" / "mapping_registry.json",
+        llm=llm_mode,
+        geometry_repairs=geometry_repairs,
+    )
     bundle = prepare_onboarding_bundle(root)
     validated = validate_onboarding_proposal(bundle, proposal)
 
@@ -1173,8 +1186,6 @@ def compile_onboarding_proposal(
         # Loop: classify → inspect unmatched_route_layer for cable-looking
         # layers → extend regex → re-classify.  Feature counts are taken from
         # the FINAL pass so admission matches what convert will deliver.
-        from .spatial_filter import apply_spatial_denoising
-
         feature_counts: dict[str, int] = {}
         annotation_expectations: dict[str, dict[str, int]] = {}
         semantic_diagnostics: dict[str, Any] = {}
@@ -1182,40 +1193,9 @@ def compile_onboarding_proposal(
         route_regex_rounds: list[dict[str, Any]] = []
         for _round in range(3):
             semantic = list(semantic_base)
-            spatial_result = apply_spatial_denoising(
-                entities=semantic,
-                catalog_roots=getattr(plan_domain, "catalog_roots", frozenset()),
-                plan_domain=plan_domain,
-                project_config_dir=root / "config",
-                llm_mode=llm_mode,
-                route_regex=registry.positive_route_layer_regex,
-                boundary_exempt_layers=(
-                    registry.layers.get("zpm_boundary", ())
-                    + registry.layers.get("sling_wire", ())
-                    + registry.layers.get("homepass", ())
-                    + registry.layers.get("patchcord", ())
-                ),
-                label_text_patterns=[
-                    str(family.text_pattern)
-                    for family in getattr(registry, "annotation_families", ())
-                ],
-                reviewed_insert_layers=[
-                    str(layer)
-                    for layers in getattr(
-                        registry, "insert_layer_families", {}
-                    ).values()
-                    for layer in layers
-                ],
-                cable_protect_layers=registry.layers.get("sling_wire", ()),
-                dimension_protect_layers=registry.layers.get(
-                    "span_dimension", ()
-                ),
-                boite_frame_layers=registry.insert_layer_families.get(
-                    "BOITE", ()
-                ),
-                topology_anchor_insert_layers=registry.insert_layer_families.get(
-                    "PTECH", ()
-                ),
+            catalog_roots, spatial_result = _denoise_plan_entities(
+                semantic, plan_domain, registry, dry_request,
+                persist_decisions=True,
             )
             semantic = list(spatial_result["entities"])
 
@@ -1224,7 +1204,10 @@ def compile_onboarding_proposal(
                 registry,
                 coverage_policy=registry.semantic_coverage_policy,
                 coverage_allowlist=list(registry.semantic_coverage_allowlist),
-                catalog_roots=getattr(plan_domain, "catalog_roots", frozenset()),
+                catalog_roots=catalog_roots,
+                project_id=profile.project_id,
+                project_slug=root.name,
+                apply_geometry_repairs=geometry_repairs == "legacy",
             )
             feature_counts = dict(
                 sorted(Counter(item.feature_class for item in features).items())
@@ -1306,6 +1289,7 @@ def compile_onboarding_proposal(
             for key in ("model_entities", "model_inserts", "model_dimensions")
         }
         profile_payload["expectations"]["feature_counts"] = feature_counts
+        profile_payload["expectations"]["geometry_repairs"] = geometry_repairs
         profile_payload["expectations"]["annotation_families"] = (
             annotation_expectations
         )
@@ -1350,6 +1334,7 @@ def compile_onboarding_proposal(
             if key not in {"api_key", "authorization", "token"}
         },
         "feature_counts": feature_counts,
+        "geometry_repairs": geometry_repairs,
         "family_validation": family_validation,
         "semantic_coverage": semantic_diagnostics.get("coverage"),
         "plan_domain": plan_domain.diagnostics,
