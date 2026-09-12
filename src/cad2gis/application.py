@@ -1074,12 +1074,20 @@ class Application:
         if not websocket and path == "/" and not review_id:
             return await RedirectResponse(f"/?review={session.review_id}#console-app")(scope, receive, safe_send)
         selected_review = session.review
+        selected_review_id = session.review_id
         try:
+            from starlette.concurrency import run_in_threadpool
+
             selected = self.config.path(session.run_dir, kind="directory")
             workspace = self.config.path(str(selected.parent / f"{selected.name}.review"), exists=False)
-            self.config.admit_run(selected, workspace)
+            # Large CAD manifests are checked for every resource. Keep those
+            # filesystem reads off the event loop so SVG loading cannot stall
+            # status, cancellation, and other browser requests.
+            await run_in_threadpool(self.config.admit_run, selected, workspace)
         except (ValueError, OSError) as exc:
             return await reject(400, str(exc))
+        if session.review is not selected_review or session.review_id != selected_review_id:
+            return await reject(409, "此页面的审查结果已切换，请从工作台重新打开结果")
         if websocket:
             from starlette.websockets import WebSocketDisconnect
 

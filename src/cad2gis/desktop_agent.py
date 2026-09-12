@@ -381,29 +381,35 @@ class DesktopAgent:
         last_flush = 0.0
         secret = profile["api_key"]
         active_tool = ContextVar("desktop_active_tool", default=None)
-        registered_events: set[tuple[str, str]] = set()
-        pending_tools: dict[str, str] = {}
+        registered_events: set[tuple[int, str]] = set()
+        tool_occurrences: dict[str, int] = {}
+        pending_tools: dict[int, tuple[str, str]] = {}
+        call_sequence = 0
 
         def clean(text):
             return str(text).replace(secret, "[已隐藏密钥]") if secret else str(text)
 
-        def event(kind, name, detail="", *, tool_call_id="", **metadata):
+        def event(kind, name, detail="", *, tool_call_id="", tool_call_sequence=0, **metadata):
             active = active_tool.get()
             if active:
                 if name == active[1]:
                     tool_call_id = tool_call_id or active[0]
+                    tool_call_sequence = tool_call_sequence or active[2]
                 else:
                     metadata.setdefault("parent_tool_call_id", active[0])
+                    metadata.setdefault("parent_tool_call_sequence", active[2])
             # The SDK observes every model call (including schema failures),
             # while the MCP bridge records the authoritative execution receipt.
-            # Keep one visible call/result pair with the provider's call ID.
+            # Providers can reuse call IDs in later responses. Deduplicate only
+            # within the particular SDK call occurrence, retaining both IDs.
             if tool_call_id:
-                key = (tool_call_id, kind)
+                tool_call_sequence = tool_call_sequence or tool_occurrences[tool_call_id]
+                key = (tool_call_sequence, kind)
                 if key in registered_events:
                     return
                 registered_events.add(key)
                 if kind in {"tool_result", "tool_error", "tool_interrupted"}:
-                    pending_tools.pop(tool_call_id, None)
+                    pending_tools.pop(tool_call_sequence, None)
             if kind == "tool_result" and name in {"run_conversion", "inspect_run", "auto_onboard_and_convert", "package_qgis_delivery",
                                                   "publish_matched_delivery", "build_qgis_review"}:
                 try:
@@ -418,13 +424,14 @@ class DesktopAgent:
                     self.store.update_run(identifier, artifacts=json.dumps(artifacts, ensure_ascii=False))
             detail = clean(detail)
             events.append({"kind": kind, "name": name, "detail": detail[:1200], "time": time.time(),
-                           "run_id": identifier, **({"tool_call_id": tool_call_id} if tool_call_id else {}),
+                           "run_id": identifier, "event_id": f"{identifier}:{len(events) + 1}",
+                           **({"tool_call_id": tool_call_id, "tool_call_sequence": tool_call_sequence} if tool_call_id else {}),
                            **({"detail_truncated": True} if len(detail) > 1200 else {}), **metadata})
             self.store.update_run(identifier, events=json.dumps(events[-200:], ensure_ascii=False))
 
         def finish_pending(kind, detail):
-            for call_id, name in list(pending_tools.items()):
-                event(kind, name, detail, tool_call_id=call_id)
+            for sequence, (call_id, name) in list(pending_tools.items()):
+                event(kind, name, detail, tool_call_id=call_id, tool_call_sequence=sequence)
 
         def recoverable(function):
             @wraps(function)
@@ -523,11 +530,13 @@ class DesktopAgent:
                     "matching": "osm", "svg_mode": "candidate", "gcp": "preview_then_explicit_rematch"}
 
         async def stream(_ctx, stream_events):
-            nonlocal text_buffer, last_flush
+            nonlocal text_buffer, last_flush, call_sequence
             response_started = False
             async for item in stream_events:
                 if isinstance(item, FunctionToolCallEvent):
-                    pending_tools[item.tool_call_id] = item.part.tool_name
+                    call_sequence += 1
+                    tool_occurrences[item.tool_call_id] = call_sequence
+                    pending_tools[call_sequence] = (item.tool_call_id, item.part.tool_name)
                     arguments = item.part.args if isinstance(item.part.args, str) else json.dumps(item.part.args or {}, ensure_ascii=False)
                     event("tool_call", item.part.tool_name, arguments,
                           tool_call_id=item.tool_call_id, args_valid=item.args_valid)
@@ -620,7 +629,7 @@ class DesktopAgent:
                             """Convert the selected DWG end to end using saved AI settings and OSM. Reuse reviewed config, otherwise onboard first. No path arguments needed. Returns verified artifacts; never overwrites an old run."""
                             from pydantic_ai import ModelRetry
                             tool_budget.consume()
-                            token = active_tool.set((ctx.tool_call_id, "convert_selected_drawing"))
+                            token = active_tool.set((ctx.tool_call_id, "convert_selected_drawing", tool_occurrences[ctx.tool_call_id]))
                             try:
                                 await conversion.execute()
                                 return publish_conversion(conversion)
@@ -631,7 +640,7 @@ class DesktopAgent:
 
                         def bridge(name):
                             async def call(ctx, **kwargs):
-                                token = active_tool.set((ctx.tool_call_id, name))
+                                token = active_tool.set((ctx.tool_call_id, name, tool_occurrences[ctx.tool_call_id]))
                                 try:
                                     response = await mcp_bridge.call(name, kwargs)
                                     if name in {"run_conversion", "auto_onboard_and_convert"}:

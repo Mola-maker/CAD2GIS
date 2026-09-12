@@ -443,19 +443,22 @@ function reviewFrameReady(){
 async function loadSvg(refresh=false){
   if(!reviewId)return;
   const selected=reviewId,epoch=++svgLoadRequest,frame=$("#svg-frame"),status=$("#svg-status");
+  let matchingRevision;
   const current=()=>selected===reviewId&&epoch===svgLoadRequest;
   const failed=detail=>{if(current()){status.textContent="SVG 报告加载失败："+detail+"；请刷新报告重试。";frame.hidden=true;$("#svg-empty").hidden=false;}};
   try{
     const body=await currentReviewRun();if(!current())return;
+    matchingRevision=(body.osm_matching?.record||body.osm_matching)?.match_sha256||"initial";
     const record=body.svg_candidates||{};
     $("#svg-empty").hidden=Boolean(record.report_url);frame.hidden=!record.report_url;
-    if(!record.report_url){status.textContent=record.report_blocker||"此结果尚未生成 SVG 候选报告";frame.removeAttribute("src");return;}
+    if(!record.report_url){status.textContent=record.report_blocker||"此结果尚未生成 SVG 候选报告";frame.removeAttribute("src");return matchingRevision;}
     const url=new URL(record.report_url,location.origin);url.searchParams.set("review",selected);url.searchParams.set("revision",reviewRevision);
     if(refresh)url.searchParams.set("refresh",String(epoch));
     const loaded=()=>{
       if(!current())return;
       const doc=frame.contentDocument;
       if(!doc||doc.URL!==frame.src)return;
+      if(doc.readyState!=="complete")return;
       if(doc.contentType!=="text/html"||!doc.querySelector("h1"))return failed("服务未返回可显示的报告");
       const images=[...doc.images];
       if(images.some(img=>!img.complete||img.naturalWidth===0))return failed("部分 SVG / PNG 图像未能加载");
@@ -473,8 +476,8 @@ async function loadSvg(refresh=false){
       await response.text();if(!current())return;
       frame.src=url.href;
     }else loaded();
-    return (body.osm_matching?.record||body.osm_matching)?.match_sha256||"initial";
-  }catch(error){failed(error.message);}
+    return matchingRevision;
+  }catch(error){failed(error.message);if(current())return matchingRevision;}
 }
 window.addEventListener("message",event=>{
   if(event.origin!==location.origin||event.source!==$("#osm-frame").contentWindow||event.data?.reviewId!==reviewId||event.data?.viewId!==reviewViewId)return;

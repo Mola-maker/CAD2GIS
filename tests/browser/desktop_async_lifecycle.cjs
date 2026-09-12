@@ -12,7 +12,7 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
  const browser=await chromium.launch({headless:true,...(process.env.CAD2GIS_BROWSER_EXECUTABLE?{executablePath:process.env.CAD2GIS_BROWSER_EXECUTABLE}:{channel:process.env.CAD2GIS_BROWSER_CHANNEL||'msedge'})});
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
-  let reportLoads=0,broken=false,reportError=false,metadataQueue=[],agentQueue=[];
+  let reportLoads=0,broken=false,reportError=false,heldImage=null,metadataQueue=[],agentQueue=[];
   page.on('pageerror',error=>results.errors.push(error.message));
   await page.route('**/*',async route=>{
    const url=new URL(route.request().url()),json=(body,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
@@ -29,7 +29,10 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
    if(url.pathname==='/report.html'){
     reportLoads++;return route.fulfill(reportError?{status:404,contentType:'text/html',body:'<!doctype html><h1>Report not found</h1>'}:{contentType:'text/html',body:'<!doctype html><title>SVG 对应复核</title><h1>源实体对应复核 · HTTP fixture</h1><img src="/symbol.svg" width="140" height="140">'});
    }
-   if(url.pathname==='/symbol.svg')return route.fulfill(broken?{status:404,contentType:'application/json',body:'{"detail":"SHA-256 mismatch"}'}:{contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="#0077aa"/></svg>'});
+   if(url.pathname==='/symbol.svg'){
+    if(heldImage)await heldImage;
+    return route.fulfill(broken?{status:404,contentType:'application/json',body:'{"detail":"SHA-256 mismatch"}'}:{contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="#0077aa"/></svg>'});
+   }
    const key=url.pathname.slice('/_app/api/'.length);
    if(key==='status')return json({remote:false,roots:['/fixture'],provider_configured:{deepseek:false,'new-api':false},semantic_extraction:{available:true}});
    if(key==='ai/config')return json({profiles:{deepseek:profile,'new-api':profile},active:'deepseek',editable:true,storage:'UI fixture'});
@@ -67,6 +70,11 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
    assert.ok(await page.locator('#svg-frame').isHidden());reportError=false;
   });
   reportError=false;
+  await check('missing_svg_report_does_not_invalidate_verified_map_revision',async()=>{
+   metadataQueue.push((route,json)=>json({osm_matching:{match_sha256:'known-map'},svg_candidates:{report_url:null,report_blocker:'SVG report is unavailable'}}));
+   assert.equal(await page.evaluate(()=>loadSvg()),'known-map');
+   assert.match(await page.locator('#svg-status').innerText(),/unavailable/);
+  });
   await check('stale_metadata_error_cannot_replace_current_report',async()=>{
    let release,started;const entered=new Promise(resolve=>{started=resolve;});
    metadataQueue.push(async(route,json)=>{started();await new Promise(resolve=>{release=resolve;});return json({detail:'obsolete metadata failure'},409);});
@@ -76,6 +84,16 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
    await page.waitForFunction(()=>document.querySelector('#svg-frame').contentDocument?.images[0]?.naturalWidth>0);
    release();await page.evaluate(()=>window.__oldSvg);
    assert.doesNotMatch(await page.locator('#svg-status').innerText(),/obsolete/);
+   assert.ok(await page.locator('#svg-frame').isVisible());
+  });
+  await check('reopening_loading_report_does_not_mark_pending_images_failed',async()=>{
+   let release;heldImage=new Promise(resolve=>{release=resolve;});
+   const imageRequest=page.waitForRequest(request=>new URL(request.url()).pathname==='/symbol.svg');
+   await page.evaluate(()=>{reviewRevision='slow-image';return loadSvg();});await imageRequest;
+   await page.evaluate(()=>loadSvg());
+   assert.doesNotMatch(await page.locator('#svg-status').innerText(),/加载失败/);
+   heldImage=null;release();
+   await page.waitForFunction(()=>document.querySelector('#svg-status').textContent.includes('1 张图像已加载'));
    assert.ok(await page.locator('#svg-frame').isVisible());
   });
   await check('late_agent_terminal_event_cannot_clear_new_run',async()=>{

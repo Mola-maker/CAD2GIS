@@ -322,6 +322,62 @@ def test_cancel_before_agent_coroutine_starts_releases_run(tmp_path):
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize('cancel_last', [False, True])
+def test_reused_provider_call_id_keeps_each_sdk_mcp_occurrence(tmp_path, monkeypatch, cancel_last):
+    from cad2gis.agent_tool_bridge import MCPToolBridge
+    from pydantic_ai.models.function import FunctionModel, DeltaToolCall
+
+    async def scenario():
+        settings = configured(tmp_path)
+        agent = DesktopAgent(ApplicationConfig((tmp_path,), state_dir=settings.directory), settings, SimpleNamespace(active=''))
+        calls = 0
+        pending = asyncio.Event()
+        original_rpc = MCPToolBridge.call
+
+        async def rpc(bridge, name, arguments):
+            if cancel_last and calls == 5:
+                pending.set()
+                await asyncio.Event().wait()
+            return await original_rpc(bridge, name, arguments)
+        monkeypatch.setattr(MCPToolBridge, 'call', rpc)
+
+        async def stream(messages, info):
+            nonlocal calls
+            calls += 1
+            if calls <= 4:
+                name = 'write_project_json' if calls % 2 else 'get_capabilities'
+                arguments = {'path': str(tmp_path / f'written-{calls}.json'), 'content': {'turn': calls}} if calls % 2 else {}
+                yield {0: DeltaToolCall(name=name, json_args=json.dumps(arguments), tool_call_id='provider-reused')}
+            elif cancel_last and calls == 5:
+                yield {0: DeltaToolCall(name='get_capabilities', json_args='{}', tool_call_id='provider-reused')}
+            else:
+                yield '完成两个写入和两次真实 MCP 能力查询。'
+
+        agent.model_override = FunctionModel(stream_function=stream)
+        started = agent.start({'message': '验证跨响应重用工具调用ID'})
+        if cancel_last:
+            await asyncio.wait_for(pending.wait(), 40)
+            await agent.cancel(started['id'])
+        else:
+            await asyncio.wait_for(agent.task, 40)
+        state = agent.store.run(started['id'])
+        assert state['status'] == ('cancelled' if cancel_last else 'succeeded'), state
+        events = [event for event in state['events'] if event.get('tool_call_id') == 'provider-reused']
+        assert len(events) == (10 if cancel_last else 8), events
+        for index in range(5 if cancel_last else 4):
+            pair = events[index * 2:index * 2 + 2]
+            assert [event['kind'] for event in pair] == ['tool_call', 'tool_interrupted' if index == 4 else 'tool_result']
+            assert {event['tool_call_sequence'] for event in pair} == {index + 1}
+        assert len({event['event_id'] for event in events}) == len(events)
+        assert json.loads((tmp_path / 'written-1.json').read_text()) == {'turn': 1}
+        assert json.loads((tmp_path / 'written-3.json').read_text()) == {'turn': 3}
+        if cancel_last:
+            history = agent.store.conversation(started['conversation'])['history']
+            assert 'written-1.json' in history and 'written-3.json' in history
+        assert not agent.active
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize("keep_failing", [False, True])
 def test_real_mcp_failure_reaches_model_retry_and_has_bounded_usage(tmp_path, keep_failing):
     from pydantic_ai.models.function import FunctionModel, DeltaToolCall
