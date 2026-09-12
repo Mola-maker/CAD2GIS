@@ -1086,6 +1086,8 @@ class Application:
             await run_in_threadpool(self.config.admit_run, selected, workspace)
         except (ValueError, OSError) as exc:
             return await reject(400, str(exc))
+        if self.sessions.get(token) is not session or session.expires <= time.monotonic():
+            return await reject(401, "登录会话已失效，请重新登录")
         if session.review is not selected_review or session.review_id != selected_review_id:
             return await reject(409, "此页面的审查结果已切换，请从工作台重新打开结果")
         if websocket:

@@ -4,6 +4,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import threading
+import time
 
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.testclient import TestClient
@@ -140,3 +141,67 @@ def test_review_admission_keeps_status_responsive_and_rechecks_run_switch(review
         finally:
             release.set()
         assert pending.result(timeout=2).status_code == 409
+
+
+@pytest.mark.parametrize("transport", ["http", "websocket"])
+@pytest.mark.parametrize("revocation", ["logout", "expiry"])
+def test_pending_review_admission_cannot_outlive_authentication(tmp_path, monkeypatch, transport, revocation):
+    """Admission must not create a socket after logout already closed its session."""
+    def factory(run, **kwargs):
+        review = FastAPI()
+
+        @review.get("/api/review/features")
+        async def features():
+            return {"protected": True}
+
+        @review.websocket("/ws")
+        async def websocket(socket: WebSocket):
+            await socket.accept()
+            await socket.send_json({"protected": True})
+            try:
+                await socket.receive_text()
+            except WebSocketDisconnect:
+                pass
+
+        return review
+
+    config = ApplicationConfig((tmp_path,), remote=True, secure=True, password="fixture-password-only")
+    app = create_application(config, review_factory=factory)
+    with TestClient(app, base_url="https://localhost", headers={"Origin": "https://localhost"}) as client:
+        assert client.post("/_app/api/login", json={"password": "fixture-password-only"}).status_code == 200
+        directory = tmp_path / "run"
+        directory.mkdir()
+        opened = client.post("/_app/api/review", json={"run": str(directory)}).json()
+        entered, release = threading.Event(), threading.Event()
+        original = ApplicationConfig.admit_run
+
+        def slow_admission(config, directory, workspace):
+            entered.set()
+            assert release.wait(5), "Test did not release the pending admission"
+            return original(config, directory, workspace)
+
+        monkeypatch.setattr(ApplicationConfig, "admit_run", slow_admission)
+
+        def request():
+            if transport == "http":
+                return client.get("/api/review/features", headers={"X-CAD2GIS-Review": opened["review_id"]}).status_code
+            try:
+                with client.websocket_connect(f"wss://localhost/ws?review={opened['review_id']}") as socket:
+                    socket.receive_json()
+                    return 200
+            except WebSocketDisconnect as exc:
+                return exc.code
+
+        with ThreadPoolExecutor(max_workers=1) as workers:
+            pending = workers.submit(request)
+            try:
+                assert entered.wait(2)
+                if revocation == "logout":
+                    assert client.post("/_app/api/logout", json={}).status_code == 200
+                    assert not app.sessions
+                else:
+                    session = next(iter(app.sessions.values()))
+                    session.expires = time.monotonic() - 1
+            finally:
+                release.set()
+            assert pending.result(timeout=2) == (401 if transport == "http" else 1008)
