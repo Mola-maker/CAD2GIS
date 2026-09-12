@@ -24,6 +24,9 @@ from .cad2gis_v3.artifact_io import read_json_object
 
 REVIEW_SCHEMA = "cad2gis.review_workspace.v1"
 _FEATURE_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,256}$")
+_PUBLIC_DEMO_CONTENT = re.compile(
+    r"<!-- public-demo-only:start -->.*?<!-- public-demo-only:end -->", re.DOTALL,
+)
 
 
 class ReviewServerError(ValueError):
@@ -32,6 +35,27 @@ class ReviewServerError(ValueError):
 
 class ReviewConflictError(ReviewServerError):
     """Optimistic revision does not match the current feature revision."""
+
+
+def _application_review_html(document: str) -> str:
+    """Render the shared map console without public demo content, before paint.
+
+    A hash jump or a later JavaScript hide still exposes the historical landing
+    page while scripts load. Explicit template boundaries keep the installed
+    workspace and public demo on one console without sending demo fixtures to a
+    selected real result.
+    """
+    if "<!-- public-demo-only:start -->" not in document:
+        raise ReviewServerError("Review workspace template boundaries are missing")
+    document = _PUBLIC_DEMO_CONTENT.sub("", document)
+    if 'id="hero-page"' in document or "<!-- public-demo-only:" in document:
+        raise ReviewServerError("Review workspace template boundaries are invalid")
+    return document.replace("<body>", '<body class="live-review">', 1).replace(
+        "</head>",
+        '<link id="cad2gis-review-theme" rel="stylesheet" '
+        'href="/_app/assets/review-theme.css">\n</head>',
+        1,
+    )
 
 
 def _json_object(path: Path) -> dict[str, Any]:
@@ -1691,7 +1715,7 @@ def create_review_app(
 
     try:
         from fastapi import FastAPI, HTTPException, Request, WebSocket
-        from fastapi.responses import FileResponse
+        from fastapi.responses import FileResponse, HTMLResponse
         from starlette.websockets import WebSocketDisconnect
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise ReviewServerError(
@@ -1870,7 +1894,11 @@ def create_review_app(
         return JSONResponse(status_code=status, content={"detail": str(exc)})
 
     @app.get("/")
-    async def index():
+    async def index(request: Request):
+        if request.query_params.get("review"):
+            return HTMLResponse(_application_review_html(
+                (web_root / "index.html").read_text(encoding="utf-8"),
+            ))
         return FileResponse(web_root / "index.html")
 
     @app.get("/assets/{asset_path:path}", include_in_schema=False)
