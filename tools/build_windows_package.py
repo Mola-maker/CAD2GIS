@@ -2,13 +2,20 @@
 from __future__ import annotations
 
 import argparse
+from email.parser import BytesParser
+import hashlib
 import json
-from pathlib import Path
+import os
+from pathlib import Path, PurePosixPath, PureWindowsPath
+import re
 import shutil
+import stat
 import subprocess
 import sys
+import tomllib
+import zipfile
 
-from build_runtime_bundle import REPOSITORY, build, download, extract, sha256
+from build_runtime_bundle import ENTRIES, REPOSITORY, build, download, extract, sha256
 
 PYTHON_URL = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14%2B20260901-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
 PYTHON_SHA = "7c45c9622400d578709a9b2cddbe8124cc21d382409d9f13406d706d28e31b14"
@@ -16,6 +23,85 @@ INNO_URL = "https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innos
 INNO_SHA = "0362a383ed217d4c4239b5933866dd96d3eb2102737da92f80f6057a4b40df2f"
 LIBREDWG_URL = "https://github.com/LibreDWG/libredwg/releases/download/0.14/libredwg-0.14-win64.zip"
 LIBREDWG_SHA = "1ad7e15344d20b3426c3435b078d82fb84b35062815946b2cca9c5fc9810fea8"
+
+
+def _redirected(path: Path) -> bool:
+    return path.is_symlink() or bool(getattr(path.lstat(), "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
+def verify_payload(payload: Path, wheel: Path, version: str) -> dict:
+    """Bind every packaged file and installed application byte to the release input."""
+    if _redirected(payload):
+        raise ValueError("Windows payload must not be a redirected directory")
+    payload = payload.resolve(strict=True)
+    manifest = json.loads((payload / "bundle-manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("platform") != "win32" or manifest.get("runtime_is_bundled") is not True:
+        raise ValueError("Input must be a native Windows runtime bundle")
+    if manifest.get("wheel_sha256") != sha256(wheel):
+        raise ValueError("Payload does not contain the requested frozen wheel")
+    expected = manifest.get("files")
+    if not isinstance(expected, dict) or not expected:
+        raise ValueError("Bundle has no file checksum inventory")
+    folded = set()
+    for relative, digest in expected.items():
+        path = PurePosixPath(relative)
+        if (not relative or path.as_posix() != relative or path.is_absolute()
+                or PureWindowsPath(relative).drive or "\\" in relative
+                or ":" in relative or ".." in path.parts
+                or relative.casefold() in folded
+                or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)):
+            raise ValueError(f"Invalid Windows bundle inventory entry: {relative}")
+        folded.add(relative.casefold())
+    actual = set()
+    # Reject reparse directories before walking into them. Inno recursively
+    # packages the directory, so checking only manifest entries is insufficient.
+    for directory, directories, files in os.walk(payload, followlinks=False):
+        for name in directories + files:
+            path = Path(directory) / name
+            if _redirected(path):
+                raise ValueError(f"Windows bundle contains a redirected path: {path.relative_to(payload)}")
+        for name in files:
+            path = Path(directory) / name
+            relative = path.relative_to(payload).as_posix()
+            if relative == "bundle-manifest.json":
+                continue
+            actual.add(relative)
+            if relative not in expected:
+                raise ValueError(f"Bundle file is not in the inventory: {relative}")
+            if sha256(path) != expected[relative]:
+                raise ValueError(f"Bundle file is missing or changed: {relative}")
+    missing = set(expected) - actual
+    if missing:
+        raise ValueError(f"Bundle file is missing or changed: {sorted(missing)[0]}")
+    if manifest.get("entrypoints") != ENTRIES:
+        raise ValueError("Windows bundle entrypoint registration is stale")
+    for relative in ("runtime/python.exe", *(f"bin/{name}.exe" for name in ENTRIES)):
+        if relative not in actual:
+            raise ValueError(f"Missing Windows bundle entry: {relative}")
+    site = payload / "runtime/Lib/site-packages"
+    with zipfile.ZipFile(wheel) as archive:
+        metadata_names = [name for name in archive.namelist() if name.endswith(".dist-info/METADATA")]
+        if len(metadata_names) != 1:
+            raise ValueError("Release wheel must have exactly one distribution metadata entry")
+        metadata = archive.read(metadata_names[0])
+        identity = BytesParser().parsebytes(metadata)
+        if identity.get("Name", "").casefold() != "cad2gis" or identity.get("Version") != version:
+            raise ValueError("Release wheel version does not match the Windows installer version")
+        installed_metadata = list(site.glob("cad2gis-*.dist-info/METADATA"))
+        if len(installed_metadata) != 1 or installed_metadata[0].read_bytes() != metadata:
+            raise ValueError("Installed CAD2GIS metadata does not match the release wheel")
+        application_files = {name for name in archive.namelist() if name.startswith("cad2gis/") and not name.endswith("/")}
+        installed_files = {path.relative_to(site).as_posix() for path in (site / "cad2gis").rglob("*") if path.is_file()}
+        if not application_files or installed_files != application_files:
+            raise ValueError("Installed CAD2GIS file inventory does not match the release wheel")
+        for name in sorted(application_files):
+            if sha256(site / name) != hashlib.sha256(archive.read(name)).hexdigest():
+                raise ValueError(f"Installed CAD2GIS file does not match the release wheel: {name}")
+    for name in (".codex-plugin/plugin.json", ".claude-plugin/plugin.json"):
+        plugin = json.loads((payload / "plugins/cad2gis-agent" / name).read_text(encoding="utf-8"))
+        if plugin.get("version", "").split("+", 1)[0] != version:
+            raise ValueError("Bundled agent plugin version does not match the release wheel")
+    return manifest
 
 
 def prepare(cache: Path) -> tuple[Path, Path, Path]:
@@ -61,7 +147,9 @@ def main() -> int:
     if args.wheel is None:
         parser.error("--wheel is required unless --prepare-only")
     if args.reuse_payload:
-        payload = args.payload.resolve(strict=True)
+        # Preserve the caller's final path component for the reparse-point
+        # check; resolve() here would hide a top-level Windows junction.
+        payload = args.payload.absolute()
         compiler = cache / "inno/ISCC.exe"
         if not compiler.is_file():
             parser.error("Prepare the pinned Inno compiler first")
@@ -70,17 +158,14 @@ def main() -> int:
         libredwg = args.libredwg or REPOSITORY / "tmp/packaging-native-patched/windows/libredwg"
         verify_native(libredwg)
         payload = build(runtime, args.wheel, libredwg, args.payload, wheelhouse=args.wheelhouse)
+    version = tomllib.loads((REPOSITORY / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+    manifest = verify_payload(payload, args.wheel.resolve(strict=True), version)
     native_receipt = verify_native(payload / "libredwg")
-    manifest = json.loads((payload / "bundle-manifest.json").read_text())
-    if manifest["wheel_sha256"] != sha256(args.wheel.resolve(strict=True)):
-        raise ValueError("Payload does not contain the requested frozen wheel")
     for name, expected in native_receipt["native_hashes"].items():
         if manifest["files"].get("libredwg/" + name) != expected:
             raise ValueError("Regenerate payload manifest after replacing native tools")
     output = REPOSITORY / "dist/windows"
     output.mkdir(parents=True, exist_ok=True)
-    import tomllib
-    version = tomllib.loads((REPOSITORY / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     installer = output / f"CAD2GIS-{version}-windows-x64-setup.exe"
     if installer.exists():
         raise FileExistsError("Archive the previous installer before building a new candidate")
@@ -92,6 +177,7 @@ def main() -> int:
               "installer": installer.name, "bytes": installer.stat().st_size,
               "sha256": sha256(installer), "wheel_sha256": manifest["wheel_sha256"],
               "payload_manifest_sha256": sha256(payload / "bundle-manifest.json"),
+              "payload_files_verified": len(manifest["files"]), "installed_wheel_bytes_verified": True,
               "native_hashes": native_receipt["native_hashes"], "reused_payload": args.reuse_payload,
               "installation_acceptance": "pending", "signing": "unsigned development distribution"}
     (output / "windows-build.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

@@ -196,6 +196,13 @@ def test_actual_mcp_tool_roundtrip_and_recoverable_error(tmp_path, monkeypatch):
         assert json.loads((tmp_path / 'evidence.json').read_text()) == {'verified':True}
         assert len(calls) == 4
         assert state['usage']['tool_calls'] >= 2
+        expected = {'cap': ('get_capabilities', 'tool_result'),
+                    'missing': ('read_project_text', 'tool_error'),
+                    'write': ('write_project_json', 'tool_result')}
+        for call_id, (name, terminal) in expected.items():
+            registered = [event for event in state['events'] if event.get('tool_call_id') == call_id]
+            assert [(event['kind'], event['name']) for event in registered] == [
+                ('tool_call', name), (terminal, name)], registered
         assert '已检查' in agent.store.messages(run['conversation'])['messages'][-1]['text']
     asyncio.run(scenario())
 
@@ -226,6 +233,92 @@ def test_cancel_preserves_completed_mutation_for_next_turn(tmp_path):
         assert 'saved.json' in history and 'interrupted' in history
         assert (tmp_path/'saved.json').exists()
         assert not agent.active
+    asyncio.run(scenario())
+
+
+def test_sdk_registers_batched_workspace_calls_and_schema_failures(tmp_path):
+    from pydantic_ai.models.function import FunctionModel, DeltaToolCall
+
+    async def scenario():
+        settings = configured(tmp_path)
+        agent = DesktopAgent(ApplicationConfig((tmp_path,), state_dir=settings.directory), settings, SimpleNamespace(active=''))
+        turns, progress = [], []
+        original_update = agent.store.update_run
+
+        def capture(identifier, **fields):
+            if fields.get('progress'):
+                progress.append(fields['progress'])
+            original_update(identifier, **fields)
+        agent.store.update_run = capture
+
+        async def stream(messages, info):
+            turns.append(messages)
+            if len(turns) == 1:
+                yield '先检查项目。'
+                yield {0: DeltaToolCall(name='workspace_context', json_args='{}', tool_call_id='context-a'),
+                       1: DeltaToolCall(name='workspace_context', json_args='{}', tool_call_id='context-b')}
+            elif len(turns) == 2:
+                yield {0: DeltaToolCall(name='list_project_files', json_args='{"page": "test-private-key"}', tool_call_id='invalid')}
+            elif len(turns) == 3:
+                yield {0: DeltaToolCall(name='list_project_files', json_args='{}', tool_call_id='files')}
+            else:
+                yield '当前结果：'
+                yield '已检查。'
+
+        agent.model_override = FunctionModel(stream_function=stream)
+        started = agent.start({'message': '检查项目和文件'})
+        await asyncio.wait_for(agent.task, 40)
+        state = agent.store.run(started['id'])
+        assert state['status'] == 'succeeded', state
+        for call_id in ('context-a', 'context-b', 'invalid', 'files'):
+            registered = [item for item in state['events'] if item.get('tool_call_id') == call_id]
+            assert [item['kind'] for item in registered] == ['tool_call', 'tool_error' if call_id == 'invalid' else 'tool_result']
+            assert all(item['run_id'] == started['id'] for item in registered)
+        assert next(item for item in state['events'] if item.get('tool_call_id') == 'invalid')['args_valid'] is False
+        assert 'test-private-key' not in json.dumps(state, ensure_ascii=False)
+        assert progress[-1] == '当前结果：已检查。'
+        assert '先检查项目。当前结果：' not in '\n'.join(progress)
+    asyncio.run(scenario())
+
+
+def test_cancel_during_tool_execution_records_bound_interruption(tmp_path, monkeypatch):
+    from pydantic_ai.models.function import FunctionModel, DeltaToolCall
+
+    async def scenario():
+        settings = configured(tmp_path)
+        agent = DesktopAgent(ApplicationConfig((tmp_path,), state_dir=settings.directory), settings, SimpleNamespace(active=''))
+        ready = asyncio.Event()
+
+        async def pending_rpc(_bridge, name, arguments):
+            ready.set()
+            await asyncio.Event().wait()
+        monkeypatch.setattr('cad2gis.desktop_agent.MCPToolBridge.call', pending_rpc)
+
+        async def stream(messages, info):
+            yield {0: DeltaToolCall(name='get_capabilities', json_args='{}', tool_call_id='pending')}
+        agent.model_override = FunctionModel(stream_function=stream)
+        started = agent.start({'message': '检查工具'})
+        await asyncio.wait_for(ready.wait(), 35)
+        await agent.cancel(started['id'])
+        state = agent.store.run(started['id'])
+        assert state['status'] == 'cancelled'
+        events = [item for item in state['events'] if item.get('tool_call_id') == 'pending']
+        assert [item['kind'] for item in events] == ['tool_call', 'tool_interrupted']
+        assert not agent.active
+    asyncio.run(scenario())
+
+
+def test_cancel_before_agent_coroutine_starts_releases_run(tmp_path):
+    async def scenario():
+        settings = configured(tmp_path)
+        agent = DesktopAgent(ApplicationConfig((tmp_path,), state_dir=settings.directory), settings, SimpleNamespace(active=''))
+        started = agent.start({'message': '立即停止任务'})
+        await agent.cancel(started['id'])
+        assert agent.store.run(started['id'])['status'] == 'cancelled'
+        assert not agent.active
+        followup = agent.start({'message': '再次立即停止', 'conversation': started['conversation']})
+        await agent.cancel(followup['id'])
+        assert agent.store.run(followup['id'])['status'] == 'cancelled'
     asyncio.run(scenario())
 
 
