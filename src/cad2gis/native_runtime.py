@@ -179,6 +179,8 @@ def ensure_osgeo_runtime() -> dict[str, Any]:
 
 
 def portable_runtime_status() -> dict[str, Any]:
+    from .native_diagnostics import libredwg_cli_text_fidelity
+
     executable, source = discover_libredwg_cli()
     return {
         "schema_version": "cad2gis.portable_runtime.v1",
@@ -190,6 +192,7 @@ def portable_runtime_status() -> dict[str, Any]:
             "available": executable is not None,
             "executable": str(executable) if executable is not None else None,
             "source": source,
+            "text_fidelity": libredwg_cli_text_fidelity(executable),
         },
         "gdal": ensure_osgeo_runtime(),
         "autocad_required": False,

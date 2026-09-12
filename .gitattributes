@@ -1,2 +1,7 @@
 # Published delivery hashes bind exact bytes, including CSV line endings.
 pages-delivery/** -text whitespace=cr-at-eol
+
+# Native repair receipts bind exact upstream patch and reproducer bytes.
+packaging/patches/libredwg-0.14-cquote-termination.patch -text whitespace=-blank-at-eol,-blank-at-eof
+packaging/patches/cquote_minimal.c -text
+.github/scripts/*.sh text eol=lf

@@ -363,22 +363,49 @@ def load_match_profile(path, source_sha256, nominal):
     return transformer_from_record(record, nominal), record
 
 
-def _native_routes(features) -> list[list[tuple[float, float]]]:
-    routes = []
-    seen = set()
-    for feature in features:
+def _native_routes(features, *, selection_evidence=None) -> list[list[tuple[float, float]]]:
+    """Prefer explicitly classified road geometry over roadside utility routes.
+
+    A CABLE's physical offset from a road is not a registration error. Mixing
+    both source classes in the same objective pulls correct road placement
+    toward a compromise. Cable-only drawings retain their existing proxy fit;
+    insufficient ROAD structure abstains rather than falling back to CABLE.
+    """
+    candidates = {'ROAD': [], 'CABLE': []}
+    for feature_index, feature in enumerate(features):
         kind = getattr(feature, "feature_class", "CABLE")
-        if kind not in {"CABLE", "ROAD"}:
+        if kind not in candidates:
             continue
         points = getattr(feature, "native_points", feature)
         values = [_point(value) for value in points]
         values = [value for index, value in enumerate(values) if index == 0 or value != values[index - 1]]
         if len(values) < 2:
             continue
+        candidates[kind].append((values, dict(
+            input_feature_index=feature_index, feature_class=kind,
+            source_handle=getattr(feature, 'source_handle', None),
+            source_entity_key=getattr(feature, 'source_entity_key', None),
+            native_sha256=_digest(values))))
+    selected_class = 'ROAD' if candidates['ROAD'] else 'CABLE'
+    routes, references, identities = [], [], {}
+    for values, reference in candidates[selected_class]:
         identity = min(tuple(values), tuple(reversed(values)))
-        if identity not in seen:
-            seen.add(identity)
+        if identity not in identities:
+            identities[identity] = len(routes)
             routes.append(values)
+            references.append(dict(route_id=len(routes) - 1, source_features=[]))
+        references[identities[identity]]['source_features'].append(reference)
+    if selection_evidence is not None:
+        selection_evidence.update(
+            schema='cad2gis.osm-route-selection.v1',
+            method='explicit_road_preferred' if candidates['ROAD'] else 'cable_proxy_only',
+            selected_feature_class=selected_class if routes else None,
+            valid_feature_counts={kind: len(items) for kind, items in candidates.items()},
+            selected_unique_route_count=len(routes), selected_routes=references,
+            excluded_features=([reference for _, reference in candidates['CABLE']] if candidates['ROAD'] else []),
+            exclusion_reason='roadside_cable_offset_is_not_road_registration_error' if candidates['ROAD'] else None,
+            road_centerline_semantics_verified=False,
+            absolute_accuracy_verified=False)
     return routes
 
 
@@ -731,7 +758,7 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
         unique.setdefault(key, hypothesis)
     candidates = []
     for hypothesis in unique.values():
-        delta = hypothesis.copy()
+        delta = np.asarray(hypothesis, dtype=float).copy()
         converged = False
         last_step_m = None
         for iteration in range(100):
@@ -810,7 +837,8 @@ def match_osm(*, source: Path, source_sha256: str, features: list, nominal,
     """Build a sealed OSM matching revision and its optional delivery transform."""
     _hash(source_sha256, "source_sha256")
     region_id = _region(region_id)
-    native_routes = _native_routes(features)
+    route_selection = {}
+    native_routes = _native_routes(features, selection_evidence=route_selection)
     native_points = [point for route in native_routes for point in route]
     if not native_points:
         # Device-only drawing partitions still need a geographic review view.
@@ -857,6 +885,7 @@ def match_osm(*, source: Path, source_sha256: str, features: list, nominal,
               "source_path": str(source), "source_crs": nominal.source_crs, "target_crs": nominal.target_crs,
               "revision": 1, "parent_match_sha256": None,
               "region_id": region_id,
+              "route_selection": route_selection,
               "status": "unavailable", "authority": "relative_osm", "absolute_accuracy_verified": False,
               "needs_review": True, "base": base, "translation_3857": [0.0, 0.0],
               "attribution": dict(ATTRIBUTION), "place_name": place_name,

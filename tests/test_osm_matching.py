@@ -99,6 +99,70 @@ def test_offline_network_match_applies_all_routes_and_retains_relative_authority
     loaded, stored = matching.load_match_profile(path, SOURCE_SHA, Nominal())
     assert loaded.points(ROUTES[0]) == transform.points(ROUTES[0])
     assert stored["match_sha256"] == record["match_sha256"]
+    assert record['route_selection']['method'] == 'cable_proxy_only'
+    assert record['route_selection']['excluded_features'] == []
+
+
+def test_road_priority_is_source_bound_replayable_and_reported_per_route(tmp_path):
+    features = [SimpleNamespace(feature_class='ROAD', native_points=route, source_handle=f'R{index}')
+                for index, route in enumerate(ROUTES)]
+    features += [SimpleNamespace(feature_class='CABLE', native_points=[(x + 8, y + 6) for x, y in route],
+                                 source_handle=f'C{index}') for index, route in enumerate(ROUTES)]
+    before = copy.deepcopy([feature.native_points for feature in features])
+    transform, record = matching.match_osm(
+        source=tmp_path / 'drawing.dwg', source_sha256=SOURCE_SHA, features=features,
+        nominal=Nominal(), coordinate_domain={'passed': False}, osm_data=snapshot(tmp_path, ROUTES))
+    assert record['status'] == 'matched'
+    assert transform.point((0, 0)) == pytest.approx(SHIFT, abs=0.001)
+    assert [feature.native_points for feature in features] == before
+    selection = record['route_selection']
+    assert selection['method'] == 'explicit_road_preferred'
+    assert selection['valid_feature_counts'] == {'ROAD': 2, 'CABLE': 2}
+    assert selection['selected_unique_route_count'] == 2
+    assert [item['source_handle'] for item in selection['excluded_features']] == ['C0', 'C1']
+    assert selection['selected_routes'][0]['source_features'][0]['source_handle'] == 'R0'
+    assert not selection['road_centerline_semantics_verified']
+    diagnostics = record['evidence']['route_diagnostics']
+    assert len(diagnostics) == 2
+    assert all(item['coverage'] == 1 and item['distance_p95_m_approx'] < 0.001 for item in diagnostics)
+    assert all(item['absolute_accuracy_verified'] is False for item in diagnostics)
+    from cad2gis.cad2gis_v3.osm_evidence import evidence_geojson
+    vector = evidence_geojson(record)['cad_routes']['features'][0]
+    assert vector['properties']['osm_coverage'] == 1.0
+    refined = matching.refine_match(record, Nominal(), controls_for(transform),
+                                   source_sha256=SOURCE_SHA, parent_run_sha256=PARENT_SHA)
+    assert refined['route_selection'] == selection
+    assert refined['evidence']['route_selection_sha256'] == record['evidence']['route_selection_sha256']
+    assert refined['evidence']['route_diagnostics'] != diagnostics
+    tampered = copy.deepcopy(record)
+    tampered['route_selection']['excluded_features'] = []
+    tampered = matching._seal(tampered)
+    with pytest.raises(ValueError, match='route selection binding'):
+        matching.transformer_from_record(tampered, Nominal())
+
+
+def test_insufficient_explicit_road_structure_does_not_fallback_to_offset_cable(tmp_path):
+    features = [SimpleNamespace(feature_class='ROAD', native_points=[(0, 0), (100, 0)])]
+    features += [SimpleNamespace(feature_class='CABLE', native_points=route) for route in ROUTES]
+    _, record = matching.match_osm(
+        source=tmp_path / 'drawing.dwg', source_sha256=SOURCE_SHA, features=features,
+        nominal=Nominal(), coordinate_domain={'passed': False}, osm_data=snapshot(tmp_path, ROUTES))
+    assert record['status'] == 'coarse'
+    assert record['quality']['reason'] == 'insufficient_route_structure'
+    assert record['route_selection']['selected_feature_class'] == 'ROAD'
+    assert record['route_selection']['selected_unique_route_count'] == 1
+    assert record['absolute_accuracy_verified'] is False
+
+
+def test_degenerate_road_does_not_suppress_valid_cable_and_dedup_keeps_lineage():
+    features = [SimpleNamespace(feature_class='ROAD', native_points=[(0, 0), (0, 0)], source_handle='BAD')]
+    features += [SimpleNamespace(feature_class='CABLE', native_points=route, source_handle=str(index))
+                 for index, route in enumerate([ROUTES[0], list(reversed(ROUTES[0]))])]
+    selection = {}
+    assert matching._native_routes(features, selection_evidence=selection) == [ROUTES[0]]
+    assert selection['method'] == 'cable_proxy_only'
+    assert selection['selected_unique_route_count'] == 1
+    assert [item['source_handle'] for item in selection['selected_routes'][0]['source_features']] == ['0', '1']
 
 
 def test_local_identical_networks_keep_coarse_review_transform_when_matching_abstains(tmp_path):

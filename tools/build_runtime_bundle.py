@@ -191,7 +191,33 @@ def build(runtime_source: Path, wheel: Path, libredwg: Path, output: Path,
     return output
 
 
+def copy_optional_runtime_docs(output: Path) -> None:
+    """Ship optional Redis setup beside the installed code, including refreshes."""
+    config = output / "config"
+    config.mkdir(exist_ok=True)
+    docs = output / "docs"
+    docs.mkdir(exist_ok=True)
+    shutil.copy2(REPOSITORY / "packaging/redis.compose.yaml", config / "redis.compose.yaml")
+    for name in ("REDIS_RUNTIME_2026-09-11.md", "AI_DATABASE_ARCHITECTURE_PLAN_2026-09-05.md"):
+        shutil.copy2(REPOSITORY / "docs" / name, docs / name)
+    (config / "README.md").write_text(
+        "# Optional Redis query cache\n\n"
+        "From this installation's root run `docker compose -f config/redis.compose.yaml up -d`.\n"
+        "Set `CAD2GIS_REDIS_URL=redis://127.0.0.1:16379/0` for the backend process, then restart it.\n"
+        "Unset the variable to use SQLite directly. No Redis server is bundled or started automatically.\n\n"
+        "The source-tree path `packaging/redis.compose.yaml` in the guide corresponds to this "
+        "installation's `config/redis.compose.yaml`.\n"
+        "See [runtime and failure/recovery guide](../docs/REDIS_RUNTIME_2026-09-11.md) and "
+        "[architecture plan](../docs/AI_DATABASE_ARCHITECTURE_PLAN_2026-09-05.md). "
+        "Other documents linked from that historical plan are in the complete CAD2GIS source release.\n",
+        encoding="utf-8", newline="\n",
+    )
+
+
 def write_manifest(output: Path, wheel: Path) -> None:
+    # Both the full builder and development-wheel refresh call this before
+    # collecting hashes, so installed configuration cannot lag behind the code.
+    copy_optional_runtime_docs(output)
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPOSITORY, text=True).strip()
     dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=REPOSITORY, text=True).strip())
     manifest = {

@@ -6,7 +6,7 @@ GIS 库和 LibreDWG，无需先安装 Python、uv、AutoCAD、Conda 或 QGIS。
 
 ## 安装
 
-1. 运行 `CAD2GIS-0.5.0-windows-x64-setup.exe`。
+1. 运行 `CAD2GIS-0.7.0-windows-x64-setup.exe`。
 2. 默认安装到当前用户的 `%LOCALAPPDATA%\Programs\CAD2GIS`，不需要管理员权限。
 3. 可选择添加桌面快捷方式；“添加命令到用户 PATH”用于现有智能体插件。
 4. 从开始菜单打开 CAD2GIS。程序启动本地服务，并用系统浏览器打开专用登录链接。
@@ -25,7 +25,9 @@ Windows 使用当前用户 DPAPI 加密保存密钥，重启后继续使用；�
 
 底部五页为 AI 配置、转换对话框、OSM 工作台、SVG 审阅台和 SQLite 可视化中心。
 左侧提供使用说明和集成架构文档。文件、会话、历史消息、任务和数据库结果支持分页。
-转换对话接入 46 个既有 MCP 工具和 5 个工作台工具，支持计划、过程、停止与历史恢复。
+转换对话接入既有 MCP 工具和工作台工具，支持计划、过程、停止与历史恢复。
+“语义提取”执行源事实导出、候选准备、语义库初始化三个阶段，允许下载四类产物；
+候选仍需审阅，不会自动提交为确定的语义分类。
 已有通过审核的项目也可选择配置目录后直接转换；软件不会把空白草稿当作已审核配置。
 
 新界面使用 molamaker 图标、蓝色背景、底栏与侧栏液态玻璃、阻尼动效与操作焦点。
@@ -81,7 +83,14 @@ cad2gis doctor --deep --strict --profile full --json
 
 1. 使用 Python 3.12 安装 `build`、`setuptools` 及测试工具。
 2. 运行 `python tools/build_reproducible_wheel.py --output-dir dist/python --verify`。
-3. 运行 `python tools/build_windows_package.py --wheel dist/python/cad2gis-0.4.0-py3-none-any.whl`。
+3. 按 `packaging/patches/README.md` 准备并验收 LibreDWG 0.14 MTEXT 终止修补版。
+4. 运行 `python tools/build_windows_package.py --wheel dist/python/cad2gis-0.7.0-py3-none-any.whl --libredwg <已验收原生工具目录>`。
+
+已有完整 payload 时，先用 `tools/refresh_runtime_bundle.py` 更新指定 wheel，再运行
+`python tools/build_windows_package.py --wheel <冻结wheel> --payload <临时payload> --reuse-payload`。
+此模式复用 Python 与依赖，只压缩安装器，并核验 wheel、原生工具与 manifest 的哈希绑定。
+原生工具替换后必须重新生成 manifest；构建器会拒绝未经重复图纸验收的旧 LibreDWG，
+也会拒绝覆盖已有同名安装器。平台交付以 `tmp/RELEASE_INPUT_READY.json` 的路径及哈希为准。
 
 构建工具下载到 `tmp/packaging-windows`，按脚本中固定 URL 和 SHA-256 校验。
 可用 `--wheelhouse <目录>` 从已验证的本地 wheel 集合离线组装。

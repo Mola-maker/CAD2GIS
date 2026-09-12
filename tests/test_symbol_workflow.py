@@ -6,6 +6,15 @@ import pytest
 from cad2gis.symbol_workflow import prepare
 
 
+def _point_database(path, entities):
+    with sqlite3.connect(path) as db:
+        db.execute('CREATE TABLE gpkg_geometry_columns(table_name,geometry_type_name)')
+        db.execute("INSERT INTO gpkg_geometry_columns VALUES('PTECH','POINT')")
+        db.execute('CREATE TABLE PTECH(source_handle)')
+        db.executemany('INSERT INTO PTECH VALUES(?)', [(entity.dxf.handle,) for entity in entities])
+    return path
+
+
 def test_candidates_account_for_unresolved_points_without_changing_delivery(tmp_path):
     ezdxf = pytest.importorskip('ezdxf')
     doc = ezdxf.new()
@@ -73,6 +82,10 @@ def test_curated_overrides_bind_polyline_and_composed_symbols(tmp_path):
     # The own-frame handle renders itself; the anchor renders the pole block instead.
     assert report['dispositions'] == {'CURATED_OVERRIDE': 2}
     assert report['overrides']['rule_count'] == 2 and report['overrides']['legend_count'] == 1
+    assert report['coverage']['by_layer']['BOITE'] == dict(
+        delivered=2, source_present=2, rendered=2, unresolved=0, grouped=0,
+        curated_alternate_geometry=1, presentation_overlays=1)
+    assert report['review_queue']['count'] == 2
     frame_symbol = f"instance-{frame.dxf.handle.lower()}"
     anchor_symbol = f"instance-{anchor.dxf.handle.lower()}"
     bindings = {binding['symbol_id']: binding['source_handle'] for binding in report['source_instance_bindings']}
@@ -150,3 +163,115 @@ def test_empty_symbol_library_remains_usable_by_svg_delivery(tmp_path, has_point
         assert statuses == {}
         assert json.loads(db.execute("SELECT value FROM metadata WHERE key='schema_version'").fetchone()[0]) == 'cad2gis.symbol-assets.v1'
     assert _project_bindings(report, {'gpkg_sha256': hashlib.sha256(database.read_bytes()).hexdigest()}, statuses) == []
+
+
+def test_unblocked_source_primitives_and_explicit_group_preserve_lineage(tmp_path):
+    ezdxf = pytest.importorskip('ezdxf')
+    document = ezdxf.new()
+    msp = document.modelspace()
+    frame = msp.add_lwpolyline([(0, 0), (4, 0), (4, 3), (0, 3)], close=True,
+                              dxfattribs={'layer': 'FAT', 'color': 40})
+    anchor = msp.add_point((100, 0), dxfattribs={'layer': 'IDENTITY'})
+    # The INSERT anchor is far away; membership, not anchor distance, binds the outline.
+    pole = document.blocks.new('OFFSET_POLE')
+    pole.add_circle((100, 0), 2, dxfattribs={'color': 0})
+    outline = msp.add_blockref('OFFSET_POLE', (0, 0), dxfattribs={'color': 3})
+    label = msp.add_text('NP7', dxfattribs={'insert': (99, 0), 'height': 0.8})
+    document.groups.new('SOURCE_POLE').set_data([anchor, outline, label])
+    unrelated = msp.add_circle((100, 0), 0.2, dxfattribs={'color': 1})
+    missing = msp.add_point((100, 0))
+    source = tmp_path / 'source.dxf'
+    document.saveas(source)
+    database = _point_database(tmp_path / 'delivery.gpkg', [frame, anchor, missing])
+    before = (source.read_bytes(), database.read_bytes())
+    report = prepare(source, [database], tmp_path / 'assets')
+    assert report['dispositions'] == {'SOURCE_GEOMETRY_ONLY': 1, 'SOURCE_GROUP_CANDIDATE': 1,
+                                       'UNRESOLVED_NON_BLOCK': 1}
+    grouped = report['points'][1]
+    assert set(grouped['render_handles']) == {outline.dxf.handle, label.dxf.handle}
+    assert grouped['source_layer'] == 'IDENTITY' and grouped['source_layout'] == 'Model'
+    assert grouped['group_evidence']['groups'][0]['name'] == 'SOURCE_POLE'
+    assert grouped['source_handle'] == anchor.dxf.handle
+    assert not grouped['source_instance_fidelity_verified']
+    assert report['points'][2]['symbol_id'] is None  # no borrowing from the same location
+    assert report['coverage']['total'] == dict(delivered=3, source_present=3, rendered=2, unresolved=1,
+                                              grouped=1, curated_alternate_geometry=0, presentation_overlays=0)
+    assert not report['coverage']['counts_are_accuracy_claims']
+    import csv
+    with (tmp_path / 'assets/svg-review-queue.csv').open(encoding='utf-8-sig', newline='') as stream:
+        queue = list(csv.DictReader(stream))
+    assert len(queue) == 1 and queue[0]['source_handle'] == missing.dxf.handle
+    assert queue[0]['source_x'] == '100.0' and queue[0]['coordinate_basis'] == 'source_point_wcs'
+    with sqlite3.connect(tmp_path / 'assets/symbols.sqlite3') as db:
+        handles, facts, diagnostics, svg = db.execute(
+            'SELECT source_handles_json, source_entities_json, diagnostics_json, svg FROM symbols WHERE symbol_id=?',
+            (grouped['symbol_id'],)).fetchone()
+    assert json.loads(handles) == [anchor.dxf.handle]
+    assert unrelated.dxf.handle not in {fact['handle'] for fact in json.loads(facts)}
+    assert json.loads(diagnostics)['source_identity_entities'][0]['type'] == 'POINT'
+    assert json.loads(diagnostics)['render_handles'] == grouped['render_handles']
+    assert '#00ff00' in svg and '#ff0000' not in svg
+    assert before == (source.read_bytes(), database.read_bytes())
+
+
+@pytest.mark.parametrize('problem', ['ambiguous', 'annotation_only', 'unsupported'])
+def test_group_uncertainty_never_falls_back_to_nearby_geometry(tmp_path, problem):
+    ezdxf = pytest.importorskip('ezdxf')
+    document = ezdxf.new()
+    msp = document.modelspace()
+    point = msp.add_point((0, 0))
+    circle = msp.add_circle((0, 0), 1)
+    members = [point, circle]
+    if problem == 'annotation_only':
+        members = [point, msp.add_text('NP7')]
+    if problem == 'unsupported':
+        members.append(msp.add_ray((0, 0), (1, 0)))
+    document.groups.new('ONE').set_data(members)
+    if problem == 'ambiguous':
+        document.groups.new('TWO').set_data([point, circle])
+    source = tmp_path / 'source.dxf'
+    document.saveas(source)
+    database = _point_database(tmp_path / 'delivery.gpkg', [point])
+    report = prepare(source, [database], tmp_path / 'assets')
+    expected = 'UNRESOLVED_GROUP_AMBIGUOUS' if problem == 'ambiguous' else 'UNRESOLVED_GROUP_UNSUPPORTED'
+    assert report['dispositions'] == {expected: 1}
+    assert report['source_instance_bindings'] == []
+    assert report['points'][0]['group_evidence']['basis'] == 'explicit_dxf_group_membership'
+
+
+def test_hidden_primitive_does_not_abort_other_source_candidates(tmp_path):
+    ezdxf = pytest.importorskip('ezdxf')
+    document = ezdxf.new()
+    visible = document.modelspace().add_circle((0, 0), 1)
+    hidden = document.modelspace().add_circle((10, 0), 1, dxfattribs={'invisible': 1})
+    source = tmp_path / 'source.dxf'
+    document.saveas(source)
+    database = _point_database(tmp_path / 'delivery.gpkg', [visible, hidden])
+    report = prepare(source, [database], tmp_path / 'assets')
+    assert report['dispositions'] == {'SOURCE_GEOMETRY_ONLY': 1, 'UNRESOLVED_RENDER_INCOMPLETE': 1}
+    assert len(report['source_instance_bindings']) == 1
+    assert report['source_instance_bindings'][0]['source_handle'] == visible.dxf.handle
+
+
+def test_conflicting_curated_overrides_are_rejected(tmp_path):
+    from cad2gis.symbol_workflow import load_overrides
+    path = tmp_path / 'overrides.json'
+    rule = {'feature_class': 'PTECH', 'source_handle': 'ABC', 'render_handles': ['DEF']}
+    path.write_text(json.dumps({'schema_version': 'cad2gis.svg-symbol-overrides.v1',
+                                'instance_sources': [rule, rule]}))
+    with pytest.raises(ValueError, match='Ambiguous'):
+        load_overrides(path)
+
+
+def test_block_fingerprint_does_not_collapse_distinct_minsert_arrays(tmp_path):
+    ezdxf = pytest.importorskip('ezdxf')
+    document = ezdxf.new()
+    document.blocks.new('POLE').add_circle((0, 0), 1)
+    first = document.modelspace().add_blockref('POLE', (0, 0))
+    array = document.modelspace().add_blockref('POLE', (10, 0))
+    array.grid(size=(1, 2), spacing=(0, 3))
+    source = tmp_path / 'source.dxf'
+    document.saveas(source)
+    database = _point_database(tmp_path / 'delivery.gpkg', [first, array])
+    report = prepare(source, [database], tmp_path / 'assets')
+    assert report['points'][0]['normalized_svg_sha256'] != report['points'][1]['normalized_svg_sha256']

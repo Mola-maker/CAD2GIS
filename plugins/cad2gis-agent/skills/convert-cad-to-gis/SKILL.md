@@ -55,6 +55,23 @@ Use `debug_mcp` to compare the running code and complete tool schema digests
 before relying on this workflow. Older installed plugins may expose a different
 implementation even when tool names look similar.
 
+For extraction-only requests, require the running `get_capabilities` response
+to advertise `semantic_database.workflow` including `export_source`,
+`query_source_entities`, and `prepare_semantic_batches`, and confirm those
+names in the actual MCP tool list. A plugin manifest version alone is not a
+runtime capability check. If missing, report the installed-runtime mismatch
+and reinstall the canonical runtime; do not imitate extraction in the client.
+
+The Windows/Linux workspace and Android's connected server expose a
+"语义提取" button. Its `semantic-extract` action runs `export-source` then
+`semantic prepare` into fresh `source/` and `candidates/` directories. It
+validates the output bindings but does not initialize a semantic store, commit
+classification, compile a revision, or change baseline/GCP. When given these
+artifacts, resume at step 2 below rather than exporting the drawing again.
+The UI's "交给 AI 审阅" action prepares a draft only; respect its review-only
+scope when the user sends it. A successful extraction is not accepted GIS
+delivery or proof of complete CAD semantics.
+
 1. `export_source` publishes a new immutable source snapshot. Omit CRS if it is
    not established; native coordinates and unknown units stay explicit.
 2. Use `query_source_entities` with filters and keyset cursors, then
@@ -70,6 +87,9 @@ implementation even when tool names look similar.
 3. `prepare_semantic_batches` builds a separate immutable candidate index.
    `query_relationship_candidates` returns registered class, label or DIMENSION
    choices; a nearby label is advisory until explicitly selected.
+   For an extraction/review-only request, report the source and candidate
+   manifest paths, counts, unresolved/unsupported boundaries, and stop here.
+   Do not infer permission for steps 4–6 from an extraction request.
 4. `initialize_semantic_store`, then construct a patch using the returned binding
    hashes, `base_revision`, and only observed entity/candidate/policy/target IDs.
    Onboarding v2 similarly selects `annotation_family_selections` candidate and

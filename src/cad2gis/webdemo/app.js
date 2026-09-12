@@ -1387,3 +1387,10 @@ const initialize = async () => {
 };
 
 initialize();
+
+// Only the authenticated application owns an executable semantic workspace.
+const semanticWorkspaceLink = document.getElementById("semantic-service-link");
+if (semanticWorkspaceLink && applicationReviewId && !window.CAD2GIS_DEMO?.active) {
+  semanticWorkspaceLink.hidden = false;
+  document.getElementById("semantic-service-note").textContent = "打开当前服务器的共享工作区，选择源图和新的结果目录。";
+}

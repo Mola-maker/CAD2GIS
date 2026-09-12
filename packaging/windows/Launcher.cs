@@ -60,7 +60,13 @@ class Launcher
                 StreamWriter log = null;
                 if (desktop)
                 {
-                    string logs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAD2GIS", "logs");
+                    string stateDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CAD2GIS");
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        if (args[i] == "--state-dir" && i + 1 < args.Length) stateDirectory = Path.GetFullPath(args[++i]);
+                        else if (args[i].StartsWith("--state-dir=", StringComparison.Ordinal)) stateDirectory = Path.GetFullPath(args[i].Substring(12));
+                    }
+                    string logs = Path.Combine(stateDirectory, "logs");
                     Directory.CreateDirectory(logs);
                     log = new StreamWriter(Path.Combine(logs, "desktop-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + ".log"));
                     log.AutoFlush = true;

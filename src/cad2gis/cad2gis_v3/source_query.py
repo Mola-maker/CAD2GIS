@@ -484,6 +484,38 @@ def query_source_entities(
         last = _position(cursor, binding, "")
         if not isinstance(last, str):
             raise SourceQueryError("Invalid entity cursor position", code="STALE_CURSOR")
+        # Validate immutable source/index and the cursor before consulting Redis.
+        # This cache has no semantic overlay: revision is explicitly bound to
+        # immutable source facts. Semantic commit/compile never read this cache.
+        from ..redis_runtime import QueryCacheBinding, query_summary_cache
+
+        cache = query_summary_cache()
+        deadline = started + timeout_ms / 1000
+        if cache is not None:
+            cache_binding = QueryCacheBinding(
+                source=metadata["source_sha256"], snapshot=metadata["snapshot_sha256"],
+                index=metadata["index_sha256"], schema=metadata["schema_version"],
+                policy="source_summary_native_bounds_literal_text.v1",
+                filters=_digest([binding["filter"], last, limit, max_bytes]),
+                revision="immutable_source:no_semantic_overlay",
+                implementation=_file_hash(Path(__file__).resolve()),
+            )
+            cached = cache.get(cache_binding, deadline=deadline)
+            expected_fields = set(fields) | ({"bounds_quality"} if box is not None else set())
+            if (isinstance(cached, dict) and set(cached) == {"items", "next_cursor"}
+                    and isinstance(cached["items"], list) and len(cached["items"]) <= limit
+                    and all(isinstance(item, dict) and set(item) == expected_fields
+                            and isinstance(item["entity_key"], str) and item["entity_key"] > last
+                            and item["view"] == view for item in cached["items"])):
+                keys = [item["entity_key"] for item in cached["items"]]
+                continuation = cached["next_cursor"]
+                valid_cursor = continuation is None or (
+                    bool(keys) and continuation == _cursor(binding, keys[-1]))
+                if keys == sorted(set(keys)) and valid_cursor:
+                    result = _response(cached["items"], metadata, continuation, started)
+                    if result["response_bytes"] <= max_bytes:
+                        _check_budget(started, timeout_ms)
+                        return result
         clauses, parameters = ["e.entity_key > ?", "e.view = ?"], [last, view]
         for name, value in filters.items():
             if name != "text_query" and value is not None:
@@ -528,6 +560,8 @@ def query_source_entities(
                 break
             items.append(item)
         _check_budget(started, timeout_ms)
+        if cache is not None:
+            cache.put(cache_binding, {"items": items, "next_cursor": next_cursor}, deadline=deadline)
         return _response(items, metadata, next_cursor, started)
     except sqlite3.OperationalError as exc:
         _check_cancelled()

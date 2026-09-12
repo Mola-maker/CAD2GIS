@@ -189,6 +189,7 @@ def diagnose(
 ) -> dict[str, Any]:
     """Read bounded diagnostics; paths are validated again at the MCP boundary."""
     from . import agent_mcp
+    from .redis_runtime import redis_status
 
     if scope not in {"identity", "runtime", "artifacts", "query"}:
         raise ValueError("scope must be identity, runtime, artifacts or query")
@@ -224,7 +225,7 @@ def diagnose(
         "protocol_version": None,
         "protocol_note": "Negotiated by the client session; SDK version is not a protocol claim.",
         "sqlite": _sqlite_capabilities(),
-        "redis": {"status": "not_configured", "required": False},
+        "redis": redis_status(probe=scope == "runtime"),
         "read_only": True,
     }
     if scope == "runtime":

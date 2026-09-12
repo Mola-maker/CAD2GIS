@@ -6,6 +6,7 @@ import copy
 import math
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -114,3 +115,22 @@ def test_exhausted_landmark_budget_cannot_manufacture_confidence():
     assert quality["landmark_search"]["seed_budget_exhausted"] is True
     assert delta is None
     assert quality["reason"] == "landmark_hypothesis_budget_exhausted"
+
+
+def test_explicit_roads_are_not_displaced_by_parallel_offset_cables():
+    """Mixing two offset source domains formerly accepted a 4.985 m wrong shift."""
+    features = [SimpleNamespace(feature_class='ROAD', native_points=route) for route in ROUTES]
+    features += [SimpleNamespace(feature_class='CABLE', native_points=[(x + 8, y + 6) for x, y in route])
+                 for route in ROUTES]
+    roads = [{'osm_way_id': index + 1, 'points': [(x + SHIFT[0], y + SHIFT[1]) for x, y in route]}
+             for index, route in enumerate(ROUTES)]
+    delta, quality = matching._match_routes(matching._native_routes(features), roads, 1.0, SHIFT)
+    assert delta == pytest.approx(SHIFT, abs=0.01)
+    assert quality['candidates'][0]['coverage'] == 1.0
+
+
+def test_integer_coordinate_hypotheses_accept_fractional_refinement():
+    roads = [{'osm_way_id': index + 1, 'points': [(x + 1000, y + 2000) for x, y in route]}
+             for index, route in enumerate(ROUTES)]
+    delta, _ = matching._match_routes(ROUTES, roads, 1.0, [1000, 2000])
+    assert delta == pytest.approx(SHIFT, abs=0.01)
