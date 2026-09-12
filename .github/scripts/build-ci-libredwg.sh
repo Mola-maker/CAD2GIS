@@ -49,7 +49,7 @@ gcc -D__USE_MINGW_ANSI_STDIO=1 -O2 -Wall -Wextra -static \
 grep -Fx 'fixed termination cases: 8; passed: 1' "$stage/cquote-result.log"
 
 ./configure --prefix="$prefix" --host=x86_64-w64-mingw32 \
-  --disable-bindings --disable-docs --disable-shared
+  --disable-bindings --disable-python --disable-docs --disable-shared
 make -j2
 # Libtool -static alone still allows shared compiler runtimes. Force the three
 # reader/writer links to include them so later PowerShell steps need no MSYS DLLs.
