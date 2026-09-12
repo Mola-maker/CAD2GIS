@@ -55,6 +55,7 @@ def build(target, resume=False, jobs=2, work_root=Path('/tmp')):
                  "--disable-bindings", "--disable-python", "--disable-docs", "--disable-shared"]
     if target == "windows":
         configure.append("--host=x86_64-w64-mingw32")
+        environment["CFLAGS"] += " -D__USE_MINGW_ANSI_STDIO=1"
         environment.update(LDFLAGS="-static", PKG_CONFIG_LIBDIR="/nonexistent")
     commands = []
     with (output / "build.log").open("a" if resume else "w", encoding="utf-8") as log:
