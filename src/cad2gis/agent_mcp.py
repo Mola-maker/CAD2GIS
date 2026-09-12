@@ -440,8 +440,9 @@ def apply_ai_onboarding(
     proposal: dict[str, Any],
     *,
     proposer: dict[str, Any] | None = None,
+    geometry_repairs: str = "legacy",
 ) -> dict[str, Any]:
-    """Compile a host/provider AI proposal and derive exact validation gates."""
+    """Compile a source-bound proposal; conversion must use the same geometry_repairs mode."""
 
     from .pipeline import apply_ai_onboarding as apply_service
 
@@ -450,6 +451,7 @@ def apply_ai_onboarding(
         project_dir=_path(project_dir),
         proposal=proposal,
         proposer=dict(proposer or {"provider": "host-agent"}),
+        geometry_repairs=geometry_repairs,
     )
     # Keep the MCP response small enough for host agents to reason over in one
     # turn.  The complete immutable result, including per-entity coverage

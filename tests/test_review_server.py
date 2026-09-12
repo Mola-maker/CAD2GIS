@@ -421,6 +421,33 @@ def test_review_serves_only_bound_svg_files_from_current_run(tmp_path):
     assert unavailable["report_url"] is None and "SHA-256" in unavailable["report_blocker"]
 
 
+def test_svg_report_serves_only_sealed_csv_review_queue(tmp_path):
+    run, _, manifest_path = _run_fixture(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    root = _add_svg_fixture(run, manifest)
+    queue = "source_handle,status\nA,待人工复核\n".encode("utf-8")
+    relative = "svg-review-queue.csv"
+    (root / relative).write_bytes(queue)
+    manifest["svg_candidates"]["files"][relative] = hashlib.sha256(queue).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with TestClient(create_review_app(run, workspace_dir=tmp_path / "review")) as client:
+        url = client.get("/api/run").json()["svg_candidates"]["report_url"]
+        prefix = url.rsplit("/", 1)[0]
+        response = client.get(f"{prefix}/{relative}")
+        assert response.status_code == 200
+        assert response.headers["content-type"].split(";")[0] == "text/csv"
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.content == queue
+
+        (root / "unsealed.csv").write_bytes(queue)
+        assert client.get(f"{prefix}/unsealed.csv").status_code == 404
+        (root / relative).write_bytes(b"changed after sealing")
+        response = client.get(f"{prefix}/{relative}")
+        assert response.status_code == 404
+        assert "SHA-256 mismatch" in response.json()["detail"]
+
+
 @pytest.mark.parametrize("relative", ["../fixture.dwg", "symbols/../../fixture.dwg", "/fixture.dwg",
     "symbols\\instance-a.svg", "C:/secret.json", "private.txt"])
 def test_svg_artifact_rejects_unsafe_paths_and_unapproved_suffixes(tmp_path, relative):

@@ -1125,7 +1125,7 @@ def _svg_candidate_path(
     relative = Path(relative_path)
     if (relative.is_absolute() or relative.drive or ".." in relative.parts
             or "\\" in relative_path or relative.as_posix() != relative_path
-            or relative.suffix.casefold() not in {".html", ".json", ".svg", ".png", ".sqlite3"}):
+            or relative.suffix.casefold() not in {".html", ".json", ".svg", ".png", ".csv", ".sqlite3"}):
         raise ReviewServerError("Invalid SVG candidate artifact path")
     root = run_dir.resolve() / "svg-candidates"
     path = (root / relative).resolve()
@@ -2353,7 +2353,9 @@ def create_review_app(
             path = _svg_candidate_path(manifest, source_run_path, relative_path)
         except ReviewServerError as exc:
             raise HTTPException(404, str(exc)) from exc
-        return FileResponse(path, headers={
+        # Windows may register .csv as an Excel document; the review queue is
+        # UTF-8 CSV regardless of the desktop file association.
+        return FileResponse(path, media_type="text/csv" if path.suffix.casefold() == ".csv" else None, headers={
             "Cache-Control": "no-store",
             "X-Content-Type-Options": "nosniff",
             "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox allow-same-origin allow-downloads",

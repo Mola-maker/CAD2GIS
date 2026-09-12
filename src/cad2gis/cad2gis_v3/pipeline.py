@@ -1590,7 +1590,9 @@ def _validate_ingested_source(source, entities, ingest_diagnostics, profile):
     return terminal_accounting, source_dependencies, inventory_gate
 
 
-def _denoise_plan_entities(semantic_entities, plan_domain, registry, request):
+def _denoise_plan_entities(
+    semantic_entities, plan_domain, registry, request, *, persist_decisions=False,
+):
     """Build a derived plan view using the unchanged reviewed detector policy."""
     from .spatial_filter import apply_spatial_denoising
 
@@ -1620,7 +1622,7 @@ def _denoise_plan_entities(semantic_entities, plan_domain, registry, request):
         plan_domain=plan_domain,
         project_config_dir=request.mapping_registry.parent,
         llm_mode=request.llm,
-        persist_decisions=False,
+        persist_decisions=persist_decisions,
         route_regex=registry.positive_route_layer_regex,
         boundary_exempt_layers=(
             getattr(registry, "layers", {}).get("zpm_boundary", ())
@@ -1686,6 +1688,13 @@ def convert(request: ConversionRequest) -> ConversionResult:
     # This review gate is before unit/CRS work, AutoCAD startup, or ingestion.
     # Validation never upgrades a draft.
     profile.require_reviewed()
+    expected_repairs = getattr(profile.expectations, "geometry_repairs", None)
+    if expected_repairs is not None and request.geometry_repairs != expected_repairs:
+        raise RuntimeError(
+            "Geometry repair mode differs from the reviewed semantic expectations: "
+            f"expected {expected_repairs!r}, got {request.geometry_repairs!r}. "
+            "Use the compiled mode or recompile the source-bound proposal for the new mode."
+        )
     if request.svg_mode == "candidate":
         from ..symbol_workflow import preflight
         preflight(run_dir / "svg-candidates", font_dirs=request.svg_font_dirs)

@@ -32,6 +32,9 @@ SCHEMA = "cad2gis.osm-matching.v1"
 _MINIMUM_NORMAL_EIGENVALUE = 0.035
 _MINIMUM_SUPPORTED_ROUTE_FRACTION = 0.70
 _MINIMUM_CONFIDENCE_GAP = 0.05
+# Cache identity only: about 0.11 micrometres at the equator. Never apply this
+# tolerance to road fitting or admit a cache covering a different search area.
+_CACHE_BBOX_ROUNDOFF_DEGREES = 1e-12
 ATTRIBUTION = {
     "text": "© OpenStreetMap contributors",
     "url": "https://www.openstreetmap.org/copyright",
@@ -536,6 +539,22 @@ def _hint(anchor, place_name, cache_dir=None):
     return None
 
 
+def _cache_bbox_equivalent(cached_bbox, requested_bbox):
+    keys = {"west", "south", "east", "north"}
+    for bounds in (cached_bbox, requested_bbox):
+        if not isinstance(bounds, Mapping) or set(bounds) != keys:
+            return False
+        if any(type(bounds[key]) not in {int, float} or not math.isfinite(bounds[key]) for key in keys):
+            return False
+        if not (-180 <= bounds["west"] < bounds["east"] <= 180
+                and -85 <= bounds["south"] < bounds["north"] <= 85):
+            return False
+    # Check every edge, including the query's coverage boundary. A larger
+    # overlapping/containing cache is not interchangeable with this snapshot.
+    return all(math.isclose(cached_bbox[key], requested_bbox[key], rel_tol=0.0,
+                            abs_tol=_CACHE_BBOX_ROUNDOFF_DEGREES) for key in keys)
+
+
 def _fetch_roads(bbox, cache_dir):
     key = _digest(bbox)
     path = Path(cache_dir) / f"osm-roads-{key}.json" if cache_dir is not None else None
@@ -546,6 +565,30 @@ def _fetch_roads(bbox, cache_dir):
                 return _normalise_roads(cached["roads"]), "cache"
         except (ValueError, TypeError, KeyError, OSError):
             pass
+    if path is not None:
+        equivalent = []
+        for candidate in sorted(path.parent.glob("osm-roads-*.json")):
+            if candidate == path:
+                continue
+            try:
+                cached = json.loads(candidate.read_text(encoding="utf-8"))
+                if not isinstance(cached, Mapping) or not _cache_bbox_equivalent(cached.get("bbox"), bbox):
+                    continue
+                # Preserve the original bbox-key and road-content bindings;
+                # roundoff lookup must not make a renamed or corrupt cache valid.
+                if candidate.name != f"osm-roads-{_digest(cached['bbox'])}.json":
+                    continue
+                roads = cached.get("roads")
+                if (not isinstance(roads, list) or not all(isinstance(road, Mapping) for road in roads)
+                        or cached.get("sha256") != _digest(roads)):
+                    continue
+                equivalent.append(_normalise_roads(roads))
+            except (ValueError, TypeError, KeyError, OSError, OverflowError):
+                continue
+            if len(equivalent) > 1:
+                return [], "cache_ambiguous"
+        if equivalent:
+            return equivalent[0], "cache_bbox_roundoff"
     try:
         roads = _normalise_roads(osm_anchor.query_osm_roads(bbox))
     except (ValueError, TypeError, KeyError, OverflowError):

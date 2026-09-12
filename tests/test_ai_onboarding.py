@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -266,6 +267,107 @@ def test_compile_is_transactional_and_admits_exact_dry_run(
     assert profile["expectations"]["feature_counts"] == {"CABLE": 1, "INFRASTRUCTURE": 1}
     assert live_review_states
     assert set(live_review_states) == {("draft", "draft"), ("auto_accepted", "auto_accepted")}
+
+
+@pytest.mark.parametrize("slug,invalid_boundary,geometry_repairs,znro_count", [
+    ("deployment", False, "legacy", 1),
+    ("deployment_sf", False, "legacy", 0),
+    ("deployment", True, "legacy", 1),
+    ("deployment", True, "candidate-only", 0),
+])
+def test_compile_and_canonical_classification_share_boundary_policy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    slug: str,
+    invalid_boundary: bool,
+    geometry_repairs: str,
+    znro_count: int,
+) -> None:
+    from cad2gis import agent_mcp
+    from cad2gis.cad2gis_v3 import pipeline
+    from cad2gis.cad2gis_v3.config import MappingRegistry, SourceProfile
+
+    source = tmp_path / "boundary.dwg"
+    source.write_bytes(b"source-bound-red-boundary-parity-fixture")
+    source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    points = [(0., 0.), (100., 0.), (100., 100.)]
+    if invalid_boundary:
+        points.extend([(50., 100.), (50., 200.), (50., 100.)])
+    points.extend([(0., 100.), (0., 0.)])
+    records = [
+        _record(source, source_hash, entity_key="metadata",
+                dwg_type="DOCUMENT_METADATA", layout="Document",
+                cad_role="metadata", text="CGEOCS=UTM84-49S;INSUNITS=6"),
+        _record(source, source_hash, entity_key="route", dwg_type="LWPOLYLINE",
+                layer="FO 48C CABLE", points=((10., 10.), (35., 10.), (60., 10.))),
+        {**_record(source, source_hash, entity_key="boundary",
+                   dwg_type="LWPOLYLINE", layer="RED BOUNDARY",
+                   points=tuple(points)), "aci_color": 1, "closed": True},
+    ]
+    root = tmp_path / slug
+    bootstrap_project(source=source, project_dir=root, records=records)
+    entities = [SourceEntity.from_record(record) for record in records[1:]]
+    monkeypatch.setattr(onboarding, "ingest", lambda *_a, **_k: (
+        entities, {"census": {
+            "model_entities": 2, "model_inserts": 0, "model_dimensions": 0,
+        }},
+    ))
+    monkeypatch.setattr(project_profile, "_model_space_entities", lambda *_a, **_k: entities)
+    bundle = onboarding.prepare_onboarding_bundle(root)
+    monkeypatch.setenv("CAD2GIS_PROJECT_ROOTS", str(tmp_path))
+    result = agent_mcp.apply_ai_onboarding(
+        source=str(source), project_dir=str(root), proposal=_proposal(bundle),
+        proposer={"provider": "test"}, geometry_repairs=geometry_repairs,
+    )
+    profile = SourceProfile.load(root / "config/source_profile.json")
+    registry = MappingRegistry.load(root / "config/mapping_registry.json", source_hash)
+    request = pipeline.ConversionRequest(
+        source=source, run_dir=root / "run", source_profile=profile.path,
+        mapping_registry=registry.path, geometry_repairs=geometry_repairs,
+    )
+    domain = onboarding.build_plan_domain(
+        entities, route_layer_pattern=re.compile(registry.positive_route_layer_regex),
+        plan_layouts=profile.plan_layouts,
+        plan_domain_authority="reviewed_source_profile",
+    )
+    catalog_roots, denoised = pipeline._denoise_plan_entities(
+        list(domain.entities), domain, registry, request,
+    )
+    features, _, _, _ = pipeline.classify_entities(
+        list(denoised["entities"]), registry,
+        coverage_policy=registry.semantic_coverage_policy,
+        coverage_allowlist=list(registry.semantic_coverage_allowlist),
+        catalog_roots=catalog_roots, project_id=profile.project_id,
+        project_slug=profile.path.parent.parent.name,
+        apply_geometry_repairs=geometry_repairs == "legacy",
+    )
+    canonical_counts = dict(Counter(feature.feature_class for feature in features))
+    assert result["feature_counts"] == canonical_counts
+    assert result["feature_counts"].get("ZNRO", 0) == znro_count
+    assert profile.expectations.geometry_repairs == geometry_repairs
+    assert result["geometry_repairs"] == geometry_repairs
+    # The immutable proposal may not silently change geometry policy later.
+    incompatible = pipeline.ConversionRequest(
+        source=source, run_dir=root / "wrong-mode-run", source_profile=profile.path,
+        mapping_registry=registry.path, svg_mode="off",
+        geometry_repairs="legacy" if geometry_repairs == "candidate-only" else "candidate-only",
+    )
+    with pytest.raises(RuntimeError, match="Geometry repair mode differs"):
+        pipeline.convert(incompatible)
+    assert not incompatible.run_dir.exists()
+
+
+def test_old_expectations_remain_unbound_and_invalid_geometry_mode_fails(tmp_path: Path) -> None:
+    from cad2gis.cad2gis_v3.config import ProjectExpectations
+
+    _, root, _ = _project(tmp_path)
+    profile = json.loads((root / "config/source_profile.json").read_text(encoding="utf-8"))
+    payload = profile["expectations"]
+    assert "geometry_repairs" not in payload
+    assert ProjectExpectations.from_mapping(payload, allow_incomplete=True).geometry_repairs is None
+    for invalid in ("off", True, []):
+        with pytest.raises(ValueError, match="expectations.geometry_repairs"):
+            ProjectExpectations.from_mapping({**payload, "geometry_repairs": invalid}, allow_incomplete=True)
 
 
 def test_compile_annotation_families_targets_insert_layers_not_label_layers() -> None:
