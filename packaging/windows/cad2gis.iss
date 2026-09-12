@@ -53,6 +53,8 @@ Name: "{userdesktop}\CAD2GIS"; Filename: "{app}\bin\cad2gis-desktop.exe"; Tasks:
 Filename: "{app}\bin\cad2gis-desktop.exe"; Description: "Open CAD2GIS"; Flags: nowait postinstall skipifsilent
 
 [Code]
+#include "upgrade_guard.iss"
+
 function HasPath(const Paths, Target: String): Boolean;
 begin
   Result := Pos(';' + Lowercase(Target) + ';', ';' + Lowercase(Paths) + ';') > 0;

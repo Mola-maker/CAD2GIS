@@ -6,12 +6,18 @@ GIS 库和 LibreDWG，无需先安装 Python、uv、AutoCAD、Conda 或 QGIS。
 
 ## 安装
 
-1. 退出正在运行的 CAD2GIS 本地服务，再运行 `CAD2GIS-0.7.1-windows-x64-setup.exe`。
+1. 退出正在运行的 CAD2GIS 本地服务，再运行 `CAD2GIS-0.7.2-windows-x64-setup.exe`。
 2. 默认安装到当前用户的 `%LOCALAPPDATA%\Programs\CAD2GIS`，不需要管理员权限。
 3. 可选择添加桌面快捷方式；“添加命令到用户 PATH”用于现有智能体插件。
 4. 从开始菜单打开 CAD2GIS。程序启动本地服务，并用系统浏览器打开专用登录链接。
 
 开发安装包尚无 Windows Authenticode 生产签名，不能将其描述为受信任发行商签名版。
+
+覆盖安装或卸载前，需要在每个已打开的 CAD2GIS 工作台左下角点击“关闭程序”。
+仅关闭浏览器标签页不会停止后台 Python 服务。0.7.2 会在删除或替换文件前检查
+运行时占用；发现仍在运行或无法写入的文件时停止并提示，保留已有安装。
+如果此前中断安装导致 `No module named 'encodings'`，退出所有旧服务后重新运行
+完整安装包即可恢复自带 Python；不需要另装系统 Python，也不需要删除项目或配置。
 
 ## 使用工作台
 
@@ -90,7 +96,7 @@ cad2gis doctor --deep --strict --profile full --json
 1. 使用 Python 3.12 安装 `build`、`setuptools` 及测试工具。
 2. 运行 `python tools/build_reproducible_wheel.py --output-dir dist/python --verify`。
 3. 按 `packaging/patches/README.md` 准备并验收 LibreDWG 0.14 MTEXT 终止修补版。
-4. 运行 `python tools/build_windows_package.py --wheel dist/python/cad2gis-0.7.1-py3-none-any.whl --libredwg <已验收原生工具目录>`。
+4. 运行 `python tools/build_windows_package.py --wheel dist/python/cad2gis-0.7.2-py3-none-any.whl --libredwg <已验收原生工具目录>`。
 
 已有完整 payload 时，先用 `tools/refresh_runtime_bundle.py` 更新指定 wheel，再运行
 `python tools/build_windows_package.py --wheel <冻结wheel> --payload <临时payload> --reuse-payload`。
