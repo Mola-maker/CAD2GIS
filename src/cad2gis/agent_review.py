@@ -89,12 +89,12 @@ def _binding(run: Path) -> dict[str, Any]:
     }
 
 
-def _json_url(url: str, *, owner_token: str = "") -> Any:
+def _json_url(url: str, *, owner_token: str = "", max_bytes: int = 1024 * 1024) -> Any:
     request = urllib.request.Request(url, headers={"X-CAD2GIS-Review-Owner": owner_token} if owner_token else {})
     with _OPENER.open(request, timeout=2) as response:
-        raw = response.read(1024 * 1024 + 1)
-    if len(raw) > 1024 * 1024:
-        raise ValueError("Review identity response exceeds its byte budget")
+        raw = response.read(max_bytes + 1)
+    if len(raw) > max_bytes:
+        raise ValueError("Review response exceeds its byte budget")
     return json.loads(raw)
 
 
@@ -103,7 +103,9 @@ def _probe(record: _OwnedReview) -> dict[str, Any]:
 
     identity = _json_url(f"{record.url}/api/agent-review", owner_token=record.owner_token)
     health = _json_url(f"{record.url}/api/health")
-    current = _json_url(f"{record.url}/api/run")
+    # Canonical run metadata can include source evidence larger than 1 MiB.
+    # Match the manifest reader's bound without enlarging identity/health/layers.
+    current = _json_url(f"{record.url}/api/run", max_bytes=64 * 1024 * 1024)
     if (not isinstance(identity, dict) or identity.get("session_id") != record.session_id
             or identity.get("binding") != record.binding
             or _binding(Path(record.binding["run_dir"])) != record.binding

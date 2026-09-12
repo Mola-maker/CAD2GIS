@@ -139,6 +139,26 @@ def test_partition_service_preserves_scope_and_uses_workspace_outside_parent_run
     assert agent_mcp.get_review_server_status(result["session_id"])["status"] == "stopped"
 
 
+def test_large_run_metadata_is_ready_but_default_response_budget_remains_bounded(fixture_run):
+    run, manifest = fixture_run
+    manifest["reasoning"] = {"source_evidence": "x" * 1_600_000}
+    _real_delivery(run, manifest)
+    manifest_before = (run / "run_manifest.json").read_bytes()
+    result = agent_mcp.start_review_server(str(run), port=_free_port())
+    assert result["status"] == "ready" and result["identity_verified"] is True
+    assert result["layers_available"] is True
+    raw = _http(result["url"] + "/api/run")
+    assert 1024 * 1024 < len(raw) < 2 * 1024 * 1024
+    assert len(json.loads(raw)["reasoning"]["source_evidence"]) == 1_600_000
+    with pytest.raises(ValueError, match="exceeds its byte budget"):
+        agent_review._json_url(result["url"] + "/api/run")
+    with pytest.raises(ValueError, match="exceeds its byte budget"):
+        agent_review._json_url(result["url"] + "/api/run", max_bytes=128)
+    assert agent_mcp.get_review_server_status(result["session_id"])["status"] == "ready"
+    assert agent_mcp.stop_review_server(result["session_id"])["status"] == "stopped"
+    assert (run / "run_manifest.json").read_bytes() == manifest_before
+
+
 def test_changed_manifest_is_not_reported_as_healthy(fixture_run):
     run, manifest = fixture_run
     _real_delivery(run, manifest)
