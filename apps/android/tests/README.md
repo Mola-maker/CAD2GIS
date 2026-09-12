@@ -8,7 +8,7 @@
 
 ```text
 emulator -avd CAD2GIS_API30 -port 5580 -no-window -noaudio -no-snapshot -gpu swiftshader_indirect
-adb -s emulator-5580 install -r dist/android/CAD2GIS-0.4.0-android-dev.apk
+adb -s emulator-5580 install -r dist/android/CAD2GIS-0.7.0-android-dev.apk
 adb -s emulator-5580 shell am start -n org.cad2gis.mobile/.MainActivity
 python apps/android/tests/emulator_ui.py --adb /path/to/adb --serial emulator-5580 --evidence tmp/android-evidence --connect https://cad.example.com
 adb -s emulator-5580 emu kill
@@ -26,3 +26,5 @@ python apps/android/tests/emulator_ui.py --adb /path/to/adb --serial emulator-55
 默认情况下 APK 会拒绝 fixture 自签名证书，这正是预期的负面测试。要测试登录和文件传输，只能在专门的、可丢弃的 AOSP 测试系统镜像中安装该测试 CA；测试镜像可用 `-writable-system` 启动并使用 Android 官方 adb root/remount 流程。不要修改 APK 的系统证书策略，不要改宿主机或真实设备的证书信任。系统镜像版本可能要求先完成其验证启动设置，不能把重启失败当成 APK 问题。模拟器里的 `10.0.2.2` 指向主机回环地址，普通手机应使用真实服务器域名。
 
 应独立记录：有效证书登录、下载内容 SHA-256、跨源导航拒绝、切换端口后重新登录、无效证书拒绝以及失败时旧页面已清空。不要仅凭控件出现就声明上传成功；需要服务器收到正确文件。测试产物中的 `emulator-test-report.json` 应绑定实际安装的 APK SHA-256，并明确实体设备及文件选择器未完成的覆盖范围。
+
+恢复验收还需覆盖：不可达服务器在 30 秒加载截止时间后显示连接失败，进度条消失；再切换到系统受信任的 HTTPS 页面能够恢复。Home 后通过 launcher 返回应恢复原页面，不应假设地址对话框自动弹出；点击“服务器”后应出现已记住的服务地址。公共 HTTPS 页面只证明证书与导航能力，不能代替真实 CAD2GIS 登录、语义提取或文件传输验收。相同 versionCode 的 `adb install -r` 只能证明替换安装及状态保留，不能代替旧版本升级。

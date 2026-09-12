@@ -10,6 +10,7 @@ import html
 import json
 import re
 import sqlite3
+import csv
 from contextlib import closing
 import subprocess
 import tempfile
@@ -19,12 +20,100 @@ OVERRIDE_SCHEMA = 'cad2gis.svg-symbol-overrides.v1'
 # Entity types whose own geometry is a meaningful symbol outline. POINT carries no
 # outline and TEXT glyphs are annotation, so neither may be bound as self geometry.
 SELF_GEOMETRY_TYPES = frozenset({'LWPOLYLINE', 'POLYLINE', 'LINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE'})
+GROUP_GEOMETRY_TYPES = SELF_GEOMETRY_TYPES | {'INSERT', 'HATCH', 'SOLID', 'TRACE', '3DFACE'}
+GROUP_ANNOTATION_TYPES = frozenset({'TEXT', 'MTEXT'})
+
+
+def _source_groups(document):
+    """Index explicit CAD GROUP membership, never infer membership by proximity."""
+    groups = {}
+    for name, group in document.groups:
+        members = list(group)
+        record = dict(name=name, handle=group.dxf.handle,
+                      member_handles=[member.dxf.handle for member in members])
+        for member in members:
+            groups.setdefault(member.dxf.handle, []).append(record)
+    return groups
+
+
+def _group_source(document, entity, groups):
+    """Return conservative render evidence for one non-block grouped feature."""
+    candidates = groups.get(entity.dxf.handle, [])
+    if not candidates:
+        return None
+    evidence = dict(groups=candidates, basis='explicit_dxf_group_membership')
+    if len(candidates) != 1:
+        return dict(status='UNRESOLVED_GROUP_AMBIGUOUS', **evidence)
+    handles = candidates[0]['member_handles']
+    members = [document.entitydb.get(handle) for handle in handles]
+    if len(members) > 64:
+        return dict(status='UNRESOLVED_GROUP_UNSUPPORTED', reason='group_exceeds_64_members', **evidence)
+    if any(member is None or not member.is_alive or member.dxf.owner != entity.dxf.owner
+           for member in members):
+        return dict(status='UNRESOLVED_GROUP_UNSUPPORTED', reason='unresolved_or_different_layout', **evidence)
+    allowed = GROUP_GEOMETRY_TYPES | GROUP_ANNOTATION_TYPES | {'POINT'}
+    if any(member.dxftype() not in allowed for member in members):
+        return dict(status='UNRESOLVED_GROUP_UNSUPPORTED', reason='unsupported_group_entity', **evidence)
+    if not any(member.dxftype() in GROUP_GEOMETRY_TYPES for member in members):
+        return dict(status='UNRESOLVED_GROUP_UNSUPPORTED', reason='group_has_no_symbol_geometry', **evidence)
+    # POINT is semantic identity, not a pole outline. Its header-controlled marker
+    # is deliberately excluded; group text, frames and block geometry stay intact.
+    return dict(status='SOURCE_GROUP_CANDIDATE',
+                render_handles=[member.dxf.handle for member in members if member.dxftype() != 'POINT'],
+                **evidence)
+
+
+def _coverage_report(points):
+    """Count delivered feature instances, including repeated database scopes."""
+    def count(rows):
+        rendered = [point for point in rows if point['symbol_id']
+                    and not point['status'].startswith('UNRESOLVED_')]
+        return dict(delivered=len(rows), source_present=sum(point['source_type'] != 'missing' for point in rows),
+                    rendered=len(rendered), unresolved=len(rows) - len(rendered),
+                    grouped=sum(point.get('geometry_basis') == 'explicit_dxf_group' for point in rendered),
+                    curated_alternate_geometry=sum(point.get('geometry_basis') == 'curated_handle_mapping'
+                                                   for point in rendered),
+                    presentation_overlays=sum(bool(point.get('presentation_overlay')) for point in rendered))
+    return dict(schema='cad2gis.svg-coverage.v1', grain='delivered_point_per_database_scope_and_layer',
+                counts_are_accuracy_claims=False, total=count(points),
+                by_layer={layer: count([point for point in points if point['layer'] == layer])
+                          for layer in sorted({point['layer'] for point in points})},
+                by_database_scope={scope: count([point for point in points if point['database'] == scope])
+                                   for scope in sorted({point['database'] for point in points})})
+
+
+def _write_review_queue(output, points):
+    """Export source locators for unresolved geometry and curated presentation."""
+    fields = ['database_scope', 'feature_class', 'source_handle', 'source_type', 'source_layer',
+              'source_layout', 'status', 'review_reason', 'source_x', 'source_y', 'source_z',
+              'coordinate_basis', 'render_handles', 'symbol_id']
+    records = []
+    for point in points:
+        reason = ('unresolved' if point['status'].startswith('UNRESOLVED_') else
+                  'curated_alternate_geometry' if point.get('geometry_basis') == 'curated_handle_mapping' else
+                  'curated_text_overlay' if point.get('presentation_overlay') else None)
+        if reason is None:
+            continue
+        anchor = point.get('source_anchor') or {}
+        coordinates = anchor.get('coordinates', (None, None, None))
+        records.append(dict(database_scope=point['database'], feature_class=point['layer'],
+                            **{key: point.get(key) for key in ('source_handle', 'source_type', 'source_layer',
+                                                             'source_layout', 'status', 'symbol_id')},
+                            review_reason=reason, source_x=coordinates[0], source_y=coordinates[1],
+                            source_z=coordinates[2], coordinate_basis=anchor.get('basis'),
+                            render_handles=';'.join(point['render_handles'])))
+    with (output / 'svg-review-queue.csv').open('w', encoding='utf-8-sig', newline='') as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(records)
+    return dict(path='svg-review-queue.csv', count=len(records),
+                coordinates='original CAD coordinates when available; not registered GIS or surveyed coordinates')
 
 
 def load_overrides(path) -> dict | None:
     """Read a project's curated SVG symbol overrides, if the file exists.
 
-    The default inventory binds symbols only to block INSERTs. A drawing may draw a
+    The inventory binds source geometry and explicit CAD groups. A drawing may draw a
     delivered feature as a closed polyline and its visible pole symbol as a block that
     is inserted at the origin, so a project can declare what to render per feature.
     Every rule is explicit and recorded in the correspondence report.
@@ -75,6 +164,9 @@ def load_overrides(path) -> dict | None:
             raise ValueError('Legend overrides need a filename-safe symbol_id and render_handles')
         legend.append(dict(symbol_id=symbol_id, render_handles=render_handles,
                            label=entry.get('label') or symbol_id))
+    identities = [(rule['feature_class'], rule['source_handle']) for rule in rules]
+    if len(identities) != len(set(identities)):
+        raise ValueError('Ambiguous SVG symbol overrides for the same class and source handle')
     return {'rules': rules, 'legend': legend, 'path': str(path)}
 
 
@@ -190,6 +282,7 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
             if process.returncode or not dxf.is_file():
                 raise RuntimeError('LibreDWG failed during optional SVG inventory')
         document = ezdxf.readfile(dxf)
+        groups = _source_groups(document)
         features, inserts = [], {}
         for layout in document.layouts:
             for entity in layout:
@@ -223,6 +316,10 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                 setattr(clone.dxf, axis, float(clone.dxf.get(axis, 1)) / scale)
             key = (clone.dxf.name, clone.dxf.layer, clone.dxf.get('color', 256),
                    clone.dxf.get('true_color', None), clone.dxf.xscale, clone.dxf.yscale,
+                   clone.dxf.zscale, tuple(clone.dxf.extrusion),
+                   clone.dxf.row_count, clone.dxf.column_count,
+                   clone.dxf.row_spacing, clone.dxf.column_spacing,
+                   entity.get_layout().name if entity.get_layout() is not None else None,
                    tuple((a.dxf.tag, a.dxf.text) for a in entity.attribs))
             if key not in fingerprint_cache:
                 # Attached attributes have world coordinates; avoid pretending these normalize.
@@ -230,7 +327,7 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                     fingerprint_cache[key] = None
                 else:
                     try:
-                        rendered, skipped = _render(document, [clone])
+                        rendered, skipped = _render(document, [clone], source_layout=entity.get_layout())
                         fingerprint_cache[key] = (hashlib.sha256(rendered.encode()).hexdigest()
                                                   if not any(s['reason'] != 'invisible' for s in skipped) else None)
                     except (ValueError, TypeError, KeyError):
@@ -245,6 +342,11 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
         for point in points:
             handle = point['source_handle']
             entity = document.entitydb.get(handle)
+            point.update(source_layer=entity.dxf.layer if entity is not None else None,
+                         source_layout=(entity.get_layout().name if entity is not None and entity.get_layout()
+                                        else None), render_handles=[])
+            if entity is not None and entity.dxftype() == 'POINT':
+                point['source_anchor'] = dict(coordinates=list(entity.dxf.location), basis='source_point_wcs')
             rule = _override_rule(overrides, point['layer'], handle)
             if rule is not None:
                 # Curated rule wins over the block-instance default.
@@ -263,8 +365,32 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                     point.update(symbol_id=symbol_id,
                                  source_type=entity.dxftype() if entity is not None else 'missing',
                                  legend_handles=[], status='CURATED_OVERRIDE',
+                                 render_handles=render_handles,
+                                 geometry_basis=('source_entity' if render_handles == [handle]
+                                                 else 'curated_handle_mapping'),
+                                 presentation_overlay=bool(rule.get('overlay_text')),
+                                 source_instance_fidelity_verified=False,
                                  override=dict(mode=rule['mode'], render_handles=render_handles,
                                                rationale=rule['rationale']))
+                    continue
+            if entity is not None and entity.dxftype() != 'INSERT':
+                grouped = _group_source(document, entity, groups)
+                if grouped is not None:
+                    point.update(group_evidence=grouped)
+                    if grouped['status'].startswith('UNRESOLVED_'):
+                        point.update(status=grouped['status'], source_type=entity.dxftype(),
+                                     legend_handles=[], symbol_id=None)
+                        continue
+                if grouped is not None or entity.dxftype() in SELF_GEOMETRY_TYPES:
+                    symbol_id = 'instance-' + handle.lower()
+                    render_handles = grouped['render_handles'] if grouped else [handle]
+                    selected[symbol_id] = dict(symbol_id=symbol_id, label=f"{point['layer']} / {handle}",
+                                               handles=[handle], render_handles=render_handles)
+                    point.update(symbol_id=symbol_id, source_type=entity.dxftype(), legend_handles=[],
+                                 render_handles=render_handles,
+                                 geometry_basis='explicit_dxf_group' if grouped else 'source_entity',
+                                 status='SOURCE_GROUP_CANDIDATE' if grouped else 'SOURCE_GEOMETRY_ONLY',
+                                 source_instance_fidelity_verified=False)
                     continue
             if entity is None or entity.dxftype() != 'INSERT':
                 point.update(status=('UNRESOLVED_NESTED_HANDLE' if '/' in handle else
@@ -277,6 +403,8 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
             signature = fingerprint(entity)
             matches = legend_signatures.get(signature, []) if signature else []
             point.update(symbol_id=symbol_id, source_type='INSERT', normalized_svg_sha256=signature,
+                         render_handles=[handle], geometry_basis='source_entity',
+                         source_instance_fidelity_verified=False,
                          legend_handles=matches,
                          status='LEGEND_MATCH_CANDIDATE' if matches else 'SOURCE_INSTANCE_ONLY')
         # Include detected margin samples as separate assets, so correspondence can be compared visually.
@@ -322,8 +450,11 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                          database_scope=p['database']) for p in points
                     if p['symbol_id'] and p['status'] != 'UNRESOLVED_RENDER_INCOMPLETE']
         counts = {s: sum(p['status'] == s for p in points) for s in sorted({p['status'] for p in points})}
+        coverage = _coverage_report(points)
+        review_queue = _write_review_queue(output, points)
         report = dict(schema='cad2gis.svg-correspondence.v1', source_sha256=digest, mode='candidate',
                       all_points_accounted_for=len(points), dispositions=counts,
+                      coverage=coverage, review_queue=review_queue,
                       complete_legend_correspondence_verified=False, auto_applied=False,
                       source_instance_bindings=bindings, points=points, legend_clusters=clusters,
                       inventory_blocks=len(inserts), input_databases_sha256=published_hashes,
@@ -334,6 +465,10 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
                                               for rule in overrides['rules'] if rule.get('overlay_text')])),
                       database_scopes={str(published_paths[path]): scope_names[path] for path in databases})
         (output / 'correspondence.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
+        summary_rows = ''.join('<tr><td>' + html.escape(layer) + '</td>' + ''.join(
+            f'<td>{values[key]}</td>' for key in ('delivered', 'source_present', 'rendered',
+                                                'curated_alternate_geometry', 'unresolved')) + '</tr>'
+            for layer, values in coverage['by_layer'].items())
         rows = ''.join('<tr><td>' + html.escape(p['layer'] + ' / ' + p['source_handle']) + '</td><td>' +
                        (f'<a href="symbols/{p["symbol_id"]}.svg"><img src="symbols/{p["symbol_id"]}.png" alt="Source instance"></a>' if p['symbol_id'] else '保留原样式') + '</td><td>' +
                        ''.join(f'<a href="symbols/legend-{h.lower()}.svg"><img src="symbols/legend-{h.lower()}.png" alt="Legend candidate"></a>{h}' for h in p['legend_handles']) +
@@ -343,7 +478,12 @@ def _prepare(source: Path, databases: list[Path], output: Path, *, font_dirs=(),
             '<style>body{font:16px system-ui;margin:2rem}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:1rem}img{width:110px;height:110px;object-fit:contain}</style>'
             '<h1>源实体与图例候选对应复核</h1><p>每个交付点均列出处理状态。候选尚未获得完整图例验收；未确认项保留原样式。'
             '归一化形状相同是对应证据，不替代动态状态和原图字体核验。</p><p><a href="symbols.sqlite3">独立 SQLite</a> · '
-            '<a href="correspondence.json">全部源句柄、检测范围与覆盖率</a></p>'
+            '<a href="correspondence.json">全部源句柄、检测范围与覆盖率</a> · '
+            '<a href="svg-review-queue.csv">下载缺失与人工替代复核清单</a></p>'
+            '<p>数量按交付数据库内的要素实例统计，分区重复实例分别计数。人工替代表示显式指定了不同的渲染句柄，'
+            '不代表原图符号已恢复。CSV 坐标如有提供，是源 CAD POINT 坐标，不是 GCP 校验后的 GIS 坐标。</p>'
+            '<table><tr><th>要素类别</th><th>交付数</th><th>源存在</th><th>已渲染候选</th><th>人工替代几何</th><th>未解决</th></tr>'
+            + summary_rows + '</table>'
             '<table><tr><th>地图实体</th><th>源实体 SVG</th><th>边缘图例候选</th><th>状态</th></tr>' + rows + '</table></html>', encoding='utf-8')
     if before != {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in databases}:
         raise ValueError('SVG workflow changed the delivery databases')

@@ -8,7 +8,7 @@
 
 ```sh
 sha256sum --check SHA256SUMS --ignore-missing
-sudo apt install ./cad2gis_0.4.0_amd64.deb
+sudo apt install ./cad2gis_0.7.0_amd64.deb
 ```
 
 在应用菜单打开 **CAD2GIS**，默认浏览器会显示本地工作台。也可以运行 `cad2gis-desktop`。工作台与智能体调用共用同一转换引擎，支持既有 OSM 匹配、人工 GCP 预览与二次匹配，以及 SVG 候选提取。需要联网的 OSM 搜索、地图底图或 AI 服务仍需网络和相应配置。
@@ -17,7 +17,7 @@ sudo apt install ./cad2gis_0.4.0_amd64.deb
 
 ## 无管理员权限的运行方式
 
-将 `cad2gis-0.4.0-linux-x86_64.tar.gz` 解压到自己拥有的目录，运行解压目录里的 `bin/cad2gis-desktop`。该运行时可以移动目录，不依赖构建机的 Python 路径。便携包要求系统已提供 `libstdc++6`、`libgomp1`、CA 证书与可用字体；桌面打开功能需要默认浏览器。可用 `bin/cad2gis doctor --deep --strict --profile full --json` 检查运行时。
+将 `cad2gis-0.7.0-linux-x86_64.tar.gz` 解压到自己拥有的目录，运行解压目录里的 `bin/cad2gis-desktop`。该运行时可以移动目录，不依赖构建机的 Python 路径。便携包要求系统已提供 `libstdc++6`、`libgomp1`、CA 证书与可用字体；桌面打开功能需要默认浏览器。可用 `bin/cad2gis doctor --deep --strict --profile full --json` 检查运行时。
 
 ## 智能体插件接口
 
@@ -34,14 +34,24 @@ Android 安装版连接 HTTPS 服务器上的工作台；转换由服务器或�
 
 ## 从代码构建
 
-在具备 C 编译器和 binutils 的 Ubuntu 24.04 x86_64 上运行。准备步骤使用官方校验值固定的 Python 独立发行包和 LibreDWG 0.14 源码；本机构建目录限定在仓库 `tmp` 下。若缺 `make`，准备脚本会从 Ubuntu 签名软件索引下载固定版本并仅解包到临时目录，不安装系统软件。Python 的可选 `share/terminfo` 终端仿真数据库因 WSL 大小写别名冲突而排除；CAD2GIS 无需该数据库。
+在具备 C 编译器、make、Git 和 binutils 的隔离 Ubuntu 24.04 x86_64 构建环境中运行；补丁编译器需要可写的 `/build`，最终运行时写到仓库 `tmp` 下。准备步骤使用官方校验值固定的 Python 独立发行包和 LibreDWG 0.14 源码。Python 的可选 `share/terminfo` 终端仿真数据库因 WSL 大小写别名冲突而排除；CAD2GIS 无需该数据库。
+
+`prepare_runtime.py` 留下的 `tmp/packaging-linux/libredwg-runtime` 是未打本次 MTEXT 补丁的上游构建，不能用于 0.7.0 最终交付。必须继续运行补丁编译和真实图纸重复性验收，并把下列 `--libredwg` 指向补丁目录。先准备最终 wheel；本次冻结文件的 SHA256 为 `e5d99d655a3e1824857d7dc583c0a8dd667e0d0b76abb9e6837c8db4c79128fb`。
+
+将 `CAD2GIS_NATIVE_INPUTS` 设为经审阅的原生验收 JSON 清单路径，结构为 `{"cases": [...]}`；每个用例包含 `name`、`file`、`sha256`、`expected_mtext_count` 和 `expected_json_mtext_sha256`，其中 `file` 相对于清单所在目录解析。后两项应来自独立审阅的 JSON 原文基准，不能从待验收输出反向生成。真实 DWG 和该本地清单不随公开源码分发。没有这些输入时只能完成构建，不能声称完成真实文本验收。
 
 ```sh
+set -eu
 python3 packaging/linux/prepare_runtime.py
+python3 packaging/build_patched_libredwg.py --target linux --jobs 2
+python3 tools/verify_native_mtext.py \
+  --native tmp/packaging-native-patched/linux/libredwg/bin \
+  --inputs "${CAD2GIS_NATIVE_INPUTS:?Set the reviewed native acceptance manifest path}" \
+  --output tmp/native-patched-validation-linux-rebuild --repetitions 5
 python3 tools/build_runtime_bundle.py \
   --runtime-source tmp/packaging-linux/standalone/python \
-  --wheel dist/python/cad2gis-0.4.0-py3-none-any.whl \
-  --libredwg tmp/packaging-linux/libredwg-runtime \
+  --wheel dist/semantic-motion-final/cad2gis-0.7.0-py3-none-any.whl \
+  --libredwg tmp/packaging-native-patched/linux/libredwg \
   --output tmp/packaging-linux/payload
 python3 tools/build_linux_package.py \
   --payload tmp/packaging-linux/payload --output dist/linux
@@ -59,3 +69,7 @@ python3 tools/build_linux_package.py \
 ```
 
 该验证只生成自造图纸，覆盖原生 CAD/GIS、MCP、完整 OSM+SVG 转换、本地工作台入口、上传、SVG 审查、GCP 预览和实际二次匹配；原交付文件的哈希必须保持不变。无图形桌面的 WSL 仅验证服务与页面响应，默认浏览器窗口的自动打开需在实际 Linux 桌面中检查。
+
+## 可选 Redis 查询缓存
+
+安装包带有 Redis Python 客户端、`config/redis.compose.yaml` 和 `docs/REDIS_RUNTIME_2026-09-11.md`。Redis 服务不会自动启动；未配置时仍直接使用 SQLite。需要启用时，从安装包根目录启动 Compose，并为后端进程设置 `CAD2GIS_REDIS_URL=redis://127.0.0.1:16379/0`。默认 TTL 为 120 秒，Redis 不可用时源要素摘要查询会回退 SQLite。`doctor --deep` 和 MCP runtime 诊断会报告真实连接状态；语义提交、源图和编译产物的权威仍在本地持久化文件/SQLite，Redis Streams 队列未启用。

@@ -22,6 +22,7 @@ def test_mcp_stdio_semantic_roundtrip_and_protocol_budget(semantic_fixture, tmp_
     f = semantic_fixture
     environment = {**os.environ, "CAD2GIS_PROJECT_ROOT": str(tmp_path),
                    "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")}
+    environment.pop("CAD2GIS_REDIS_URL", None)
     context = {"source_run": str(f["source"]),
                "prepare_manifest": str(tmp_path / "wire-prepare" / "manifest.json"),
                "semantic_store": str(tmp_path / "wire-store.sqlite3")}
@@ -43,7 +44,12 @@ def test_mcp_stdio_semantic_roundtrip_and_protocol_budget(semantic_fixture, tmp_
                     assert debug["status"] == "ok"
                     assert debug["protocol_version"] == handshake.protocolVersion
                     assert debug["transport"] == "stdio"
-                    assert debug["redis"] == {"status": "not_configured", "required": False}
+                    cache = debug["redis"]
+                    assert cache["status"] == "not_configured"
+                    assert cache["required"] is False and cache["configured"] is False
+                    assert cache["authority"] == "sqlite_and_source_manifests"
+                    assert cache["fallback"] == "sqlite"
+                    assert cache["connectivity_checked"] is False
                     page = await session.call_tool("query_source_entities", {"run_dir": str(f["source"]), "max_bytes": 8192})
                     assert not page.isError
                     assert len(page.model_dump_json(exclude_none=True).encode()) < 8192

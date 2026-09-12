@@ -10,6 +10,8 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Bundle;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.view.View;
 import android.view.WindowInsets;
@@ -44,6 +46,7 @@ import java.util.concurrent.Executors;
 public final class MainActivity extends Activity {
     private static final int PICK_UPLOAD = 1;
     private static final int SAVE_DOWNLOAD = 2;
+    private static final long NAVIGATION_TIMEOUT_MS = 30000;
     private WebView web;
     private TextView status;
     private ProgressBar progress;
@@ -52,6 +55,8 @@ public final class MainActivity extends Activity {
     private String pendingDownload;
     private boolean pageFailed;
     private boolean resetHistoryAfterNavigation;
+    private final Handler navigationHandler = new Handler(Looper.getMainLooper());
+    private Runnable navigationTimeout;
     private final ExecutorService downloads = Executors.newSingleThreadExecutor();
 
     @Override public void onCreate(Bundle saved) {
@@ -82,7 +87,7 @@ public final class MainActivity extends Activity {
         Button home = new Button(this);
         home.setText("CAD2GIS");
         home.setContentDescription("返回服务器首页");
-        home.setOnClickListener(v -> { if (server != null) web.loadUrl(server.home()); });
+        home.setOnClickListener(v -> { if (server != null) loadPage(server.home()); });
         toolbar.addView(home);
         status = new TextView(this);
         status.setText("连接 CAD2GIS 服务器");
@@ -107,7 +112,7 @@ public final class MainActivity extends Activity {
             try {
                 server = ServerAddress.parse(remembered);
                 String page = saved == null ? null : saved.getString("page");
-                web.loadUrl(server.permits(page) ? page : server.home());
+                loadPage(server.permits(page) ? page : server.home());
             } catch (IllegalArgumentException error) { chooseServer(); }
         }
     }
@@ -137,6 +142,7 @@ public final class MainActivity extends Activity {
                 if (view != web) return;
                 pageFailed = false;
                 status.setText("正在连接…");
+                startNavigationDeadline(view);
             }
 
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -159,16 +165,20 @@ public final class MainActivity extends Activity {
             @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 handler.cancel();
                 if (view != web) return;
+                cancelNavigationDeadline();
                 pageFailed = true;
                 web.setVisibility(View.INVISIBLE);
+                progress.setVisibility(View.GONE);
                 status.setText("证书验证失败");
                 message("无法验证服务器 HTTPS 证书，请联系服务器管理员");
             }
 
             @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (view == web && request.isForMainFrame()) {
+                    cancelNavigationDeadline();
                     pageFailed = true;
                     web.setVisibility(View.INVISIBLE);
+                    progress.setVisibility(View.GONE);
                     status.setText("连接失败，请检查地址或网络后重试");
                 }
             }
@@ -176,6 +186,7 @@ public final class MainActivity extends Activity {
             @Override public void onPageFinished(WebView view, String url) {
                 if (view != web) return;
                 if (!pageFailed && server != null && server.permits(url)) {
+                    cancelNavigationDeadline();
                     web.setVisibility(View.VISIBLE);
                     status.setText(server.origin());
                     if (resetHistoryAfterNavigation) {
@@ -188,6 +199,7 @@ public final class MainActivity extends Activity {
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onProgressChanged(WebView view, int value) {
+                if (view != web || pageFailed) return;
                 progress.setProgress(value);
                 progress.setVisibility(value == 100 ? View.GONE : View.VISIBLE);
             }
@@ -239,6 +251,7 @@ public final class MainActivity extends Activity {
             try {
                 ServerAddress next = ServerAddress.parse(address.getText().toString());
                 boolean changed = server == null || !next.origin().equals(server.origin());
+                cancelNavigationDeadline();
                 web.stopLoading();
                 pendingDownload = null;
                 if (uploadCallback != null) { uploadCallback.onReceiveValue(null); uploadCallback = null; }
@@ -259,15 +272,43 @@ public final class MainActivity extends Activity {
                     WebStorage.getInstance().deleteAllData();
                     CookieManager.getInstance().removeAllCookies(done -> {
                         CookieManager.getInstance().flush();
-                        if (server == next) web.loadUrl(next.home());
+                        if (server == next) loadPage(next.home());
                     });
                 } else {
                     web.setVisibility(View.VISIBLE);
-                    web.loadUrl(next.home());
+                    loadPage(next.home());
                 }
             } catch (IllegalArgumentException error) { address.setError(error.getMessage()); }
         }));
         dialog.show();
+    }
+
+    private void loadPage(String url) {
+        pageFailed = false;
+        status.setText("正在连接…");
+        startNavigationDeadline(web);
+        web.loadUrl(url);
+    }
+
+    private void startNavigationDeadline(WebView target) {
+        cancelNavigationDeadline();
+        navigationTimeout = () -> {
+            if (target != web) return;
+            pageFailed = true;
+            target.stopLoading();
+            target.setVisibility(View.INVISIBLE);
+            progress.setVisibility(View.GONE);
+            status.setText("连接失败，请检查地址或网络后重试");
+            navigationTimeout = null;
+        };
+        navigationHandler.postDelayed(navigationTimeout, NAVIGATION_TIMEOUT_MS);
+    }
+
+    private void cancelNavigationDeadline() {
+        if (navigationTimeout != null) {
+            navigationHandler.removeCallbacks(navigationTimeout);
+            navigationTimeout = null;
+        }
     }
 
     @Override protected void onActivityResult(int request, int result, Intent data) {
@@ -350,6 +391,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        cancelNavigationDeadline();
         if (uploadCallback != null) uploadCallback.onReceiveValue(null);
         downloads.shutdown();
         if (web != null) { web.stopLoading(); web.destroy(); }

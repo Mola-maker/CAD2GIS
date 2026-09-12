@@ -181,6 +181,12 @@ class Jobs:
         action = payload.get("action")
         if action == "doctor":
             return ["doctor", "--deep", "--strict", "--profile", "full", "--json"], ""
+        if action == "semantic-extract":
+            source = self.config.path(payload.get("source"), kind="source")
+            output = self.config.path(payload.get("run"), exists=False)
+            if output.exists():
+                raise ValueError("结果目录已存在，请使用新的目录以保留历史结果")
+            return ["export-source", str(source), "--run-dir", str(output / "source"), "--json"], str(output)
         if action not in {"inspect", "bootstrap", "convert", "auto-convert"}:
             raise ValueError("不支持的操作")
         source = self.config.path(payload.get("source"), kind="source")
@@ -216,7 +222,10 @@ class Jobs:
                 raise RuntimeError("已有任务正在执行，请等待完成或先取消任务")
             job_id = secrets.token_hex(10)
             record = {"id": job_id, "action": payload["action"], "status": "queued", "log": "",
-                      "run_dir": run, "exit_code": None, "created": time.time()}
+                       "run_dir": run, "exit_code": None, "created": time.time(),
+                       "stage": "queued", "completed_stages": 0,
+                       "total_stages": 3 if payload["action"] == "semantic-extract" else 1,
+                       "artifacts": []}
             self.records[job_id] = record
             self.active = job_id
             # Old logs are not a durable run record; manifests remain authoritative.
@@ -234,37 +243,109 @@ class Jobs:
             environment.update(self.settings.environment(provider))
         hidden = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {"start_new_session": True}
         try:
-            with self.lock:
-                if record["status"] == "cancelled" or self.closed:
-                    record["status"] = "cancelled"
-                    return
-                self.process = subprocess.Popen(
-                    [sys.executable, "-I", "-B", "-u", "-X", "utf8", "-m", "cad2gis.cli", *args], cwd=str(self.config.roots[0]),
-                    env=environment, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", **hidden,
-                )
-                process = self.process
-                record["status"] = "running"
-            assert process.stdout is not None
-            for line in process.stdout:
-                for name in ("CAD2GIS_APP_PASSWORD", "DEEPSEEK_API_KEY", "NEWAPI_API_KEY", "NEW_API_API_KEY"):
-                    secret = environment.get(name, "")
-                    if secret:
-                        line = line.replace(secret, "[已隐藏]")
+            semantic = record["action"] == "semantic-extract"
+            stages = [("source" if semantic else "execute", args)]
+            if semantic:
+                output = self.config.path(record["run_dir"], exists=False)
+                # Reserve a fresh directory atomically. Never reuse an accepted run.
                 with self.lock:
-                    record["log"] = (record["log"] + line)[-131072:]
-            code = process.wait()
+                    if record["status"] in {"cancelling", "cancelled"} or self.closed:
+                        record["status"] = "cancelled"
+                        return
+                    output.mkdir(parents=True, exist_ok=False)
+                stages.append(("candidates", ["semantic", "prepare", "--source-run", str(output / "source"),
+                                               "--output-dir", str(output / "candidates"), "--json"]))
+            for stage, command in stages:
+                with self.lock:
+                    if record["status"] in {"cancelling", "cancelled"} or self.closed:
+                        record["status"] = "cancelled"
+                        return
+                    record.update(status="running", stage=stage)
+                    if semantic:
+                        record["log"] += "\n" + {"source": "读取原始 CAD 事实…", "candidates": "建立来源绑定的语义候选…"}[stage] + "\n"
+                    self.process = subprocess.Popen(
+                        [sys.executable, "-I", "-B", "-u", "-X", "utf8", "-m", "cad2gis.cli", *command], cwd=str(self.config.roots[0]),
+                        env=environment, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", **hidden,
+                    )
+                    process = self.process
+                assert process.stdout is not None
+                for line in process.stdout:
+                    for name in ("CAD2GIS_APP_PASSWORD", "DEEPSEEK_API_KEY", "NEWAPI_API_KEY", "NEW_API_API_KEY"):
+                        secret = environment.get(name, "")
+                        if secret:
+                            line = line.replace(secret, "[已隐藏]")
+                    with self.lock:
+                        record["log"] = (record["log"] + line)[-131072:]
+                code = process.wait()
+                with self.lock:
+                    self.process = None
+                    record["exit_code"] = code
+                    if record["status"] in {"cancelling", "cancelled"}:
+                        record["status"] = "cancelled"
+                        return
+                    if code != 0:
+                        record["status"] = "failed"
+                        return
+                    record["completed_stages"] += 1
+            if semantic:
+                with self.lock:
+                    if record["status"] in {"cancelling", "cancelled"}:
+                        record["status"] = "cancelled"
+                        return
+                    record["stage"] = "verify"
+                # Use canonical validators, not a zero exit code or a file count,
+                # to establish that the source and candidate manifests agree.
+                artifacts = self.semantic_artifacts(record["run_dir"])
+                with self.lock:
+                    if record["status"] in {"cancelling", "cancelled"}:
+                        record["status"] = "cancelled"
+                        return
+                    record.update(artifacts=artifacts["artifacts"], summary=artifacts["summary"], completed_stages=3)
             with self.lock:
-                record["exit_code"] = code
-                if record["status"] != "cancelled":
-                    record["status"] = "succeeded" if code == 0 else "failed"
+                if record["status"] not in {"cancelling", "cancelled"}:
+                    record.update(status="succeeded", stage="complete")
         except Exception as exc:
             with self.lock:
-                record.update(status="failed", log=(record["log"] + f"\n无法运行任务：{exc}")[-131072:])
+                if record["status"] not in {"cancelling", "cancelled"}:
+                    record.update(status="failed", log=(record["log"] + f"\n无法运行任务：{exc}")[-131072:])
         finally:
             with self.lock:
+                if record["status"] == "cancelling":
+                    record["status"] = "cancelled"
                 self.process = None
                 self.active = ""
+
+    def semantic_artifacts(self, run: str) -> dict[str, Any]:
+        """Admit fixed output paths before canonical source/candidate validation."""
+        root = self.config.path(run, kind="directory")
+        source = self.config.path(str(root / "source"), kind="directory")
+        source_manifest = self.config.path(str(source / "source_manifest.json"))
+        prepare_manifest = self.config.path(str(root / "candidates/manifest.json"))
+        if max(source_manifest.stat().st_size, prepare_manifest.stat().st_size) > 8 * 1024 * 1024:
+            raise ValueError("语义提取清单过大")
+        facts = json.loads(source_manifest.read_text(encoding="utf-8"))
+        if not isinstance(facts, dict) or not isinstance(facts.get("artifacts"), dict):
+            raise ValueError("语义源清单结构无效")
+        for artifact in facts.get("artifacts", {}).values():
+            if not isinstance(artifact, dict):
+                raise ValueError("语义源产物记录无效")
+            self.config.path(artifact.get("path"))
+        paths = [("source_manifest", "源事实清单", source_manifest, "json"),
+                 ("prepare_manifest", "语义候选清单", prepare_manifest, "json"),
+                 ("source_database", "源事实数据库", source / "source.gpkg", "database"),
+                 ("candidate_database", "语义候选数据库", root / "candidates/candidate_index.sqlite3", "database")]
+        for _, _, path, _ in paths:
+            self.config.path(str(path))
+        from .cad2gis_v3.semantic_stage import _bound_context
+
+        manifest, _, _ = _bound_context(source, prepare_manifest)
+        return {"run_dir": str(root), "summary": {
+                    "entity_count": manifest["entity_count"], "candidate_count": manifest["candidate_count"],
+                    "source_sha256": manifest["source_sha256"], "snapshot_sha256": manifest["snapshot_sha256"],
+                    "status": manifest["status"], "semantic_committed": False,
+                }, "artifacts": [{"name": name, "label": label, "path": str(path), "kind": kind}
+                                 for name, label, path, kind in paths]}
 
     def list(self):
         with self.lock:
@@ -274,7 +355,9 @@ class Jobs:
         with self.lock:
             if job_id != self.active:
                 raise ValueError("任务已结束或不存在")
-            self.records[job_id]["status"] = "cancelled"
+            if self.records[job_id]["status"] in {"succeeded", "failed", "cancelled"}:
+                raise ValueError("任务已结束或不存在")
+            self.records[job_id]["status"] = "cancelling"
             process = self.process
         if process is not None and process.poll() is None:
             if os.name == "nt":
@@ -408,6 +491,9 @@ class Application:
             return {"status": "ok", "schema_version": "cad2gis.application.v1", "remote": config.remote,
                     "roots": list(map(str, config.roots)), "run_dir": session.run_dir,
                     "active_job": self.jobs.active, "matching": "osm", "svg_mode": "candidate",
+                    "semantic_extraction": {"action": "semantic-extract", "available": True,
+                                            "stages": ["export-source", "semantic prepare", "verify"],
+                                            "automatic_commit": False},
                     "active_agent": self.agent.active,
                     "ai_provider": self.settings.public()["active"],
                     "provider_configured": {key: value["configured"] for key, value in self.settings.public()["profiles"].items()}}
@@ -464,6 +550,18 @@ class Application:
         async def database_schema(path: str):
             from .desktop_database import schema
             return await run_in_threadpool(schema, config, path)
+
+        @manager.get("/_app/api/semantic/artifacts")
+        async def semantic_artifacts(run: str):
+            return await run_in_threadpool(self.jobs.semantic_artifacts, run)
+
+        @manager.get("/_app/api/semantic/artifact")
+        async def semantic_artifact(run: str, name: str):
+            result = await run_in_threadpool(self.jobs.semantic_artifacts, run)
+            artifact = next((item for item in result["artifacts"] if item["name"] == name), None)
+            if artifact is None:
+                raise ValueError("语义产物不存在")
+            return FileResponse(artifact["path"], filename=Path(artifact["path"]).name)
 
         @manager.post("/_app/api/database/query")
         async def database_query(request: Request):
@@ -554,7 +652,7 @@ class Application:
         @manager.post("/_app/api/jobs/{job_id}/cancel")
         async def cancel_job(job_id: str):
             await run_in_threadpool(self.jobs.cancel, job_id)
-            return {"status": "cancelled"}
+            return {"status": self.jobs.records[job_id]["status"]}
 
         @manager.post("/_app/api/review")
         async def open_review(request: Request):

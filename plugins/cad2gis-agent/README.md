@@ -82,6 +82,32 @@ authenticated TLS reverse proxy.
 
 ## First request
 
+### Extract semantics across applications and plugins
+
+Windows and Linux provide **语义提取** in the drawing/settings panel; Android
+opens the same panel from its connected HTTPS server. Choose a DWG and a new
+output directory. The operation runs the canonical `export-source` and
+`semantic prepare` commands, reports three actual stages, and verifies source
+and candidate bindings before offering the manifests and read-only databases.
+It does not require an AI key or an assumed CRS. Cancelled or failed jobs keep
+available evidence; select a new output directory for a retry.
+
+Plugin clients use `get_capabilities` and `debug_mcp` first. Confirm
+`semantic_database.workflow` and the live tool list contain `export_source`,
+`query_source_entities`, and `prepare_semantic_batches`. Then export, page
+through facts, and prepare candidates using the existing tools. If those
+capabilities are absent, upgrade the Python runtime as well as the plugin and
+restart the MCP client. Updating only a plugin cache does not upgrade the
+server engine.
+
+Extraction creates `source/source_manifest.json`, `source/source.gpkg`,
+`candidates/manifest.json`, and `candidates/candidate_index.sqlite3`. Class,
+label and dimension candidates remain proposals. The software's **交给 AI 审阅**
+button fills a source-bound prompt for the user to review and send; it does not
+send the request, commit semantics, or promote a GIS delivery automatically.
+
+### Convert and review
+
 Ask the agent to call `get_capabilities` first. A correct run then inspects the
 source, creates source-bound onboarding decisions, validates the project, runs
 the canonical conversion, and reports geometry, topology, length, and

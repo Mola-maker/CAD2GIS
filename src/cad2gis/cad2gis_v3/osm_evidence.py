@@ -199,6 +199,8 @@ def build_match_evidence(record, native_routes, base_routes, *, samples=None, di
                 "residuals": [], "residual_distance_method": "web_mercator_reference_latitude_cosine_approximation",
                 "correspondence_method": "nearest_direction_compatible_segment_within_corridor",
                 "correspondence_corridor_m": 25.0, "minimum_direction_consistency": 0.7}
+    if 'route_selection' in record:
+        evidence['route_selection_sha256'] = _digest(record['route_selection'])
     index = RoadSegmentIndex(roads)
     if placed and samples is not None and len(samples) and len(index.references):
         moved = np.asarray(samples) + record["translation_3857"]
@@ -212,6 +214,26 @@ def build_match_evidence(record, native_routes, base_routes, *, samples=None, di
                 "to_3857": inspected["feet"][i].tolist(), "distance_m_approx": distance,
                 "direction_consistency": alignment, "supported": distance <= 25.0 and alignment >= 0.7,
                 "residual_kind": "osm_corridor"})
+    # Route-level summaries make sparse/missing-road and incompatible-direction
+    # cases reviewable. They are descriptive relative evidence, never extra
+    # control points or a correction applied to the source geometry.
+    grouped = defaultdict(list)
+    for residual in evidence['residuals']:
+        grouped[residual['route_id']].append(residual)
+    evidence['route_diagnostics'] = []
+    for route_id in range(len(native_routes)):
+        residuals = grouped[route_id]
+        distances = [item['distance_m_approx'] for item in residuals]
+        evidence['route_diagnostics'].append({
+            'route_id': route_id, 'sample_count': len(residuals),
+            'supported_sample_count': sum(item['supported'] for item in residuals),
+            'coverage': sum(item['supported'] for item in residuals) / len(residuals) if residuals else None,
+            'distance_median_m_approx': float(np.median(distances)) if distances else None,
+            'distance_p95_m_approx': float(np.percentile(distances, 95)) if distances else None,
+            'outside_corridor_sample_count': sum(distance > 25.0 for distance in distances),
+            'incompatible_direction_sample_count': sum(item['direction_consistency'] < 0.7 for item in residuals),
+            'nearest_osm_way_ids': sorted({item['osm_way_id'] for item in residuals}),
+            'authority': 'relative_osm', 'absolute_accuracy_verified': False})
     evidence["evidence_sha256"] = _digest(evidence)
     return evidence
 
@@ -241,6 +263,8 @@ def validate_match_evidence(record):
         raise ValueError("OSM evidence must retain relative-only authority")
     if _digest(record["osm_snapshot"]["roads"]) != expected["osm_snapshot_sha256"]:
         raise ValueError("OSM evidence snapshot content mismatch")
+    if 'route_selection_sha256' in evidence and evidence['route_selection_sha256'] != _digest(record.get('route_selection')):
+        raise ValueError('OSM evidence source route selection binding mismatch')
 
 
 def evidence_geojson(record):
@@ -271,10 +295,14 @@ def evidence_geojson(record):
         return [point[0] + delta[0], point[1] + delta[1]]
 
     native_to_base = {}
+    diagnostics = {item['route_id']: item for item in evidence.get('route_diagnostics', [])}
     if evidence["has_geographic_placement"]:
         for route in evidence["cad_routes"]:
+            diagnostic = diagnostics.get(route['route_id'], {})
             add("cad_routes", "LineString", [geographic(shifted(p)) for p in route["base_points_3857"]],
-                {"route_id": route["route_id"], "native_sha256": route["native_sha256"]})
+                {"route_id": route["route_id"], "native_sha256": route["native_sha256"],
+                 **{f'osm_{key}': value for key, value in diagnostic.items()
+                    if key not in {'route_id', 'authority', 'absolute_accuracy_verified'}}})
             native_to_base.update(zip((tuple(p) for p in route["native_points"]), route["base_points_3857"]))
         for node in evidence["cad_topology"]["nodes"]:
             add("cad_nodes", "Point", geographic(shifted(native_to_base[tuple(node["point_native"])])),

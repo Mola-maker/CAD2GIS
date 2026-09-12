@@ -9,6 +9,9 @@
       "env_vars": [
         "CAD2GIS_BACKEND_PATH",
         "CAD2GIS_CACHE_DIR",
+        "CAD2GIS_REDIS_URL",
+        "CAD2GIS_REDIS_CACHE_TTL_SECONDS",
+        "CAD2GIS_REDIS_TIMEOUT_MS",
         "CAD2GIS_GCP_TOOL_PATH",
         "CAD2GIS_PROJECT_ROOT",
         "CAD2GIS_PROJECT_ROOTS",
