@@ -54,7 +54,8 @@ def test_mcp_svg_default_opt_out_and_fonts(tmp_path, monkeypatch, tool_name, mod
     captured = {}
     source, project, run = (tmp_path / name for name in ("source.dwg", "project", "run"))
     source.write_bytes(b"source")
-    project.mkdir()
+    if tool_name == "run_conversion":
+        project.mkdir()
     for name in font_names:
         (tmp_path / name).mkdir()
     monkeypatch.setenv("CAD2GIS_PROJECT_ROOTS", str(tmp_path))

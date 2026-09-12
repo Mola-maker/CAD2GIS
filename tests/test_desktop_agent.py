@@ -4,6 +4,7 @@ import json
 import os
 import sqlite3
 from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
@@ -96,6 +97,69 @@ def test_conversation_pages_are_stable_and_scoped(tmp_path):
     assert [x['text'] for x in second['messages']] == list(map(str, range(5,45)))
     with pytest.raises(ValueError):
         AgentStore(tmp_path, 'two').conversation(record['id'])
+
+
+def test_existing_conversation_database_migrates_without_losing_messages(tmp_path):
+    with sqlite3.connect(tmp_path / 'conversations.sqlite3') as db:
+        db.execute("CREATE TABLE conversations (id TEXT PRIMARY KEY, scope TEXT, title TEXT, created REAL, updated REAL, history TEXT DEFAULT '[]', plan TEXT DEFAULT '[]')")
+        db.execute("INSERT INTO conversations (id,scope,title,created,updated) VALUES ('saved','one','保留的对话',1,1)")
+    store = AgentStore(tmp_path, 'one')
+    store.message('saved', 'user', '继续转换')
+    assert store.messages('saved')['context'] == {}
+    assert store.messages('saved')['messages'][0]['text'] == '继续转换'
+    assert AgentStore(tmp_path, 'one').conversation('saved')['title'] == '保留的对话'
+
+
+def test_one_sentence_conversion_binds_real_paths_and_returns_result(tmp_path, monkeypatch):
+    from pydantic_ai.models.function import FunctionModel, DeltaToolCall
+    source = tmp_path / 'imported.dwg'
+    source.write_bytes(b'fixture')
+    calls = []
+
+    async def conversion_rpc(_bridge, name, arguments):
+        calls.append((name, dict(arguments)))
+        assert name == 'auto_onboard_and_convert'
+        assert arguments['source'] == str(source)
+        assert arguments['project_dir'] == str(tmp_path / 'project')
+        assert arguments['osm_place'] == 'Tomohon'
+        run = Path(arguments['run_dir'])
+        run.mkdir()
+        manifest, delivery = run / 'run_manifest.json', run / 'delivery.gpkg'
+        manifest.write_text('{}')
+        delivery.write_bytes(b'fixture')
+        return {'result': json.dumps({'run_manifest': str(manifest), 'delivery': str(delivery), 'run_status': 'CONDITIONAL'})}
+
+    monkeypatch.setattr('cad2gis.desktop_agent.MCPToolBridge.call', conversion_rpc)
+
+    async def scenario():
+        settings = configured(tmp_path)
+        agent = DesktopAgent(ApplicationConfig((tmp_path,), state_dir=settings.directory), settings, SimpleNamespace(active=''))
+        turns = []
+
+        async def stream(messages, info):
+            turns.append(messages)
+            assert {'convert_selected_drawing', 'list_project_files'} <= {tool.name for tool in info.function_tools}
+            if len(turns) == 1:
+                yield {0: DeltaToolCall(name='workspace_context', json_args='{}', tool_call_id='context')}
+            elif len(turns) == 2:
+                results = [p.content for m in messages for p in m.parts if getattr(p, 'tool_name', '') == 'workspace_context' and getattr(p, 'part_kind', '') == 'tool-return']
+                assert results[-1]['paths']['project']['kind'] == 'planned'
+                yield {0: DeltaToolCall(name='convert_selected_drawing', json_args='{}', tool_call_id='convert')}
+            else:
+                yield '转换已完成，可以打开结果核对地图。'
+
+        agent.model_override = FunctionModel(stream_function=stream)
+        started = agent.start({'message': '转换当前图纸', 'source': str(source), 'project': str(tmp_path / 'project'), 'run': str(tmp_path / 'run-1'), 'osm_place': 'Tomohon'})
+        await asyncio.wait_for(agent.task, 40)
+        state = agent.store.run(started['id'])
+        assert state['status'] == 'succeeded', state['error']
+        assert Path(state['result']['run_manifest']).is_file()
+        assert state['result']['drawing'] == str(source)
+        history = agent.store.messages(started['conversation'])
+        assert history['result'] == state['result']
+        assert history['context']['run'] == state['result']['run_dir']
+        assert len(calls) == 1
+    asyncio.run(scenario())
 
 
 def test_actual_mcp_tool_roundtrip_and_recoverable_error(tmp_path, monkeypatch):
