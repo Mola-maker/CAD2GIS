@@ -70,6 +70,15 @@ def worker(args):
         shutil.copy2(source, local_source)
         report["binding_source_name"] = name
         report["configuration_sha256"] = {p.name: sha(p) for p in (project / "config").glob("*.json")}
+        selected = pipeline.resolve_project_configuration(
+            project_dir=project, discover_gcp=args.matching == "nominal",
+            discover_match=args.matching == "osm",
+        ).match_profile
+        report["matching_profile_selected"] = (
+            {"path": str(selected), "sha256": sha(selected)} if selected is not None else None
+        )
+        if selected is not None and args.osm_data_dir:
+            raise ValueError("Project pins a frozen match profile; omit --osm-data-dir when replaying reviewed baselines")
         stage = "export_source"
         print(f"START {stage}: {args.drawing}", flush=True)
         if args.source_snapshots:
@@ -126,6 +135,12 @@ def worker(args):
                     matching=args.matching, osm_data=osm_data)
         write(root / "conversion-result.json", dataclasses.asdict(result) if dataclasses.is_dataclass(result) else result)
         manifest = read(root / "run/run_manifest.json")
+        if selected is not None:
+            applied = manifest.get("profiles", {}).get("match_profile", {})
+            if applied.get("sha256") != sha(selected):
+                raise ValueError("Conversion did not preserve the selected frozen match profile")
+        report["osm_matching"] = {key: (manifest.get("osm_matching") or {}).get(key)
+                                  for key in ("status", "revision", "match_sha256", "needs_review")}
         report["stages"][stage] = "PASS"
         report.update({key: manifest.get(key) for key in (
             "run_status", "delivery_counts", "validation", "terminal_accounting", "unresolved_count",

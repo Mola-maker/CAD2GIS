@@ -22,6 +22,40 @@ from urllib.parse import unquote
 from contextlib import closing
 from pathlib import Path
 
+
+def _matching_context(value, database_hashes):
+    """Bind a saved conversion registration to the exact displayed CAD database."""
+    if value is None:
+        return None
+    if (not isinstance(value, dict) or value.get("schema") != "cad2gis.qgis-matching-context.v1"
+            or set(database_hashes) != {value.get("delivery_sha256")}):
+        raise ValueError("Matching context belongs to a different CAD delivery")
+    record = value.get("matching")
+    if not isinstance(record, dict) or record.get("schema_version") != "cad2gis.osm-matching.v1":
+        raise ValueError("Matching context has no supported matching record")
+    unsigned = {k: v for k, v in record.items() if k != "match_sha256"}
+    digest = hashlib.sha256(json.dumps(unsigned, sort_keys=True, separators=(",", ":"),
+                                      ensure_ascii=False, allow_nan=False).encode()).hexdigest()
+    if record.get("match_sha256") != digest or record.get("source_sha256") != value.get("source_sha256"):
+        raise ValueError("Matching context source or record hash mismatch")
+    if record.get("absolute_accuracy_verified") is not False or record.get("authority") != "relative_osm":
+        raise ValueError("Matching context must retain relative-only authority")
+    if record.get("status") not in {"matched", "coarse", "abstained", "unavailable"}:
+        raise ValueError("Matching context has invalid status")
+    return value
+
+
+def _review_title(correction, matching):
+    if correction:
+        detail = "CAD coordinate-label translation"
+    elif matching:
+        record = matching["matching"]
+        detail = f"OSM {record['status']} — revision {record['revision']}"
+        if record["status"] in {"abstained", "unavailable"}:
+            detail += " — nominal coordinates retained"
+    else:
+        detail = "CAD registration not supplied"
+    return "CAD2GIS OSM review — " + detail
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 OSM_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 OSM_CREDIT = "© OpenStreetMap contributors | openstreetmap.org/copyright"
@@ -314,6 +348,7 @@ def build(
     registration=None,
     source_evidence=None,
     standalone=False,
+    matching_context=None,
 ):
     """Write a new review project, preserving all CAD database bytes and SVGs."""
     from qgis.core import (
@@ -358,6 +393,15 @@ def build(
     if any(path.suffix.lower() != ".gpkg" for path in databases):
         raise ValueError("Input layers must use GeoPackage")
     hashes = {path: sha(path) for path in databases}
+    inherited_matching, has_matching = project.readEntry("CAD2GISReview", "canonicalMatching")
+    matching = _matching_context(
+        json.loads(Path(matching_context).read_text(encoding="utf-8")) if matching_context else
+        json.loads(inherited_matching) if has_matching else None,
+        hashes.values(),
+    )
+    if matching and any(layer.crs() != QgsCoordinateReferenceSystem(matching["matching"]["target_crs"])
+                        for layer in layers):
+        raise ValueError("Matching context target CRS differs from the CAD layers")
     correction = None
     destination = QgsCoordinateReferenceSystem("EPSG:3857")
     if registration:
@@ -548,14 +592,8 @@ def build(
         project.viewSettings().setDefaultViewExtent(
             QgsReferencedRectangle(extent, destination)
         )
-        project.setTitle(
-            "CAD2GIS OSM review — "
-            + (
-                "CAD coordinate-label translation"
-                if correction
-                else "nominal CAD registration"
-            )
-        )
+        project.setTitle(_review_title(correction, matching))
+        project.writeEntry("CAD2GISReview", "canonicalMatching", json.dumps(matching))
         project.writeEntry(
             "CAD2GISReview", "coordinateCorrection", json.dumps(correction)
         )
@@ -581,6 +619,7 @@ def build(
             "osm_database_sha256": osm_sha,
             "osm_source_sha256": sha(osm_data),
             "coordinate_review": correction,
+            "canonical_matching": matching,
             "absolute_accuracy_verified": False,
             "geometry_and_attributes_unchanged": True,
             "attribution": OSM_CREDIT,
@@ -601,6 +640,8 @@ def main():
     parser.add_argument("--osm-data", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--registration", type=Path)
+    parser.add_argument("--matching-context", type=Path,
+                        help="Source- and database-bound canonical matching record from publish-match")
     parser.add_argument("--source-evidence", type=Path)
     parser.add_argument("--standalone", action="store_true")
     parser.add_argument("--font", type=Path)
@@ -614,6 +655,7 @@ def main():
         args.osm_data,
         args.output,
         registration=args.registration,
+        matching_context=args.matching_context,
         source_evidence=args.source_evidence,
         standalone=args.standalone,
     )

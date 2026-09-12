@@ -66,6 +66,29 @@ def _revision(manifest: Mapping[str, Any]) -> int:
     return revision
 
 
+def _matching_scopes(manifest: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    """Do not publish a nominal fallback as a successfully matched delivery."""
+    records = {MAIN_SCOPE: manifest.get("osm_matching")}
+    partitions = manifest.get("delivery_partitions", {})
+    records.update({scope: value.get("osm_matching") for scope, value in partitions.items()})
+    populated = {}
+    for scope, record in records.items():
+        counts = (manifest.get("delivery_counts") if scope == MAIN_SCOPE
+                  else partitions[scope].get("delivery_counts"))
+        if isinstance(counts, Mapping) and not any(counts.values()):
+            continue  # Empty main panels do not override populated independent panels.
+        if not isinstance(record, Mapping) or record.get("status") != "matched":
+            status = record.get("status", "missing") if isinstance(record, Mapping) else "missing"
+            reason = record.get("quality", {}).get("reason") if isinstance(record, Mapping) else None
+            raise PublishError(
+                f"Scope {scope} has OSM matching status {status} ({reason}); "
+                "resolve its matching or select a reviewed --match-profile before publish-match. "
+                "Use qgis-review for an explicitly uncorrected reference view."
+            )
+        populated[scope] = record
+    return populated
+
+
 def _delivery_root(run: Path, explicit: Path | None) -> Path:
     if explicit is not None:
         return explicit.expanduser().resolve()
@@ -143,7 +166,15 @@ def _run_qgis(python: Path, module: str, arguments: Sequence[str]) -> None:
         package_parent + os.pathsep + existing if existing else package_parent
     )
     environment["QT_QPA_PLATFORM"] = "offscreen"
-    command = [str(python), "-m", module, *arguments]
+    # OSGeo4W's launcher clears PYTHONPATH. Pass our package location in the
+    # interpreter bootstrap too, so source-checkout publication works there.
+    bootstrap = (
+        "import runpy,sys;"
+        f"sys.path.insert(0,{package_parent!r});"
+        "sys.argv=sys.argv[1:];"
+        "runpy.run_module(sys.argv[0],run_name='__main__')"
+    )
+    command = [str(python), "-c", bootstrap, module, *arguments]
     _log("run " + " ".join(command))
     result = subprocess.run(command, env=environment, capture_output=True, text=True)
     if result.returncode != 0:
@@ -248,6 +279,7 @@ def publish(
         raise PublishError(f"Run manifest not found: {manifest_path}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     revision = _revision(manifest)
+    matching_scopes = _matching_scopes(manifest)
     root = _delivery_root(run, Path(delivery_root) if delivery_root is not None else None)
     directory = _revision_directory(revision)
     target = root / directory
@@ -272,8 +304,12 @@ def publish(
             ])
             review_root = work_path / "review"
             scopes = [
-                _publish_scope(entry, baseline, svg_root, review_root, staging, snapshots, python)
+                _publish_scope(entry, baseline, svg_root, review_root, staging, snapshots, python,
+                               matching=matching_scopes.get(str(entry["scope"])),
+                               source_sha256=report["source_sha256"],
+                               run_manifest_sha256=report["run_manifest_sha256"])
                 for entry in report["deliveries"]
+                if str(entry["scope"]) in matching_scopes
             ]
             published = {
                 "schema_version": SCHEMA,
@@ -305,6 +341,10 @@ def _publish_scope(
     staging: Path,
     snapshots: Mapping[str, Path],
     python: Path,
+    *,
+    matching: Mapping[str, Any] | None = None,
+    source_sha256: str | None = None,
+    run_manifest_sha256: str | None = None,
 ) -> dict[str, Any]:
     scope = str(entry["scope"])
     relative = Path(str(entry["project"]))
@@ -324,10 +364,22 @@ def _publish_scope(
         raise PublishError(f"SVG review project is missing for scope {scope}: {svg_project}")
     review_project = review_root / relative
     review_project.parent.mkdir(parents=True, exist_ok=True)
+    context_args = []
+    if matching is not None:
+        context_path = review_project.parent / "matching-context.json"
+        context_path.write_text(json.dumps({
+            "schema": "cad2gis.qgis-matching-context.v1",
+            "delivery_sha256": entry["gpkg_sha256"],
+            "source_sha256": source_sha256,
+            "run_manifest_sha256": run_manifest_sha256,
+            "matching": matching,
+        }, ensure_ascii=False), encoding="utf-8")
+        context_args = ["--matching-context", str(context_path)]
     _run_qgis(python, "cad2gis.qgis_review", [
         "--project", str(svg_project),
         "--osm-data", str(snapshot),
         "--output", str(review_project),
+        *context_args,
     ])
     standalone = review_project.parent / "view-with-source-SVG.qgz"
     _run_qgis(python, "cad2gis.qgis_review", [
@@ -360,6 +412,8 @@ def _publish_scope(
         "svg_bindings": len(review_receipt.get("svg_bindings", ())),
         "osm_layers": review_receipt.get("osm_layers"),
         "geometry_and_attributes_unchanged": review_receipt.get("geometry_and_attributes_unchanged"),
+        "matching": {key: matching.get(key) for key in ("status", "revision", "match_sha256")}
+            if matching is not None else None,
     }
 
 

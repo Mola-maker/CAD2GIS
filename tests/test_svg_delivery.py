@@ -1,9 +1,35 @@
 import hashlib
+import json
 import sqlite3
 
 import pytest
 
 from cad2gis.svg_delivery import _project_bindings
+
+
+def test_empty_scope_does_not_reach_qgis_packager(tmp_path, monkeypatch):
+    from cad2gis import svg_delivery
+
+    baseline, assets = tmp_path / 'baseline', tmp_path / 'assets'
+    baseline.mkdir()
+    assets.mkdir()
+    (baseline / 'delivery-manifest.json').write_text(json.dumps({
+        'source_sha256': 'source', 'deliveries': [
+            {'scope': 'main', 'layers': [{'features': 0}], 'project': 'delivery.qgz'},
+        ],
+    }))
+    (assets / 'correspondence.json').write_text(json.dumps({'source_sha256': 'source'}))
+    db = sqlite3.connect(assets / 'symbols.sqlite3')
+    db.execute('CREATE TABLE symbols(symbol_id TEXT,status TEXT)')
+    db.close()
+
+    def unexpected(*args, **kwargs):
+        raise AssertionError('Empty scope reached QGIS packaging')
+
+    monkeypatch.setattr(svg_delivery, 'package', unexpected)
+    result = svg_delivery.build(baseline, assets, tmp_path / 'output')
+    assert result['projects'] == []
+    assert result['skipped_empty_scopes'] == ['main']
 
 
 def binding(scope, handle='A1', symbol='instance-a1'):

@@ -27,6 +27,11 @@ from .osm_evidence import RoadSegmentIndex, build_match_evidence, osm_topology, 
 
 
 SCHEMA = "cad2gis.osm-matching.v1"
+# Keep recorded acceptance criteria identical to the gates used by the solver.
+# A shallow bend may constrain translation; truly parallel geometry still fails.
+_MINIMUM_NORMAL_EIGENVALUE = 0.035
+_MINIMUM_SUPPORTED_ROUTE_FRACTION = 0.70
+_MINIMUM_CONFIDENCE_GAP = 0.05
 ATTRIBUTION = {
     "text": "© OpenStreetMap contributors",
     "url": "https://www.openstreetmap.org/copyright",
@@ -596,7 +601,7 @@ def _observability(directions, weights):
     return {"rank": int(np.count_nonzero(eigenvalues > 1e-8)), "eigenvalues": eigenvalues.tolist(),
             "minimum_eigenvalue": float(eigenvalues[0]),
             "condition_number": float(eigenvalues[1] / eigenvalues[0]) if eigenvalues[0] > 1e-8 else None,
-            "observable": bool(eigenvalues[0] >= 0.04)}
+            "observable": bool(eigenvalues[0] >= _MINIMUM_NORMAL_EIGENVALUE)}
 
 
 def _sample_weights(routes, route_ids):
@@ -722,8 +727,10 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
                "source_observability": source_structure,
                "search_complete": False, "confidence_interpretation": "score_gap_among_bounded_hypotheses",
                "thresholds": {"corridor_m": 25.0, "coverage": 0.75, "direction_consistency": 0.70,
-                              "supported_route_fraction": 0.75, "confidence_gap": 0.06,
-                              "minimum_normal_eigenvalue": 0.04, "candidate_merge_distance_m": 0.25}}
+                              "supported_route_fraction": _MINIMUM_SUPPORTED_ROUTE_FRACTION,
+                              "confidence_gap": _MINIMUM_CONFIDENCE_GAP,
+                              "minimum_normal_eigenvalue": _MINIMUM_NORMAL_EIGENVALUE,
+                              "candidate_merge_distance_m": 0.25}}
     if not source_structure["observable"]:
         return None, {**quality, "reason": "source_geometry_unobservable", "candidates": []}
     tolerance = 25.0 / scale_to_ground
@@ -808,7 +815,8 @@ def _match_routes(routes, roads, scale_to_ground, initial_translation):
     best = distinct[0]
     gap = best["score"] - distinct[1]["score"] if len(distinct) > 1 else best["score"]
     accepted = (best["coverage"] >= 0.75 and best["direction_consistency"] >= 0.70
-                and best["supported_route_fraction"] >= 0.75 and gap >= 0.06
+                and best["supported_route_fraction"] >= _MINIMUM_SUPPORTED_ROUTE_FRACTION
+                and gap >= _MINIMUM_CONFIDENCE_GAP
                 and best["observability"]["observable"]
                 and best["refinement_converged"]
                 and not landmark_search["seed_budget_exhausted"])

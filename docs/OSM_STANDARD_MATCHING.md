@@ -5,6 +5,11 @@ CAD2GIS 的标准流程是 **OSM 自动匹配 → SVG 图例候选提取 → 查
 `absolute_accuracy_verified: false`。地图重合、较小的拟合残差或较高的自动匹配分数，
 均不代表已证明测量级绝对精度。
 
+自动验收目前要求：长度加权覆盖率至少 75%、方向一致性至少 70%、有效路线支持比例
+至少 70%、最佳与次佳独立候选分差至少 0.05，以及方向约束最小归一化特征值至少
+0.035。道路走廊仍为 25 米，还必须满足收敛和搜索预算检查。纯直线、平行线或近乎
+等价的重复路网不会因为阈值放宽而自动获准。项目已固定的校正优先于自动搜索。
+
 本页的命令是使用说明，尖括号内容需要替换为本地文件或目录。示例不表示已经转换了
 某张用户 DWG。运行环境安装见 [README](../README.md#快速开始)；每个 DWG 都需要
 自己的源配置和语义映射，OSM 定位不替代这些前置检查。
@@ -50,6 +55,26 @@ cad2gis convert "<SOURCE.dwg>" --project "<PROJECT_DIR>" --run-dir "<PLACE_RUN_D
 本身只提供粗定位。在线服务配置及公共服务的使用要求见本页后文。
 
 ## 2. 查看结果并预览人工校正
+
+### 固定已复核的项目匹配配置
+
+项目重建需要复用已保存的校正时，在 `config/cad2gis-project.json` 中显式选择文件：
+
+```json
+{"config": {"match_profile": "matching-manual-gcp.json"}}
+```
+
+路径相对该项目清单解析。`convert --project ... --matching osm` 和批量语料重建会自动
+使用此文件，并将文件摘要写入运行清单；无需每次重复 `--match-profile`。也支持通用
+文件名 `config/match_profile.json`。显式 `--match-profile` 优先于项目选择；标称模式
+或显式测量 GCP 不自动套用 OSM 校正。固定校正不能同时与新 `--osm-data` / `--osm-place`
+输入混用，需要重新匹配时使用未固定校正的项目副本。文件不存在、源图摘要或原始
+坐标变换不一致时转换报错，不静默退回自动匹配。
+
+`publish-match` 只发布非空范围中状态为 `matched` 的结果。`abstained` / `unavailable`
+表示未采用自动候选，需先处理其原因或提供复核后的校正。仅检查原始位置可使用
+`qgis-review`。发布的 QGZ 保存源图、运行清单、交付数据库摘要及完整匹配记录，标题
+显示匹配状态和版本；离线复核器验证其记录与实际数据库一致。
 
 ```shell
 cad2gis review "<FIRST_RUN_DIR>" --workspace "<REVIEW_DIR>" --port 8765
