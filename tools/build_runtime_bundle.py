@@ -107,7 +107,12 @@ def create_launchers(output: Path) -> None:
             launcher = bin_dir / name
             launcher.write_text(
                 '#!/bin/sh\nset -eu\n'
-                'resolved=$(readlink -f "$0")\n'
+                'resolved=$0\n'
+                'while [ -L "$resolved" ]; do\n'
+                '  parent=$(CDPATH= cd -- "$(dirname -- "$resolved")" && pwd)\n'
+                '  link=$(readlink "$resolved")\n'
+                '  case "$link" in /*) resolved=$link ;; *) resolved=$parent/$link ;; esac\n'
+                'done\n'
                 'root=$(CDPATH= cd -- "$(dirname -- "$resolved")/.." && pwd)\n'
                 'export CAD2GIS_BUNDLE_ROOT="$root"\n'
                 ': "${CAD2GIS_LIBREDWG_CLI:=$root/libredwg/bin/dwg2dxf}"\n'

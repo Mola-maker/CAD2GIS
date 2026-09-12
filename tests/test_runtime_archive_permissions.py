@@ -55,3 +55,27 @@ def test_native_source_archive_rejects_nonregular_entries(tmp_path, kind):
         bundle.addfile(member)
     with pytest.raises(RuntimeError, match="Unsafe"):
         native_runtime._safe_extract_tar(archive, tmp_path / "runtime")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX installed command links")
+def test_bundle_launcher_resolves_relative_symlink_chain_with_spaces(tmp_path):
+    path = Path(__file__).resolve().parents[1] / "tools/build_runtime_bundle.py"
+    spec = importlib.util.spec_from_file_location("runtime_bundle_launchers", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    bundle = tmp_path / "installed application"
+    interpreter = bundle / "runtime/bin/python3"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.write_text('#!/bin/sh\nprintf "%s\\n" "$CAD2GIS_BUNDLE_ROOT" "$PWD" "$@"\n')
+    interpreter.chmod(0o755)
+    module.create_launchers(bundle)
+    links = tmp_path / "command links"
+    links.mkdir()
+    (links / "intermediate").symlink_to("../installed application/bin/cad2gis")
+    (links / "cad2gis").symlink_to("intermediate")
+    result = subprocess.run([str(links / "cad2gis"), "--version"], cwd=tmp_path,
+                            capture_output=True, text=True, check=True)
+    lines = result.stdout.splitlines()
+    assert lines[:2] == [str(bundle), str(tmp_path)]
+    assert lines[-1] == "--version"
+    assert "-I" in lines and "-m" in lines
