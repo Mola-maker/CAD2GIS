@@ -291,12 +291,14 @@ def audit_visual_conversion(
         raise MCPServiceError("Unknown canonical delivery partition")
     before = {str(base / relative): sha for base in (source, run)
               for relative, sha in _qgis_source_inventory(base).items()}
-    command = [sys.executable, "-m", "cad2gis.visual_audit", "--source-run", str(source),
+    command = [sys.executable, "-I", "-m", "cad2gis.visual_audit", "--source-run", str(source),
                "--run", str(run), "--output", str(output)]
     if partition:
         command.extend(["--partition", partition])
     try:
-        process = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", timeout=600)
+        # Windows Python startup can block on the MCP transport's live stdin.
+        process = subprocess.run(command, stdin=subprocess.DEVNULL,
+                                 capture_output=True, text=True, encoding="utf-8", timeout=600)
         if process.returncode:
             raise MCPServiceError("Visual audit failed: " + (process.stderr or process.stdout)[-4000:])
         report_path = _path(output / "report.json")
