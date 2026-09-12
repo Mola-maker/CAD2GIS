@@ -24,6 +24,9 @@ TRACE_SCHEMA = "cad2gis.mcp_trace.v1"
 DIAGNOSTIC_SCHEMA = "cad2gis.debug_mcp.v1"
 _TRACE_LOCK = threading.Lock()
 MUTATING_TOOLS = frozenset({
+    "package_qgis_delivery",
+    "publish_matched_delivery", "build_qgis_review", "build_source_svg_delivery", "verify_qgis_review", "audit_visual_conversion",
+    "start_review_server", "stop_review_server",
     "install_runtime", "bootstrap_project", "apply_ai_onboarding",
     "auto_onboard_and_convert", "run_conversion", "create_decision_pack",
     "prepare_review_workspace", "start_feedback_iteration",
@@ -36,6 +39,9 @@ MUTATING_TOOLS = frozenset({
 })
 
 _ERROR_RECOVERY = {
+    "REVIEW_PORT_IN_USE": "Choose a free local port; do not adopt or stop an unrelated listener.",
+    "REVIEW_START_FAILED": "Inspect the returned startup log and runtime readiness before starting again.",
+    "REVIEW_STOPPING": "The owned server is finishing in-flight review actions; inspect its status before restarting.",
     "PATH_OUTSIDE_ROOT": "Choose a path inside the configured project roots; do not widen the roots automatically.",
     "ARTIFACT_NOT_FOUND": "Check the supplied file or run directory; create the required input with the preceding workflow step.",
     "OUTPUT_EXISTS": "Inspect the existing immutable output. Use a new run directory for a new conversion.",
@@ -404,12 +410,18 @@ def traced_tool(name: str, handler: Callable[..., Any], server: Any,
             return exc
         from mcp.server.fastmcp.exceptions import ToolError
         code = error_code(exc)
+        review_recovery = getattr(exc, "review_recovery", None) if name == "start_review_server" else None
+        if (not isinstance(review_recovery, dict) or set(review_recovery) != {"session_id", "log_path"}
+                or re.fullmatch(r"review-[a-f0-9]{32}", str(review_recovery.get("session_id", ""))) is None
+                or not isinstance(review_recovery.get("log_path"), str)):
+            review_recovery = None
         return ToolError(json.dumps({
             "error_code": code, "trace_id": event["trace_id"],
             "retryable": code in {"DATABASE_BUSY", "QUERY_BUDGET_EXCEEDED"} and name not in MUTATING_TOOLS,
             "committed": "unknown" if name in MUTATING_TOOLS else False,
             "recovery": _ERROR_RECOVERY.get(code, "Inspect the operation status and existing artifacts before attempting a recovery."),
             **(_precommit_annotation_failure(exc) if name == "apply_ai_onboarding" else {}),
+            **({"review_recovery": review_recovery} if review_recovery is not None else {}),
         }))
 
     if inspect.iscoroutinefunction(handler):

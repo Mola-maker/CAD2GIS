@@ -8,7 +8,7 @@ import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
-from cad2gis.agent_mcp import audit_run, prepare_review_workspace
+from cad2gis.agent_mcp import MCPServiceError, audit_run, prepare_review_workspace
 from cad2gis import review_server
 from cad2gis.review_server import (
     ReviewConflictError,
@@ -421,31 +421,50 @@ def test_review_serves_only_bound_svg_files_from_current_run(tmp_path):
     assert unavailable["report_url"] is None and "SHA-256" in unavailable["report_blocker"]
 
 
-def test_svg_report_serves_only_sealed_csv_review_queue(tmp_path):
+def test_svg_report_serves_bound_png_previews_and_csv_queue(tmp_path):
+    from PIL import Image
+
     run, _, manifest_path = _run_fixture(tmp_path)
     manifest = json.loads(manifest_path.read_text())
     root = _add_svg_fixture(run, manifest)
-    queue = "source_handle,status\nA,待人工复核\n".encode("utf-8")
-    relative = "svg-review-queue.csv"
-    (root / relative).write_bytes(queue)
-    manifest["svg_candidates"]["files"][relative] = hashlib.sha256(queue).hexdigest()
+    png_path = root / "symbols" / "instance-a.png"
+    Image.new("RGB", (2, 1), "red").save(png_path)
+    png = png_path.read_bytes()
+    queue = "source_handle,status\nA,待人工复核\n".encode()
+    (root / "svg-review-queue.csv").write_bytes(queue)
+    (root / "correspondence.html").write_text(
+        '<img src="symbols/instance-a.png"><a href="svg-review-queue.csv">Queue</a>',
+        encoding="utf-8",
+    )
+    for relative in ("symbols/instance-a.png", "svg-review-queue.csv", "correspondence.html"):
+        manifest["svg_candidates"]["files"][relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
+    manifest["artifacts"]["svg_candidates_html"]["sha256"] = manifest["svg_candidates"]["files"]["correspondence.html"]
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
     with TestClient(create_review_app(run, workspace_dir=tmp_path / "review")) as client:
         url = client.get("/api/run").json()["svg_candidates"]["report_url"]
         prefix = url.rsplit("/", 1)[0]
-        response = client.get(f"{prefix}/{relative}")
-        assert response.status_code == 200
-        assert response.headers["content-type"].split(";")[0] == "text/csv"
-        assert response.headers["x-content-type-options"] == "nosniff"
-        assert response.content == queue
+        assert 'src="symbols/instance-a.png"' in client.get(url).text
+        for relative, expected, media_type in (
+            ("symbols/instance-a.png", png, "image/png"),
+            ("svg-review-queue.csv", queue, "text/csv"),
+        ):
+            response = client.get(f"{prefix}/{relative}")
+            assert response.status_code == 200
+            assert response.headers["content-type"].split(";")[0] == media_type
+            assert response.headers["x-content-type-options"] == "nosniff"
+            assert response.content == expected
 
+        # Adding supported suffixes never makes unsealed or outside-run files public.
+        (root / "symbols" / "unsealed.png").write_bytes(png)
         (root / "unsealed.csv").write_bytes(queue)
-        assert client.get(f"{prefix}/unsealed.csv").status_code == 404
-        (root / relative).write_bytes(b"changed after sealing")
-        response = client.get(f"{prefix}/{relative}")
-        assert response.status_code == 404
-        assert "SHA-256 mismatch" in response.json()["detail"]
+        for relative in ("symbols/unsealed.png", "unsealed.csv", "%2e%2e/run_manifest.json", "symbols/instance-a.png.exe"):
+            assert client.get(f"{prefix}/{relative}").status_code == 404
+        for relative in ("symbols/instance-a.png", "svg-review-queue.csv"):
+            (root / relative).write_bytes(b"changed after sealing")
+            response = client.get(f"{prefix}/{relative}")
+            assert response.status_code == 404
+            assert "SHA-256 mismatch" in response.json()["detail"]
 
 
 @pytest.mark.parametrize("relative", ["../fixture.dwg", "symbols/../../fixture.dwg", "/fixture.dwg",
@@ -709,6 +728,32 @@ def test_mcp_run_audit_verifies_hashes_counts_and_source_replay(
     assert "artifact:delivery" in failed["failures"]
 
 
+@pytest.mark.parametrize("query", ["?review=selected-result", "?review=selected-result&demo=1"])
+def test_selected_review_serves_map_without_historical_demo_before_javascript(
+    tmp_path, query,
+) -> None:
+    run_dir, _, _ = _run_fixture(tmp_path)
+    client = TestClient(create_review_app(run_dir, workspace_dir=tmp_path / "review"))
+    response = client.get("/" + query)
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    page = response.text
+    # Assert against the response itself: hiding after scripts run still flashes
+    # the old page and lets ?demo=1 replace real API requests with fixture data.
+    assert '<body class="live-review focused-review">' in page
+    for retained in ('id="console-app"', 'id="local-map"', 'id="map"',
+                     'id="gcp-role"', 'id="preview-gcp"', 'id="export-gcp"',
+                     'id="visual-dialog"', "./assets/vendor/ol.js", "./assets/app.js"):
+        assert retained in page
+    for removed in ('id="hero-page"', 'id="plugin-guide"', 'id="process-terminal"',
+                    "hero-motion.js", "demo-fixture.js", "Hutabohu", "Gorontalo",
+                    "9,717", "557e01413c39", "public-demo-only"):
+        assert removed not in page
+    assert "./assets/review.css" in page
+    assert client.get("/api/run").json()["source_entity_count"] == 1538
+    assert 'id="hero-page"' not in client.get("/").text
+
+
 def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None:
     monkeypatch.delenv("CAD2GIS_REVIEW_POSTGIS_DSN", raising=False)
     run_dir, delivery, manifest_path = _run_fixture(tmp_path)
@@ -839,6 +884,58 @@ def test_mcp_prepares_separate_review_workspace(tmp_path, monkeypatch) -> None:
     assert result["url"] == "http://127.0.0.1:9876"
     assert "cad2gis review" in result["launch_command"]
     assert (tmp_path / "run.review" / "review.sqlite3").is_file()
+    with sqlite3.connect(result["database"]) as database:
+        database.execute("CREATE TABLE preserve_existing_review (value TEXT)")
+        database.execute("INSERT INTO preserve_existing_review VALUES ('reviewed')")
+    again = prepare_review_workspace(str(run_dir), workspace_dir=result["workspace_dir"], port=9876)
+    assert again == result
+    with sqlite3.connect(result["database"]) as database:
+        assert database.execute("SELECT value FROM preserve_existing_review").fetchall() == [("reviewed",)]
+
+
+@pytest.mark.parametrize("location,marker", [
+    ("self", "run_manifest.json"), ("other", "run_manifest.json"),
+    ("other", "source_manifest.json"), ("other", "partition_manifest.json"),
+])
+def test_mcp_prepare_rejects_immutable_workspace_ancestors(tmp_path, monkeypatch, location, marker):
+    monkeypatch.setenv("CAD2GIS_PROJECT_ROOTS", str(tmp_path))
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "run_manifest.json").write_text(json.dumps({"source": {"sha256": "b" * 64}}))
+    immutable = run if location == "self" else tmp_path / "other-run"
+    immutable.mkdir(exist_ok=True)
+    if location != "self":
+        (immutable / marker).write_text("{}")
+    before = {p.relative_to(immutable): p.read_bytes() for p in immutable.rglob("*") if p.is_file()}
+    with pytest.raises(MCPServiceError, match="outside immutable"):
+        prepare_review_workspace(str(run), workspace_dir=str(immutable / "nested" / "review"))
+    assert {p.relative_to(immutable): p.read_bytes() for p in immutable.rglob("*") if p.is_file()} == before
+    assert not (immutable / "nested").exists()
+
+
+@pytest.mark.parametrize("redirect", ["workspace", "database"])
+def test_mcp_prepare_rejects_links_into_immutable_runs(tmp_path, monkeypatch, redirect):
+    monkeypatch.setenv("CAD2GIS_PROJECT_ROOTS", str(tmp_path))
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "run_manifest.json").write_text(json.dumps({"source": {"sha256": "b" * 64}}))
+    immutable = tmp_path / "other-run"
+    immutable.mkdir()
+    (immutable / "run_manifest.json").write_text("{}")
+    target = immutable / "review.sqlite3"
+    target.write_bytes(b"immutable database")
+    workspace = tmp_path / "review"
+    try:
+        if redirect == "workspace":
+            workspace.symlink_to(immutable, target_is_directory=True)
+        else:
+            workspace.mkdir()
+            (workspace / "review.sqlite3").symlink_to(target)
+    except OSError:
+        pytest.skip("Symlink creation is unavailable")
+    with pytest.raises(MCPServiceError, match="outside immutable"):
+        prepare_review_workspace(str(run), workspace_dir=str(workspace))
+    assert target.read_bytes() == b"immutable database"
 
 
 def test_review_console_exposes_toc_copy_and_accessibility_contracts(

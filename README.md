@@ -3,6 +3,12 @@
 [![CAD2GIS CI](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml)
 [![Web Demo](https://github.com/Mola-maker/CAD2GIS/actions/workflows/pages.yml/badge.svg)](https://mola-maker.github.io/CAD2GIS/?demo=1)
 
+**Linux 0.7.0-1 安装包（预发布）**：[Linux 修复版](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.7.0-linux.1) ·
+[Ubuntu x86_64 `.deb`](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/cad2gis_0.7.0-1_amd64.deb) ·
+[Linux 便携包](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/cad2gis-0.7.0-1-linux-x86_64.tar.gz) ·
+[Linux 安装说明](docs/INSTALL_LINUX.md)。要求 glibc 2.39 或更新版本。
+预发布不进入 GitHub 的 `releases/latest` 入口，请使用上述版本链接。
+
 CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Python API、
 Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
 canonical 流水线，不为某张测试图维护硬编码分支。

@@ -9,11 +9,12 @@ import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from http.cookies import SimpleCookie
+import hashlib
 import ipaddress
 import json
 import os
 from pathlib import Path
-from pathlib import PureWindowsPath
+from pathlib import PurePosixPath, PureWindowsPath
 import secrets
 import signal
 import socket
@@ -21,8 +22,10 @@ import subprocess
 import sys
 import threading
 import time
+import zipfile
+import xml.etree.ElementTree as ET
 from typing import Any
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, unquote, urlencode, urlsplit
 import webbrowser
 
 
@@ -31,6 +34,27 @@ SESSION_SECONDS = 12 * 60 * 60
 LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 ASSETS = Path(__file__).resolve().parent / "desktop"
 MAX_UPLOAD_BYTES = 512 * 1024 * 1024
+_DELIVERY_FILES = {
+    "delivery-manifest.json": "QGIS 交付清单", "checksums.json": "文件校验清单", "README.md": "打开说明",
+    "delivery.gpkg": "GIS 交付数据", "source.gpkg": "CAD 源事实数据", "evidence.gpkg": "来源证据数据",
+    "run_manifest.json": "运行清单", "partition_manifest.json": "分区清单", "osm_matching.json": "OSM 匹配证据",
+    "svg-candidates/index.html": "SVG / PNG 图例", "svg-candidates/correspondence.html": "SVG 来源对应报告",
+    "svg-candidates/manifest.json": "SVG 图例清单", "svg-candidates/correspondence.json": "SVG 对应结构化报告",
+    "svg-candidates/selection.json": "SVG 候选选择", "svg-candidates/symbols.sqlite3": "SVG 符号数据库",
+    "qgis/styles/style_manifest.json": "QGIS 样式清单", "reasoning/visual/manifest.json": "源图视觉证据清单",
+    "delivery.review.json": "QGIS 外部数据绑定核验", "osm-basemap.gpkg": "离线 OSM 底图",
+    "view-with-source-SVG.review.json": "QGIS 独立图纸绑定核验",
+}
+# No recursive filesystem walk or manifest-controlled paths: only these product
+# output directories and file types can appear in the download catalog.
+_DELIVERY_SUFFIXES = {
+    "": {".qgz", ".qgs", ".html", ".png", ".svg"},
+    "qgis": {".qgz", ".qgs"}, "qgis/styles": {".qml"}, "styles": {".qml"},
+    "svg-candidates": set(), "svg-candidates/symbols": {".svg", ".png"},
+    "reasoning/visual": {".png", ".svg"},
+    "audit": {".html", ".png", ".json"}, "visual": {".html", ".png", ".json"},
+    "reports": {".html", ".png", ".json"},
+}
 
 
 def _host_name(value: str) -> str:
@@ -347,6 +371,246 @@ class Jobs:
                 }, "artifacts": [{"name": name, "label": label, "path": str(path), "kind": kind}
                                  for name, label, path, kind in paths]}
 
+    def _delivery_root(self, run: str) -> Path:
+        root = self.config.path(run, kind="directory")
+        supplied = Path(run).expanduser().absolute()
+        for path in (supplied, *supplied.parents):
+            if path.is_symlink() or getattr(path, "is_junction", lambda: False)():
+                raise ValueError("交付目录不能通过符号链接打开")
+        return root
+
+    def _delivery_path(self, root: Path, name: str) -> Path:
+        if (not isinstance(name, str) or not name or len(name) > 512 or "\\" in name
+                or ":" in name or any(part in {"", ".", ".."} or part.startswith(".")
+                                      for part in name.split("/"))):
+            raise ValueError("交付文件名无效")
+        relative = PurePosixPath(name)
+        parent = "" if str(relative.parent) == "." else str(relative.parent)
+        if name not in _DELIVERY_FILES and relative.suffix.lower() not in _DELIVERY_SUFFIXES.get(parent, set()):
+            raise ValueError("交付文件不在允许清单中")
+        target = root
+        for part in relative.parts:
+            target /= part
+            if target.is_symlink() or getattr(target, "is_junction", lambda: False)():
+                raise ValueError("交付文件不能使用符号链接")
+        approved = self.config.path(str(target))
+        if not approved.is_relative_to(root) or not approved.is_file():
+            raise ValueError("交付文件不存在")
+        return approved
+
+    def delivery_artifacts(self, run: str) -> dict[str, Any]:
+        """List existing local outputs without changing or upgrading run status."""
+        root = self._delivery_root(run)
+        if (root / "delivery.review.json").exists() or (root / "view-with-source-SVG.review.json").exists():
+            record = self.standard_delivery_scope(str(root))
+            from .match_delivery import DELIVERY_FILES
+
+            return {**record, "artifacts": [
+                {"name": name, "label": _DELIVERY_FILES.get(name, name),
+                 "kind": Path(name).suffix.lstrip("."), "size": self._delivery_path(root, name).stat().st_size,
+                 "url": "/_app/api/delivery/artifact?" + urlencode({"run": str(root), "name": name})}
+                for name in DELIVERY_FILES]}
+        manifest_name = next((name for name in ("run_manifest.json", "partition_manifest.json", "delivery-manifest.json")
+                              if (root / name).exists()), "run_manifest.json")
+        manifest = self._delivery_path(root, manifest_name)
+        if manifest.stat().st_size > 8 * 1024 * 1024:
+            raise ValueError("交付运行清单过大")
+        try:
+            record = json.loads(manifest.read_text(encoding="utf-8"))
+        except (UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError("交付运行清单无效") from exc
+        if not isinstance(record, dict):
+            raise ValueError("交付运行清单无效")
+        candidates = set(_DELIVERY_FILES)
+        for relative in _DELIVERY_SUFFIXES:
+            folder = root
+            for part in PurePosixPath(relative).parts:
+                folder /= part
+                if folder.is_symlink() or getattr(folder, "is_junction", lambda: False)():
+                    break
+            else:
+                if folder.is_dir():
+                    for entry in folder.iterdir():
+                        candidates.add(entry.relative_to(root).as_posix())
+                        if len(candidates) > 20000:
+                            raise ValueError("交付文件过多，请选择单个图页的结果目录")
+        artifacts = []
+        for name in sorted(candidates, key=lambda name: (name not in _DELIVERY_FILES, name)):
+            try:
+                path = self._delivery_path(root, name)
+            except ValueError:
+                continue  # Unrelated files and links are never advertised.
+            kind = path.suffix.lower().lstrip(".")
+            artifacts.append({"name": name, "label": _DELIVERY_FILES.get(name, path.name), "kind": kind,
+                              "size": path.stat().st_size,
+                              "url": "/_app/api/delivery/artifact?" + urlencode({"run": str(root), "name": name})})
+        result = {"run_dir": str(root), "run_status": record.get("run_status", "UNKNOWN"), "artifacts": artifacts}
+        if manifest_name == "delivery-manifest.json":
+            archive = self.delivery_archive(str(root))
+            result["archive"] = {"name": archive.name, "size": archive.stat().st_size,
+                                 "url": "/_app/api/delivery/archive?" + urlencode({"run": str(root)})}
+        return result
+
+    def standard_delivery_scope(self, directory: str) -> dict[str, Any]:
+        """Admit six-file scopes from their actual QGZ/database bindings, read-only."""
+        from .match_delivery import DELIVERY_FILES
+        from .qgis_review import OSM_URL, _matching_context
+
+        root = self._delivery_root(directory)
+        files = {name: self._delivery_path(root, name) for name in DELIVERY_FILES}
+
+        def digest(path):
+            with path.open("rb") as stream:
+                return hashlib.file_digest(stream, "sha256").hexdigest()
+
+        cad_sha, osm_sha = digest(files["delivery.gpkg"]), digest(files["osm-basemap.gpkg"])
+        contexts, snapshots = [], []
+        try:
+            for project_name, standalone in (("delivery.qgz", False), ("view-with-source-SVG.qgz", True)):
+                receipt_path = files[Path(project_name).with_suffix(".review.json").name]
+                if receipt_path.stat().st_size > 64 * 1024 * 1024:
+                    raise ValueError("交付核验记录过大")
+                receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                if (not isinstance(receipt, dict) or receipt.get("schema") != "cad2gis.qgis-osm-review.v1"
+                        or receipt.get("sha256") != digest(files[project_name])
+                        or receipt.get("standalone") is not standalone
+                        or receipt.get("cad_database_hashes") != [cad_sha]
+                        or receipt.get("geometry_and_attributes_unchanged") is not True
+                        or receipt.get("absolute_accuracy_verified") is not False):
+                    raise ValueError("QGIS 交付核验记录与实际文件不匹配")
+                contexts.append(_matching_context(receipt.get("canonical_matching"), [cad_sha]))
+                snapshot = receipt.get("osm_source_sha256")
+                if not isinstance(snapshot, str) or len(snapshot) != 64:
+                    raise ValueError("QGIS 交付缺少冻结 OSM 来源绑定")
+                snapshots.append(snapshot)
+                with zipfile.ZipFile(files[project_name]) as bundle:
+                    names = bundle.namelist()
+                    documents = [name for name in names if name.endswith(".qgs")]
+                    if (len(set(names)) != len(names) or len(documents) != 1
+                            or any(PurePosixPath(name).is_absolute() or ".." in PurePosixPath(name).parts
+                                   or "\\" in name or ":" in name for name in names)
+                            or bundle.getinfo(documents[0]).file_size > 64 * 1024 * 1024):
+                        raise ValueError("QGZ 项目结构无效")
+                    document = ET.fromstring(bundle.read(documents[0]))
+                    observed = {}
+                    for layer in document.findall("projectlayers/maplayer"):
+                        provider, source = layer.findtext("provider"), layer.findtext("datasource") or ""
+                        if provider == "wms" and unquote(source) == "type=xyz&url=" + OSM_URL + "&zmin=0&zmax=19":
+                            continue
+                        if provider != "ogr" or "|layername=" not in source:
+                            raise ValueError("QGIS 交付包含未绑定的数据源")
+                        database = source.split("|", 1)[0]
+                        if database in observed:
+                            continue
+                        if standalone:
+                            attachment = database.removeprefix("attachment:")
+                            if not database.startswith("attachment:") or attachment not in names or not attachment.endswith(".gpkg"):
+                                raise ValueError("独立 QGZ 缺少绑定的数据库附件")
+                            with bundle.open(attachment) as stream:
+                                observed[database] = hashlib.file_digest(stream, "sha256").hexdigest()
+                        else:
+                            if database not in {"./delivery.gpkg", "./osm-basemap.gpkg"}:
+                                raise ValueError("QGIS 交付引用了标准目录外的数据")
+                            observed[database] = cad_sha if database == "./delivery.gpkg" else osm_sha
+                    expected = {cad_sha, receipt.get("osm_database_sha256")}
+                    if len(observed) != 2 or set(observed.values()) != expected:
+                        raise ValueError("QGIS 内嵌或外部数据库哈希不匹配")
+            if contexts[0] != contexts[1] or snapshots[0] != snapshots[1]:
+                raise ValueError("两份 QGIS 图纸的匹配或冻结 OSM 来源不一致")
+        except (OSError, UnicodeError, json.JSONDecodeError, zipfile.BadZipFile, ET.ParseError, KeyError, TypeError) as exc:
+            raise ValueError("标准 QGIS 交付绑定无效") from exc
+        context = contexts[0] or {}
+        matching = context.get("matching", {})
+        return {"run_dir": str(root), "run_status": "UNKNOWN", "delivery_sha256": cad_sha,
+                "delivery_kind": "standard_matched" if matching.get("status") == "matched" else "standard_reference",
+                "source_sha256": context.get("source_sha256"), "run_manifest_sha256": context.get("run_manifest_sha256"),
+                "matching": {key: matching.get(key) for key in ("status", "revision", "match_sha256", "authority")},
+                "absolute_accuracy_verified": False}
+
+    def delivery_archive(self, run: str) -> Path:
+        """Serve the complete, hash-bound sibling ZIP of a portable package."""
+        root = self._delivery_root(run)
+        manifest = self._delivery_path(root, "delivery-manifest.json")
+        checksum_file = self._delivery_path(root, "checksums.json")
+        archive = root.with_suffix(".zip")
+        if archive.is_symlink() or getattr(archive, "is_junction", lambda: False)():
+            raise ValueError("交付压缩包不能使用符号链接")
+        archive = self.config.path(str(archive))
+        if max(manifest.stat().st_size, checksum_file.stat().st_size) > 8 * 1024 * 1024:
+            raise ValueError("交付清单过大")
+        try:
+            report = json.loads(manifest.read_text(encoding="utf-8"))
+            checksums = json.loads(checksum_file.read_text(encoding="utf-8"))
+            if (not isinstance(report, dict) or report.get("schema_version") != "cad2gis.delivery-package.v1"
+                    or not isinstance(checksums, dict) or not checksums or "checksums.json" in checksums):
+                raise ValueError("交付清单或文件校验清单无效")
+            allowed = {"delivery-manifest.json", "checksums.json", "README.md"}
+            bound_hashes = {}
+            descriptors = report.get("deliveries")
+            if not isinstance(descriptors, list) or not descriptors:
+                raise ValueError("交付清单缺少图页")
+            for entry in descriptors:
+                project = PurePosixPath(entry["project"])
+                if project.name != "delivery.qgz":
+                    raise ValueError("交付项目路径无效")
+                allowed.update(str(project.parent / name) for name in ("delivery.qgz", "delivery.gpkg"))
+                bound_hashes[str(project.parent / "delivery.gpkg")] = entry["gpkg_sha256"]
+                for layer in entry["layers"]:
+                    name = layer["layer"]
+                    if (not isinstance(name, str) or not name or any(char in name for char in "/\\:")
+                            or name.startswith(".")):
+                        raise ValueError("交付图层名无效")
+                    allowed.add(str(project.parent / (name + ".csv")))
+                    allowed.add(str(project.parent / "styles" / (name + ".qml")))
+            if report.get("overview_project"):
+                if report["overview_project"] != "all-districts.qgz":
+                    raise ValueError("交付总图路径无效")
+                allowed.add("all-districts.qgz")
+            if report.get("geometry_repairs") == "candidate-only":
+                allowed.add("geometry_repair_candidates.json")
+            svg = report.get("svg_candidates") or {}
+            allowed.update("svg-candidates/" + name for name in svg.get("files", {}))
+            bound_hashes.update(("svg-candidates/" + name, sha) for name, sha in svg.get("files", {}).items())
+            actual = {}
+            pending = [root]
+            while pending:
+                for path in pending.pop().iterdir():
+                    if (path.is_symlink() or getattr(path, "is_junction", lambda: False)()
+                            or self.config.path(str(path)) != path):
+                        raise ValueError("交付压缩目录不能包含符号链接")
+                    if path.is_dir():
+                        pending.append(path)
+                        continue
+                    name = path.relative_to(root).as_posix()
+                    visual = (report.get("visual_audit_included") is True and name.startswith("visual/")
+                              and path.suffix.lower() in {".json", ".html", ".png", ".svg", ".csv"})
+                    if (not path.is_file() or any(part in {"", ".", ".."} or part.startswith(".")
+                                                 for part in name.split("/"))
+                            or ":" in name or "\\" in name or (name not in allowed and not visual)):
+                        raise ValueError("交付压缩目录包含未允许的文件")
+                    with path.open("rb") as stream:
+                        actual[name] = hashlib.file_digest(stream, "sha256").hexdigest()
+                    if len(actual) > 20000:
+                        raise ValueError("交付压缩目录文件过多")
+            if (not allowed <= set(actual) or set(actual) != {*checksums, "checksums.json"}
+                    or any(actual[name] != sha for name, sha in checksums.items())
+                    or any(actual.get(name) != sha for name, sha in bound_hashes.items())):
+                raise ValueError("交付目录与文件校验清单不匹配")
+            with zipfile.ZipFile(archive) as bundle:
+                names = bundle.namelist()
+                if len(names) != len(actual) or set(names) != set(actual):
+                    raise ValueError("ZIP 成员与当前交付目录不匹配，请重新打包")
+                for name, expected in actual.items():
+                    info = bundle.getinfo(name)
+                    if info.file_size != (root / name).stat().st_size or (info.external_attr >> 16) & 0o170000 == 0o120000:
+                        raise ValueError("ZIP 文件大小或类型无效")
+                    with bundle.open(info) as stream:
+                        if hashlib.file_digest(stream, "sha256").hexdigest() != expected:
+                            raise ValueError("ZIP 文件哈希不匹配，请重新打包")
+        except (OSError, KeyError, TypeError, AttributeError, UnicodeError, json.JSONDecodeError, zipfile.BadZipFile) as exc:
+            raise ValueError("交付 ZIP 缺失或无效，请重新打包") from exc
+        return archive
+
     def list(self):
         with self.lock:
             return [dict(record) for record in reversed(list(self.records.values()))]
@@ -562,6 +826,23 @@ class Application:
             if artifact is None:
                 raise ValueError("语义产物不存在")
             return FileResponse(artifact["path"], filename=Path(artifact["path"]).name)
+
+        @manager.get("/_app/api/delivery/artifacts")
+        async def delivery_artifacts(run: str):
+            return await run_in_threadpool(self.jobs.delivery_artifacts, run)
+
+        @manager.get("/_app/api/delivery/artifact")
+        async def delivery_artifact(run: str, name: str):
+            result = await run_in_threadpool(self.jobs.delivery_artifacts, run)
+            if not any(item["name"] == name for item in result["artifacts"]):
+                raise ValueError("交付文件不存在或不在允许清单中")
+            target = self.jobs._delivery_path(self.jobs._delivery_root(run), name)
+            return FileResponse(target, filename=target.name)
+
+        @manager.get("/_app/api/delivery/archive")
+        async def delivery_archive(run: str):
+            target = await run_in_threadpool(self.jobs.delivery_archive, run)
+            return FileResponse(target, filename=target.name, media_type="application/zip")
 
         @manager.post("/_app/api/database/query")
         async def database_query(request: Request):

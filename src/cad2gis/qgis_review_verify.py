@@ -7,9 +7,10 @@ import os
 from pathlib import Path
 
 from .qgis_review import OSM_CREDIT, _matching_context, _svg_bindings, sha
+from .qgis_runtime_fonts import ensure_runtime_fonts, verify_rendered_text
 
 
-def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
+def verify(project_path, image_path, *, title="CAD2GIS OSM review", font=None):
     from qgis.core import (
         QgsProject,
         QgsVectorLayer,
@@ -20,6 +21,7 @@ def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
     from qgis.PyQt.QtCore import QSize
     from qgis.PyQt.QtGui import QColor, QPainter, QFont
 
+    font_runtime = ensure_runtime_fonts(font)
     project_path = Path(project_path).resolve()
     receipt = json.loads(
         project_path.with_suffix(".review.json").read_text(encoding="utf-8")
@@ -128,6 +130,20 @@ def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
             "QGIS render errors: "
             + repr([(e.layerID, e.message) for e in job.errors()])
         )
+    labeling_results = job.takeLabelingResults()
+    if labeling_results is None:
+        raise ValueError("QGIS returned no labeling results for font verification")
+    status = (
+        "CAD coordinate-label translation; original database unchanged"
+        if correction
+        else "Converted CAD coordinates retained; original database unchanged"
+    )
+    footer = OSM_CREDIT + " | Reference map; independent survey accuracy unverified"
+    annotations = [(QFont("Arial", 14), title), (QFont("Arial", 10), footer), (QFont("Arial", 10), status)]
+    label_font_qa = verify_rendered_text(
+        labeling_results.allLabels(), annotations,
+        expected_label_layers=[layer.name() for layer in visible if layer.labelsEnabled() and layer.featureCount() > 0],
+    )
     image = job.renderedImage()
     # Check actual map pixels before adding the title/footer (which could hide a blank map).
     colors = {
@@ -147,12 +163,7 @@ def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
     painter.drawText(
         20,
         1372,
-        OSM_CREDIT + " | Reference map; independent survey accuracy unverified",
-    )
-    status = (
-        "CAD coordinate-label translation; original database unchanged"
-        if correction
-        else "Converted CAD coordinates retained; original database unchanged"
+        footer,
     )
     painter.drawText(20, 1392, status)
     painter.end()
@@ -172,6 +183,8 @@ def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
         snapshot_sha256=sha(image_path),
         sampled_map_colors=len(colors),
         map_samples=map_samples,
+        font_runtime=font_runtime,
+        label_font_qa=label_font_qa,
         absolute_accuracy_verified=False,
     )
     image_path.with_suffix(".json").write_text(
@@ -184,7 +197,6 @@ def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
 def main():
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from qgis.core import QgsApplication
-    from qgis.PyQt.QtGui import QFontDatabase
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", type=Path, required=True)
@@ -194,9 +206,7 @@ def main():
     args = parser.parse_args()
     app = QgsApplication([], False)
     app.initQgis()
-    if args.font and QFontDatabase.addApplicationFont(str(args.font)) < 0:
-        raise ValueError("Cannot load requested font")
-    print(json.dumps(verify(args.project, args.image, title=args.title)), flush=True)
+    print(json.dumps(verify(args.project, args.image, title=args.title, font=args.font)), flush=True)
 
 
 if __name__ == "__main__":

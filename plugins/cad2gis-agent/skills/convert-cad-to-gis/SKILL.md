@@ -68,19 +68,28 @@ still passes deterministic compilation and admission gates.
 3. Run canonical conversion into a new directory. For OSM-reviewed baselines,
    use matching="osm" so pinned project corrections are selected. Never replace
    a reviewed correction with a nominal run just to make conversion finish.
-4. For the standard baseline six-file delivery, run `cad2gis publish-match`
-   with a verified QGIS Python and the source-bound frozen review basemap.
-   Preserve its matching gates and partition directories. `batch package` and
-   `package_delivery` alone do not produce this SVG/OSM delivery contract.
-   An unmatched scope may instead use the public `qgis-review` workflow as an
-   explicitly uncorrected reference view. Bind its actual matching record to
+4. For the standard baseline six-file delivery, call `publish_matched_delivery`
+   with a new delivery_root and source-bound frozen osm_snapshots for every
+   populated scope. QGIS uses CAD2GIS_QGIS_PYTHON or canonical discovery.
+   Preserve its matching gates and partition directories. `package_qgis_delivery`
+   creates an ordinary portable QGZ/ZIP, without automatically applying SVGs;
+   it does not produce this standard SVG/OSM delivery contract.
+   For an unmatched scope, use `package_qgis_delivery`, then
+   `build_source_svg_delivery` with source-bound SVG assets, then
+   `build_qgis_review` as an explicitly uncorrected reference view.
+   Use a new output directory at every stage. Bind its actual matching record to
    the exact displayed database; retain abstained/unavailable titles and never
    present such a scope as an accepted matching revision.
-5. Reopen both QGZ files in a separate QGIS process. Verify embedded datasets,
+5. Call `verify_qgis_review` for both QGZ files with new image paths. It reopens
+   and renders each project in a separate QGIS process. Verify embedded datasets,
    source SVG bindings, layer/partition identities, feature counts and actual
    rendering. Compare logical source entities separately from cable segments;
    transform both datasets into the same CRS before evaluating offsets.
-6. Prepare and launch the actual local review workspace and open its URL.
+   Use `audit_visual_conversion` for independent source/geometry/field overlays;
+   preserve its separate source snapshot and requested partition.
+6. Call `start_review_server` for the run or selected partition and open the URL
+   only after status=ready. `get_review_server_status` rechecks run/source/manifest
+   identity and live GIS layers. The tool does not open a browser itself.
    Verify a live run-bound page and its SVG resources; a static batch index is
    not the conversion review console. Keep unresolved SVG points and all
    CONDITIONAL statuses visible in the delivery report.
@@ -188,10 +197,16 @@ agent needs to construct onboarding or repair arguments directly.
 
 ## Interactive review
 
-Call `prepare_review_workspace`, launch the returned command, and open its local
-URL. Use the ToC to move through source, mapping, registration, validation, and
+Call `start_review_server` and open the verified local URL. The process belongs
+to the current MCP connection; use `stop_review_server` for graceful shutdown.
+Do not reuse another service occupying the port. `prepare_review_workspace`
+only creates the edit store and a launch command; it does not start a server.
+Use the ToC to move through source, mapping, registration, validation, and
 delivery evidence. The console command is copyable; executing it creates a new
 immutable run rather than modifying the current delivery in place.
+An exported reviewed GCP profile can be supplied explicitly through
+`run_conversion`'s gcp_profile argument; existing registration conflict and
+source-binding gates still apply.
 
 For real-drawing simulation, reported offsets/missing objects, field review, or
 GCP work, read [onsite-verification.md](references/onsite-verification.md).

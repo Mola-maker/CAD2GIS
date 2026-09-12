@@ -19,3 +19,15 @@ their environment policy. Use `debug_mcp` with runtime scope to verify the actua
 server configuration and connectivity. Leaving Redis unconfigured preserves
 direct SQLite queries. Android and HTTP clients use their server's cache and
 must not receive Redis credentials.
+## QGIS runtime
+
+For SVG/OSM publication and independent QGIS rendering, set
+`CAD2GIS_QGIS_PYTHON` in the environment that launches the MCP server to the
+local Python or launcher that can import `qgis.core`. The Codex allow-list
+forwards this variable. Other stdio clients inherit their launching environment;
+for streamable HTTP, configure it on the server. It is an executable path, not
+a shell command. Missing QGIS does not disable source inspection or conversion.
+
+`CAD2GIS_QGIS_FONT` may point to a local font file for headless QGIS processes.
+The font is loaded only into that process; no system font settings are changed.
+Review verification rejects missing fonts and unsupported rendered label glyphs.

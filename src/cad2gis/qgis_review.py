@@ -22,6 +22,8 @@ from urllib.parse import unquote
 from contextlib import closing
 from pathlib import Path
 
+from .qgis_runtime_fonts import ensure_runtime_fonts
+
 
 def _matching_context(value, database_hashes):
     """Bind a saved conversion registration to the exact displayed CAD database."""
@@ -349,6 +351,7 @@ def build(
     source_evidence=None,
     standalone=False,
     matching_context=None,
+    font=None,
 ):
     """Write a new review project, preserving all CAD database bytes and SVGs."""
     from qgis.core import (
@@ -363,6 +366,7 @@ def build(
     )
     from pyproj import Transformer
 
+    font_runtime = ensure_runtime_fonts(font)
     output, project_path = Path(output).resolve(), Path(project_path).resolve()
     if output.exists():
         raise FileExistsError(output)
@@ -623,6 +627,7 @@ def build(
             "absolute_accuracy_verified": False,
             "geometry_and_attributes_unchanged": True,
             "attribution": OSM_CREDIT,
+            "font_runtime": font_runtime,
         }
         project.clear()
     output.with_suffix(".review.json").write_text(
@@ -633,7 +638,6 @@ def build(
 
 def main():
     from qgis.core import QgsApplication
-    from qgis.PyQt.QtGui import QFontDatabase
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", type=Path, required=True)
@@ -648,8 +652,6 @@ def main():
     args = parser.parse_args()
     app = QgsApplication([], False)
     app.initQgis()
-    if args.font and QFontDatabase.addApplicationFont(str(args.font)) < 0:
-        raise ValueError("Cannot load requested font")
     result = build(
         args.project,
         args.osm_data,
@@ -658,6 +660,7 @@ def main():
         matching_context=args.matching_context,
         source_evidence=args.source_evidence,
         standalone=args.standalone,
+        font=args.font,
     )
     print(json.dumps(result), flush=True)
 

@@ -119,6 +119,38 @@ def get_capabilities() -> dict[str, Any]:
             "review edits are revisioned separately; registration export "
             "returns a command that creates a new immutable run"
         ),
+        "qgis_delivery": {
+            "tool": "package_qgis_delivery",
+            "outputs": ["QGZ projects", "companion GeoPackages and QML", "complete ZIP", "SHA-256 checksums"],
+            "overwrite": False,
+            "standalone_qgz": False,
+            "verification": "package hashes, ZIP contents, QGZ local data references and layer counts",
+            "qgis_render_verified": False,
+            "accuracy_rule": "packaging preserves the original run status; it does not approve coordinates",
+        },
+        "matched_delivery": {
+            "tool": "publish_matched_delivery",
+            "workflow": ["audit_run", "publish_matched_delivery", "verify_qgis_review", "start_review_server"],
+            "files_per_scope": ["delivery.gpkg", "delivery.qgz", "delivery.review.json", "osm-basemap.gpkg",
+                                "view-with-source-SVG.qgz", "view-with-source-SVG.review.json"],
+            "matching_gate": "Every populated scope must retain a canonical matched revision",
+            "osm_inputs": "Explicit frozen snapshots for every populated scope; no implicit network fetch",
+            "qgis_runtime": "CAD2GIS_QGIS_PYTHON or canonical runtime discovery",
+            "reference_view_tool": "build_qgis_review",
+            "reference_workflow": ["package_qgis_delivery", "build_source_svg_delivery", "build_qgis_review", "verify_qgis_review"],
+            "source_svg_tool": "build_source_svg_delivery",
+            "independent_render_tool": "verify_qgis_review",
+            "source_visual_audit_tool": "audit_visual_conversion",
+            "absolute_accuracy_verified": False,
+        },
+        "review_server": {
+            "start_tool": "start_review_server", "status_tool": "get_review_server_status",
+            "stop_tool": "stop_review_server", "localhost_only": True,
+            "identity": "Owned process, exact run/source/manifest and partition, live GIS layers",
+            "lifetime": "Current MCP process; graceful stop finishes in-flight review actions",
+            "browser_opened": False,
+            "prepare_only_tool": "prepare_review_workspace",
+        },
         "semantic_database": {
             "workflow": ["export_source", "query_source_entities", "get_entity_context_batch",
                          "prepare_semantic_batches", "query_relationship_candidates",
@@ -1471,6 +1503,7 @@ def run_conversion(
     osm_data: str = "",
     osm_place: str = "",
     match_profile: str = "",
+    gcp_profile: str = "",
 ) -> dict[str, Any]:
     """Run the canonical pipeline; no conversion logic is duplicated here."""
 
@@ -1486,6 +1519,7 @@ def run_conversion(
         **({"osm_data": _path(osm_data)} if osm_data else {}),
         **({"osm_place": osm_place} if osm_place else {}),
         **({"match_profile": _path(match_profile)} if match_profile else {}),
+        **({"gcp_profile": _path(gcp_profile)} if gcp_profile else {}),
         **({"source_run": _path(source_run)} if source_run else {}),
         **({"semantic_store": _path(semantic_store) if semantic_store else None, "semantic_job": semantic_job} if semantic_store or semantic_job else {}),
         **({"geometry_repairs": geometry_repairs} if geometry_repairs != "legacy" else {}),
@@ -1505,6 +1539,132 @@ def run_conversion(
     }
 
 
+def _qgis_source_inventory(directory: Path) -> dict[str, str]:
+    """Admit every local file before packaging; never follow a redirected tree."""
+    from .batch import digest
+
+    inventory = {}
+    pending = [directory]
+    while pending:
+        for path in pending.pop().iterdir():
+            approved = _path(path)
+            if approved != path or path.is_symlink():
+                raise MCPServiceError("QGIS package inputs must not contain symlinks or junctions")
+            if path.is_dir():
+                pending.append(path)
+            elif path.is_file():
+                inventory[path.relative_to(directory).as_posix()] = digest(path)
+            else:
+                raise MCPServiceError("QGIS package inputs must contain only regular files and directories")
+    return inventory
+
+
+def _verify_qgis_delivery(output: Path, report: dict[str, Any]) -> dict[str, Any]:
+    import hashlib
+    import sqlite3
+    import xml.etree.ElementTree as ET
+    import zipfile
+    from contextlib import closing
+    from .batch import digest
+
+    checksums = _json_object(_path(output / "checksums.json"))
+    actual = _qgis_source_inventory(output)
+    if set(actual) != {*checksums, "checksums.json"} or any(actual[name] != value for name, value in checksums.items()):
+        raise MCPServiceError("QGIS delivery checksum inventory does not match its files")
+    archive = output.with_suffix(".zip")
+    with zipfile.ZipFile(_path(archive)) as bundle:
+        if len(bundle.namelist()) != len(actual) or set(bundle.namelist()) != set(actual):
+            raise MCPServiceError("QGIS ZIP inventory does not match its delivery directory")
+        for name, expected in actual.items():
+            with bundle.open(name) as stream:
+                if hashlib.file_digest(stream, "sha256").hexdigest() != expected:
+                    raise MCPServiceError(f"QGIS ZIP checksum mismatch: {name}")
+    projects = []
+    descriptors = [*report["deliveries"]]
+    if report.get("overview_project"):
+        descriptors.append({"scope": "all-districts", "project": report["overview_project"]})
+    allowed_databases = {entry["gpkg_sha256"] for entry in report["deliveries"]}
+    for entry in descriptors:
+        project = _path(output / entry["project"])
+        if not project.is_relative_to(output):
+            raise MCPServiceError("QGIS project escapes the delivery directory")
+        with zipfile.ZipFile(project) as container:
+            documents = [name for name in container.namelist() if name.endswith(".qgs")]
+            if len(documents) != 1:
+                raise MCPServiceError("QGZ must contain exactly one project document")
+            root = ET.fromstring(container.read(documents[0]))
+        layers = {}
+        for layer in root.findall("projectlayers/maplayer"):
+            source = (layer.findtext("datasource") or "").split("|")
+            if (len(source) != 2 or not source[0].startswith("./")
+                    or not source[1].startswith("layername=")):
+                raise MCPServiceError("QGZ contains a non-local database reference")
+            database = _path(project.parent / source[0])
+            if not database.is_relative_to(output) or digest(database) not in allowed_databases:
+                raise MCPServiceError("QGZ database does not match its delivered bytes")
+            table = source[1].removeprefix("layername=")
+            with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as connection:
+                if table not in {row[0] for row in connection.execute("SELECT table_name FROM gpkg_geometry_columns")}:
+                    raise MCPServiceError("QGZ references an absent spatial layer")
+                count = connection.execute('SELECT COUNT(*) FROM "' + table.replace('"', '""') + '"').fetchone()[0]
+            layers[layer.findtext("layername")] = count
+        if "layers" in entry and layers != {item["layer"]: item["features"] for item in entry["layers"]}:
+            raise MCPServiceError("QGZ layer counts differ from the delivery receipt")
+        projects.append({"scope": entry["scope"], "path": str(project), "sha256": digest(project), "layers": layers})
+    return {"status": "PASS", "file_count": len(actual), "zip_contents_verified": True,
+            "local_qgis_references_verified": True, "qgis_render_verified": False, "projects": projects}
+
+
+def package_qgis_delivery(run_dir: str, output_dir: str) -> dict[str, Any]:
+    """Create verified QGZ projects and a complete portable ZIP from an existing run.
+
+    Call this when the user requests QGZ or a QGIS package; run_conversion and
+    prepare_review_workspace do not generate QGZ. Both paths must be inside the
+    authorized workspace. output_dir and its sibling .zip must be new and outside
+    the immutable run. Download and extract the complete ZIP: its QGZ projects
+    require the companion GeoPackages/styles. Verification covers file hashes,
+    ZIP contents and QGZ references/counts, not an actual QGIS render or surveyed
+    accuracy. SVG candidates remain candidates and are not automatically applied.
+    """
+    from .batch import digest
+    from .delivery import package_delivery
+    from .agent_qgis import _output
+
+    directory = _path(run_dir)
+    if not directory.is_dir():
+        raise MCPServiceError("run_dir must be an existing conversion directory")
+    manifest = _json_object(_path(directory / "run_manifest.json"))
+    output = _path(output_dir, must_exist=False)
+    archive = _path(output.with_suffix(".zip"), must_exist=False)
+    if output == archive or output.is_relative_to(directory) or archive.is_relative_to(directory):
+        raise MCPServiceError("QGIS output must be a new directory outside the immutable run")
+    if output.exists() or archive.exists():
+        raise MCPServiceError("QGIS output directory or ZIP already exists; choose a new output_dir", code="OUTPUT_EXISTS")
+    _output(str(output))
+    _output(str(archive))
+    before = _qgis_source_inventory(directory)
+    try:
+        report = package_delivery(directory, output)
+        verification = _verify_qgis_delivery(output, report)
+        if _qgis_source_inventory(directory) != before:
+            raise MCPServiceError("Source run files changed during QGIS packaging")
+        expected = manifest.get("delivery_counts")
+        if isinstance(expected, dict) and verification["projects"][0]["layers"] != expected:
+            raise MCPServiceError("Delivered QGIS layer counts differ from the original run manifest")
+    except (OSError, ValueError) as exc:
+        if isinstance(exc, MCPServiceError):
+            raise
+        raise MCPServiceError(f"QGIS packaging failed: {exc}") from exc
+    return {"schema_version": "cad2gis.qgis_delivery_result.v1", "status": "completed",
+            "run_dir": str(directory), "output_dir": str(output), "run_status": report["run_status"],
+            "projects": verification.pop("projects"),
+            "archive": {"path": str(archive), "sha256": digest(archive), "size": archive.stat().st_size},
+            "manifest": {"path": str(output / "delivery-manifest.json"), "sha256": digest(output / "delivery-manifest.json")},
+            "verification": verification, "source_run_unchanged": True,
+            "standalone_qgz": False, "download_complete_zip": True,
+            "svg_candidates_auto_applied": False, "absolute_accuracy_verified": False}
+
+
 def prepare_review_workspace(
     run_dir: str,
     *,
@@ -1514,6 +1674,7 @@ def prepare_review_workspace(
     """Create the separate edit store and return a local review launch command."""
 
     from .review_server import SQLiteReviewStore
+    from .agent_review import _require_mutable_path
 
     directory = _path(run_dir)
     if not directory.is_dir():
@@ -1531,9 +1692,11 @@ def prepare_review_workspace(
             must_exist=False,
         )
     )
+    _require_mutable_path(workspace)
+    database = _path(workspace / "review.sqlite3", must_exist=False)
+    _require_mutable_path(database)
     workspace.mkdir(parents=True, exist_ok=True)
     session_id = f"{directory.name}:{source_sha[:16]}"
-    database = workspace / "review.sqlite3"
     SQLiteReviewStore(database, session_id=session_id)
     return {
         "schema_version": "cad2gis.review_workspace.v1",
@@ -1547,6 +1710,12 @@ def prepare_review_workspace(
         ),
         "immutable_delivery": True,
     }
+
+
+from .agent_qgis import (
+    audit_visual_conversion, build_qgis_review, build_source_svg_delivery, publish_matched_delivery, verify_qgis_review,
+)
+from .agent_review import get_review_server_status, start_review_server, stop_review_server
 
 
 def create_server(
@@ -1630,6 +1799,14 @@ def create_server(
         return report
 
     registrations = (
+        ("audit_visual_conversion", audit_visual_conversion),
+        ("build_qgis_review", build_qgis_review),
+        ("build_source_svg_delivery", build_source_svg_delivery),
+        ("publish_matched_delivery", publish_matched_delivery),
+        ("verify_qgis_review", verify_qgis_review),
+        ("start_review_server", start_review_server),
+        ("get_review_server_status", get_review_server_status),
+        ("stop_review_server", stop_review_server),
         ("get_capabilities", runtime_capabilities_tool),
         ("debug_mcp", debug_tool),
         ("export_source", export_source),
@@ -1654,6 +1831,7 @@ def create_server(
         ("auto_onboard_and_convert", auto_onboard_and_convert),
         ("inspect_run", inspect_run),
         ("audit_run", audit_run),
+        ("package_qgis_delivery", package_qgis_delivery),
         ("list_evidence_nodes", list_evidence_nodes),
         ("get_evidence_node", get_evidence_node),
         ("list_visual_regions", list_visual_regions),
@@ -1738,6 +1916,14 @@ if __name__ == "__main__":  # pragma: no cover
 __all__ = [
     "AGENT_PROMPT_CONTRACT_VERSION",
     "MCPServiceError",
+    "audit_visual_conversion",
+    "build_qgis_review",
+    "build_source_svg_delivery",
+    "publish_matched_delivery",
+    "verify_qgis_review",
+    "start_review_server",
+    "get_review_server_status",
+    "stop_review_server",
     "apply_ai_onboarding",
     "audit_run",
     "auto_onboard_and_convert",
@@ -1756,6 +1942,7 @@ __all__ = [
     "list_network_repair_candidates",
     "list_visual_regions",
     "main",
+    "package_qgis_delivery",
     "prepare_review_workspace",
     "prepare_ai_onboarding",
     "resolve_visual_hit",

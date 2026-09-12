@@ -7,7 +7,7 @@ import json
 from typing import Any
 
 
-PLUGIN_CONTRACT_VERSION = "0.7.0"
+PLUGIN_CONTRACT_VERSION = "0.7.5"
 SKILL_CONTRACT_VERSION = "cad2gis.convert_skill.v3"
 ITERATION_SKILL_CONTRACT_VERSION = "cad2gis.iterate_skill.v1"
 SKILL_CONTRACTS = {
@@ -21,8 +21,11 @@ MCP_TOOL_CONTRACT_SCHEMA = "cad2gis.mcp_tool_contract.v1"
 MCP_TOOL_NAMES = (
     "apply_ai_onboarding",
     "audit_run",
+    "audit_visual_conversion",
     "auto_onboard_and_convert",
     "bootstrap_project",
+    "build_qgis_review",
+    "build_source_svg_delivery",
     "cancel_compile_job",
     "commit_semantic_patch",
     "compile_semantic_revision",
@@ -37,6 +40,7 @@ MCP_TOOL_NAMES = (
     "get_capabilities",
     "get_entity_context_batch",
     "get_evidence_node",
+    "get_review_server_status",
     "get_runtime_status",
     "get_scene_visual_region_context",
     "initialize_semantic_store",
@@ -54,11 +58,13 @@ MCP_TOOL_NAMES = (
     "list_registered_operations",
     "list_scene_visual_regions",
     "list_visual_regions",
+    "package_qgis_delivery",
     "prepare_ai_onboarding",
     "prepare_iteration_context",
     "prepare_review_workspace",
     "prepare_semantic_batches",
     "preview_semantic_patch",
+    "publish_matched_delivery",
     "query_relationship_candidates",
     "query_source_entities",
     "reconcile_compile_jobs",
@@ -66,9 +72,12 @@ MCP_TOOL_NAMES = (
     "resolve_visual_hit",
     "run_conversion",
     "start_feedback_iteration",
+    "start_review_server",
+    "stop_review_server",
     "validate_decision_pack",
     "validate_project",
     "validate_scene_interpretation_plan",
+    "verify_qgis_review",
 )
 
 
