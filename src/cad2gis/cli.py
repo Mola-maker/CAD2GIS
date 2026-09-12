@@ -56,6 +56,12 @@ def _parser() -> argparse.ArgumentParser:
     register_batch(commands)
     from .match_delivery import register as register_match_delivery
     register_match_delivery(commands)
+    from .reverse import register as register_reverse
+    register_reverse(commands)
+    from .reverse_batch import register as register_reverse_batch
+    register_reverse_batch(commands)
+    from .reverse_source import register as register_reverse_source
+    register_reverse_source(commands)
     #若用户选择了doctor命令，则调用_doctor函数处理
     doctor.add_argument(
             "--profile",
@@ -850,6 +856,8 @@ _COMMANDS = frozenset(
     {
         "doctor", "runtime", "inspect", "bootstrap", "validate", "convert", "auto-convert", "gcp",
         "review", "verify", "debug-mcp", "export-source", "index-source", "query-source", "semantic", "batch",
+        "reverse-inspect", "reverse-convert", "reverse-verify", "reverse-batch",
+        "reverse-source-inspect", "reverse-source-convert", "reverse-source-verify",
     }
 )
 
@@ -893,7 +901,7 @@ def _recovery_command(stage: str) -> str:
 
 
 def _error_payload(exc: Exception, *, stage: str) -> dict[str, Any]:
-    return {
+    result = {
         "type": exc.__class__.__name__,
         "message": str(exc),
         "error_code": _error_code(exc),
@@ -901,6 +909,13 @@ def _error_payload(exc: Exception, *, stage: str) -> dict[str, Any]:
         "artifact_status": _artifact_status(exc),
         "recovery_command": _recovery_command(stage),
     }
+    details = getattr(exc, "details", {})
+    if isinstance(details, dict):
+        selected = {key: details[key] for key in ("unverified_workspace", "workspace", "run_published",
+                    "process_may_be_running", "log_path", "pid") if key in details}
+        if selected:
+            result["details"] = selected
+    return result
 
 
 def _jsonable(value: Any) -> Any:

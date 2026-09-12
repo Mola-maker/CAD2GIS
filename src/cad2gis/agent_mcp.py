@@ -100,6 +100,33 @@ def get_capabilities() -> dict[str, Any]:
         ),
         "filesystem_roots": [str(root) for root in _roots()],
         "runtime": _runtime_status(),
+        "gis_to_cad": {
+            "workflow": ["reverse_inspect", "reverse_convert", "reverse_verify"],
+            "input_formats": ["GeoPackage", "GeoJSON"],
+            "output_formats": ["DXF", "DWG"],
+            "dwg_requires": "AutoCAD Core Console and successful source-derived native readback",
+            "dxf_version": "R2018",
+            "dwg_output": True,
+            "original_cad_restored": False,
+            "absolute_accuracy_verified": False,
+            "runtime_dependencies": ["sqlite3", "pyproj", "shapely", "ezdxf"],
+            "requires_gdal": False,
+            "requires_pillow": False,
+            "native_coordinate_recovery": {
+                "supported": True,
+                "parameters": ["registration_manifest", "partition"],
+                "authority": "Source-bound registration manifest and recorded inverse coordinate operation; numerical closure is not positional accuracy.",
+                "original_cad_restored": False,
+            },
+            "coordinate_policy": "Explicit projected CRS, or native coordinate frame recovery from a hash-bound registration manifest; numeric Z is preserved without vertical datum conversion.",
+            "output_policy": "Publish a new immutable run directory with drawing.dxf, attributes.jsonl and manifest.json.",
+            "source_primitive_reproduction": {
+                "workflow": ["reverse_source_inspect", "reverse_source_convert", "reverse_source_verify"],
+                "requires": "Strict canonical source snapshot and complete fingerprint-bound primitive facts",
+                "types": ["LINE", "LWPOLYLINE", "CIRCLE", "ARC", "ELLIPSE"],
+                "GIS_edits_applied": False, "original_cad_restored": False,
+            },
+        },
         "scene_evidence": {
             "visual_schema": "cad2gis.scene_visual_bundle.v1",
             "role_plan_schema": "cad2gis.scene_interpretation_plan.v1",
@@ -230,6 +257,129 @@ def _json_object(path: Path, *, max_bytes: int = 64 * 1024 * 1024) -> dict[str, 
         return read_json_object(path, max_uncompressed_bytes=max_bytes)
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
         raise MCPServiceError(str(exc)) from exc
+
+
+def reverse_inspect(source: str, *, layers: list[str] | None = None) -> dict[str, Any]:
+    """Validate GeoPackage/GeoJSON layers and CRS without creating artifacts."""
+
+    from .reverse import inspect_gis
+
+    return inspect_gis(_path(source), layers=layers)
+
+
+def reverse_convert(
+    source: str, *, run_dir: str, layers: list[str] | None = None,
+    source_crs: str | None = None, target_crs: str | None = None,
+    label_field: str | None = None, layer_field: str | None = None,
+    label_height: float = 2.5, registration_manifest: str | None = None,
+    partition: str | None = None, output_format: str = "DXF",
+) -> dict[str, Any]:
+    """Create a traceable DXF or runtime-verified DWG R2018 run in a new directory."""
+
+    from .reverse import reverse_convert as convert
+
+    source_path = _path(source)
+    output = _path(run_dir, must_exist=False)
+    registration_path = _path(registration_manifest) if registration_manifest is not None else None
+    # _path resolves links for admission; retain the canonical publisher's
+    # rejection of an already-existing (including dangling) output symlink.
+    if Path(run_dir).expanduser().is_symlink():
+        raise MCPServiceError("Reverse output path is an existing symlink", code="REVERSE_OUTPUT_EXISTS")
+    return convert(
+        source_path, run_dir=output, layers=layers,
+        source_crs=source_crs, target_crs=target_crs, label_field=label_field,
+        layer_field=layer_field, label_height=label_height,
+        registration_manifest=registration_path, partition=partition, output_format=output_format,
+    )
+
+
+def reverse_verify(
+    run_dir: str, *, source: str | None = None, tolerance: float = 1e-8,
+    registration_manifest: str | None = None,
+) -> dict[str, Any]:
+    """Verify CAD artifacts against source GIS; DWG invokes native readback in scratch space."""
+
+    directory = _path(run_dir)
+    source_path = _path(source) if source is not None else None
+    registration_path = _path(registration_manifest) if registration_manifest is not None else None
+    manifest = _json_object(_path(directory / "manifest.json"))
+    if source is None:
+        source = manifest.get("source")
+        if not isinstance(source, str) or not source.strip():
+            raise MCPServiceError("Reverse run manifest must declare a source path")
+        source_path = _path(source)
+    options = manifest.get("export_options")
+    if registration_path is None and isinstance(options, dict) and options.get("registration_manifest") is not None:
+        registration_manifest = options["registration_manifest"]
+        if not isinstance(registration_manifest, str) or not registration_manifest.strip():
+            raise MCPServiceError("Reverse run registration_manifest must declare a path")
+        registration_path = _path(registration_manifest)
+    from .reverse_verify import verify_reverse
+
+    return verify_reverse(
+        directory, source=source_path, tolerance=tolerance,
+        registration_manifest=registration_path, scratch_parent=_reverse_scratch_parent(directory),
+    )
+
+
+def _reverse_scratch_parent(directory: Path) -> Path:
+    """Retained native diagnostics must stay inside an admitted project root."""
+    for root in _roots():
+        if directory.is_relative_to(root):
+            return _path(directory.parent if directory.parent.is_relative_to(root) else root)
+    raise MCPServiceError("No admitted root for native verification scratch", code="PATH_OUTSIDE_ROOT")
+
+
+def _admit_reverse_snapshot(source_manifest: str) -> Path:
+    from .reverse_source_reader import snapshot_paths
+
+    path = _path(source_manifest)
+    if Path(source_manifest).expanduser().is_symlink():
+        raise MCPServiceError("Source snapshot manifest symlinks are not supported")
+    paths = snapshot_paths(path)
+    for path in paths:
+        _path(path)
+    return paths[0]
+
+
+def reverse_source_inspect(source_manifest: str, *, max_entities: int = 50) -> dict[str, Any]:
+    """Inspect source primitive facts with bounded entity detail; no GIS edits are applied."""
+    from .reverse_source import inspect_source_snapshot
+
+    if isinstance(max_entities, bool) or not isinstance(max_entities, int) or not 1 <= max_entities <= 200:
+        raise MCPServiceError("max_entities must be 1..200")
+    report = inspect_source_snapshot(_admit_reverse_snapshot(source_manifest))
+    entries = report["entities"]
+    return {**report, "entities": entries[:max_entities], "returned_entity_count": min(len(entries), max_entities),
+            "truncated": len(entries) > max_entities}
+
+
+def reverse_source_convert(source_manifest: str, *, run_dir: str, entity_types: list[str] | None = None,
+                           layout: str = "Model", output_format: str = "DXF") -> dict[str, Any]:
+    """Reproduce explicitly selected native primitives in a new CAD run; unsupported facts fail closed."""
+    from .reverse_source import reproduce_source_snapshot
+
+    source = _admit_reverse_snapshot(source_manifest)
+    if Path(run_dir).expanduser().is_symlink():
+        raise MCPServiceError("Reverse output path is an existing symlink", code="REVERSE_OUTPUT_EXISTS")
+    return reproduce_source_snapshot(source, run_dir=_path(run_dir, must_exist=False),
+                                     entity_types=entity_types, layout=layout, output_format=output_format)
+
+
+def reverse_source_verify(run_dir: str, *, source_manifest: str | None = None) -> dict[str, Any]:
+    """Verify source-fact reproduction; DWG requires fresh native binary readback."""
+    from .reverse_source import verify_source_reproduction
+
+    directory = _path(run_dir)
+    manifest_path = directory / "manifest.json"
+    if manifest_path.is_symlink():
+        raise MCPServiceError("Reverse manifest symlinks are not supported")
+    manifest = _json_object(_path(manifest_path))
+    source = source_manifest if source_manifest is not None else manifest.get("source_manifest")
+    if not isinstance(source, str) or not source.strip():
+        raise MCPServiceError("Reverse source manifest path is missing")
+    return verify_source_reproduction(directory, source_manifest=_admit_reverse_snapshot(source),
+                                      scratch_parent=_reverse_scratch_parent(directory))
 
 
 def inspect_run(run_dir: str) -> dict[str, Any]:
@@ -1640,6 +1790,12 @@ def create_server(
         ("get_runtime_status", runtime_status_tool),
         ("install_runtime", runtime_install_tool),
         ("inspect_source", inspect_source),
+        ("reverse_inspect", reverse_inspect),
+        ("reverse_convert", reverse_convert),
+        ("reverse_verify", reverse_verify),
+        ("reverse_source_inspect", reverse_source_inspect),
+        ("reverse_source_convert", reverse_source_convert),
+        ("reverse_source_verify", reverse_source_verify),
         ("bootstrap_project", bootstrap_project),
         ("validate_project", validate_project),
         ("prepare_ai_onboarding", prepare_ai_onboarding),
@@ -1692,7 +1848,16 @@ def create_server(
             "compile_semantic_revision", "cancel_compile_job", "reconcile_compile_jobs",
         }:
             handler = database_tool(name, handler)
-        server.tool(name=name)(traced_tool(name, handler, server, trace_identity))
+        annotations = None
+        if name in {"reverse_inspect", "reverse_convert", "reverse_verify", "reverse_source_inspect", "reverse_source_convert", "reverse_source_verify"}:
+            from mcp.types import ToolAnnotations
+
+            read_only = name not in {"reverse_convert", "reverse_source_convert"}
+            annotations = ToolAnnotations(
+                readOnlyHint=read_only, destructiveHint=False,
+                idempotentHint=read_only, openWorldHint=False,
+            )
+        server.tool(name=name, annotations=annotations)(traced_tool(name, handler, server, trace_identity))
     return server
 
 
@@ -1752,6 +1917,12 @@ __all__ = [
     "prepare_review_workspace",
     "prepare_ai_onboarding",
     "resolve_visual_hit",
+    "reverse_convert",
+    "reverse_inspect",
+    "reverse_verify",
+    "reverse_source_inspect",
+    "reverse_source_convert",
+    "reverse_source_verify",
     "run_conversion",
     "validate_decision_pack",
     "validate_project",

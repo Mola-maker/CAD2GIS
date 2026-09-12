@@ -88,7 +88,7 @@ class MCPToolBridge:
         for key, value in kwargs.items():
             if isinstance(value, str) and value and (
                 key.endswith(("_path", "_dir", "_store"))
-                or key in {"source", "source_run", "semantic_store", "osm_data", "match_profile"}
+                or key in {"source", "source_run", "semantic_store", "osm_data", "match_profile", "registration_manifest", "source_manifest"}
             ):
                 try:
                     kwargs[key] = str(self.admitted(value, False))
@@ -101,7 +101,9 @@ class MCPToolBridge:
             [name, kwargs], sort_keys=True, ensure_ascii=False, allow_nan=False,
         ).encode()).hexdigest()
         if fingerprint in self.uncertain_mutations:
-            detail = "上一写入的结果尚不确定，本轮不会重复提交相同操作。请检查现有产物或 inspect_semantic_store / inspect_run，再说明恢复步骤。"
+            inspector = {"reverse_convert": "reverse_verify", "reverse_source_convert": "reverse_source_verify"}.get(
+                name, "inspect_semantic_store / inspect_run")
+            detail = f"上一写入的结果尚不确定，本轮不会重复提交相同操作。请检查现有产物或 {inspector}，再说明恢复步骤。"
             self.event("tool_error", name, detail)
             raise ModelRetry(detail)
 

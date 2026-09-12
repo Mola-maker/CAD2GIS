@@ -33,6 +33,8 @@ MUTATING_TOOLS = frozenset({
     "compile_semantic_revision", "initialize_semantic_store",
     "cancel_compile_job", "reconcile_compile_jobs",
     "prepare_iteration_context",
+    "reverse_convert",
+    "reverse_source_convert",
 })
 
 _ERROR_RECOVERY = {
@@ -44,6 +46,19 @@ _ERROR_RECOVERY = {
     "DATABASE_BUSY": "Wait for the active database operation to finish; inspect its status before retrying a mutation.",
     "QUERY_BUDGET_EXCEEDED": "Narrow filters or page size and retry the read query; inspect status first for a mutation.",
     "ONBOARDING_ANNOTATION_INVALID": "Review the failed candidate in prepare_ai_onboarding. Select only structurally supported candidates; keep omitted annotations unresolved. Inspect current project state before retrying.",
+    "REVERSE_OUTPUT_EXISTS": "Inspect the immutable DXF run with reverse_verify. Choose a new run_dir for another conversion.",
+    "REVERSE_OUTPUT_BUSY": "Inspect the active publisher and its output before retrying; do not remove another publisher's reservation.",
+    "REVERSE_SOURCE_BUSY": "Close the GeoPackage writer and checkpoint its journal before reading a stable snapshot.",
+    "REVERSE_SOURCE_CHANGED": "Use a closed, stable GIS source snapshot and repeat reverse_inspect before conversion.",
+    "REVERSE_CRS_REQUIRED": "Inspect source CRS metadata and supply a known projected target_crs; never guess the coordinate system.",
+    "REVERSE_CRS_INVALID": "Correct source_crs or target_crs using the source's declared coordinate reference system.",
+    "REVERSE_REGISTRATION_INVALID": "Inspect the original registration manifest, delivery hash and explicit partition. Native recovery requires recorded inverse coordinate evidence and cannot combine CRS overrides.",
+    "REVERSE_VERIFICATION_FAILED": "Inspect reverse_verify evidence and original source; do not modify hashes to hide artifact differences.",
+    "REVERSE_DWG_RUNTIME_UNAVAILABLE": "DWG requires a locally configured AutoCAD Core Console. Configure that runtime or choose output_format DXF.",
+    "REVERSE_DWG_PROCESS_FAILED": "Inspect the native process log. Resolve its reported runtime or profile restriction before retrying into a new output directory.",
+    "REVERSE_DWG_TIMEOUT": "Inspect whether the owned native process stopped and any retained workspace before retrying. Do not duplicate an uncertain write.",
+    "REVERSE_DWG_INVALID_OUTPUT": "Native serialization or readback failed validation. Inspect the process evidence; do not treat the DWG as verified.",
+    "REVERSE_CLEANUP_FAILED": "The run may already be published. Call reverse_verify on run_dir before any recovery or new conversion.",
 }
 
 
@@ -403,12 +418,23 @@ def traced_tool(name: str, handler: Callable[..., Any], server: Any,
             return exc
         from mcp.server.fastmcp.exceptions import ToolError
         code = error_code(exc)
+        reverse_details = {}
+        if name.startswith("reverse_"):
+            reverse_details["message"] = str(exc)[:2000]
+            if getattr(exc, "retained_artifact_path", None) is not None:
+                reverse_details["artifact_status"] = str(exc.retained_artifact_path)
+            details = getattr(exc, "details", {})
+            if isinstance(details, dict):
+                reverse_details["details"] = {key: details[key] for key in (
+                    "unverified_workspace", "workspace", "run_published", "process_may_be_running", "log_path", "pid"
+                ) if key in details}
         return ToolError(json.dumps({
             "error_code": code, "trace_id": event["trace_id"],
             "retryable": code in {"DATABASE_BUSY", "QUERY_BUDGET_EXCEEDED"} and name not in MUTATING_TOOLS,
             "committed": "unknown" if name in MUTATING_TOOLS else False,
             "recovery": _ERROR_RECOVERY.get(code, "Inspect the operation status and existing artifacts before attempting a recovery."),
             **(_precommit_annotation_failure(exc) if name == "apply_ai_onboarding" else {}),
+            **reverse_details,
         }))
 
     if inspect.iscoroutinefunction(handler):

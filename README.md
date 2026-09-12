@@ -7,6 +7,12 @@ CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Py
 Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
 canonical 流水线，不为某张测试图维护硬编码分支。
 
+**GIS → CAD 逆向转换**：[使用说明](docs/GIS_TO_CAD.md)。新增
+`reverse-inspect`、`reverse-convert`、`reverse-verify` 和 `reverse-batch` 支持
+GeoPackage / GeoJSON → DXF R2018、源绑定的原坐标系恢复及并行批处理。
+DWG R2018 使用可选的 AutoCAD Core Console，并逐次重新读取二进制验证几何。
+CLI、Python 与 MCP 共享实现，输出附带属性、实体对应关系及核验记录。
+
 **0.6.0 升级交付**：[安装与新功能](docs/UPGRADE_0_6_0.md) ·
 [OSM 算法与证据层](docs/UPGRADE_OSM.md) · [GCP 微调](docs/UPGRADE_GCP.md) ·
 [九图旧配置兼容性](docs/UPGRADE_BASELINE_COMPATIBILITY.md)。本次源码归档和安装包的

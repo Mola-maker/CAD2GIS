@@ -18,7 +18,6 @@ import sqlite3
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
 from pyproj import CRS, Transformer
 from pyproj.enums import TransformDirection
 from pyproj.exceptions import ProjError
@@ -520,6 +519,7 @@ def vertex_graph(values):
 
 
 def render(path, source, delivered, comparisons, report, focus=False):
+    from PIL import Image, ImageDraw, ImageFont
     image = Image.new("RGB", (2160, 1400), "#f6f8fc")
     draw = ImageDraw.Draw(image)
     font_path = next((p for p in (
@@ -608,6 +608,7 @@ def render(path, source, delivered, comparisons, report, focus=False):
 
 
 def render_changes(path, source, delivered, comparisons, report):
+    from PIL import Image, ImageDraw, ImageFont
     """Show the largest recorded differences, including repaired region spikes."""
     changes = sorted((row for row in comparisons if (row.get("hausdorff_native_m") or 0) > .01),
                      key=lambda row: row["hausdorff_native_m"], reverse=True)[:6]

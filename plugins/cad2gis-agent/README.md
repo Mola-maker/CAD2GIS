@@ -4,6 +4,44 @@ CAD2GIS Agent is the thin, cross-agent registration layer for the canonical
 CAD2GIS Python package. It adds one skill and one MCP server; it does not copy
 reader, mapping, topology, length, CRS, or GeoPackage logic.
 
+## Reverse conversion
+
+The updated runtime exposes `reverse_inspect`, `reverse_convert`, and
+`reverse_verify` for GeoPackage/GeoJSON-to-CAD delivery. DXF R2018 needs no GDAL;
+optional DWG R2018 requires AutoCAD Core Console and fresh native binary readback.
+Source-bound registration manifests can restore the original coordinate frame.
+Separate `reverse_source_inspect`, `reverse_source_convert`, and
+`reverse_source_verify` tools reproduce explicitly selected, fingerprint-bound
+native primitives from a strict source snapshot without applying GIS edits.
+Neither mode claims complete original CAD restoration or absolute accuracy.
+
+The CLI also provides source-hash-bound parallel batch plans. See
+[usage and failure recovery](../../docs/GIS_TO_CAD.md) and
+[verification evidence](../../docs/GIS_TO_CAD_VERIFICATION.md).
+These tools require the runtime built from this change; an older running MCP
+process does not gain them merely by updating plugin documentation. Install the
+reviewed runtime package and restart the client, without editing a plugin cache.
+
+The reverse-system source is on feature branch `codex/gis-to-cad-20260912`.
+Use that branch when building this implementation; the general `main.zip`
+installation below is not the branch-specific installation command. To install
+from the reviewed source checkout, run from its repository root:
+
+```shell
+uv tool install --python 3.12 --force ".[agent]"
+```
+
+The separately verified local wheel is also available on the validation machine:
+
+```shell
+uv tool install --python 3.12 --force "cad2gis[agent] @ file:///E:/branch_CAD2GIS/validation/reverse-full-20260912/dist-final/cad2gis-0.6.0-py3-none-any.whl"
+```
+
+The wheel still uses project version `0.6.0`; identify this local build by the
+SHA-256 in the verification record, rather than by version alone. These install
+commands can fetch missing dependencies; validation used existing dependencies
+and an isolated local installation, without replacing a user's MCP runtime.
+
 ## Install the runtime
 
 Use Python 3.11 or 3.12. Install the self-contained agent runtime from any
@@ -22,8 +60,9 @@ directory and cause `os error 32`. Restart clients after installation.
 The agent extra uses platform wheels for GDAL/OGR and ezdxf. The runtime command
 installs the checksum-pinned official LibreDWG release on Windows. On
 macOS/Linux it uses Homebrew when available, then falls back to a rootless build
-of the checksum-pinned official source release in the user cache. AutoCAD and
-Conda are not required.
+of the checksum-pinned official source release in the user cache. Forward CAD
+reading does not require AutoCAD or Conda. Reverse DWG writing specifically
+requires the qualified AutoCAD Core Console backend.
 
 ## Grant project access explicitly
 
