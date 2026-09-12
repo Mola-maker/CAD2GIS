@@ -13,7 +13,7 @@ Windows 安装包、Linux DEB / 便携包和 Android 开发 APK 均已构建。W
 | [Linux x64 便携包](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/semantic-upgrade/linux/cad2gis-0.7.0-linux-x86_64.tar.gz>) | 344,888,579 | `38c6adc0aed8172c49bad72b973f5ef384377e679651eb79e1ea1a94a82e31c6` |
 | [Android 开发签名 APK](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/android/CAD2GIS-0.7.0-android-dev.apk>) | 1,725,056 | `1b9f550e9f25a06d176218f7ff414a4aab6709fb610f94b62640edff6d2b77b9` |
 
-冻结 wheel：[cad2gis-0.7.0-py3-none-any.whl](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/semantic-motion-final/cad2gis-0.7.0-py3-none-any.whl>)，SHA256 `e5d99d655a3e1824857d7dc583c0a8dd667e0d0b76abb9e6837c8db4c79128fb`。清单和每个平台的已安装文件均绑定此 wheel；Python 与既有依赖复用。[机器可读交付清单](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/PLATFORM_DELIVERY_0.7.0.json>)、[校验文件](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/PLATFORM_SHA256SUMS_0.7.0>)。
+冻结 wheel：[cad2gis-0.7.0-py3-none-any.whl](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/semantic-motion-final/cad2gis-0.7.0-py3-none-any.whl>)，SHA256 `e5d99d655a3e1824857d7dc583c0a8dd667e0d0b76abb9e6837c8db4c79128fb`。Windows/Linux 清单和已安装的应用文件均绑定此 wheel；Python 与既有依赖复用。Android APK 是独立的服务客户端，不包含后端 wheel。[机器可读交付清单](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/PLATFORM_DELIVERY_0.7.0.json>)、[校验文件](<E:/branch_CAD2GIS/CAD2GIS-semantic-upgrade/dist/PLATFORM_SHA256SUMS_0.7.0>)。
 
 ## 安装与业务证据
 
