@@ -1,0 +1,59 @@
+name: Build macOS release installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing draft release tag to build and attach installers to
+        required: true
+        default: v0.7.0
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_tag }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate native runner and draft release
+        run: |
+          test "$(uname -m)" = "$EXPECTED_ARCH"
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          mkdir -p dist/python
+          gh release download "$RELEASE_TAG" --pattern 'cad2gis-*-py3-none-any.whl' --dir dist/python
+      - name: Build offline PKG and test native runtime
+        run: python tools/build_macos_package.py --wheel dist/python/cad2gis-*-py3-none-any.whl
+      - name: Install and exercise packaged application
+        run: |
+          sudo installer -pkg dist/macos/CAD2GIS-*-macos-"$EXPECTED_ARCH".pkg -target /
+          installed=/Applications/CAD2GIS.app/Contents/Resources/payload
+          "$installed/bin/cad2gis" --version
+          /usr/local/bin/cad2gis --version
+          "$installed/bin/cad2gis" doctor --deep --strict --profile full --json
+          "$installed/runtime/bin/python3" -I tools/smoke_runtime_bundle.py --bundle "$installed" --output "$RUNNER_TEMP/installed-native" > "dist/macos/macos-$EXPECTED_ARCH-installed-native.log"
+          "$installed/runtime/bin/python3" -I tools/smoke_synthetic_conversion.py --bundle "$installed" --output "$RUNNER_TEMP/installed-conversion" > "dist/macos/macos-$EXPECTED_ARCH-installed-conversion.log"
+      - name: Attach verified packages to draft release
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          gh release upload "$RELEASE_TAG" dist/macos/*

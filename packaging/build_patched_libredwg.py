@@ -26,14 +26,14 @@ def sha(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def build(target, resume=False, jobs=2):
+def build(target, resume=False, jobs=2, work_root=Path('/tmp')):
     assert os.uname().sysname == "Linux"
     archive = ROOT / "tmp/packaging-linux/downloads/libredwg-0.14.tar.gz"
     patch = ROOT / "packaging/patches/libredwg-0.14-cquote-termination.patch"
     reproducer = ROOT / "packaging/patches/cquote_minimal.c"
     for path, expected in ((archive, SOURCE_SHA), (patch, PATCH_SHA), (reproducer, REPRO_SHA)):
         assert sha(path) == expected, f"Pinned input changed: {path}"
-    work = Path("/build") / ("cad2gis-libredwg-cquote-" + target)
+    work = work_root.expanduser().resolve() / ("cad2gis-libredwg-cquote-" + target)
     output = ROOT / "tmp/packaging-native-patched" / target
     if resume:
         assert work.is_dir() and output.is_dir(), "No interrupted stage to resume"
@@ -50,9 +50,9 @@ def build(target, resume=False, jobs=2):
     compiler = "x86_64-w64-mingw32-gcc" if target == "windows" else "gcc"
     strip = "x86_64-w64-mingw32-strip" if target == "windows" else "strip"
     suffix = ".exe" if target == "windows" else ""
-    environment = dict(os.environ, CC=compiler, CFLAGS="-O2")
+    environment = dict(os.environ, CC=compiler, CFLAGS="-O2 -std=gnu11")
     configure = [str(source / "configure"), f"--prefix={prefix}",
-                 "--disable-bindings", "--disable-docs", "--disable-shared"]
+                 "--disable-bindings", "--disable-python", "--disable-docs", "--disable-shared"]
     if target == "windows":
         configure.append("--host=x86_64-w64-mingw32")
         environment.update(LDFLAGS="-static", PKG_CONFIG_LIBDIR="/nonexistent")
@@ -82,8 +82,7 @@ def build(target, resume=False, jobs=2):
              *(["-static"] if target == "windows" else []), str(reproducer), "-o", str(repro_binary)])
         if target == "linux":
             run([str(repro_binary)])
-        if not resume:
-            run(configure)
+        run(configure)
         run(["make", f"-j{jobs}"])
         if target == "windows":
             # Libtool's -static only forbids shared libtool libraries. Its
@@ -136,5 +135,6 @@ if __name__ == "__main__":
     parser.add_argument("--target", choices=("linux", "windows"), required=True)
     parser.add_argument("--resume", action="store_true", help="Continue verified interrupted stage without cleaning objects")
     parser.add_argument("--jobs", type=int, choices=range(1, 9), default=2)
+    parser.add_argument("--work-root", type=Path, default=Path('/tmp'))
     args = parser.parse_args()
-    build(args.target, args.resume, args.jobs)
+    build(args.target, args.resume, args.jobs, args.work_root)
