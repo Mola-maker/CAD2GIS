@@ -1,21 +1,48 @@
 /* The installed review starts at the maps, without the product/demo landing. */
-html,body.focused-review{height:auto;min-height:100%;overflow:auto}
-.focused-review #console-app{height:auto;min-height:100vh;display:flex;flex-direction:column}
-.focused-review .workspace{height:auto;min-height:640px;flex:1;grid-template-columns:260px minmax(0,1fr);align-items:stretch}
-.focused-review .map-workspace{height:640px;min-height:640px}
-.focused-review .navigation-panel{max-height:640px;overflow-y:auto;overscroll-behavior:auto}
-.focused-review .map-grid{min-height:320px}
+html,body.focused-review{height:100%;min-height:0;overflow:hidden}
+.focused-review #console-app{height:100%;min-height:0;display:flex;flex-direction:column}
+.focused-review .workspace{height:auto;min-height:0;flex:1 1 0;display:grid;grid-template-columns:260px minmax(0,1fr);align-items:stretch;overflow:hidden}
+.focused-review .map-workspace{height:auto;min-height:0;overflow:hidden}
+.focused-review .navigation-panel{min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain}
+.focused-review .map-grid{min-height:0;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr)}
 .focused-review .project-picker-heading,.focused-review .project-picker-label,.focused-review .project-picker,.focused-review .project-proof-grid,.focused-review .project-proof-list,.focused-review .project-location,.focused-review .project-description{display:none}
 .focused-review .workflow-nav{display:none}
-.focused-review .topbar{height:auto;min-height:64px}
+.focused-review .topbar{height:auto;min-height:48px;flex-shrink:0;padding:6px 12px;gap:8px}
+.focused-review .topbar .eyebrow{display:none}
+.focused-review .topbar h1{font-size:14px}
+.focused-review .brand-mark{width:30px;height:30px;font-size:10px}
+.focused-review .review-current-source{max-width:min(550px,45vw);font-size:9px}
+.focused-review .run-state{flex-wrap:wrap;gap:5px;font-size:9px}
+.focused-review .run-state button{min-height:32px;font-size:10px}
 .focused-review .map-actions{flex-wrap:wrap}
-.focused-review .map-toolbar{min-height:64px;height:auto}
+.focused-review .map-toolbar{min-height:0;height:auto;padding:5px 8px}
+.focused-review .map-actions button{min-height:30px}
+.focused-review .basemap-status{font-size:9px;line-height:1.4;padding:4px 8px}
+.focused-review .precision-summary{padding:5px 8px;gap:5px 12px}
+.focused-review .precision-summary strong{font-size:10px}
+.focused-review .precision-summary span{font-size:8px}
+.focused-review:not(.manual-correction) .pick-guide{display:none}
+.focused-review:not(.manual-correction) .map-workspace{grid-template-rows:auto auto auto minmax(0,1fr)}
 .focused-review .review-guide{display:none}
-.focused-review.manual-correction .review-guide{display:block}
+.focused-review.manual-correction .review-guide{display:block;max-height:40%;overflow:auto}
 .focused-review .inspector-panel{position:fixed;inset:64px 0 0 auto;width:min(430px,90vw);z-index:30;overflow:auto;background:#fff}
+.review-map-switch,#toggle-layers,#close-layers{display:none}
 @media(max-width:900px){
- .focused-review .workspace{display:flex;flex-direction:column}
- .focused-review .map-workspace{order:0;width:100%;height:900px;min-height:900px}
- .focused-review .map-grid{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
- .focused-review .navigation-panel{order:1;max-height:none;overflow:visible}
+ .focused-review .workspace{display:flex;flex-direction:column;position:relative}
+ .focused-review .map-workspace{order:0;width:100%;flex:1 1 0;height:auto;min-height:0}
+ .focused-review .map-grid{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr)}
+ .focused-review .map-pane{grid-area:1/1}
+ .focused-review:not([data-map-view="gis"]) #gis-pane,.focused-review[data-map-view="gis"] #cad-pane{display:none}
+ .focused-review .navigation-panel{display:none;position:absolute;inset:0 auto 0 0;width:min(340px,100%);height:100%;max-height:100%;overflow:auto;z-index:20;box-shadow:8px 0 25px #29476530}
+ .focused-review.layers-open .navigation-panel{display:block}
+ .focused-review #toggle-layers,.focused-review #close-layers{display:inline-flex}
+ .focused-review #close-layers{float:right}
+ .focused-review .mode-switch{display:none}
+ .focused-review .review-map-switch{display:flex;gap:4px;align-items:center;flex-shrink:0}
+ .focused-review .review-map-switch button{min-height:30px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:white;font-size:10px}
+ .focused-review .review-map-switch [aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:white}
+ .focused-review .map-actions{width:auto;flex:1;justify-content:flex-end;gap:4px}
+ .focused-review .precision-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .focused-review .map-toolbar{gap:4px}
 }
+@media(max-width:560px){.focused-review .brand-mark,.focused-review #connection-label{display:none}.focused-review .review-current-source{max-width:50vw}.focused-review .topbar h1{font-size:12px}.focused-review .precision-summary{grid-template-columns:1fr 1fr}.focused-review .map-actions{justify-content:flex-start}.focused-review .map-toolbar{align-content:start}}

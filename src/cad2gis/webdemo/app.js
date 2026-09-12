@@ -280,6 +280,64 @@ const worldMap = new ol.Map({
   }),
 });
 
+// An overview belongs to the visible map size, not to an earlier hidden iframe.
+// Keep user navigation when resizing; only overview views follow new dimensions.
+const overviewMaps = new Set([localMap, worldMap]);
+const mapExtent = (map) => map === localMap ? localExtent : [...previewLayers.values()]
+  .reduce((extent, layer) => ol.extent.extend(extent, layer.getSource().getExtent()), ol.extent.createEmpty());
+const fitMapOverview = (map) => {
+  const target = map.getTargetElement();
+  if (!target.clientWidth || !target.clientHeight) return;
+  map.updateSize();
+  const extent = mapExtent(map), size = map.getSize();
+  if (!size || ol.extent.isEmpty(extent)) return;
+  const padding = Math.min(40, Math.floor(Math.min(...size) / 8));
+  map.getView().fit(extent, { size, padding: [padding, padding, padding, padding] });
+};
+let mapLayoutFrame;
+const scheduleMapLayout = () => {
+  cancelAnimationFrame(mapLayoutFrame);
+  mapLayoutFrame = requestAnimationFrame(() => {
+    for (const map of [localMap, worldMap]) {
+      const target = map.getTargetElement();
+      if (!target.clientWidth || !target.clientHeight) continue;
+      map.updateSize();
+      if (overviewMaps.has(map)) fitMapOverview(map);
+    }
+  });
+};
+const mapLayoutObserver = new ResizeObserver(scheduleMapLayout);
+for (const map of [localMap, worldMap]) {
+  const target = map.getTargetElement();
+  mapLayoutObserver.observe(target);
+  map.on("pointerdrag", () => { overviewMaps.delete(map); });
+  target.addEventListener("wheel", () => overviewMaps.delete(map), { passive: true });
+  target.addEventListener("keydown", (event) => {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "+", "-", "=", "PageUp", "PageDown"].includes(event.key)) overviewMaps.delete(map);
+  });
+  target.addEventListener("click", (event) => {
+    if (event.target.closest(".ol-zoom")) overviewMaps.delete(map);
+  });
+  target.addEventListener("dblclick", () => overviewMaps.delete(map));
+}
+window.addEventListener("resize", scheduleMapLayout);
+document.addEventListener("visibilitychange", scheduleMapLayout);
+const toggleLayerPanel = (open) => {
+  const restoreFocus = !open && $("#review-layers")?.contains(document.activeElement);
+  document.body.classList.toggle("layers-open", open);
+  $("#toggle-layers")?.setAttribute("aria-expanded", String(open));
+  if (restoreFocus) $("#toggle-layers")?.focus({ preventScroll: true });
+};
+$("#toggle-layers")?.addEventListener("click", () => toggleLayerPanel(!document.body.classList.contains("layers-open")));
+$("#close-layers")?.addEventListener("click", () => toggleLayerPanel(false));
+const selectReviewMap = (name) => {
+  document.body.dataset.mapView = name;
+  document.querySelectorAll("button[data-map-view]").forEach((item) => item.setAttribute("aria-pressed", String(item.dataset.mapView === name)));
+  toggleLayerPanel(false);
+  scheduleMapLayout();
+};
+document.querySelectorAll("button[data-map-view]").forEach((button) => button.addEventListener("click", () => selectReviewMap(button.dataset.mapView)));
+
 const refreshPreview = async ({ fitView = false } = {}) => {
   const epoch = ++previewEpoch;
   const fittedCollections = new Map();
@@ -399,7 +457,10 @@ const refreshPreview = async ({ fitView = false } = {}) => {
   const extents = [...previewLayers.values()].map((layer) => layer.getSource().getExtent());
   if (extents.length && (firstPreview || fitView)) {
     const extent = extents.reduce((acc, value) => ol.extent.extend(acc, value), ol.extent.createEmpty());
-    if (!ol.extent.isEmpty(extent)) worldMap.getView().fit(extent, { padding: [50, 50, 50, 50] });
+    if (!ol.extent.isEmpty(extent)) {
+      overviewMaps.add(worldMap);
+      fitMapOverview(worldMap);
+    }
   }
   updatePrecisionState();
   return !previewError;
@@ -639,6 +700,7 @@ const showSelected = (map) => {
       // picked geometry resolvable instead of buried in an overview blob.
       const geometry = feature.getGeometry();
       if (geometry && map === localMap) {
+        overviewMaps.delete(localMap);
         const currentZoom = localMap.getView().getZoom() || 0;
         localMap.getView().fit(geometry.getExtent(), {
           padding: [40, 40, 40, 40],
@@ -696,7 +758,8 @@ const loadLayers = async () => {
     });
   }
   if (!ol.extent.isEmpty(localExtent)) {
-    localMap.getView().fit(localExtent, { padding: [40, 40, 40, 40] });
+    overviewMaps.add(localMap);
+    fitMapOverview(localMap);
   }
   const visibleCount = layers.filter((descriptor) => descriptor.feature_count > 0).length;
   terminalEvent("ok", `已加载 ${visibleCount} 个非空图层，共 ${layers.length} 个图层定义`);
@@ -1050,7 +1113,8 @@ $("#copy-command").addEventListener("click", async () => {
   }
 });
 $("#tool-fit").addEventListener("click", () => {
-  if (!ol.extent.isEmpty(localExtent)) localMap.getView().fit(localExtent, { padding: [40, 40, 40, 40] });
+  overviewMaps.add(localMap);overviewMaps.add(worldMap);
+  fitMapOverview(localMap);
   refreshPreview({ fitView: true }).catch((error) => toast(error.message, true));
 });
 $("#open-visual").addEventListener("click", async () => {
@@ -1202,6 +1266,7 @@ function setReviewStage(stage) {
     manualCorrection = ["registration", "validation", "delivery"].includes(stage);
     $("#stage-registration").hidden = !manualCorrection;
     document.body.classList.toggle("manual-correction", manualCorrection);
+    toggleLayerPanel(manualCorrection);
     $("#toggle-manual-gcp").textContent = manualCorrection ? "收起人工 GCP" : "人工 GCP（可选）";
     $("#toggle-manual-gcp").setAttribute("aria-expanded", String(manualCorrection));
     updatePickGuide();
@@ -1294,7 +1359,8 @@ $("#close-inspector").addEventListener("click", () => toggleInspector(false));
 $("#start-guided-correction").addEventListener("click", () => {
   $("#review-guide").open = false;
   setReviewStage("registration");
-  $("#local-map").focus();
+  selectReviewMap("cad");
+  requestAnimationFrame(() => $("#local-map").focus({ preventScroll: true }));
 });
 $("#review-guide").addEventListener("toggle", () => requestAnimationFrame(() => { localMap.updateSize(); worldMap.updateSize(); }));
 $("#pick-guide-action").addEventListener("click", () => {
@@ -1314,6 +1380,7 @@ $("#reset-gcp").addEventListener("click", () => adjustControl("reset"));
 $("#center-gcp").addEventListener("click", () => {
   const pair = controls.find((item) => item.id === selectedGcpId);
   if (!pair) return;
+  overviewMaps.delete(localMap);overviewMaps.delete(worldMap);
   const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 200;
   localMap.getView().animate({ center: pair.cad, duration });
   worldMap.getView().animate({ center: pair.map, duration });
@@ -1327,6 +1394,7 @@ $("#evidence-layer-menu").addEventListener("toggle", () => {
 document.querySelectorAll("[data-evidence-layer]").forEach((input) => input.addEventListener("change", () => evidenceLayers.get(input.dataset.evidenceLayer)?.setVisible(input.checked)));
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !$("#review-inspector").hidden) toggleInspector(false);
+  if (event.key === "Escape") toggleLayerPanel(false);
 });
 
 

@@ -236,6 +236,20 @@ function guarded(fn){return async event=>{
 };}
 function on(id,event,fn){let pending=false;$(id).addEventListener(event,guarded(async e=>{if(event==="submit")e.preventDefault();if(pending||e.currentTarget.disabled)return;pending=true;try{return await fn(e);}finally{pending=false;}}));}
 function showLogin(){clearTimeout(timer);clearTimeout(agentTimer);++agentPollRequest;agentRun="";$("#workspace").hidden=true;$("#login").hidden=false;$("#connection").textContent="尚未登录";projectPopup.close();helpPopup.close();toolsPopup.close();}
+let reviewLayoutFrame;
+function scheduleReviewLayout(){
+  cancelAnimationFrame(reviewLayoutFrame);
+  reviewLayoutFrame=requestAnimationFrame(()=>{
+    if(!$("#app").classList.contains("review-mode"))return;
+    const main=$("#main-workspace"),dockRect=dock.getBoundingClientRect();
+    const reserve=Math.max(12,Math.ceil(main.getBoundingClientRect().bottom-dockRect.top+12));
+    main.style.setProperty("--review-dock-space",reserve+"px");
+    $("#osm-frame").contentWindow?.dispatchEvent(new Event("resize"));
+  });
+}
+const reviewLayoutObserver=new ResizeObserver(scheduleReviewLayout);
+reviewLayoutObserver.observe($("#main-workspace"));reviewLayoutObserver.observe(dock);
+window.addEventListener("resize",scheduleReviewLayout);
 function showPage(page){
   if(!["config","chat","osm","svg","sqlite","delivery"].includes(page))return;
   toolsPopup.close();
@@ -250,7 +264,7 @@ function showPage(page){
   $("#app").classList.toggle("review-mode",page==="osm");
   if(page!=="osm")setReviewFocus(false);
   positionDockLens();
-  if(page==="osm"&&$("#osm-frame").contentWindow)$("#osm-frame").contentWindow.dispatchEvent(new Event("resize"));
+  if(page==="osm")scheduleReviewLayout();
   if(page==="svg"&&reviewId)loadSvg().catch(e=>message(e.message,true));
 }
 function setReviewFocus(expanded){
@@ -259,7 +273,7 @@ function setReviewFocus(expanded){
   $("#review-focus").textContent=expanded?"收起工作区":"展开工作区";
   requestAnimationFrame(()=>{
     positionDockLens();
-    $("#osm-frame").contentWindow?.dispatchEvent(new Event("resize"));
+    scheduleReviewLayout();
   });
 }
 function updateWorkflow(){
