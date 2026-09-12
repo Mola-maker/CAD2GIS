@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -27,6 +28,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--installer", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--expected-wheel-sha256", help="Require the installed manifest to match the frozen release wheel")
+    parser.add_argument("--wait-for-ui-review", action="store_true",
+                        help="Keep this test installation available for bounded browser review before uninstall")
     args = parser.parse_args()
     output = args.output.resolve()
     if not output.is_relative_to(ROOT / "tmp") or output.exists():
@@ -56,9 +60,26 @@ def main() -> None:
     for name in ("PYTHONPATH", "PYTHONHOME", "CAD2GIS_BACKEND_PATH", "CAD2GIS_LIBREDWG_CLI"):
         environment.pop(name, None)
     results = {}
+    manifest = {}
     try:
+        manifest_path = installation / "bundle-manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        shutil.copy2(manifest_path, output / "installed-bundle-manifest.json")
+        if args.expected_wheel_sha256:
+            assert manifest["wheel_sha256"] == args.expected_wheel_sha256.lower(), "Installed wheel differs from release input"
+        for relative, expected in manifest["files"].items():
+            installed_file = (installation / relative).resolve(strict=True)
+            assert installed_file.is_relative_to(installation.resolve()), relative
+            with installed_file.open("rb") as stream:
+                actual = hashlib.file_digest(stream, "sha256").hexdigest()
+            assert actual == expected, f"Installed file hash mismatch: {relative}"
+        (output / "installed-integrity.json").write_text(json.dumps({
+            "status": "passed", "wheel_sha256": manifest["wheel_sha256"],
+            "manifest_files_verified": len(manifest["files"]),
+        }, indent=2), encoding="utf-8")
         for script, directory in (("smoke_runtime_bundle.py", "native"), ("smoke_synthetic_conversion.py", "conversion"),
-                                  ("smoke_application_bundle.py", "application")):
+                                  ("smoke_application_bundle.py", "application"),
+                                  ("smoke_windows_launcher.py", "desktop-launcher")):
             with (output / f"{directory}.log").open("w", encoding="utf-8") as log:
                 completed = subprocess.run([str(python), "-I", "-B", str(ROOT / "tools" / script),
                     "--bundle", str(installation), "--output", str(project_data / directory),
@@ -68,6 +89,19 @@ def main() -> None:
             results[directory] = completed.returncode
             if completed.returncode:
                 raise RuntimeError(f"{script} failed; inspect {output / (directory + '.log')}")
+        if args.wait_for_ui_review:
+            (output / "awaiting-ui-review.json").write_text(json.dumps({
+                "installation": str(installation), "wheel_sha256": manifest["wheel_sha256"],
+                "review_result": str(output / "installed-ui-review.json"),
+            }, indent=2), encoding="utf-8")
+            deadline = time.monotonic() + 900
+            review_path = output / "installed-ui-review.json"
+            while not review_path.is_file() and time.monotonic() < deadline:
+                time.sleep(1)
+            review = json.loads(review_path.read_text(encoding="utf-8"))
+            assert review["status"] == "passed", review
+            assert review["wheel_sha256"] == manifest["wheel_sha256"], "UI review used a stale bundle"
+            results["installed_ui_review"] = 0
     finally:
         subprocess.run([str(installation / "unins000.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART",
                         f"/LOG={output / 'uninstall.log'}"], check=True,
@@ -93,6 +127,7 @@ def main() -> None:
     report = {"schema": "cad2gis.windows_install_verification.v1", "installer": str(installer),
               "installer_sha256": installer_hash,
               "installation": "passed", "relocated_path_with_spaces_and_unicode": True,
+              "wheel_sha256": manifest["wheel_sha256"], "manifest_files_verified": len(manifest["files"]),
               "tests": results, "uninstall": "passed", "user_data_preserved": True, "user_path_restored": True}
     (output / "installation-report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))

@@ -22,6 +22,12 @@ from pathlib import Path
 SCHEMA = "cad2gis.symbol-assets.v1"
 
 
+class _NoVectorGeometry(ValueError):
+    def __init__(self, skipped):
+        super().__init__('Selected CAD entities produced no vector geometry')
+        self.skipped = skipped
+
+
 def _create_symbol_schema(db):
     """Keep a valid asset library even when no source instance is renderable."""
     db.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
@@ -85,7 +91,38 @@ def rasterize_svg(svg_text: str) -> bytes:
                                  background="#ffffff")
 
 
-def _render(document, entities):
+def _source_layout(document, entity, *, inherited=None):
+    """Resolve linked entities through their owner chain, not a guessed block.
+
+    ATTRIB, VERTEX and SEQEND can be owned by another entity rather than a
+    BLOCK_RECORD. DXFGraphic.get_layout() assumes the latter in its block
+    fallback. A known parent layout is used only for an unlinked child.
+    """
+    from ezdxf.lldxf.const import DXFKeyError
+
+    visited = set()
+    current = entity
+    while True:
+        handle = current.dxf.get("handle")
+        identity = ("handle", str(handle).upper()) if handle else ("object", id(current))
+        if identity in visited:
+            raise ValueError(f"Cyclic CAD owner chain at entity {handle or current.dxftype()}")
+        visited.add(identity)
+        owner_handle = current.dxf.get("owner")
+        if owner_handle in (None, "", "0"):
+            return inherited
+        owner = document.entitydb.get(str(owner_handle).upper())
+        if owner is None:
+            raise ValueError(f"Missing CAD owner {owner_handle} for entity {handle}")
+        if owner.dxftype() == "BLOCK_RECORD":
+            try:
+                return document.layouts.get_layout_by_key(owner.dxf.handle)
+            except DXFKeyError:
+                return document.blocks.get_block_layout_by_handle(owner.dxf.handle)
+        current = owner
+
+
+def _render(document, entities, *, source_layout=None):
     from ezdxf.addons.drawing import Frontend, RenderContext, layout, svg
     from ezdxf.addons.drawing.config import BackgroundPolicy, Configuration
 
@@ -97,19 +134,24 @@ def _render(document, entities):
 
     backend = svg.SVGBackend()
     context = RenderContext(document)
-    context.set_current_layout(document.modelspace())
+    entities = list(entities)
+    source_layout = source_layout or next((resolved for entity in entities
+                                          if (resolved := _source_layout(document, entity)) is not None), document.modelspace())
+    context.set_current_layout(source_layout)
     context.current_layout_properties.set_colors("#ffffff", "#000000")
     frontend = RecordingFrontend(context, backend, Configuration(background_policy=BackgroundPolicy.OFF))
     frontend.draw_entities(entities)
     backend.finalize()
     backend.set_background("#ffffff00")
+    if not backend.player().bbox().has_data:
+        raise _NoVectorGeometry(skipped)
     # Qt SVG loses large (>32767) path coordinates in some render paths.
     # This normalization affects symbol presentation only, never CAD coordinates.
     result = _plain_svg(backend.get_string(layout.Page(0, 0, margins=layout.Margins.all(0.2)),
                        settings=layout.Settings(output_layers=False, output_coordinate_space=10000)))
     if not any(node.tag.rsplit("}", 1)[-1] in {"path", "line", "polyline", "polygon", "circle", "ellipse"}
                for node in ET.fromstring(result).iter()):
-        raise ValueError("Selected CAD entities produced no vector geometry")
+        raise _NoVectorGeometry(skipped)
     return result, skipped
 
 
@@ -172,20 +214,24 @@ def _closure(document, entities):
     """Record definition dependencies too, including unrendered dynamic variants."""
     facts, visited = [], set()
 
-    def visit(entity):
+    def visit(entity, inherited_layout=None):
         handle = entity.dxf.get("handle", "")
-        if handle in visited:
+        identity = ("handle", str(handle).upper()) if handle else ("object", id(entity))
+        if identity in visited:
             return
-        visited.add(handle)
-        facts.append({"handle": handle, "type": entity.dxftype(), "attributes": entity.dxfattribs()})
+        visited.add(identity)
+        owner_layout = _source_layout(document, entity, inherited=inherited_layout)
+        facts.append({"handle": handle, "type": entity.dxftype(), "attributes": entity.dxfattribs(),
+                      "source_layer": entity.dxf.get("layer", ""),
+                      "source_layout": owner_layout.name if owner_layout is not None else None})
         if entity.dxftype() == "INSERT":
             block = document.blocks.get(entity.dxf.name)
             if block is None:
                 raise ValueError(f"Missing block definition: {entity.dxf.name}")
             for member in block:
-                visit(member)
+                visit(member, block)
             for attribute in entity.attribs:
-                visit(attribute)
+                visit(attribute, owner_layout)
 
     for entity in entities:
         visit(entity)
@@ -258,21 +304,40 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
         dxf_hash = _sha(dxf.read_bytes())
         document = ezdxf.readfile(dxf)
         assets = []
+        layout_orders = {}
         for item in items:
             handles = item.get("handles", [])
             # A curated override may render geometry other than the bound entity
             # (for example a feature drawn as a POINT whose visible style is a
             # neighbouring polyline frame or a pole block). The bound handle keeps
             # the one-to-one binding contract; render_handles records what was drawn.
-            render_handles = item.get("render_handles") or handles
-            if not handles or len(handles) != len(set(handles)):
+            render_handles = item.get("render_handles", handles)
+            if not handles or len(handles) != len({str(handle).upper() for handle in handles}):
                 raise ValueError("Each symbol requires a nonempty list of unique source handles")
-            if not render_handles or len(render_handles) != len(set(render_handles)):
+            if not render_handles or len(render_handles) != len({str(handle).upper() for handle in render_handles}):
                 raise ValueError("Each symbol requires a nonempty list of unique render handles")
+            identities = [document.entitydb.get(str(handle).upper()) for handle in handles]
+            if any(entity is None or not entity.is_alive for entity in identities):
+                raise ValueError(f"Unresolved source identity handle in {item['symbol_id']}")
             entities = [document.entitydb.get(str(handle).upper()) for handle in render_handles]
             if any(entity is None or not entity.is_alive for entity in entities):
                 raise ValueError(f"Unresolved render handle in {item['symbol_id']}")
+            identity_layouts = [_source_layout(document, entity) for entity in identities]
+            render_layouts = [_source_layout(document, entity) for entity in entities]
+            source_owners = {layout.block_record_handle if layout is not None else None for layout in identity_layouts}
+            if len(source_owners) != 1 or any((layout.block_record_handle if layout is not None else None) not in source_owners for layout in render_layouts):
+                raise ValueError(f"Source identity and render handles span different layouts in {item['symbol_id']}")
+            source_layout = identity_layouts[0]
+            # Honor the CAD layout's redraw order, rather than selection-list order.
+            if source_layout is not None:
+                if source_layout.name not in layout_orders:
+                    layout_orders[source_layout.name] = {
+                        entity.dxf.handle: index
+                        for index, entity in enumerate(source_layout.entities_in_redraw_order())}
+                render_order = layout_orders[source_layout.name]
+                entities.sort(key=lambda entity: render_order.get(entity.dxf.handle, len(render_order)))
             facts = _closure(document, entities)
+            identity_facts = _closure(document, identities)
             text_facts = [fact for fact in facts if fact["type"] in {"TEXT", "MTEXT", "ATTRIB", "ATTDEF"}]
             if text_facts:
                 try:
@@ -282,7 +347,15 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
             overlay = item.get("overlay_text")
             overlay_entities = _overlay_text_entities(document, entities, overlay) if overlay else []
             # The curated label is drawn after the frame geometry, so it stays on top.
-            rendered, skipped = _render(document, [*entities, *overlay_entities])
+            try:
+                rendered, skipped = _render(document, [*entities, *overlay_entities], source_layout=source_layout)
+            except _NoVectorGeometry as exc:
+                # One unsupported/hidden instance must not erase every valid
+                # candidate. A blank sidecar remains incomplete and unexportable.
+                rendered = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" />'
+                skipped = list(exc.skipped) + [
+                    {"handle": entity.dxf.handle, "type": entity.dxftype(),
+                     "reason": "selected_entities_produced_no_vector_geometry"} for entity in entities]
             selected_handles = {str(handle).upper() for handle in [*handles, *render_handles]}
             errors = [entry for entry in skipped if entry["reason"] != "invisible"
                       or str(entry.get("handle", "")).upper() in selected_handles]
@@ -310,8 +383,17 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
                 }
             else:
                 diagnostics_overlay = None
+            geometry_basis = ('source_entity' if {str(handle).upper() for handle in handles}
+                              == {str(handle).upper() for handle in render_handles} else 'explicit_render_selection')
+            if geometry_basis != 'source_entity':
+                warnings.append('Render handles differ from feature identity; review the explicit source association.')
+            if overlay:
+                warnings.append('Curated overlay text is presentation artwork, not text recovered from the CAD source.')
             assets.append({"symbol_id": item["symbol_id"], "label": str(item.get("label", item["symbol_id"])),
                            "handles": handles, "svg": rendered, "svg_sha256": _sha(rendered.encode()),
+                           "render_handles": render_handles, "source_identity_entities": json.loads(_json(identity_facts)),
+                           "source_layout": source_layout.name if source_layout is not None else None,
+                           "geometry_basis": geometry_basis, "source_instance_fidelity_verified": False,
                            "status": "incomplete" if errors else "candidate", "warnings": warnings,
                            "fonts": font_evidence, "skipped": skipped, "source_entities": facts,
                            "overlay_text": diagnostics_overlay})
@@ -332,7 +414,10 @@ def _extract(source: Path, selection: Path, output: Path, *, font_dirs=(), max_s
                 asset["symbol_id"], asset["label"], asset["status"], asset["svg"], asset["svg_sha256"],
                 _json(asset["handles"]), _json(asset["source_entities"]),
                 _json({"warnings": asset["warnings"], "skipped": asset["skipped"], "fonts": asset["fonts"],
-                       "overlay_text": asset.get("overlay_text")})))
+                       "overlay_text": asset.get("overlay_text"), "render_handles": asset["render_handles"],
+                       "source_identity_entities": asset["source_identity_entities"],
+                       "source_layout": asset["source_layout"], "geometry_basis": asset["geometry_basis"],
+                       "source_instance_fidelity_verified": False})))
             (output / "symbols" / f"{asset['symbol_id']}.svg").write_text(asset["svg"], encoding="utf-8")
     for asset in assets:
         png = rasterize_svg(asset["svg"])

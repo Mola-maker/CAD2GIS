@@ -1,0 +1,15 @@
+# Optional disposable query-summary cache. SQLite remains authoritative.
+# This cache-only instance MUST NOT be used for job queues (eviction enabled).
+services:
+  redis-query-cache:
+    image: redis:7.4-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "127.0.0.1:16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+    restart: unless-stopped
+    mem_limit: 192m

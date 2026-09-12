@@ -22,6 +22,10 @@ from .runtime import (
     load_backend_module,
 )
 from .native_runtime import ensure_osgeo_runtime, portable_runtime_status
+from .native_diagnostics import (
+    libredwg_cli_text_fidelity,
+    selected_cli_has_known_text_defect,
+)
 
 ACCORECONSOLE_ENV = "CAD2GIS_ACCORECONSOLE"
 ACCORECONSOLE_TIMEOUT_ENV = "CAD2GIS_ACCORECONSOLE_TIMEOUT"
@@ -36,6 +40,21 @@ class Check:
     required_for_conversion: bool = True
     required_for_profiles: tuple[str, ...] = ()
     remediation: str | None = None
+
+
+def _native_text_check(selected_backend: str, assessment: dict[str, Any]) -> Check:
+    return Check(
+        name="libredwg_cli_text_fidelity",
+        status="warning",
+        detail=(
+            f"{assessment['status']}; selected_reader={selected_backend}; "
+            f"executable_sha256={assessment.get('executable_sha256')}; "
+            f"runtime_library_sha256={assessment.get('runtime_library_sha256')}; "
+            f"{assessment['detail']}"
+        ),
+        required_for_conversion=selected_cli_has_known_text_defect(selected_backend, assessment),
+        remediation=assessment.get("remediation"),
+    )
 
 
 def _module_check(name: str, label: str, *, deep: bool) -> Check:
@@ -297,6 +316,7 @@ def collect_checks(
         ("osgeo", "GDAL/OGR Python bindings"),
         ("pyproj", "PROJ Python bindings"),
         ("ezdxf", "ezdxf"),
+        ("resvg_py", "resvg SVG rendering bindings"),
     ):
         checks.append(_module_check(module_name, label, deep=deep))
 
@@ -334,6 +354,12 @@ def collect_checks(
 
         selected_name = configured_reader()
         selected = selected_reader_capability()
+        from .native_runtime import discover_libredwg_cli
+
+        cli_executable, _ = discover_libredwg_cli()
+        checks.append(_native_text_check(
+            selected.backend, libredwg_cli_text_fidelity(cli_executable),
+        ))
         checks.append(
             Check(
                 name="reader",
@@ -392,6 +418,17 @@ def collect_checks(
             )
         )
         checks.append(_timeout_check())
+    from .redis_runtime import redis_status
+
+    redis = redis_status(probe=deep)
+    redis_ok = redis["status"] in {"ready", "not_configured", "configured_unverified"}
+    checks.append(Check(
+        name="redis_query_cache", status="ok" if redis_ok else "warning",
+        detail=f"{redis['status']}; optional compact query cache; SQLite fallback; "
+               "durable local compile jobs (Redis Streams disabled)",
+        required_for_conversion=False,
+        remediation=None if redis_ok else redis.get("remediation", "Repair Redis configuration/connectivity or unset CAD2GIS_REDIS_URL to use SQLite directly."),
+    ))
     return tuple(checks)
 
 

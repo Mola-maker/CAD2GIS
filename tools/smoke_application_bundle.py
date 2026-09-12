@@ -38,7 +38,8 @@ def run(bundle: Path, output: Path, conversion: Path) -> dict:
     announcements = queue.Queue()
     with (output / "service.stderr.log").open("w", encoding="utf-8") as errors:
         process = subprocess.Popen([str(python), "-I", "-B", "-X", "utf8", "-m", "cad2gis.application",
-            "--no-browser", "--project-root", str(conversion)], cwd=output, env=environment,
+            "--no-browser", "--state-dir", str(output / "state"),
+            "--project-root", str(conversion)], cwd=output, env=environment,
             stdout=subprocess.PIPE, stderr=errors, text=True, encoding="utf-8",
             **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}))
 
@@ -63,6 +64,8 @@ def run(bundle: Path, output: Path, conversion: Path) -> dict:
                 assert client.post("/_app/api/login", json={"token": token}).status_code == 401
                 status = request("GET", "/_app/api/status")
                 assert status["matching"] == "osm" and status["svg_mode"] == "candidate"
+                assert status["semantic_extraction"]["available"] is True
+                assert status["semantic_extraction"]["automatic_commit"] is False
                 uploaded = request("POST", "/_app/api/upload", params={"name": "安装验收 drawing.dwg"},
                     content=(conversion / "generated.dwg").read_bytes(),
                     headers={"Content-Type": "application/octet-stream"})
@@ -76,6 +79,30 @@ def run(bundle: Path, output: Path, conversion: Path) -> dict:
                     time.sleep(.2)
                 (output / "inspect-job.json").write_text(json.dumps(current, indent=2), encoding="utf-8")
                 assert current["status"] == "succeeded", current
+                semantic_run = conversion / "semantic-preparation"
+                semantic = request("POST", "/_app/api/jobs", json={
+                    "action": "semantic-extract", "source": uploaded["source"], "run": str(semantic_run)})
+                deadline = time.monotonic() + 180
+                while time.monotonic() < deadline:
+                    current = next(row for row in request("GET", "/_app/api/jobs")["jobs"]
+                                   if row["id"] == semantic["id"])
+                    if current["status"] not in {"queued", "running", "cancelling"}:
+                        break
+                    time.sleep(.2)
+                (output / "semantic-job.json").write_text(json.dumps(current, indent=2), encoding="utf-8")
+                assert current["status"] == "succeeded" and current["completed_stages"] == 3, current
+                prepared = request("GET", "/_app/api/semantic/artifacts", params={"run": str(semantic_run)})
+                assert prepared["summary"]["entity_count"] > 0
+                assert prepared["summary"]["semantic_committed"] is False
+                assert prepared["summary"]["source_sha256"] == digest(conversion / "generated.dwg")
+                assert {item["name"] for item in prepared["artifacts"]} == {
+                    "source_manifest", "prepare_manifest", "source_database", "candidate_database"}
+                for artifact in prepared["artifacts"]:
+                    downloaded = client.get("/_app/api/semantic/artifact", params={
+                        "run": str(semantic_run), "name": artifact["name"]})
+                    assert downloaded.status_code == 200
+                    assert hashlib.sha256(downloaded.content).hexdigest() == digest(Path(artifact["path"]))
+                (output / "semantic-artifacts.json").write_text(json.dumps(prepared, indent=2), encoding="utf-8")
                 selected = request("POST", "/_app/api/review", json={"run": str(original)})
                 client.headers["X-CAD2GIS-Review"] = selected["review_id"]
                 summary = request("GET", "/api/run")
@@ -121,6 +148,8 @@ def run(bundle: Path, output: Path, conversion: Path) -> dict:
             report = {"schema": "cad2gis.application_bundle_smoke.v1", "status": "passed", "bundle": str(bundle),
                 "authentication": "passed", "single_use_link": "passed", "upload_hash_verified": True,
                 "real_inspect_job": "passed", "local_map_library": "passed", "svg_report": "passed",
+                "real_semantic_extraction": "passed", "semantic_stages_completed": 3,
+                "semantic_artifact_download_hashes_verified": True, "automatic_semantic_commit": False,
                 "gcp_preview_only": True, "real_rematch": "passed", "original_delivery_unchanged": True,
                 "matched_point": point, "expected_point": [12600110, -799805], "shutdown": "passed"}
             (output / "application-report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")

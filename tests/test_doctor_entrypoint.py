@@ -87,3 +87,16 @@ def test_missing_entrypoint_reports_missing_without_spurious_path_warning(
     checks = doctor._mcp_entrypoint_checks()
     assert len(checks) == 1
     assert checks[0].status == "missing"
+
+
+def test_missing_core_svg_renderer_prevents_false_ready(monkeypatch):
+    find_spec = doctor.importlib.util.find_spec
+    monkeypatch.setattr(doctor.importlib.util, "find_spec",
+                        lambda name: None if name == "resvg_py" else find_spec(name))
+    checks = doctor.collect_checks(deep=False)
+    renderer = next(check for check in checks if check.name == "resvg_py")
+    assert renderer.status == "missing"
+    assert renderer.required_for_conversion is True
+    monkeypatch.setattr(doctor, "collect_checks", lambda **kwargs: (renderer,))
+    report = doctor.build_report()
+    assert report["status"] == "limited" and report["conversion_ready"] is False
