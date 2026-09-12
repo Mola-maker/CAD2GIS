@@ -122,7 +122,8 @@ def test_extracted_source_can_build_a_wheel_without_git(repository, tmp_path):
     unpacked = tmp_path / "unpacked"
     with zipfile.ZipFile(result["archives"][0]["path"]) as archive:
         archive.extractall(unpacked)  # This archive was just verified by the builder.
-    subprocess.run([sys.executable, "-m", "pip", "wheel", str(unpacked / "CAD2GIS-0.7.0"), "--no-deps", "--no-build-isolation", "--wheel-dir", str(tmp_path / "wheels")], check=True, capture_output=True)
+    build = subprocess.run([sys.executable, "-m", "pip", "wheel", str(unpacked / "CAD2GIS-0.7.0"), "--no-deps", "--no-build-isolation", "--wheel-dir", str(tmp_path / "wheels")], capture_output=True, text=True)
+    assert build.returncode == 0, f"Extracted source wheel build failed:\n{build.stdout}\n{build.stderr}"
     wheel = next((tmp_path / "wheels").glob("*.whl"))
     with zipfile.ZipFile(wheel) as archive:
         assert archive.read("example/__init__.py") == b'VALUE = "current-worktree"\n'
