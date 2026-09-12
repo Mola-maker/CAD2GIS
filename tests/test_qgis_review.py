@@ -1,6 +1,8 @@
 import copy
 import math
 import sqlite3
+import hashlib
+import json
 
 import pytest
 
@@ -9,7 +11,27 @@ from cad2gis.qgis_review import (
     coordinate_pair,
     fit_translation,
     sha,
+    _matching_context,
+    _review_title,
 )
+
+
+def test_matching_provenance_survives_without_display_correction():
+    record = {"schema_version": "cad2gis.osm-matching.v1", "status": "matched", "revision": 2,
+              "source_sha256": "a" * 64, "authority": "relative_osm", "absolute_accuracy_verified": False}
+    record["match_sha256"] = hashlib.sha256(json.dumps(record, sort_keys=True, separators=(",", ":"),
+                                                       ensure_ascii=False).encode()).hexdigest()
+    context = {"schema": "cad2gis.qgis-matching-context.v1", "delivery_sha256": "b" * 64,
+               "source_sha256": "a" * 64, "matching": record}
+    assert _matching_context(context, ["b" * 64]) == context
+    assert "OSM matched" in _review_title(None, context)
+    assert "nominal" not in _review_title(None, context)
+    assert "not supplied" in _review_title(None, None)
+    with pytest.raises(ValueError, match="different CAD delivery"):
+        _matching_context(context, ["c" * 64])
+    record["revision"] = 3
+    with pytest.raises(ValueError, match="hash mismatch"):
+        _matching_context(context, ["b" * 64])
 
 
 def test_translation_preserves_pairwise_distance_and_reports_inconsistent_controls():

@@ -6,7 +6,7 @@ import math
 import os
 from pathlib import Path
 
-from .qgis_review import OSM_CREDIT, _svg_bindings, sha
+from .qgis_review import OSM_CREDIT, _matching_context, _svg_bindings, sha
 
 
 def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
@@ -39,6 +39,12 @@ def verify(project_path, image_path, *, title="CAD2GIS OSM review"):
     cad_paths = {Path(layer.source().split("|", 1)[0]).resolve() for layer in cad}
     if sorted(sha(p) for p in cad_paths) != receipt["cad_database_hashes"]:
         raise ValueError("Canonical geometry/attributes changed")
+    matching = receipt.get("canonical_matching")
+    stored_matching, has_matching = project.readEntry("CAD2GISReview", "canonicalMatching")
+    if matching is not None:
+        _matching_context(matching, receipt["cad_database_hashes"])
+        if not has_matching or json.loads(stored_matching) != matching:
+            raise ValueError("Project lost its canonical matching provenance")
     if not receipt["standalone"] and any(
         not p.is_relative_to(project_path.parent) for p in cad_paths
     ):

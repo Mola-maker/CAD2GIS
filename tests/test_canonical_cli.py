@@ -104,6 +104,66 @@ def test_frozen_match_rejects_conflicting_registration_inputs(tmp_path):
                                  match_profile=tmp_path / "match.json", osm_place="new place")
 
 
+def _project_matching_selection(project):
+    profile = project / "config" / "reviewed-translation.json"
+    profile.write_text("{}", encoding="utf-8")
+    (project / "config" / "cad2gis-project.json").write_text(
+        json.dumps({"config": {"match_profile": profile.name}}), encoding="utf-8")
+    return profile
+
+
+def test_project_selected_matching_reaches_default_conversion(tmp_path, monkeypatch):
+    project, _, _ = _minimal_project(tmp_path)
+    profile = _project_matching_selection(project)
+    source = tmp_path / "source.dwg"
+    source.write_bytes(b"dwg")
+    calls = []
+    monkeypatch.setattr(runtime, "call_conversion_backend", lambda **kw: calls.append(kw))
+    pipeline.convert_project(source=source, project_dir=project, run_dir=tmp_path / "run", svg_mode="off")
+    assert calls[0]["match_profile"] == profile.resolve()
+    assert calls[0]["gcp_profile"] is None
+
+
+@pytest.mark.parametrize("new_input", [{"osm_place": "elsewhere"}, {"osm_data": "roads.json"}])
+def test_project_matching_cannot_silently_revert_to_automatic(tmp_path, monkeypatch, new_input):
+    project, _, _ = _minimal_project(tmp_path)
+    _project_matching_selection(project)
+    source = tmp_path / "source.dwg"
+    source.write_bytes(b"dwg")
+    calls = []
+    monkeypatch.setattr(runtime, "call_conversion_backend", lambda **kw: calls.append(kw))
+    with pytest.raises(pipeline.ProjectConfigurationError, match="Project selects frozen match"):
+        pipeline.convert_project(source=source, project_dir=project, run_dir=tmp_path / "run",
+                                 svg_mode="off", **new_input)
+    assert calls == []
+
+
+def test_explicit_match_overrides_project_selection_and_nominal_ignores_it(tmp_path, monkeypatch):
+    project, _, _ = _minimal_project(tmp_path)
+    _project_matching_selection(project)
+    explicit = tmp_path / "explicit.json"
+    explicit.write_text("{}")
+    source = tmp_path / "source.dwg"
+    source.write_bytes(b"dwg")
+    calls = []
+    monkeypatch.setattr(runtime, "call_conversion_backend", lambda **kw: calls.append(kw))
+    pipeline.convert_project(source=source, project_dir=project, run_dir=tmp_path / "r1",
+                             svg_mode="off", match_profile=explicit)
+    pipeline.convert_project(source=source, project_dir=project, run_dir=tmp_path / "r2",
+                             svg_mode="off", matching="nominal")
+    assert calls[0]["match_profile"] == explicit.resolve()
+    assert "match_profile" not in calls[1]
+
+
+def test_missing_project_matching_does_not_fall_back(tmp_path):
+    project, _, _ = _minimal_project(tmp_path)
+    _project_matching_selection(project).unlink()
+    source = tmp_path / "source.dwg"
+    source.write_bytes(b"dwg")
+    with pytest.raises(pipeline.ProjectConfigurationError, match="does not exist"):
+        pipeline.convert_project(source=source, project_dir=project, run_dir=tmp_path / "run", svg_mode="off")
+
+
 def test_generic_project_discovery_has_no_customer_name(tmp_path: Path) -> None:
     project, source_profile, mapping_registry = _minimal_project(tmp_path, prefix="delta")
 

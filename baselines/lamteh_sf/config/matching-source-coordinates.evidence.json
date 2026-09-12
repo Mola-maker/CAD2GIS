@@ -1,0 +1,67 @@
+{
+  "schema_version": "cad2gis.source-coordinate-alignment-evidence.v1",
+  "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+  "reference_drawing": "lamteh_sf",
+  "reference_source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+  "source_text": [
+    {
+      "cad_handle": "1CC2AC",
+      "owner_handle": "1CC2AA",
+      "text": "EXT.MR.KLDYA.P001",
+      "native_points": "[[10210.04067881306,-9098.986796563542]]"
+    },
+    {
+      "cad_handle": "1CC2AE",
+      "owner_handle": "1CC2AA",
+      "text": "5.468081° , 95.368299°",
+      "native_points": "[[10216.8919255095,-9124.809106627948]]"
+    },
+    {
+      "cad_handle": "1CC30C",
+      "owner_handle": "1CC308",
+      "text": "5.468867° , 95.361535°",
+      "native_points": "[[9113.866196453302,-9038.273929332345]]"
+    },
+    {
+      "cad_handle": "1CC30A",
+      "owner_handle": "1CC308",
+      "text": "EXT.MR.KLDYA.P137",
+      "native_points": "[[9106.277169469264,-9012.451619267938]]"
+    }
+  ],
+  "controls": [
+    {
+      "point_id": "MR.KLDYA.P001",
+      "cad_x": 10056.08336140853,
+      "cad_y": -8915.292349875856,
+      "target_easting": 10616350.482500661,
+      "target_northing": 609630.1181584207,
+      "target_crs": "EPSG:3857",
+      "role": "train",
+      "enabled": true,
+      "weight": 1.0,
+      "longitude": 95.368299,
+      "latitude": 5.468081,
+      "source": "DWG_SOURCE_COORDINATE_TABLE:lamteh_sf:handle=1AC878"
+    },
+    {
+      "point_id": "MR.KLDYA.P137",
+      "cad_x": 9301.130464144539,
+      "cad_y": -8822.878186175776,
+      "target_easting": 10615597.517464936,
+      "target_northing": 609718.0153170403,
+      "target_crs": "EPSG:3857",
+      "role": "train",
+      "enabled": true,
+      "weight": 1.0,
+      "longitude": 95.361535,
+      "latitude": 5.468867,
+      "source": "DWG_SOURCE_COORDINATE_TABLE:lamteh_sf:handle=1B051C"
+    }
+  ],
+  "parent_run_manifest_sha256": "5b0c5eebc26568638cd8ea4f38666b6976bc43cb28509f4f7f98dcd64c3207b0",
+  "match_sha256": "89485cfe13d08dd4b225c9d3488774e9857ca4a5adbcd35a02b1cf83d924fa83",
+  "absolute_accuracy_verified": false,
+  "independent_check_points": 0,
+  "limitation": "Two source drawing coordinate references constrain translation only; no independent surveyed accuracy acceptance."
+}

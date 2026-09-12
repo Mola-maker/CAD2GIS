@@ -9,6 +9,7 @@ from cad2gis.match_delivery import (
     _revision,
     _revision_directory,
     _search_bbox,
+    _matching_scopes,
     publish,
 )
 
@@ -84,3 +85,60 @@ def test_missing_run_manifest_is_rejected_before_any_qgis_work(tmp_path):
     run.mkdir(parents=True)
     with pytest.raises(PublishError, match="Run manifest not found"):
         publish(run)
+
+
+@pytest.mark.parametrize("status", ["abstained", "unavailable", "coarse"])
+def test_unaccepted_match_cannot_be_published_as_matched(tmp_path, status):
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "run_manifest.json").write_text(json.dumps({
+        "osm_matching": {"revision": 1, "status": status,
+                         "quality": {"reason": "weak_or_ambiguous_network_alignment"}},
+        "delivery_counts": {"PTECH": 3},
+    }))
+    with pytest.raises(PublishError, match=f"status {status}"):
+        publish(run, delivery_root=tmp_path / "delivery")
+    assert not (tmp_path / "delivery").exists()
+
+
+def test_each_populated_partition_must_have_accepted_matching():
+    manifest = {"osm_matching": {"revision": 1, "status": "unavailable"},
+                "delivery_counts": {"CABLE": 0},
+                "delivery_partitions": {"A": {"delivery_counts": {"CABLE": 2},
+                                               "osm_matching": {"revision": 1, "status": "matched"}}}}
+    assert _matching_scopes(manifest)["A"]["status"] == "matched"
+    manifest["delivery_partitions"]["A"]["osm_matching"]["status"] = "abstained"
+    with pytest.raises(PublishError, match="Scope A"):
+        _matching_scopes(manifest)
+
+
+def test_publish_skips_empty_main_and_reviews_matched_partition(tmp_path, monkeypatch):
+    from cad2gis import match_delivery
+
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "run_manifest.json").write_text(json.dumps({
+        "osm_matching": {"revision": 1, "status": "unavailable"},
+        "delivery_counts": {"CABLE": 0},
+        "delivery_partitions": {"A": {
+            "delivery_counts": {"CABLE": 2},
+            "osm_matching": {"revision": 1, "status": "matched"},
+        }},
+    }))
+    monkeypatch.setattr(match_delivery, "_resolve_qgis_python", lambda _: tmp_path / "python")
+    monkeypatch.setattr(match_delivery, "package_delivery", lambda *_: {
+        "source_sha256": "a" * 64, "run_manifest_sha256": "b" * 64,
+        "run_status": "COMPLETED", "deliveries": [{"scope": "main"}, {"scope": "A"}],
+    })
+    monkeypatch.setattr(match_delivery, "_run_qgis", lambda *_: None)
+    reviewed = []
+
+    def review(entry, *args, **kwargs):
+        reviewed.append(entry["scope"])
+        assert kwargs["matching"]["status"] == "matched"
+        return {"scope": entry["scope"]}
+
+    monkeypatch.setattr(match_delivery, "_publish_scope", review)
+    result = publish(run, delivery_root=tmp_path / "delivery")
+    assert reviewed == ["A"]
+    assert result["scopes"] == [{"scope": "A"}]

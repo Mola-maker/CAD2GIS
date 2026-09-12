@@ -29,17 +29,20 @@ class ProjectConfiguration:
     source_profile: Path
     mapping_registry: Path
     gcp_profile: Path | None
+    match_profile: Path | None = None
 
 
 _CONFIG_PATTERNS: dict[str, tuple[str, ...]] = {
     "source_profile": ("source_profile.json",),
     "mapping_registry": ("mapping_registry.json",),
     "gcp_profile": ("gcp_profile.json",),
+    "match_profile": ("match_profile.json",),
 }
 _CONFIG_LABELS = {
     "source_profile": "source profile",
     "mapping_registry": "mapping registry",
     "gcp_profile": "GCP profile",
+    "match_profile": "frozen OSM match profile",
 }
 _REQUIRED_CONFIGS = frozenset({"source_profile", "mapping_registry"})
 
@@ -203,6 +206,8 @@ def resolve_project_configuration(
     mapping_registry: str | Path | None = None,
     gcp_profile: str | Path | None = None,
     discover_gcp: bool = True,
+    match_profile: str | Path | None = None,
+    discover_match: bool = False,
 ) -> ProjectConfiguration:
     """Resolve explicit config paths and fill omissions from ``project_dir``."""
 
@@ -237,11 +242,18 @@ def resolve_project_configuration(
         manifest=manifest,
         kind="gcp_profile",
     ) if gcp_profile is not None or discover_gcp else None
+    resolved_match = _resolve_config(
+        explicit=match_profile,
+        project=project,
+        manifest=manifest,
+        kind="match_profile",
+    ) if match_profile is not None or discover_match else None
 
     return ProjectConfiguration(
         source_profile=resolved_source,
         mapping_registry=resolved_mapping,
         gcp_profile=resolved_gcp,
+        match_profile=resolved_match,
     )
 
 
@@ -302,7 +314,15 @@ def convert_project(
         mapping_registry=mapping_registry,
         gcp_profile=gcp_profile,
         discover_gcp=matching == "nominal",
+        match_profile=match_profile,
+        discover_match=matching == "osm" and gcp_profile is None,
     )
+    selected_match = configuration.match_profile
+    if selected_match is not None and (osm_data is not None or osm_place or gcp_profile is not None):
+        raise ProjectConfigurationError(
+            f"Project selects frozen match profile {selected_match}; do not combine it with "
+            "new OSM inputs or a GCP profile. To rematch, use a copied project without its match_profile selection."
+        )
     resolved_decision_pack = (
         None if decision_pack is None else _existing_file(decision_pack, "decision pack")
     )
@@ -324,7 +344,7 @@ def convert_project(
         **({"matching": matching} if matching != "osm" else {}),
         **({"osm_data": _existing_file(osm_data, "OSM data")} if osm_data is not None else {}),
         **({"osm_place": osm_place} if osm_place else {}),
-        **({"match_profile": _existing_file(match_profile, "match profile")} if match_profile is not None else {}),
+        **({"match_profile": selected_match} if selected_match is not None else {}),
         svg_mode=svg_mode,
         svg_font_dirs=tuple(Path(path).expanduser().resolve() for path in svg_font_dirs),
     )

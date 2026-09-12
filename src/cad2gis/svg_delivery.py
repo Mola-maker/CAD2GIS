@@ -55,8 +55,11 @@ def build(baseline, assets, output):
     shutil.copytree(baseline, output)
     # Old checksums are superseded by a new complete seal after independent verification.
     report = dict(source_sha256=manifest['source_sha256'], mode='source-instance-svg-review',
-                  complete_legend_correspondence_verified=False, projects=[])
+                  complete_legend_correspondence_verified=False, projects=[], skipped_empty_scopes=[])
     for entry in manifest['deliveries']:
+        if 'layers' in entry and not any(layer['features'] for layer in entry['layers']):
+            report['skipped_empty_scopes'].append(entry['scope'])
+            continue
         relative = Path(entry['project'])
         folder = output / relative.parent
         original = baseline / relative

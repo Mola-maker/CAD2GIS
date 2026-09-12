@@ -9,6 +9,7 @@ import shutil
 import sqlite3
 import xml.etree.ElementTree as ET
 import zipfile
+from contextlib import closing
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from .batch import digest, write_json
@@ -27,7 +28,7 @@ def qgis_project(gpkg: Path, styles: Path, destination: Path) -> list[dict]:
     layers = ET.SubElement(root, "projectlayers")
     report = []
     extent = None
-    with sqlite3.connect(gpkg.as_uri() + "?mode=ro", uri=True) as db:
+    with closing(sqlite3.connect(gpkg.as_uri() + "?mode=ro", uri=True)) as db:
         for name, geometry, srs in db.execute("SELECT table_name,geometry_type_name,srs_id FROM gpkg_geometry_columns ORDER BY CASE WHEN geometry_type_name LIKE '%POINT%' THEN 0 WHEN geometry_type_name LIKE '%LINE%' THEN 1 ELSE 2 END, table_name"):
             identifier = "cad2gis_" + name
             qml_path = styles / (name + ".qml")
@@ -282,7 +283,7 @@ def package_delivery(run: Path, output: Path, *, audit_dir: Path | None = None) 
         artifact = manifest.get("artifacts", {}).get("delivery", {}) if scope == "main" else manifest.get("delivery_partitions", {}).get(scope, {})
         if artifact.get("sha256") != digest(source):
             raise ValueError(f"GeoPackage does not match the canonical manifest: {scope}")
-        with sqlite3.connect(source.as_uri() + "?mode=ro", uri=True) as db:
+        with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as db:
             if db.execute("PRAGMA quick_check").fetchone()[0] != "ok":
                 raise ValueError(f"SQLite integrity check failed: {scope}")
         shutil.copy2(source, folder / "delivery.gpkg")

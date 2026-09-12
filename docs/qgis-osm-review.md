@@ -5,6 +5,15 @@ retains its CAD GeoPackage bytes and embedded SVG bindings, and optionally appli
 a source-bound coordinate-label translation **inside the review project only**.
 It does not change the canonical conversion, lengths, or acceptance status.
 
+`publish-match` also supplies the canonical conversion's sealed matching record,
+bound to the source drawing, run manifest and exact CAD database hashes. This
+record is retained in the QGZ and review receipt and checked by the independent
+verifier. The title reports the actual OSM status and revision; a project without
+this provenance says `CAD registration not supplied`, rather than assuming a
+nominal conversion. Publication rejects populated scopes whose match was not
+accepted. The `--matching-context` option carries this provenance only; it does
+not apply another coordinate correction.
+
 The nine-drawing review is available from the
 [2026-09-08 GitHub Release](https://github.com/Mola-maker/CAD2GIS/releases/tag/osm-review-20260908).
 Download the project archive for all 22 QGZ files, or the smaller snapshot archive
