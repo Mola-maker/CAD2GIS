@@ -54,6 +54,7 @@ MCP_TOOL_NAMES = (
     "list_registered_operations",
     "list_scene_visual_regions",
     "list_visual_regions",
+    "package_qgis_delivery",
     "prepare_ai_onboarding",
     "prepare_iteration_context",
     "prepare_review_workspace",

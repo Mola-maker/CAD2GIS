@@ -24,6 +24,7 @@ TRACE_SCHEMA = "cad2gis.mcp_trace.v1"
 DIAGNOSTIC_SCHEMA = "cad2gis.debug_mcp.v1"
 _TRACE_LOCK = threading.Lock()
 MUTATING_TOOLS = frozenset({
+    "package_qgis_delivery",
     "install_runtime", "bootstrap_project", "apply_ai_onboarding",
     "auto_onboard_and_convert", "run_conversion", "create_decision_pack",
     "prepare_review_workspace", "start_feedback_iteration",

@@ -16,6 +16,7 @@ const hashes=Object.fromEntries(Object.entries(snapshot).map(([f,b])=>[f,crypto.
 const results={scope:'Real desktop code and bundled Framework7; local API fixtures; production server-rendered map HTML with GIS scripts disabled',hashes,checks:[],screenshots:[]};
 const profile={base_url:'https://example.invalid/v1',model:'review-fixture',capability:'json_object',token_field:'max_tokens',timeout_s:90,max_tokens:4096,max_requests:32,has_key:false,configured:false,issue:'UI fixture only'};
 const events=Array.from({length:40},(_,i)=>({kind:'tool_result',name:'转换证据 '+i,detail:JSON.stringify({artifacts:Array.from({length:100},(_,n)=>({id:n,path:'/fixture/'+'long-path-'.repeat(30),sha256:'a'.repeat(64)}))},null,2)}));
+const chatArtifacts=[{kind:'qgis_package',run_dir:'/fixture/run',output_dir:'/fixture/package'}];
 const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png':'image/png','.woff2':'font/woff2','.svg':'image/svg+xml'};
 (async()=>{
  const launch={headless:true};
@@ -25,7 +26,7 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
  try{
   const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),errors=[],unexpected=[];
   let reviewRequests=0,mapLoads=0,svgLoads=0,holdDelivery=false,releaseDelivery;
-  const mapLoadsById={},runs={'/fixture/result':'fixture-review','/fixture/retry':'retry-review','/fixture/result-b':'fixture-review-b','/fixture/result-c':'fixture-review-b'};
+  const mapLoadsById={},runs={'/fixture/result':'fixture-review','/fixture/retry':'retry-review','/fixture/result-b':'fixture-review-b','/fixture/result-c':'fixture-review-b','/fixture/run':'chat-artifact-review'};
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',async route=>{
    const url=new URL(route.request().url());
@@ -37,11 +38,13 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
     if(key==='ai/config')return json({profiles:{deepseek:profile,'new-api':profile},active:'deepseek',editable:true,storage:'UI fixture'});
     if(key==='files')return json({path:'/fixture',parent:null,page:1,total:0,has_more:false,entries:[]});
     if(key==='jobs')return json({jobs:[]});
-    if(key==='conversations')return json({items:[{id:'fixture-chat',title:'长历史与人工复核回归'}],has_more:false});
-    if(key==='conversations/fixture-chat')return json({messages:Array.from({length:30},(_,i)=>({role:'assistant',text:`历史消息 ${i}：查看源图、地图和符号后继续。`})),plan:[{status:'completed',text:'转换证据已整理'}],before:0,has_more:false});
-    if(key==='agent/fixture-agent')return json({id:'fixture-agent',conversation:'fixture-chat',status:'succeeded',events,progress:'',usage:{requests:0,tool_calls:40}});
+    if(key==='conversations')return json({items:[{id:'fixture-chat',title:'长历史与人工复核回归'},{id:'fixture-empty',title:'尚无产物的另一对话'}],has_more:false});
+    if(key==='conversations/fixture-chat')return json({messages:Array.from({length:30},(_,i)=>({role:'assistant',text:`历史消息 ${i}：查看源图、地图和符号后继续。`})),plan:[{status:'completed',text:'转换证据已整理'}],artifacts:chatArtifacts,before:0,has_more:false});
+    if(key==='conversations/fixture-empty')return json({messages:[{role:'assistant',text:'此对话还没有生成交付文件。'}],plan:[],artifacts:[],before:0,has_more:false});
+    if(key==='agent/fixture-agent')return json({id:'fixture-agent',conversation:'fixture-chat',status:'succeeded',events,progress:'',artifacts:chatArtifacts,usage:{requests:0,tool_calls:40}});
     if(key==='delivery/artifacts'){
-     const run=url.searchParams.get('run');assert.ok(run in runs);
+     const run=url.searchParams.get('run');assert.ok(run in runs||run==='/fixture/package');
+     if(run==='/fixture/package')return json({run_dir:run,run_status:'CONDITIONAL',archive:{name:'package.zip',size:16384},artifacts:[{name:'delivery.gpkg',size:1024},{name:'delivery.qgz',size:4096}]});
      if(holdDelivery&&run==='/fixture/result')await new Promise(resolve=>{releaseDelivery=resolve;});
      return json({run_status:'CONDITIONAL',artifacts:run==='/fixture/result-c'?[{name:'third-project.qgz',size:8192}]:run==='/fixture/result-b'?[{name:'second-project.qgz',size:8192}]:[{name:'delivery.gpkg',size:1024},{name:'project.qgz',size:4096}]});
     }
@@ -200,8 +203,44 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
   const newRunLink=new URL(await page.locator('#delivery-files a[download]').getAttribute('href'),'http://review-flow.invalid');
   assert.equal(newRunLink.searchParams.get('run'),'/fixture/result-c');assert.equal(newRunLink.searchParams.get('name'),'third-project.qgz');
   pass('new_matching_result_updates_run_and_requires_fresh_confirmation');
+  await page.locator('.bottom-dock [data-page="chat"]').click();
+  await page.locator('#chat-artifacts').waitFor({state:'visible'});
+  assert.deepEqual(await page.locator('#chat-artifacts button').allTextContents(),['打开地图','SVG / PNG 预览','QGZ 与完整交付包']);
+  await page.locator('#chat-artifacts').getByRole('button',{name:'SVG / PNG 预览',exact:true}).click();
+  await page.frameLocator('#osm-frame').locator('#console-app').waitFor({state:'attached'});
+  await page.waitForFunction(()=>!reviewOpening&&document.querySelector('#osm-frame').contentDocument?.readyState==='complete');
+  await page.waitForFunction(()=>document.querySelector('#tab-svg').classList.contains('tab-active'));
+  await page.frameLocator('#svg-frame').locator('#svg-fixture').waitFor();
+  assert.equal(await page.locator('#existing-run').inputValue(),'/fixture/run');
+  await notifyMap('ready','chat-artifact-review');
+  await page.locator('.bottom-dock [data-page="chat"]').click();
+  await page.locator('#chat-artifacts').getByRole('button',{name:'打开地图',exact:true}).click();
+  await waitMapShell();
+  assert.ok(await page.locator('#tab-osm').evaluate(e=>e.classList.contains('tab-active')));
+  assert.equal(await page.locator('#existing-run').inputValue(),'/fixture/run');
+  pass('chat_artifact_buttons_open_svg_preview_and_current_map');await screenshot('chat-artifact-map.png');
+
+  await page.locator('.bottom-dock [data-page="chat"]').click();
+  await screenshot('chat-qgis-artifact-buttons.png');
+  await page.locator('#chat-artifacts').getByRole('button',{name:'QGZ 与完整交付包',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('#tab-delivery').classList.contains('tab-active')&&document.querySelectorAll('#delivery-files a[download]').length===3);
+  assert.equal(await page.locator('#delivery-path').innerText(),'/fixture/package');
+  const packageDownloads=await page.locator('#delivery-files a[download]').evaluateAll(links=>links.map(a=>({path:new URL(a.href).pathname,run:new URL(a.href).searchParams.get('run'),name:new URL(a.href).searchParams.get('name')})));
+  assert.deepEqual(packageDownloads,[{path:'/_app/api/delivery/archive',run:'/fixture/package',name:null},{path:'/_app/api/delivery/artifact',run:'/fixture/package',name:'delivery.gpkg'},{path:'/_app/api/delivery/artifact',run:'/fixture/package',name:'delivery.qgz'}]);
+  assert.match(await page.locator('#delivery-files').innerText(),/完整 ZIP.*配套 GeoPackage/);
+  assert.match(await page.locator('#delivery-status').innerText(),/CONDITIONAL/);
+  pass('chat_qgz_button_uses_package_directory_and_complete_zip_download');await screenshot('chat-complete-qgis-package.png');
+
+  await page.locator('#conversations').getByRole('button',{name:'尚无产物的另一对话',exact:true}).click();
+  await page.waitForFunction(()=>conversation==='fixture-empty'&&document.querySelector('#chat-messages').textContent.includes('还没有生成交付文件'));
+  assert.ok(await page.locator('#chat-artifacts').isHidden());
+  assert.equal(await page.locator('#chat-artifacts button').count(),0);
+  await page.locator('#conversations').getByRole('button',{name:'长历史与人工复核回归',exact:true}).click();
+  await page.waitForFunction(()=>conversation==='fixture-chat'&&document.querySelectorAll('#chat-artifacts button').length===3);
+  assert.ok(await page.locator('#chat-artifacts').isVisible());
+  pass('chat_artifact_buttons_remain_scoped_to_selected_conversation');
   assert.deepEqual(errors,[]);assert.deepEqual(unexpected,[]);pass('no_browser_errors_or_unexpected_requests');
   results.requests={reviewRequests,mapLoads,mapLoadsById,svgLoads};results.errors=errors;
  }finally{await browser.close();fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(results,null,2));}
- assert.equal(results.checks.length,14);
+ assert.equal(results.checks.length,17);
 })().catch(error=>{console.error(error);process.exitCode=1;});

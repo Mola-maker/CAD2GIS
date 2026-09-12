@@ -1149,7 +1149,7 @@ def _svg_candidate_path(
     relative = Path(relative_path)
     if (relative.is_absolute() or relative.drive or ".." in relative.parts
             or "\\" in relative_path or relative.as_posix() != relative_path
-            or relative.suffix.casefold() not in {".html", ".json", ".svg", ".sqlite3"}):
+            or relative.suffix.casefold() not in {".html", ".json", ".svg", ".png", ".csv", ".sqlite3"}):
         raise ReviewServerError("Invalid SVG candidate artifact path")
     root = run_dir.resolve() / "svg-candidates"
     path = (root / relative).resolve()

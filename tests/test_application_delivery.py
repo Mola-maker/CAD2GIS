@@ -117,3 +117,44 @@ def test_partition_delivery_reads_status_without_promoting_it(delivery_shell):
     assert response.status_code == 200
     assert response.json()["run_status"] == "CONDITIONAL"
     assert "partition_manifest.json" in {item["name"] for item in response.json()["artifacts"]}
+
+
+def test_portable_delivery_lists_complete_zip_and_checks_its_manifest(delivery_shell):
+    import zipfile
+    client, _, run = delivery_shell
+    _login(client)
+    (run / 'run_manifest.json').unlink()
+    manifest = run / 'delivery-manifest.json'
+    manifest.write_text(json.dumps({'schema_version': 'cad2gis.delivery-package.v1', 'run_status': 'CONDITIONAL'}))
+    archive = run.with_suffix('.zip')
+    with zipfile.ZipFile(archive, 'w') as bundle:
+        bundle.write(manifest, 'delivery-manifest.json')
+        bundle.write(run / 'delivery.gpkg', 'delivery.gpkg')
+    response = client.get('/_app/api/delivery/artifacts', params={'run': str(run)})
+    assert response.status_code == 200
+    data = response.json()
+    assert data['run_status'] == 'CONDITIONAL'
+    assert data['archive']['size'] == archive.stat().st_size
+    download = client.get(data['archive']['url'])
+    assert download.status_code == 200
+    assert download.content == archive.read_bytes()
+    assert download.headers['content-type'] == 'application/zip'
+    assert download.headers['content-disposition'].startswith('attachment;')
+    manifest.write_text('{}')
+    assert client.get(data['archive']['url']).status_code == 400
+
+
+def test_delivery_archive_requires_auth_and_refuses_symlinks(delivery_shell, tmp_path):
+    client, _, run = delivery_shell
+    query = {'run': str(run)}
+    assert client.get('/_app/api/delivery/archive', params=query).status_code == 401
+    _login(client)
+    assert client.get('/_app/api/delivery/archive', params=query).status_code == 400
+    (run / 'delivery-manifest.json').write_text('{}')
+    archive = run.with_suffix('.zip')
+    try:
+        archive.symlink_to(tmp_path / 'private.zip')
+    except OSError:
+        pytest.skip('Symlinks unavailable')
+    assert client.get('/_app/api/delivery/archive', params=query).status_code == 400
+    assert client.get('/_app/api/delivery/archive', params={'run': str(tmp_path)}).status_code == 400

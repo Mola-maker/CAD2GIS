@@ -79,16 +79,17 @@ def test_committed_mutation_trace_survives_diagnostic_write_failure(monkeypatch)
     assert wrapped() == {"revision": 2, "committed": True}
 
 
-def test_cancelled_call_has_one_terminal_event(capsys):
+@pytest.mark.parametrize("tool_name,committed", [("query_source_entities", False), ("package_qgis_delivery", "unknown")])
+def test_cancelled_call_has_one_terminal_event(capsys, tool_name, committed):
     async def query() -> dict:
         raise asyncio.CancelledError()
 
-    wrapped = mcp_diagnostics.traced_tool("query_source_entities", query, _Server())
+    wrapped = mcp_diagnostics.traced_tool(tool_name, query, _Server())
     with pytest.raises(asyncio.CancelledError):
         asyncio.run(wrapped())
     events = [json.loads(line) for line in capsys.readouterr().err.splitlines()]
     assert [event["phase"] for event in events] == ["started", "cancelled"]
-    assert events[-1]["committed"] is False
+    assert events[-1]["committed"] == committed
 
 
 def test_error_result_is_not_traced_as_success(capsys):
@@ -104,13 +105,14 @@ def test_error_result_is_not_traced_as_success(capsys):
     assert events[-1]["error_code"] == "TOOL_EXECUTION_FAILED"
 
 
-def test_mutation_busy_error_is_not_advertised_as_safe_to_replay():
+@pytest.mark.parametrize("tool_name", ["commit_semantic_patch", "package_qgis_delivery"])
+def test_mutation_busy_error_is_not_advertised_as_safe_to_replay(tool_name):
     import sqlite3
 
     def commit():
         raise sqlite3.OperationalError("database is locked")
 
-    wrapped = mcp_diagnostics.traced_tool("commit_semantic_patch", commit, _Server())
+    wrapped = mcp_diagnostics.traced_tool(tool_name, commit, _Server())
     with pytest.raises(Exception) as exc:
         wrapped()
     result = json.loads(str(exc.value))
