@@ -7,6 +7,9 @@ on:
         description: Existing draft release tag to build and attach installers to
         required: true
         default: v0.7.0
+      release_id:
+        description: Numeric ID of the draft release
+        required: true
 
 permissions:
   contents: read
@@ -27,6 +30,7 @@ jobs:
     timeout-minutes: 60
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_ID: ${{ inputs.release_id }}
       GH_TOKEN: ${{ github.token }}
       EXPECTED_ARCH: ${{ matrix.arch }}
     steps:
@@ -39,9 +43,15 @@ jobs:
       - name: Validate native runner and draft release
         run: |
           test "$(uname -m)" = "$EXPECTED_ARCH"
-          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          [[ "$RELEASE_ID" =~ ^[0-9]+$ ]]
+          release_api="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"
+          test "$(gh api "$release_api" --jq .draft)" = true
+          test "$(gh api "$release_api" --jq .tag_name)" = "$RELEASE_TAG"
           mkdir -p dist/python
-          gh release download "$RELEASE_TAG" --pattern 'cad2gis-*-py3-none-any.whl' --dir dist/python
+          asset=$(gh api "$release_api" --jq '.assets[] | select(.name | endswith(".whl")) | .id')
+          [[ "$asset" =~ ^[0-9]+$ ]]
+          version=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset" -H 'Accept: application/octet-stream' > "dist/python/cad2gis-$version-py3-none-any.whl"
       - name: Build offline PKG and test native runtime
         run: python tools/build_macos_package.py --wheel dist/python/cad2gis-*-py3-none-any.whl
       - name: Install and exercise packaged application
@@ -55,5 +65,11 @@ jobs:
           "$installed/runtime/bin/python3" -I tools/smoke_synthetic_conversion.py --bundle "$installed" --output "$RUNNER_TEMP/installed-conversion" > "dist/macos/macos-$EXPECTED_ARCH-installed-conversion.log"
       - name: Attach verified packages to draft release
         run: |
-          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
-          gh release upload "$RELEASE_TAG" dist/macos/*
+          release_api="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"
+          test "$(gh api "$release_api" --jq .draft)" = true
+          for file in dist/macos/*; do
+            curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" -H 'Content-Type: application/octet-stream' \
+              --data-binary "@$file" \
+              "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=$(basename "$file")"
+          done
