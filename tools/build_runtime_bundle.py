@@ -125,6 +125,20 @@ def create_launchers(output: Path) -> None:
             launcher.chmod(0o755)
 
 
+def copy_runtime(runtime_source: Path, destination: Path) -> None:
+    """Omit optional terminal aliases before copying a runtime from WSL storage."""
+    runtime_source = runtime_source.resolve(strict=True)
+    ignore_cache = shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo")
+
+    def ignored(directory, names):
+        ignored_names = set(ignore_cache(directory, names))
+        if Path(directory) == runtime_source / "share":
+            ignored_names.add("terminfo")
+        return ignored_names
+
+    shutil.copytree(runtime_source, destination, symlinks=True, ignore=ignored)
+
+
 def build(runtime_source: Path, wheel: Path, libredwg: Path, output: Path,
           *, wheelhouse: Path | None = None, requirements_lock: Path | None = None) -> Path:
     runtime_source = runtime_source.resolve(strict=True)
@@ -136,8 +150,7 @@ def build(runtime_source: Path, wheel: Path, libredwg: Path, output: Path,
     if not output.is_relative_to(REPOSITORY):
         raise ValueError("Build output must stay inside this repository")
     output.mkdir(parents=True)
-    shutil.copytree(runtime_source, output / "runtime", symlinks=True,
-                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    copy_runtime(runtime_source, output / "runtime")
     python = output / "runtime" / ("python.exe" if os.name == "nt" else "bin/python3")
     if not python.is_file():
         raise ValueError(f"Standalone Python is missing: {python}")

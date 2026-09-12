@@ -4,11 +4,15 @@
 
 ## 安装与打开
 
-下载 `.deb` 和同目录的 `SHA256SUMS` 后，在下载目录运行：
+从 [v0.7.0-linux.1 发布页](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.7.0-linux.1)
+下载 [Ubuntu x86_64 安装包](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/cad2gis_0.7.0-1_amd64.deb)
+和 [SHA256SUMS-linux-0.7.0-1](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/SHA256SUMS-linux-0.7.0-1)。
+当前为预发布，GitHub 的 `releases/latest` 入口不会包含它。
+在下载目录运行：
 
 ```sh
-sha256sum --check SHA256SUMS --ignore-missing
-sudo apt install ./cad2gis_0.7.0_amd64.deb
+sha256sum --check SHA256SUMS-linux-0.7.0-1 --ignore-missing
+sudo apt install ./cad2gis_0.7.0-1_amd64.deb
 ```
 
 在应用菜单打开 **CAD2GIS**，默认浏览器会显示本地工作台。也可以运行 `cad2gis-desktop`。工作台与智能体调用共用同一转换引擎，支持既有 OSM 匹配、人工 GCP 预览与二次匹配，以及 SVG 候选提取。需要联网的 OSM 搜索、地图底图或 AI 服务仍需网络和相应配置。
@@ -17,7 +21,7 @@ sudo apt install ./cad2gis_0.7.0_amd64.deb
 
 ## 无管理员权限的运行方式
 
-将 `cad2gis-0.7.0-linux-x86_64.tar.gz` 解压到自己拥有的目录，运行解压目录里的 `bin/cad2gis-desktop`。该运行时可以移动目录，不依赖构建机的 Python 路径。便携包要求系统已提供 `libstdc++6`、`libgomp1`、CA 证书与可用字体；桌面打开功能需要默认浏览器。可用 `bin/cad2gis doctor --deep --strict --profile full --json` 检查运行时。
+将 `cad2gis-0.7.0-1-linux-x86_64.tar.gz` 解压到自己拥有的目录，运行解压目录里的 `bin/cad2gis-desktop`。该运行时可以移动目录，不依赖构建机的 Python 路径。便携包要求系统已提供 `libstdc++6`、`libgomp1`、CA 证书与可用字体；桌面打开功能需要默认浏览器。可用 `bin/cad2gis doctor --deep --strict --profile full --json` 检查运行时。
 
 ## 智能体插件接口
 
@@ -54,12 +58,15 @@ python3 tools/build_runtime_bundle.py \
   --libredwg tmp/packaging-native-patched/linux/libredwg \
   --output tmp/packaging-linux/payload
 python3 tools/build_linux_package.py \
-  --payload tmp/packaging-linux/payload --output dist/linux
+  --payload tmp/packaging-linux/payload --output dist/linux --version 0.7.0-1
 ```
 
 运行时保留包内第三方许可证、LibreDWG 对应版本源码和构建收据。`dependency-install.json`、`requirements.lock`、`THIRD_PARTY_COMPONENTS.json` 和 `bundle-manifest.json` 记录依赖版本、下载哈希和文件哈希。当前项目声明专有许可证，`pyramids-gis` 与 LibreDWG 包含 GPLv3 组件；本地产物用于安装验证，公开分发前须完成 `THIRD_PARTY_NOTICES.md` 说明的许可证决策。
 
-构建程序生成 `.deb`、便携 `.tar.gz`、`SHA256SUMS` 和 `linux-build.json`。本地验证应从新目录解包，清除 `PYTHONPATH`/`PYTHONHOME` 后运行实际入口、GDAL/LibreDWG 检查、MCP 握手和工作台健康检查。
+构建程序生成 `.deb`、便携 `.tar.gz`、`SHA256SUMS` 和 `linux-build.json`。
+复制任何运行时（包括旧的已安装运行时）时，都排除可选 `share/terminfo` 目录与 Python 字节码缓存，
+避免 WSL 大小写别名产生失效链接。打包前逐文件校验清单，缺失、改动、未登记的文件或失效链接会阻止生成安装包。
+本地验证应从新目录解包，清除 `PYTHONPATH`/`PYTHONHOME` 后运行实际入口、GDAL/LibreDWG 检查、MCP 握手和工作台健康检查。
 
 安装器验收须真正运行 `dpkg --install`，不能只用归档解包代替：Debian 数据归档使用 GNU tar 并显式列出父目录，以满足实际安装器规则。安装后可用安装目录自己的 Python 运行完整验证：
 
