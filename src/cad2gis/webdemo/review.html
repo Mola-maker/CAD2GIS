@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8f7">
+  <title>CAD2GIS — 可验证的 GIS 交付</title>
+  <script id="cad2gis-page-config" type="application/json">
+    {"optionalGcp":true,"worldCenterLonLat":[0,0],"worldZoom":2,"localExtentControl":false,"worldExtentControl":null}
+  </script>
+  <link rel="stylesheet" href="./assets/vendor/ol.css">
+  <link rel="preload" href="./assets/noto-sans-sc-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/smiley-sans-subset.woff2?v=font-system-20260829" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./assets/styles.css?v=precision-workspace-20260909">
+<link rel="stylesheet" href="./assets/review.css?v=20260913">
+</head>
+<body class="live-review focused-review">
+  <div id="console-app" tabindex="-1">
+  <header class="topbar">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">C2G</span>
+      <div>
+        <span class="eyebrow">CAD2GIS / SPATIAL DELIVERY CONSOLE</span>
+        <h1>核对当前地图匹配</h1><p id="review-current-source" class="review-current-source">正在读取当前图纸…</p>
+      </div>
+    </div>
+    <div class="run-state" aria-label="服务状态">
+      <span id="connection-dot" class="status-dot pending"></span>
+      <span id="connection-label">正在连接</span>
+      <span id="run-status" class="badge">—</span><button id="toggle-evidence" class="ghost" aria-expanded="false" aria-controls="review-inspector">证据与工具</button>
+    </div>
+  </header>
+
+  <details id="review-guide" class="review-guide"><summary>第一次配准？查看操作提示</summary><div class="review-guide-content"><img src="./assets/onboarding-map-v1.png" width="1536" height="1024" alt="" aria-hidden="true" loading="lazy"><div><strong>选同一个真实位置，分别落在两张图上。</strong><ol><li>先核对左侧源几何，放大并选择设施或清晰拐点。</li><li>在右图选相同位置，或输入测量得到的经纬度。</li><li>用下方方向按钮微调目标点；检查残差后再生成新结果。</li></ol><p>训练点用于拟合。独立检查点只用于验证，不能与训练点重复。OSM 是地图参考，测量精度需要独立证据。</p><button id="start-guided-correction" class="primary">开始选择控制点</button></div></div></details>
+  <main class="workspace">
+    <aside class="panel navigation-panel">
+      <section class="project-card">
+        <span class="section-kicker project-current-kicker">当前工作流</span>
+        <strong id="project-name">未加载运行</strong>
+        <span id="project-source" class="muted truncate">等待 run manifest…</span>
+      </section>
+
+      <nav class="workflow-nav" aria-label="审查步骤">
+        <button class="workflow-step is-active" data-stage="source">
+          <span>01</span><span><strong>核对源图</strong><small>图层、实体与曲线</small></span>
+        </button>
+        <button class="workflow-step" data-stage="semantic">
+          <span>02</span><span><strong>语义映射</strong><small>证据约束的分类</small></span>
+        </button>
+        <button class="workflow-step" data-stage="registration">
+          <span>03</span><span><strong>选择与微调 GCP</strong><small>源图和地图对应选点</small></span>
+        </button>
+        <button class="workflow-step" data-stage="validation">
+          <span>04</span><span><strong>检查残差</strong><small>训练与独立检查分开</small></span>
+        </button>
+        <button class="workflow-step" data-stage="delivery">
+          <span>05</span><span><strong>生成新结果</strong><small>保留原结果与控制点</small></span>
+        </button>
+      </nav>
+
+      <section id="stage-source" class="stage-card">
+        <div class="section-heading">
+          <div><span class="section-kicker">Source layers</span><h2>交付图层</h2></div>
+          <button id="tool-fit" class="icon-button" title="缩放到全部数据" aria-label="缩放到全部数据">⌗</button>
+        </div>
+        <p class="muted">左图回溯交付要素对应的 CAD 源几何，不是完整 DWG。请结合“CAD 视觉证据”和全源实体清单检查遗漏；派生面可能没有对应源图形。图层开关同步作用于右侧预览。</p>
+        <div id="layer-list" class="layer-list"></div>
+      </section>
+
+      <section id="stage-registration" class="stage-card registration-card" hidden>
+        <div class="section-heading">
+          <div><span class="section-kicker">CONTROL POINTS</span><h2>人工 GCP 校正（可选）</h2></div>
+          <span class="step-chip">GCP</span>
+        </div>
+        <p class="muted">先在 CAD 上选点，再指定地图上的同一位置。已保存的点可选中后微调。</p>
+        <label class="field-label">控制点角色
+          <select id="gcp-role">
+            <option value="train">训练点 · 参与校正拟合</option>
+            <option value="check">独立检查点 · 只评估残差</option>
+          </select>
+        </label>
+        <div class="coordinate-inputs">
+          <label>经度 <input id="target-lon" type="number" step="any" placeholder="例如 112.70000000" required inputmode="decimal"></label>
+          <label>纬度 <input id="target-lat" type="number" step="any" placeholder="例如 -7.45000000" required inputmode="decimal"></label>
+        </div>
+        <button id="send-coordinate" class="wide primary">保存这组控制点</button>
+        <div class="button-row">
+          <button id="use-map-center" class="secondary">使用地图中心</button>
+          <button id="clear-pending" class="ghost">取消选择</button>
+        </div>
+        <div class="gcp-list-heading"><strong>已保存的控制点</strong><span>点选后微调</span></div>
+        <div id="gcp-list" class="gcp-list" aria-label="已保存的控制点"></div>
+        <section id="gcp-adjust" class="gcp-adjust" hidden aria-labelledby="gcp-adjust-title">
+          <div class="section-heading"><h3 id="gcp-adjust-title">微调目标位置</h3><span id="gcp-adjust-role" class="step-chip"></span></div>
+          <p id="gcp-adjust-coordinate" class="gcp-coordinate-readout"></p>
+          <label class="field-label" for="gcp-step">每次移动的实际距离<select id="gcp-step"><option value="0.01">0.01 m · 1 cm</option><option value="0.1" selected>0.1 m · 10 cm</option><option value="1">1 m</option></select></label>
+          <div class="nudge-pad" role="group" aria-label="按实际距离微调目标位置"><button data-adjust-gcp="north" aria-label="向北微调">↑<small>北</small></button><button data-adjust-gcp="west" aria-label="向西微调">←<small>西</small></button><button id="center-gcp" class="nudge-center" aria-label="在两张地图中定位这个控制点">⌖<small>定位</small></button><button data-adjust-gcp="east" aria-label="向东微调">→<small>东</small></button><button data-adjust-gcp="south" aria-label="向南微调">↓<small>南</small></button></div>
+          <div class="button-row"><button id="undo-gcp" class="secondary">撤销上次微调</button><button id="reset-gcp" class="ghost">恢复最初选点</button></div>
+          <p id="gcp-adjust-status" class="muted" role="status" aria-live="polite">仅移动地图目标点，CAD 源点保持不变。</p>
+        </section>
+        <div class="metric-card">
+          <span>当前预览</span><strong id="fit-model">等待 GIS 匹配结果</strong>
+          <span>残差 RMSE</span><strong id="fit-rmse">—</strong>
+          <span>控制点</span><strong id="fit-coverage">0 个训练点；0 个独立检查点</strong>
+          <span>已应用匹配</span><strong id="matching-version">—</strong>
+          <span>目标坐标</span><strong id="target-coordinate">—</strong>
+        </div>
+        <button id="copy-coordinate" class="wide ghost" disabled>复制已传送的目标坐标</button>
+        <button id="preview-gcp" class="wide secondary">预览人工校正</button>
+        <button id="export-gcp" class="wide primary" disabled>二次匹配并生成新结果</button>
+        <p id="matching-status" class="muted" role="status" aria-live="polite">正在读取当前匹配版本与人工控制点…</p>
+        <details class="accuracy-explainer"><summary>怎样判断位置是否足够准确？</summary><p>训练残差反映拟合效果；独立检查残差才评估未参与拟合的位置。请把点分布在项目范围内，避免全部落在同一直线。</p><p>OSM 仅提供相对地图参考。0.01 m 是移动步长，不代表达到 1 cm 精度；绝对精度需测量或权威控制点验证。</p><p>每次二次匹配生成新的结果。静态演示仅记录选点，不执行校正。</p></details>
+      </section>
+    </aside>
+
+    <section class="map-workspace" aria-label="CAD 与地图叠加工作区">
+      <div class="map-toolbar">
+        <div class="mode-switch"><span class="mode-label">DUAL VIEW</span><strong>源几何 ↔ 地图位置</strong></div>
+        <div class="map-actions">
+          <button id="toggle-manual-gcp" class="ghost" aria-expanded="false" aria-controls="stage-registration">人工 GCP（可选）</button>
+          <span id="map-reference-note" class="map-reference-note">等待地图参考…</span>
+          <span class="legend-dot train"></span><span>训练点</span>
+          <span class="legend-dot check"></span><span>检查点</span>
+          <label class="basemap-switch"><input id="online-basemap" type="checkbox">在线 OSM 底图</label><button id="fit-both" class="ghost" title="缩放到两张图的全部要素">显示全部</button><button id="open-visual" class="ghost">源图证据</button>
+          <details id="evidence-layer-menu" class="evidence-layer-menu"><summary>配准证据层</summary><div class="evidence-layer-options"><p>当前已应用匹配的矢量证据</p><label><input type="checkbox" data-evidence-layer="cad_routes" disabled><i class="evidence-swatch cad"></i>CAD 路线</label><label><input type="checkbox" data-evidence-layer="osm_roads" disabled><i class="evidence-swatch osm"></i>OSM 路网</label><label><input type="checkbox" data-evidence-layer="cad_nodes" disabled><i class="evidence-swatch node"></i>CAD 连接节点</label><label><input type="checkbox" data-evidence-layer="osm_nodes" disabled><i class="evidence-swatch osm-node"></i>OSM 连接节点</label><label><input type="checkbox" data-evidence-layer="residuals" disabled><i class="evidence-swatch residual"></i>匹配残差线</label><p id="evidence-layer-status" role="status">展开后读取当前匹配证据。</p></div></details>
+        </div>
+      </div>
+      <p id="basemap-status" class="basemap-status">在线底图未加载。启用后会向 OpenStreetMap 请求当前视野的地图瓦片。</p>
+      <div class="precision-summary" aria-label="校正精度状态"><div><span>当前视图</span><strong id="precision-view">已应用结果</strong></div><div><span>训练 RMSE</span><strong id="precision-train">—</strong></div><div><span>独立检查 RMSE</span><strong id="precision-check">尚未验证</strong></div><div><span>精度依据</span><strong id="precision-evidence">等待控制点</strong></div></div>
+      <div id="pick-guide" class="pick-guide" role="status" aria-live="polite"><b>下一步</b><span id="pick-guide-text">在左侧 CAD 中放大并选择一个真实设施或拐点。</span><button id="pick-guide-action" class="ghost" type="button">选择控制点</button></div>
+      <section class="map-grid">
+        <article class="map-pane">
+          <header><span><b>CAD</b> 原始坐标</span><code id="cad-coordinate">—</code></header>
+          <div id="local-map" class="map" tabindex="0" aria-label="CAD 源几何地图，可用方向键平移，加减键缩放"></div>
+        </article>
+        <article class="map-pane">
+          <header><span><b>GIS</b> OSM 匹配与人工校正预览</span><code id="map-coordinate">—</code></header>
+          <div id="map" class="map" tabindex="0" aria-label="OSM 地图与 GIS 结果，可用方向键平移，加减键缩放"></div>
+        </article>
+        <div id="toast" class="toast" aria-live="polite"></div>
+      </section>
+    </section>
+
+    <aside id="review-inspector" class="panel inspector-panel" hidden aria-label="运行证据与高级工具"><div class="inspector-heading"><strong>证据与工具</strong><button id="close-inspector" class="ghost" aria-label="关闭证据与工具">×</button></div>
+      <div class="tab-list" role="tablist" aria-label="审查工具">
+        <button class="tab-button is-active" role="tab" aria-selected="true" data-tab="evidence">证据</button>
+        <button class="tab-button" role="tab" aria-selected="false" data-tab="console">控制台</button>
+        <button class="tab-button" role="tab" aria-selected="false" data-tab="agent">AI 协作</button>
+      </div>
+
+      <div id="tab-evidence" class="tab-panel is-active" role="tabpanel">
+        <section><span class="section-kicker">Architecture diagnosis</span><h2>架构诊断</h2>
+          <p class="muted">源几何、拓扑、长度和坐标精度分别验证。AI 解释和选择证据，不替代数值拟合。</p>
+          <div id="diagnosis" class="diagnosis">等待运行清单…</div>
+        </section>
+        <section><span class="section-kicker">Run evidence</span><h2>运行证据</h2><dl id="run-summary"></dl></section>
+        <section><span class="section-kicker">SVG candidates</span><h2>SVG 图形与图例对应</h2>
+          <p id="svg-candidate-status" class="muted" role="status" aria-live="polite">正在读取 SVG 提取状态…</p>
+          <p class="muted">候选报告列出源实体图形、图例对应和未解决项，供逐项复核；候选不会自动替换 GIS 交付样式。</p>
+          <a id="open-svg-candidates" target="_blank" rel="noopener noreferrer" hidden>打开本轮 SVG 对应报告 ↗</a>
+        </section>
+        <section><span class="section-kicker">Selection</span><h2>选中对象</h2><pre id="feature-properties">在任一地图点击对象。</pre></section>
+      </div>
+
+      <div id="tab-console" class="tab-panel" role="tabpanel" hidden>
+        <section><span class="section-kicker">Live terminal</span><h2>流水线控制台</h2>
+          <p class="muted">这里记录本次审查的有效动作，不输出地图移动等无关噪声。</p>
+          <div id="terminal-log" class="terminal-log" role="log" aria-live="polite"></div>
+        </section>
+        <section class="command-section">
+          <div class="section-heading"><div><span class="section-kicker">Next command</span><h2>重新转换</h2></div>
+            <button id="copy-command" class="icon-button" disabled title="复制命令" aria-label="复制转换命令">复制</button>
+          </div>
+          <pre id="conversion-command">二次匹配后显示本次转换命令，供需要时复现结果。</pre>
+          <p class="warning" id="preview-source-note">右图默认显示当前 GIS 结果。人工点变化后预览校正；二次匹配成功后自动加载新结果，并保留控制点供继续修改。</p>
+        </section>
+      </div>
+
+      <div id="tab-agent" class="tab-panel" role="tabpanel" hidden>
+        <section aria-labelledby="semantic-launch-heading"><span class="section-kicker">SOURCE-BOUND SEMANTICS</span><h2 id="semantic-launch-heading">先提取，再审阅。</h2><p class="muted">在软件的“语义提取”中生成源快照与关系候选。候选需审阅后才能提交分类。</p><a id="semantic-service-link" href="/_app/?tool=semantic" target="_top" hidden>打开语义提取工作区 ↗</a><p id="semantic-service-note" class="muted">真实提取由 Windows / Linux 软件或 Android 所连接的服务器执行。演示页只展示记录。</p></section>
+        <section><span class="section-kicker">Agent workspace</span><h2>与 AI 一起审查</h2>
+          <p class="muted">把结构化证据交给任意 MCP 智能体。模型可以解释、筛选和提出注册操作，不能发明几何或坐标。</p>
+          <div class="prompt-list">
+            <button data-copy-prompt="检查当前 run，并分别解释源几何、拓扑、长度和坐标精度状态。">解释当前运行</button>
+            <button data-copy-prompt="列出当前证据图中的未解决实体，只提出已注册且可验证的修复。">审查未解决实体</button>
+            <button data-copy-prompt="检查 GCP 的空间分布和独立检查点残差，不要把 OSM 重合声明为绝对精度。">检查配准精度</button>
+          </div>
+        </section>
+        <section><span class="section-kicker">Guardrails</span><h2>自动化边界</h2>
+          <ul class="guardrail-list"><li>只引用已经观察到的实体与证据 ID</li><li>源坐标、曲线和原生长度不可由模型改写</li><li>每次修正生成新 run，可追溯且可回滚</li></ul>
+        </section>
+      </div>
+    </aside>
+  </main>
+  </div>
+
+  <dialog id="visual-dialog">
+    <div class="dialog-head"><div><span class="section-kicker">Multi-scale evidence</span><h2>CAD 多尺度视觉证据</h2></div><button id="close-visual" aria-label="关闭">×</button></div>
+    <div id="visual-grid" class="visual-grid"></div>
+  </dialog>
+
+  <script src="./assets/vendor/ol.js"></script>
+  <script type="module" src="./assets/app.js?v=precision-workspace-20260909"></script>
+</body>
+</html>

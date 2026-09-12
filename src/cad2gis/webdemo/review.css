@@ -1,0 +1,21 @@
+/* The installed review starts at the maps, without the product/demo landing. */
+html,body.focused-review{height:auto;min-height:100%;overflow:auto}
+.focused-review #console-app{height:auto;min-height:100vh;display:flex;flex-direction:column}
+.focused-review .workspace{height:auto;min-height:640px;flex:1;grid-template-columns:260px minmax(0,1fr);align-items:stretch}
+.focused-review .map-workspace{height:640px;min-height:640px}
+.focused-review .navigation-panel{max-height:640px;overflow-y:auto;overscroll-behavior:auto}
+.focused-review .map-grid{min-height:320px}
+.focused-review .project-picker-heading,.focused-review .project-picker-label,.focused-review .project-picker,.focused-review .project-proof-grid,.focused-review .project-proof-list,.focused-review .project-location,.focused-review .project-description{display:none}
+.focused-review .workflow-nav{display:none}
+.focused-review .topbar{height:auto;min-height:64px}
+.focused-review .map-actions{flex-wrap:wrap}
+.focused-review .map-toolbar{min-height:64px;height:auto}
+.focused-review .review-guide{display:none}
+.focused-review.manual-correction .review-guide{display:block}
+.focused-review .inspector-panel{position:fixed;inset:64px 0 0 auto;width:min(430px,90vw);z-index:30;overflow:auto;background:#fff}
+@media(max-width:900px){
+ .focused-review .workspace{display:flex;flex-direction:column}
+ .focused-review .map-workspace{order:0;width:100%;height:900px;min-height:900px}
+ .focused-review .map-grid{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+ .focused-review .navigation-panel{order:1;max-height:none;overflow:visible}
+}

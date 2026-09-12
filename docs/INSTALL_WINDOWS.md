@@ -6,7 +6,7 @@ GIS 库和 LibreDWG，无需先安装 Python、uv、AutoCAD、Conda 或 QGIS。
 
 ## 安装
 
-1. 运行 `CAD2GIS-0.7.0-windows-x64-setup.exe`。
+1. 退出正在运行的 CAD2GIS 本地服务，再运行 `CAD2GIS-0.7.1-windows-x64-setup.exe`。
 2. 默认安装到当前用户的 `%LOCALAPPDATA%\Programs\CAD2GIS`，不需要管理员权限。
 3. 可选择添加桌面快捷方式；“添加命令到用户 PATH”用于现有智能体插件。
 4. 从开始菜单打开 CAD2GIS。程序启动本地服务，并用系统浏览器打开专用登录链接。
@@ -33,9 +33,15 @@ Windows 使用当前用户 DPAPI 加密保存密钥，重启后继续使用；�
 新界面使用 molamaker 图标、蓝色背景、底栏与侧栏液态玻璃、阻尼动效与操作焦点。
 系统开启减少动态效果时关闭非必要动画。
 
-默认转换执行 OSM 相对匹配与 SVG 候选提取。打开结果后，人工 GCP 首先用于
-预览；确认二次匹配才生成新的 GIS 结果，旧结果保留。OSM 配准不代表已获得
+默认转换执行 OSM 相对匹配与 SVG 候选提取。第三步打开结果后，先核对已应用的
+地图匹配；位置符合要求时，点击“匹配没问题，继续 SVG 审阅”，即可查看符号报告
+和交付数据。人工 GCP 是可选项，可以随时展开或收起；已有控制点不会强制进入
+人工校正预览。确认二次匹配才生成新的 GIS 结果，旧结果保留。OSM 配准不代表已获得
 测量级绝对精度。地图瓦片、在线 OSM 查询和可选 AI 需要网络。
+
+0.7.1 的地图页面使用专用审阅入口，不再先加载旧演示首页。地图和 SVG 页面可以
+向下滚动；重复打开结果会重新加载并显示进度，SVG 缩略图与原始 SVG 均可查看。
+二次匹配后会更新报告绑定，避免旧地图、旧报告与新交付数据混用。
 
 任务进度区域显示真实输出与错误。“关闭程序”用于停止本次桌面服务；单纯关闭
 浏览器标签页不会自动中断正在进行的转换任务。
@@ -84,7 +90,7 @@ cad2gis doctor --deep --strict --profile full --json
 1. 使用 Python 3.12 安装 `build`、`setuptools` 及测试工具。
 2. 运行 `python tools/build_reproducible_wheel.py --output-dir dist/python --verify`。
 3. 按 `packaging/patches/README.md` 准备并验收 LibreDWG 0.14 MTEXT 终止修补版。
-4. 运行 `python tools/build_windows_package.py --wheel dist/python/cad2gis-0.7.0-py3-none-any.whl --libredwg <已验收原生工具目录>`。
+4. 运行 `python tools/build_windows_package.py --wheel dist/python/cad2gis-0.7.1-py3-none-any.whl --libredwg <已验收原生工具目录>`。
 
 已有完整 payload 时，先用 `tools/refresh_runtime_bundle.py` 更新指定 wheel，再运行
 `python tools/build_windows_package.py --wheel <冻结wheel> --payload <临时payload> --reuse-payload`。

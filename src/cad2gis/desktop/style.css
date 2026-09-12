@@ -133,6 +133,18 @@ button[aria-disabled=true],button:disabled{cursor:not-allowed}
 @media(max-width:650px){.companion-status{gap:0;max-width:34px}.companion-status .companion-portrait{width:34px;height:34px;border-radius:10px}.companion-status>[data-companion-label]{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.titlebar-right{gap:7px}.semantic-launch{margin-top:24px;padding-top:23px}.semantic-intro h3{font-size:20px}.semantic-action{min-height:84px}.semantic-action strong{font-size:17px}.artifact-row{gap:9px}.job-panel .action-toolbar{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){button,a,.companion-portrait,.semantic-action>span:last-child{animation:none!important;transition:none!important;transform:none!important}[data-companion] .companion-portrait{animation:none!important;transform:none!important}}
 
+/* Review pages share one outer scroll area; maps retain their own pan/zoom. */
+.main-workspace{min-height:0;min-width:0;overflow-y:auto;overscroll-behavior-y:auto}
+.main-workspace>.tabs{height:auto;min-height:100%;overflow:visible}
+.review-tab{height:auto;overflow:visible}
+.map-review-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 14px}
+.map-review-actions .muted{margin:0}
+#review-load-status{min-height:22px;margin-bottom:8px}
+.review-mode #osm-frame,.review-expanded #osm-frame{display:block;height:850px;min-height:720px;max-height:none}
+#svg-frame{display:block;height:780px;min-height:600px;margin-top:14px}
+.review-mode .main-workspace{padding-bottom:120px}
+@media(max-width:900px){.review-mode #osm-frame,.review-expanded #osm-frame{height:1150px}}
+
 /* molamaker motion score v2: a small companion at every real action. */
 :root{--motion-press:120ms;--motion-feedback:240ms;--motion-enter:420ms;--motion-exit:180ms;--motion-ease:cubic-bezier(.22,1,.36,1);--motion-pink:#d77dab;--f7-popup-transition-duration:320ms;--f7-popup-transition-timing-function:var(--motion-ease)}
 button.motion-button{position:relative;min-height:44px;min-width:44px;transition:transform var(--motion-press) var(--motion-ease),opacity var(--motion-press) linear!important}
