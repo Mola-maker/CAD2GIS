@@ -11,10 +11,13 @@ projects.  QGIS work happens in a separate interpreter that can import
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.util
 import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -48,6 +51,11 @@ _LOG_PREFIX = "cad2gis publish-match: "
 
 class PublishError(RuntimeError):
     """The reviewed revision cannot be published as a delivery."""
+
+
+def _file_sha256(path: Path) -> str:
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
 def _revision_directory(revision: int) -> str:
@@ -143,23 +151,86 @@ def _resolve_qgis_python(explicit: Path | None) -> Path:
         if not path.is_file():
             continue
         try:
-            probe = subprocess.run(
-                [str(path), "-c", "import qgis.core"],
-                capture_output=True, timeout=300,
-            )
+            available = _probe_qgis_python(path)
         except (OSError, subprocess.SubprocessError):
             continue
-        if probe.returncode == 0:
+        if available:
             return path
     raise PublishError(
         "No Python runtime with QGIS was found; pass --qgis-python or set CAD2GIS_QGIS_PYTHON"
     )
 
 
+def _probe_qgis_python(path: Path, *, timeout: float = 60) -> bool:
+    # DEVNULL avoids waiting forever for a timed-out .cmd descendant to close
+    # inherited stdout pipes. Terminate only this newly owned process tree.
+    options = ({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt"
+               else {"start_new_session": True})
+    process = subprocess.Popen([str(path), "-c", "import qgis.core"],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        env=_qgis_environment(), **options)
+    try:
+        return process.wait(timeout=timeout) == 0
+    except subprocess.TimeoutExpired:
+        try:
+            if os.name == "nt":
+                taskkill = Path(os.environ.get("SystemRoot", "C:/Windows")) / "System32/taskkill.exe"
+                subprocess.run([str(taskkill), "/PID", str(process.pid), "/T", "/F"],
+                    capture_output=True, timeout=15, check=False, creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                os.killpg(process.pid, signal.SIGKILL)
+        finally:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=5)
+        raise
+
+
+def _qgis_environment() -> dict[str, str]:
+    """Keep conversion's bundled GDAL out of the separate QGIS runtime.
+
+    Pyramids modifies process environment during native runtime initialization.
+    Its GDAL libraries and data must not shadow the QGIS installation's own
+    versions. Remove only paths inside the discovered wheel's private roots,
+    leaving unrelated user configuration and the parent environment untouched.
+    """
+    environment = dict(os.environ)
+    # Windows venv redirectors inject their base Python home into descendants.
+    # QGIS uses a different interpreter and must resolve its own standard library.
+    environment.pop("PYTHONHOME", None)
+    try:
+        spec = importlib.util.find_spec("pyramids")
+    except (ImportError, ValueError):
+        spec = None
+    if spec is None or not spec.origin:
+        return environment
+    package = Path(spec.origin).resolve().parent
+    roots = (package, package.parent / "pyramids_gis.libs", package.parent / "pyramids_gis.dylibs")
+
+    def owned(value: str) -> bool:
+        if not value:
+            return False
+        path = Path(value.strip('"')).resolve()
+        return any(path.is_relative_to(root) for root in roots)
+
+    for key in ("PATH", "PYTHONPATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH",
+                "GDAL_DRIVER_PATH", "GDAL_DATA", "PROJ_DATA", "PROJ_LIB"):
+        if key not in environment:
+            continue
+        original = environment[key].split(os.pathsep)
+        retained = [value for value in original if not owned(value)]
+        if retained != original:
+            if retained:
+                environment[key] = os.pathsep.join(retained)
+            else:
+                environment.pop(key)
+    return environment
+
+
 def _run_qgis(python: Path, module: str, arguments: Sequence[str]) -> None:
     import cad2gis
 
-    environment = dict(os.environ)
+    environment = _qgis_environment()
     package_parent = str(Path(cad2gis.__file__).resolve().parent.parent)
     existing = environment.get("PYTHONPATH", "")
     environment["PYTHONPATH"] = (
@@ -176,7 +247,7 @@ def _run_qgis(python: Path, module: str, arguments: Sequence[str]) -> None:
     )
     command = [str(python), "-c", bootstrap, module, *arguments]
     _log("run " + " ".join(command))
-    result = subprocess.run(command, env=environment, capture_output=True, text=True)
+    result = subprocess.run(command, env=environment, stdin=subprocess.DEVNULL, capture_output=True, text=True)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip().splitlines()
         tail = " | ".join(detail[-3:]) if detail else "no output"
@@ -311,6 +382,8 @@ def publish(
                 for entry in report["deliveries"]
                 if str(entry["scope"]) in matching_scopes
             ]
+            if len(scopes) != len(matching_scopes) or {entry["scope"] for entry in scopes} != set(matching_scopes):
+                raise PublishError("Published scopes do not cover every populated matching scope")
             published = {
                 "schema_version": SCHEMA,
                 "source_sha256": report["source_sha256"],
@@ -359,21 +432,25 @@ def _publish_scope(
         snapshot.write_text(
             json.dumps(_fetch_review_snapshot(bbox), ensure_ascii=False), encoding="utf-8"
         )
+    snapshot_sha256 = _file_sha256(snapshot)
     svg_project = svg_root / relative
     if not svg_project.is_file():
         raise PublishError(f"SVG review project is missing for scope {scope}: {svg_project}")
+    svg_project_sha256 = _file_sha256(svg_project)
     review_project = review_root / relative
     review_project.parent.mkdir(parents=True, exist_ok=True)
     context_args = []
+    expected_context = None
     if matching is not None:
         context_path = review_project.parent / "matching-context.json"
-        context_path.write_text(json.dumps({
+        expected_context = {
             "schema": "cad2gis.qgis-matching-context.v1",
             "delivery_sha256": entry["gpkg_sha256"],
             "source_sha256": source_sha256,
             "run_manifest_sha256": run_manifest_sha256,
             "matching": matching,
-        }, ensure_ascii=False), encoding="utf-8")
+        }
+        context_path.write_text(json.dumps(expected_context, ensure_ascii=False), encoding="utf-8")
         context_args = ["--matching-context", str(context_path)]
     _run_qgis(python, "cad2gis.qgis_review", [
         "--project", str(svg_project),
@@ -381,6 +458,7 @@ def _publish_scope(
         "--output", str(review_project),
         *context_args,
     ])
+    editable_project_sha256 = _file_sha256(review_project)
     standalone = review_project.parent / "view-with-source-SVG.qgz"
     _run_qgis(python, "cad2gis.qgis_review", [
         "--project", str(review_project),
@@ -388,6 +466,13 @@ def _publish_scope(
         "--output", str(standalone),
         "--standalone",
     ])
+    receipts = [json.loads(project.with_suffix(".review.json").read_text(encoding="utf-8"))
+                for project in (review_project, standalone)]
+    if any(not isinstance(receipt, dict) for receipt in receipts):
+        raise PublishError(f"Invalid QGIS review receipt for scope {scope}")
+    if (_file_sha256(snapshot) != snapshot_sha256
+            or any(receipt.get("osm_source_sha256") != snapshot_sha256 for receipt in receipts)):
+        raise PublishError(f"OSM snapshot changed during publication of scope {scope}")
     destination = staging if scope == MAIN_SCOPE else staging / group
     destination.mkdir(parents=True, exist_ok=True)
     copies = {
@@ -404,11 +489,73 @@ def _publish_scope(
         shutil.copy2(source, destination / name)
     if snapshot.parent == staging:
         snapshot.unlink()
-    review_receipt = json.loads((destination / "delivery.review.json").read_text(encoding="utf-8"))
+    # Validate the staged bytes before publish() exposes the atomic revision.
+    # A successful QGIS subprocess alone does not establish a valid delivery.
+    import xml.etree.ElementTree as ET
+    import zipfile
+    from .qgis_review import OSM_URL, _matching_context
+
+    cad_sha256 = _file_sha256(destination / "delivery.gpkg")
+    if cad_sha256 != entry["gpkg_sha256"] or _file_sha256(source_gpkg) != cad_sha256:
+        raise PublishError(f"Canonical CAD database changed during publication of scope {scope}")
+    if _file_sha256(destination / "delivery.qgz") != editable_project_sha256:
+        raise PublishError(f"Editable QGIS input changed during standalone publication of scope {scope}")
+    staged_receipts = []
+    for project_name, is_standalone in (("delivery.qgz", False), ("view-with-source-SVG.qgz", True)):
+        project_path = destination / project_name
+        receipt = json.loads(project_path.with_suffix(".review.json").read_text(encoding="utf-8"))
+        if (not isinstance(receipt, dict) or receipt.get("schema") != "cad2gis.qgis-osm-review.v1"
+                or receipt.get("sha256") != _file_sha256(project_path)
+                or receipt.get("standalone") is not is_standalone
+                or receipt.get("cad_database_hashes") != [cad_sha256]
+                or receipt.get("geometry_and_attributes_unchanged") is not True
+                or receipt.get("absolute_accuracy_verified") is not False
+                or receipt.get("input_project_sha256") != (editable_project_sha256 if is_standalone else svg_project_sha256)
+                or receipt.get("osm_source_sha256") != snapshot_sha256):
+            raise PublishError(f"QGIS review receipt does not match staged delivery for scope {scope}: {project_name}")
+        if not is_standalone:
+            if receipt.get("osm_database_sha256") != _file_sha256(destination / "osm-basemap.gpkg"):
+                raise PublishError(f"QGIS OSM database receipt does not match staged delivery for scope {scope}")
+        else:
+            try:
+                with zipfile.ZipFile(project_path) as archive:
+                    names = archive.namelist()
+                    documents = [name for name in names if name.endswith(".qgs")]
+                    if (len(set(names)) != len(names) or len(documents) != 1
+                            or archive.getinfo(documents[0]).file_size > 64 * 1024 * 1024):
+                        raise ValueError("Invalid standalone QGZ archive")
+                    document = ET.fromstring(archive.read(documents[0]))
+                    observed = {}
+                    for layer in document.findall("projectlayers/maplayer"):
+                        provider, source = layer.findtext("provider"), layer.findtext("datasource") or ""
+                        if provider == "wms" and urllib.parse.unquote(source) == "type=xyz&url=" + OSM_URL + "&zmin=0&zmax=19":
+                            continue
+                        if provider != "ogr" or "|layername=" not in source:
+                            raise ValueError("Unbound standalone QGZ data source")
+                        database = source.split("|", 1)[0]
+                        attachment = database.removeprefix("attachment:")
+                        if not database.startswith("attachment:") or attachment not in names or not attachment.endswith(".gpkg"):
+                            raise ValueError("Missing standalone QGZ database attachment")
+                        if database not in observed:
+                            with archive.open(attachment) as stream:
+                                observed[database] = hashlib.file_digest(stream, "sha256").hexdigest()
+                    if len(observed) != 2 or set(observed.values()) != {cad_sha256, receipt.get("osm_database_sha256")}:
+                        raise ValueError("Standalone QGZ database hashes do not match receipt")
+            except (OSError, ValueError, zipfile.BadZipFile, ET.ParseError, KeyError, TypeError) as exc:
+                raise PublishError(f"Invalid standalone QGIS database receipt for scope {scope}") from exc
+        try:
+            actual_context = _matching_context(receipt.get("canonical_matching"), [cad_sha256])
+        except ValueError as exc:
+            raise PublishError(f"Invalid QGIS matching receipt for scope {scope}: {project_name}") from exc
+        if actual_context != expected_context:
+            raise PublishError(f"QGIS matching receipt belongs to a different source or revision for scope {scope}: {project_name}")
+        staged_receipts.append(receipt)
+    review_receipt = staged_receipts[0]
     return {
         "scope": scope,
         "directory": "." if scope == MAIN_SCOPE else group.as_posix(),
         "gpkg_sha256": entry["gpkg_sha256"],
+        "osm_source_sha256": snapshot_sha256,
         "svg_bindings": len(review_receipt.get("svg_bindings", ())),
         "osm_layers": review_receipt.get("osm_layers"),
         "geometry_and_attributes_unchanged": review_receipt.get("geometry_and_attributes_unchanged"),

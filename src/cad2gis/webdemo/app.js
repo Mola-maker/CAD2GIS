@@ -10,12 +10,15 @@ const reviewViewId = new URLSearchParams(location.search).get("view");
 const notifyReviewState = () => {
   if (!applicationReviewId) return;
   parent.postMessage({type:"cad2gis-review-state", reviewId:applicationReviewId, viewId:reviewViewId,
-    ready:reviewInitialized && !manualCorrection && !matchingBusy && !controlsMutationPending
+    state:document.body.dataset.reviewState || "loading", message:document.body.dataset.reviewMessage || "",
+    runDir:runSummary?.current_run_dir || runSummary?.run_dir || "",
+    ready:reviewInitialized && document.body.dataset.reviewState === "ready" && !manualCorrection && !matchingBusy && !controlsMutationPending
       && !resultReloadPending && !reviewPageExpired && activePreviewKind === "applied",
     manual:manualCorrection, revision:matchingRecord()?.match_sha256 || "initial"}, location.origin);
 };
-if (applicationReviewId) {
+if (applicationReviewId && !document.getElementById("cad2gis-review-theme")) {
   const atelier = document.createElement("link");
+  atelier.id = "cad2gis-review-theme";
   atelier.rel = "stylesheet";
   atelier.href = "/_app/assets/review-theme.css";
   document.head.append(atelier);
@@ -937,13 +940,20 @@ $("#copy-coordinate").addEventListener("click", async () => {
   }
 });
 const reloadCurrentResult = async () => {
-  const run = await fetchJSON("/api/run");
-  clearProjectState();
-  renderRun(run);
-  await loadLayers();
-  await loadControls();
-  resultReloadPending = false;
-  updateMatchingActions();
+  reportReviewState("loading");
+  try {
+    const run = await fetchJSON("/api/run");
+    clearProjectState();
+    renderRun(run);
+    await loadLayers();
+    await loadControls();
+    resultReloadPending = false;
+    updateMatchingActions();
+    reportReviewState("ready");
+  } catch (error) {
+    reportReviewState("error", error.message);
+    throw error;
+  }
 };
 
 $("#preview-gcp").addEventListener("click", async () => {
@@ -1389,7 +1399,15 @@ const connectSocket = () => {
   };
 };
 
+const reportReviewState = (state, message = "") => {
+  document.body.dataset.reviewState = state;
+  document.body.dataset.reviewMessage = message;
+  reviewInitialized = state === "ready";
+  notifyReviewState();
+};
+
 const boot = async () => {
+  reportReviewState("loading");
   $("#terminal-log").innerHTML = '<div class="terminal-empty">等待 CAD2GIS 服务…</div>';
   terminalEvent("info", "正在读取 run manifest 与图层目录");
   try {
@@ -1399,9 +1417,9 @@ const boot = async () => {
     await loadControls();
     setReviewStage(pageConfig.optionalGcp ? "source" : "registration");
     connectSocket();
-    reviewInitialized = true;
-    notifyReviewState();
+    reportReviewState("ready");
   } catch (error) {
+    reportReviewState("error", error.message || "地图工作区初始化失败");
     toast(error.message, true);
     $("#connection-dot").className = "status-dot offline";
     terminalEvent("error", `工作台初始化失败：${error.message}`);

@@ -107,7 +107,7 @@ def verify(bundle: Path, output: Path) -> dict:
                                 "automatic_semantic_commit": False,
                                 "state_dir": str(output / "application-state")},
                 "host": Path("/etc/os-release").read_text(), "verified_at": time.time(),
-                "desktop_browser_window": "headless WSL; browser auto-open not exercised",
+                "desktop_browser_window": "HTTP workflow verified; browser auto-open not exercised",
             }
             (output / "verification.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
             return result

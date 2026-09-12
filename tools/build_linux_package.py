@@ -92,6 +92,26 @@ def _ar(destination: Path, members: list[Path]) -> None:
                 stream.write(b"\n")
 
 
+def validate_payload(payload: Path, manifest: dict) -> None:
+    """Reject incomplete or changed bundles before producing installers."""
+    expected = manifest.get("files")
+    if not isinstance(expected, dict) or not expected:
+        raise ValueError("Bundle has no file checksum inventory")
+    for relative, digest in expected.items():
+        path = payload / relative
+        if (Path(relative).is_absolute() or ".." in Path(relative).parts
+                or not path.resolve().is_relative_to(payload.resolve())):
+            raise ValueError(f"Bundle inventory redirects outside the payload: {relative}")
+        if not path.is_file() or sha256(path) != digest:
+            raise ValueError(f"Bundle file is missing or changed: {relative}")
+    for path in payload.rglob("*"):
+        if path.is_symlink() and (not path.exists() or not path.resolve().is_relative_to(payload.resolve())):
+            raise ValueError(f"Bundle contains an invalid symlink: {path.relative_to(payload)}")
+        if path.is_file() and path != payload / "bundle-manifest.json":
+            if path.relative_to(payload).as_posix() not in expected:
+                raise ValueError(f"Bundle file is not in the inventory: {path.relative_to(payload)}")
+
+
 def build(payload: Path, output: Path, version: str) -> dict:
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise RuntimeError("Build and validate Linux x86_64 packages on Linux x86_64")
@@ -104,6 +124,7 @@ def build(payload: Path, output: Path, version: str) -> dict:
     manifest = json.loads((payload / "bundle-manifest.json").read_text())
     if manifest.get("platform") != "linux" or not manifest.get("runtime_is_bundled"):
         raise ValueError("Input must be a native Linux runtime bundle")
+    validate_payload(payload, manifest)
     for relative in ("bin/cad2gis", "bin/cad2gis-agent-mcp", "bin/cad2gis-desktop",
                      "runtime/bin/python3", "libredwg/bin/dwg2dxf"):
         if not (payload / relative).is_file():

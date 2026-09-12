@@ -1,7 +1,7 @@
 # CAD2GIS Agent
 
 CAD2GIS Agent is the thin, cross-agent registration layer for the canonical
-CAD2GIS Python package. It adds one skill and one MCP server; it does not copy
+CAD2GIS Python package. It adds conversion/iteration skills and one MCP server; it does not copy
 reader, mapping, topology, length, CRS, or GeoPackage logic.
 
 ## Install the runtime
@@ -115,9 +115,27 @@ coordinate accuracy separately. It finishes with `audit_run`, which verifies
 artifact hashes and compares the physical GeoPackage layer census with the run
 manifest.
 
-For GCP work, call `prepare_review_workspace` and open the returned URL. Web
-edits stay in a revision store. Exporting GCPs returns a copyable command that
+For a standard SVG/OSM six-file delivery, call `publish_matched_delivery` with
+a new delivery root and frozen OSM snapshots for all populated scopes, then
+`verify_qgis_review` to reopen and render both QGZ files in separate QGIS
+processes. Configure `CAD2GIS_QGIS_PYTHON` when QGIS is outside canonical runtime
+discovery. Matching gates remain mandatory. `package_qgis_delivery` is the
+ordinary portable QGZ/ZIP path and does not automatically apply SVG candidates.
+For an unmatched reference view, use `package_qgis_delivery`, then
+`build_source_svg_delivery` with source-bound SVG assets, then
+`build_qgis_review`, and finally `verify_qgis_review`, with new output paths.
+`audit_visual_conversion` creates independent source and delivery overlays.
+
+For GCP work, call `start_review_server` and open its URL only after it returns
+`status=ready`. The tool verifies ownership, run/source/manifest/partition
+identity and live GIS layers; it does not open the browser. Use
+`get_review_server_status` to recheck and `stop_review_server` to shut down
+gracefully. Services belong to the current MCP process and stop when its owner
+exits; in-flight confirmed review actions finish during graceful shutdown.
+`prepare_review_workspace` only creates the edit store and a launch command.
+Web edits stay in a revision store. Exporting GCPs returns a copyable command that
 creates a new calibrated run; it does not mutate the existing GeoPackage.
+The reviewed profile can be passed as `gcp_profile` to `run_conversion`.
 If the source DWG is unavailable on the current machine, the GCP profile is
 still preserved but the UI deliberately withholds an invalid rerun command.
 Append `?demo=1` to the review URL for a clearly labeled, synthetic browser-only

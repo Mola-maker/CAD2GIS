@@ -16,6 +16,7 @@
 </head>
 <body>
   <a class="skip-link" href="#console-app">跳到地图工作台</a>
+  <!-- public-demo-only:start -->
   <section id="hero-page" class="hero-page" aria-labelledby="hero-title">
     <div class="hero-grid-layer" aria-hidden="true"></div>
     <header class="hero-nav">
@@ -359,13 +360,14 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
     </section>
   </section>
 
+  <!-- public-demo-only:end -->
   <div id="console-app" tabindex="-1">
   <header class="topbar">
     <div class="brand-lockup">
       <span class="brand-mark" aria-hidden="true">C2G</span>
       <div>
         <span class="eyebrow">CAD2GIS / SPATIAL DELIVERY CONSOLE</span>
-        <h1>核对源图，校正地图位置</h1><p id="review-current-source" class="review-current-source">正在读取当前图纸…</p>
+        <h1>核对源图与地图位置</h1><p id="review-current-source" class="review-current-source">正在读取当前图纸…</p>
       </div>
     </div>
     <div class="run-state" aria-label="服务状态">
@@ -375,24 +377,24 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
     </div>
   </header>
 
-  <details id="review-guide" class="review-guide"><summary>第一次配准？查看操作提示</summary><div class="review-guide-content"><img src="./assets/onboarding-map-v1.png" width="1536" height="1024" alt="" aria-hidden="true" loading="lazy"><div><strong>选同一个真实位置，分别落在两张图上。</strong><ol><li>先核对左侧源几何，放大并选择设施或清晰拐点。</li><li>在右图选相同位置，或输入测量得到的经纬度。</li><li>用下方方向按钮微调目标点；检查残差后再生成新结果。</li></ol><p>训练点用于拟合。独立检查点只用于验证，不能与训练点重复。OSM 是地图参考，测量精度需要独立证据。</p><button id="start-guided-correction" class="primary">开始选择控制点</button></div></div></details>
+  <details id="review-guide" class="review-guide"><summary>需要调整位置时，查看控制点操作提示</summary><div class="review-guide-content"><img src="./assets/onboarding-map-v1.png" width="1536" height="1024" alt="" aria-hidden="true" loading="lazy"><div><strong>选同一个真实位置，分别落在两张图上。</strong><ol><li>先核对左侧源几何，放大并选择设施或清晰拐点。</li><li>在右图选相同位置，或输入测量得到的经纬度。</li><li>用下方方向按钮微调目标点；检查残差后再生成新结果。</li></ol><p>训练点用于拟合。独立检查点只用于验证，不能与训练点重复。OSM 是地图参考，测量精度需要独立证据。</p><button id="start-guided-correction" class="primary">开始选择控制点</button></div></div></details>
   <main class="workspace">
     <aside class="panel navigation-panel">
       <section class="project-card">
         <div class="project-picker-heading"><span class="section-kicker">当前图纸</span><span id="demo-project-loading" class="project-loading" hidden>LOADING</span></div>
         <label class="project-picker-label" for="demo-project-select">选择图纸与地图预览</label>
         <select id="demo-project-select" class="project-picker" aria-label="选择真实转换案例">
-          <option value="hutabohu">Hutabohu / Gorontalo</option>
+          <option value="">正在读取当前图纸…</option>
         </select>
-        <span id="demo-project-location" class="project-location">Gorontalo, Indonesia</span>
-        <p id="demo-project-description" class="project-description">完整 FTTH 派生运行，包含 8 个交付图层与独立 DIMENSION 长度证据。</p>
+        <span id="demo-project-location" class="project-location">等待读取坐标与地图参考</span>
+        <p id="demo-project-description" class="project-description">正在读取所选结果的源事实、图层与审计证据。</p>
         <div class="project-proof-grid" aria-label="项目派生数据摘要">
-          <span><small>SOURCE</small><strong id="demo-project-source-count">9,717</strong></span>
-          <span><small>DELIVERY</small><strong id="demo-project-delivery-count">1,150</strong></span>
+          <span><small>SOURCE</small><strong id="demo-project-source-count">—</strong></span>
+          <span><small>DELIVERY</small><strong id="demo-project-delivery-count">—</strong></span>
         </div>
         <dl class="project-proof-list">
-          <div><dt>地图参考</dt><dd id="demo-project-map-reference">DWG declared EPSG:3857</dd></div>
-          <div><dt>源哈希</dt><dd><code id="demo-project-sha">557e01413c39…</code></dd></div>
+          <div><dt>地图参考</dt><dd id="demo-project-map-reference">等待当前结果</dd></div>
+          <div><dt>源哈希</dt><dd><code id="demo-project-sha">—</code></dd></div>
         </dl>
         <span class="section-kicker project-current-kicker">当前工作流</span>
         <strong id="project-name">未加载运行</strong>
@@ -558,8 +560,10 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
   </dialog>
 
   <script src="./assets/vendor/ol.js"></script>
+  <!-- public-demo-only:start -->
   <script src="./assets/demo-fixture.js?v=runtime-fix-20260901"></script>
   <script type="module" src="./assets/hero-motion.js?v=font-system-20260829"></script>
+  <!-- public-demo-only:end -->
   <script type="module" src="./assets/app.js?v=precision-workspace-20260909"></script>
 </body>
 </html>

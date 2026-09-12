@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager, contextmanager
-from datetime import timedelta
+from datetime import datetime, timedelta
 import hashlib
 from functools import wraps
 import json
@@ -43,11 +43,15 @@ class AgentStore:
               CREATE TABLE IF NOT EXISTS runs (
                 id TEXT PRIMARY KEY, conversation TEXT NOT NULL, status TEXT NOT NULL,
                 created REAL NOT NULL, updated REAL NOT NULL, progress TEXT NOT NULL DEFAULT '',
-                events TEXT NOT NULL DEFAULT '[]', error TEXT NOT NULL DEFAULT '', usage TEXT NOT NULL DEFAULT '{}');
+                events TEXT NOT NULL DEFAULT '[]', error TEXT NOT NULL DEFAULT '', usage TEXT NOT NULL DEFAULT '{}',
+                artifacts TEXT NOT NULL DEFAULT '[]');
             """)
             for table, column in (("runs", "result"), ("conversations", "selected_context")):
                 if column not in {row["name"] for row in db.execute(f"PRAGMA table_info({table})")}:
                     db.execute(f"ALTER TABLE {table} ADD COLUMN {column} TEXT NOT NULL DEFAULT '{{}}'")
+            if "artifacts" not in {row["name"] for row in db.execute("PRAGMA table_info(runs)")}:
+                db.execute("ALTER TABLE runs ADD COLUMN artifacts TEXT NOT NULL DEFAULT '[]'")
+            db.execute("CREATE INDEX IF NOT EXISTS runs_conversation_created ON runs(conversation,created DESC)")
         self.path.chmod(0o600)
 
     @contextmanager
@@ -91,7 +95,18 @@ class AgentStore:
         return {"id": identifier, "title": conversation["title"], "plan": json.loads(conversation["plan"]),
                 "context": json.loads(conversation["selected_context"]), "result": json.loads(result[0]) if result else {},
                 "messages": [dict(row) for row in reversed(rows[:limit])], "has_more": len(rows) > limit,
-                "before": rows[limit - 1]["id"] if len(rows) >= limit else 0}
+                "before": rows[limit - 1]["id"] if len(rows) >= limit else 0,
+                "artifacts": self.latest_artifacts(identifier)}
+
+    def latest_artifacts(self, identifier: str) -> list[dict[str, Any]]:
+        """Keep the latest real outcome across subsequent chat-only turns and restarts."""
+        self.conversation(identifier)
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT artifacts FROM runs WHERE conversation=? AND artifacts!='[]' "
+                "ORDER BY created DESC,rowid DESC LIMIT 1", (identifier,),
+            ).fetchone()
+        return json.loads(row["artifacts"]) if row else []
 
     def message(self, conversation: str, role: str, text: str):
         with self.connect() as db:
@@ -100,7 +115,7 @@ class AgentStore:
             db.execute("UPDATE conversations SET updated=? WHERE id=?", (time.time(), conversation))
 
     def update_run(self, identifier: str, **fields):
-        allowed = {"status", "progress", "events", "error", "usage", "result"}
+        allowed = {"status", "progress", "events", "error", "usage", "result", "artifacts"}
         if not fields.keys() <= allowed:
             raise ValueError("Invalid run fields")
         with self.connect() as db:
@@ -116,6 +131,7 @@ class AgentStore:
         result["events"] = json.loads(result["events"])
         result["usage"] = json.loads(result["usage"])
         result["result"] = json.loads(result["result"])
+        result["artifacts"] = json.loads(result["artifacts"])
         return result
 
 
@@ -169,6 +185,121 @@ class DesktopAgent:
         self.task: asyncio.Task | None = None
         self.tools: list[dict[str, str]] = []
         self.model_override = None  # Dependency injection for deterministic protocol tests only.
+
+    def _artifact_from_tool(self, name: str, result: Any) -> dict[str, Any] | None:
+        """Admit only known successful MCP results backed by existing project files."""
+        if name not in {"run_conversion", "inspect_run", "auto_onboard_and_convert", "package_qgis_delivery"} or not isinstance(result, dict):
+            return None
+
+        def admitted(value, *, directory=False):
+            path = self.config.path(value, kind="directory" if directory else "")
+            if path == self.settings.directory or self.settings.directory in path.parents:
+                raise ValueError("Artifact is inside the credential directory")
+            if not directory and not path.is_file():
+                raise ValueError("Artifact file is missing")
+            return path
+
+        try:
+            if name in {"run_conversion", "auto_onboard_and_convert"}:
+                manifest_path = admitted(result.get("run_manifest"))
+                if manifest_path.name != "run_manifest.json":
+                    return None
+                run = admitted(str(manifest_path.parent), directory=True)
+            else:
+                run = admitted(result.get("run_dir"), directory=True)
+                manifest_path = admitted(str(run / "run_manifest.json"))
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            artifact = {"kind": "run", "run_dir": str(run)}
+            if manifest.get("run_status") in {"VERIFIED", "CONDITIONAL", "UNSAFE", "FAILED"}:
+                artifact["run_status"] = manifest["run_status"]
+            if name == "package_qgis_delivery":
+                if result.get("status") != "completed" or result.get("verification", {}).get("status") != "PASS":
+                    return None
+                output = admitted(result.get("output_dir"), directory=True)
+                admitted(str(output / "delivery-manifest.json"))
+                archive = admitted(result.get("archive", {}).get("path"))
+                if archive != output.with_suffix(".zip") or output.is_relative_to(run):
+                    return None
+                projects = result.get("projects")
+                if not isinstance(projects, list) or not projects:
+                    return None
+                for project in projects:
+                    path = admitted(project.get("path"))
+                    if path.suffix.lower() != ".qgz" or not path.is_relative_to(output):
+                        return None
+                artifact.update(kind="qgis_package", output_dir=str(output))
+            return artifact
+        except (ValueError, OSError, AttributeError, TypeError):
+            # Capturing a card must not turn a completed mutation into a retry.
+            return None
+
+    def _artifacts_from_tool(self, name: str, result: Any) -> list[dict[str, Any]]:
+        """Keep each standard scope separate and verify its real downloadable files."""
+        if name not in {"publish_matched_delivery", "build_qgis_review"}:
+            artifact = self._artifact_from_tool(name, result)
+            return [artifact] if artifact is not None else []
+        if not isinstance(result, dict) or result.get("status") != "completed":
+            return []
+        try:
+            if name == "build_qgis_review":
+                project = self.config.path(result.get("project_path"))
+                scope = self.jobs.standard_delivery_scope(str(project.parent))
+                return [{"kind": "qgis_scope", "output_dir": scope["run_dir"],
+                         "scope": project.parent.name, "delivery_kind": scope["delivery_kind"],
+                         "run_status": scope["run_status"]}]
+            if result.get("schema_version") != "cad2gis.published-match-delivery.v1":
+                return []
+            run = self.config.path(result.get("run_dir"), kind="directory")
+            manifest_path = self.config.path(str(run / "run_manifest.json"))
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            source_sha = manifest.get("source", {}).get("sha256")
+            if not source_sha or result.get("source_sha256") != source_sha:
+                return []
+            manifest_sha = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            output = self.config.path(result.get("path"), kind="directory")
+            if output.is_relative_to(run):
+                return []
+            scopes = result.get("scopes")
+            if not isinstance(scopes, list) or not scopes:
+                return []
+            artifacts, seen = [], set()
+            for entry in scopes:
+                relative = entry["directory"]
+                if (not isinstance(relative, str) or not relative or "\\" in relative or ":" in relative
+                        or (relative != "." and any(part in {"", ".", ".."} for part in relative.split("/")))):
+                    return []
+                directory = self.config.path(str(output / relative), kind="directory")
+                if not directory.is_relative_to(output) or directory in seen:
+                    return []
+                seen.add(directory)
+                scope = self.jobs.standard_delivery_scope(str(directory))
+                identifier = entry["scope"]
+                if identifier == "main":
+                    review_run = run
+                    source_delivery = manifest.get("artifacts", {}).get("delivery", {})
+                    source_matching = manifest.get("osm_matching", {})
+                else:
+                    if identifier not in manifest.get("delivery_partitions", {}):
+                        return []
+                    review_run = self.config.path(str(run / identifier), kind="directory")
+                    if not review_run.is_relative_to(run):
+                        return []
+                    self.config.path(str(review_run / "partition_manifest.json"))
+                    source_delivery = manifest["delivery_partitions"][identifier]
+                    source_matching = source_delivery.get("osm_matching", {})
+                if (scope["source_sha256"] != source_sha or scope["run_manifest_sha256"] != manifest_sha
+                        or scope["delivery_sha256"] != entry.get("gpkg_sha256")
+                        or scope["delivery_sha256"] != source_delivery.get("sha256")
+                        or scope["delivery_kind"] != "standard_matched"
+                        or scope["matching"]["match_sha256"] != source_matching.get("match_sha256")
+                        or scope["matching"]["match_sha256"] != entry.get("matching", {}).get("match_sha256")):
+                    return []
+                artifacts.append({"kind": "qgis_scope", "run_dir": str(review_run), "output_dir": str(directory),
+                                  "scope": identifier, "delivery_kind": scope["delivery_kind"],
+                                  "run_status": manifest.get("run_status", "UNKNOWN")})
+            return artifacts
+        except (ValueError, OSError, AttributeError, TypeError, KeyError):
+            return []  # An incomplete or changed package is not a successful card.
 
     async def close(self):
         if self.task and not self.task.done():
@@ -231,6 +362,7 @@ class DesktopAgent:
         from pydantic_ai.usage import RunUsage, UsageLimits
 
         events: list[dict[str, Any]] = []
+        artifacts: list[dict[str, Any]] = []
         usage = RunUsage()
         tool_budget = ToolAttemptBudget()
         text_buffer = ""
@@ -241,6 +373,18 @@ class DesktopAgent:
             return str(text).replace(secret, "[已隐藏密钥]") if secret else str(text)
 
         def event(kind, name, detail=""):
+            if kind == "tool_result" and name in {"run_conversion", "inspect_run", "auto_onboard_and_convert", "package_qgis_delivery",
+                                                  "publish_matched_delivery", "build_qgis_review"}:
+                try:
+                    captured = self._artifacts_from_tool(name, json.loads(detail))
+                except (ValueError, TypeError):
+                    captured = []
+                for artifact in captured:
+                    artifacts[:] = [item for item in artifacts if
+                                    (item["kind"], item.get("output_dir") or item.get("run_dir")) !=
+                                    (artifact["kind"], artifact.get("output_dir") or artifact.get("run_dir"))]
+                    artifacts.append(artifact)
+                    self.store.update_run(identifier, artifacts=json.dumps(artifacts, ensure_ascii=False))
             events.append({"kind": kind, "name": name, "detail": clean(detail)[:1200], "time": time.time()})
             self.store.update_run(identifier, events=json.dumps(events[-200:], ensure_ascii=False))
 
@@ -323,7 +467,23 @@ class DesktopAgent:
 
         def workspace_context() -> dict[str, Any]:
             """Return selected files, allowed roots, provider ID and standard conversion settings."""
+            now = datetime.now().astimezone()
+            parent = (Path(context["run"]).parent if context.get("run") else
+                      Path(context["source"]).parent if context.get("source") else
+                      Path(context["project"]) if context.get("project") else self.config.roots[0])
+            stamp = now.strftime("%Y%m%d-%H%M%S") + "-" + identifier[:8]
+            def new_directory(prefix, *, archive=False):
+                candidate = parent / (prefix + stamp)
+                while candidate.exists() or (archive and candidate.with_suffix(".zip").exists()):
+                    candidate = parent / (prefix + stamp + "-" + secrets.token_hex(3))
+                return admitted(str(candidate), False)
+            suggested_run = new_directory("run-")
+            suggested_package = new_directory("qgis-delivery-", archive=True)
             return {"roots": list(map(str, self.config.roots)), **context, **workspace.snapshot(), "provider": profile["provider"],
+                    "current_datetime": now.isoformat(timespec="seconds"), "current_date": now.date().isoformat(),
+                    "timezone": now.tzname(), "suggested_run_dir": str(suggested_run),
+                    "suggested_qgis_output_dir": str(suggested_package),
+                    "artifacts": self.store.latest_artifacts(conversation),
                     "matching": "osm", "svg_mode": "candidate", "gcp": "preview_then_explicit_rematch"}
 
         async def stream(_ctx, stream_events):
@@ -358,7 +518,21 @@ class DesktopAgent:
             "用户要求逐项人工审阅建项时，使用 prepare_ai_onboarding 获取要求，使用 write_project_json 创建证据文件，"
             "然后通过 apply_ai_onboarding 等既有工具验证。用户尚未给出必要证据时清楚说明。"
             "默认 OSM 相对匹配和 SVG candidate，保存来源；GCP 先预览，仅在用户要求二次匹配时应用。"
-            "每次转换使用新的 run_dir，不覆盖旧结果；如果结果目录已存在，换一个带时间的目录。"
+            "每次转换使用新的 run_dir，不覆盖旧结果；使用 workspace_context 的真实当前日期与 suggested_run_dir，不编造日期。"
+            "用户明确要求普通 QGZ/QGIS ZIP 包时，直接 inspect_run 检查已有可用 run，再调用 package_qgis_delivery；"
+            "优先复用当前run或 workspace_context.artifacts 中的已有转换结果，不重新转换，不反复询问打包方式。"
+            "使用 suggested_qgis_output_dir 创建新包；输出存在则选择另一个新目录。"
+            "prepare_review_workspace 只创建地图审查工作区，run_conversion 只转换，均不代表已生成QGZ。"
+            "QGZ需要配套GeoPackage和样式，必须交付 package_qgis_delivery 返回的完整ZIP，不能只给孤立QGZ文件。"
+            "SVG candidate只表示生成候选图例，未自动应用到QGIS样式；如有未解析符号必须如实说明。"
+            "用户要求基线标准交付或源图SVG与OSM完整交付时，先 inspect_run 核实各个 populated scope 的 matching，"
+            "仅在全部为 matched 且每个 scope 有冻结OSM快照时调用 publish_matched_delivery；每个scope独立提供标准六文件。"
+            "未匹配范围保留真实状态，使用 build_source_svg_delivery 和 build_qgis_review 创建明确标识的未校正参考视图；"
+            "只有SVG候选或SVG构建完成不能称为已匹配标准交付。每个QGZ用 verify_qgis_review 独立重开渲染，"
+            "源图到交付的要素、字段和图形核验使用 audit_visual_conversion。"
+            "prepare_review_workspace不等于已打开核验台；桌面使用真实转换结果的打开地图入口，"
+            "独立MCP使用 start_review_server 并用 get_review_server_status 核验实际run绑定，按工具返回的生命周期使用，"
+            "结束时调用 stop_review_server；不编造URL或声称浏览器已经打开。以当前实际注册工具列表为准。"
             "auto_onboard_and_convert 使用 workspace_context 的 provider。"
             "大数据采用查询和分页，不全量塞入上下文。工具失败不可冒充成功。"
             "工具失败后先检查错误码与恢复提示，再修正参数或更换方法；不要原样循环。"
