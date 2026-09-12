@@ -34,9 +34,9 @@ Android 安装版连接 HTTPS 服务器上的工作台；转换由服务器或�
 
 ## 从代码构建
 
-在具备 C 编译器、make、Git 和 binutils 的隔离 Ubuntu 24.04 x86_64 构建环境中运行；补丁编译器需要可写的 `/build`，最终运行时写到仓库 `tmp` 下。准备步骤使用官方校验值固定的 Python 独立发行包和 LibreDWG 0.14 源码。Python 的可选 `share/terminfo` 终端仿真数据库因 WSL 大小写别名冲突而排除；CAD2GIS 无需该数据库。
+在具备 C 编译器、make、Git 和 binutils 的隔离 Ubuntu 24.04 x86_64 构建环境中运行；补丁编译器默认使用 `/tmp`，可用 `--work-root` 指定持久化构建目录，最终运行时写到仓库 `tmp` 下。准备步骤使用官方校验值固定的 Python 独立发行包和 LibreDWG 0.14 源码。Python 的可选 `share/terminfo` 终端仿真数据库因 WSL 大小写别名冲突而排除；CAD2GIS 无需该数据库。
 
-`prepare_runtime.py` 留下的 `tmp/packaging-linux/libredwg-runtime` 是未打本次 MTEXT 补丁的上游构建，不能用于 0.7.0 最终交付。必须继续运行补丁编译和真实图纸重复性验收，并把下列 `--libredwg` 指向补丁目录。先准备最终 wheel；本次冻结文件的 SHA256 为 `e5d99d655a3e1824857d7dc583c0a8dd667e0d0b76abb9e6837c8db4c79128fb`。
+`prepare_runtime.py` 留下的 `tmp/packaging-linux/libredwg-runtime` 是未打本次 MTEXT 补丁的上游构建，不能用于 0.7.0 最终交付。必须继续运行补丁编译和真实图纸重复性验收，并把下列 `--libredwg` 指向补丁目录。先准备最终 wheel；已发布文件的 SHA256 以对应 Release 的 `SHA256SUMS` 为准。
 
 将 `CAD2GIS_NATIVE_INPUTS` 设为经审阅的原生验收 JSON 清单路径，结构为 `{"cases": [...]}`；每个用例包含 `name`、`file`、`sha256`、`expected_mtext_count` 和 `expected_json_mtext_sha256`，其中 `file` 相对于清单所在目录解析。后两项应来自独立审阅的 JSON 原文基准，不能从待验收输出反向生成。真实 DWG 和该本地清单不随公开源码分发。没有这些输入时只能完成构建，不能声称完成真实文本验收。
 
