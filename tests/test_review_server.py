@@ -363,9 +363,12 @@ def _add_svg_fixture(run_dir, manifest, *, label="SVG fixture"):
     report = {"source_sha256": manifest["source"]["sha256"],
         "all_points_accounted_for": 2, "dispositions": {"SOURCE_INSTANCE_ONLY": 2}}
     (root / "correspondence.json").write_text(json.dumps(report), encoding="utf-8")
-    (root / "correspondence.html").write_text(f'<h1>{label}</h1><img src="symbols/instance-a.svg">', encoding="utf-8")
+    (root / "correspondence.html").write_text(f'<h1>{label}</h1><a href="symbols/instance-a.svg"><img src="symbols/instance-a.png"></a>', encoding="utf-8")
     (root / "symbols.sqlite3").write_bytes(b"bound-store-fixture")
     (root / "symbols" / "instance-a.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
+    import base64
+    (root / "symbols" / "instance-a.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF9sAAAAASUVORK5CYII="))
     manifest["svg_candidates"] = {"mode": "candidate", "status": "completed",
         "auto_applied": False, "font_dirs": [], "output_dir": str(root),
         "report": str(root / "correspondence.json"), "html": str(root / "correspondence.html"),
@@ -400,8 +403,13 @@ def test_review_serves_only_bound_svg_files_from_current_run(tmp_path):
     assert response.status_code == 200 and "SVG fixture" in response.text
     assert response.headers["cache-control"] == "no-store"
     assert "sandbox" in response.headers["content-security-policy"]
-    for relative in ("correspondence.json", "symbols.sqlite3", "symbols/instance-a.svg"):
+    for relative in ("correspondence.json", "symbols.sqlite3", "symbols/instance-a.svg", "symbols/instance-a.png"):
         assert client.get(f"{prefix}/{relative}").status_code == 200
+    image = client.get(f"{prefix}/symbols/instance-a.png")
+    assert image.headers["content-type"] == "image/png"
+    assert image.content == (root / "symbols/instance-a.png").read_bytes()
+    (root / "symbols/instance-a.png").write_bytes(b"changed")
+    assert client.get(f"{prefix}/symbols/instance-a.png").status_code == 404
     (root / "private.json").write_text('{"private": true}')
     assert client.get(f"{prefix}/private.json").status_code == 404
     assert client.get(url.replace(prefix, "/api/svg-candidates/" + "0" * 64)).status_code == 409
@@ -691,28 +699,14 @@ def test_review_app_keeps_run_artifacts_immutable(tmp_path, monkeypatch) -> None
     assert run_summary["source_entity_count"] == 1538
     assert run_summary["delivery_counts"] == {"SITE": 1, "CABLE": 33}
     page = client.get("/").text
-    assert "核对源图，校正地图位置" in page
-    assert "把不可信的" in page
-    assert "DWG" in page
-    assert 'id="hero-page"' in page
-    assert 'data-count="9717"' in page
-    assert "assets/hero-evidence-graph.svg" in page
-    assert 'id="process-terminal"' in page
-    assert 'data-process-terminal' in page
-    assert "run-label-provenance-fix-003" in page
-    assert "proper interior crossings 1 · promoted connections 0" in page
-    assert page.count('data-terminal-line data-stage=') == 14
-    assert "DERIVED REPLAY · NOT LIVE EXECUTION" in page
-    assert "9,717 immutable source entities" in page
-    assert "281 entities unresolved" in page
-    assert "170 / 179 spans" in page
-    assert "max |error| &lt; 0.001 m" in page
-    assert "1,150 delivery features" in page
-    assert 'id="plugin-guide"' in page
-    assert 'data-plugin-guide' in page
-    assert page.count('data-plugin-step=') == 5
-    assert "codex plugin marketplace add Mola-maker/CAD2GIS --ref main" in page
-    assert "cad2gis plugin marketplace" not in page
+    assert "核对当前地图匹配" in page
+    assert 'id="hero-page"' not in page
+    assert 'hero-motion.js' not in page
+    assert 'demo-fixture.js' not in page
+    assert 'data-process-terminal' not in page
+    assert '"optionalGcp":true' in page
+    assert 'id="stage-registration" class="stage-card registration-card" hidden' in page
+    assert './assets/review.css' in page
     response = client.post("/api/review/features", json={
         "feature": _feature(),
         "expected_revision": 0,
@@ -834,7 +828,7 @@ def test_review_console_exposes_toc_copy_and_accessibility_contracts(
     assert 'data-tab="console"' in page.text
     assert 'id="copy-command"' in page.text
     assert 'id="copy-coordinate"' in page.text
-    assert './assets/demo-fixture.js' in page.text
+    assert './assets/demo-fixture.js' not in page.text
 
     script = client.get("/assets/app.js")
     assert script.status_code == 200

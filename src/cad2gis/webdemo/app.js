@@ -4,6 +4,16 @@ const pageConfig = JSON.parse(document.getElementById("cad2gis-page-config")?.te
 // the selection that opened it even when another browser tab opens another run.
 // Standalone review and the public demo have no application page identity.
 const applicationReviewId = new URLSearchParams(location.search).get("review");
+let manualCorrection = !pageConfig.optionalGcp;
+let reviewInitialized = false;
+const reviewViewId = new URLSearchParams(location.search).get("view");
+const notifyReviewState = () => {
+  if (!applicationReviewId) return;
+  parent.postMessage({type:"cad2gis-review-state", reviewId:applicationReviewId, viewId:reviewViewId,
+    ready:reviewInitialized && !manualCorrection && !matchingBusy && !controlsMutationPending
+      && !resultReloadPending && !reviewPageExpired && activePreviewKind === "applied",
+    manual:manualCorrection, revision:matchingRecord()?.match_sha256 || "initial"}, location.origin);
+};
 if (applicationReviewId) {
   const atelier = document.createElement("link");
   atelier.rel = "stylesheet";
@@ -166,6 +176,7 @@ const updateMatchingActions = () => {
   updatePrecisionState();
   updatePickGuide();
   $("#matching-version").textContent = matching?.revision != null ? `第 ${matching.revision} 版` : "—";
+  notifyReviewState();
 };
 
 const palette = {
@@ -271,7 +282,7 @@ const refreshPreview = async ({ fitView = false } = {}) => {
   const fittedCollections = new Map();
   const fit = registrationPreview?.preview_fit || registrationPreview?.fit;
   let previewError = "";
-  if (controls.length && !window.CAD2GIS_DEMO?.active) {
+  if (manualCorrection && controls.length && !window.CAD2GIS_DEMO?.active) {
     if (!fit) {
       previewError = registrationPreview?.preview_error || "请补充有效训练点以预览人工校正";
     } else {
@@ -356,6 +367,7 @@ const refreshPreview = async ({ fitView = false } = {}) => {
     previewLayers.set(name, layer);
   }
   activePreviewKind = fittedCollections.size ? "correction" : "applied";
+  notifyReviewState();
   previewIsCurrent = !previewError;
   const matching = matchingRecord();
   $("#fit-model").textContent = fittedCollections.size
@@ -590,12 +602,14 @@ const savePair = async (cad, lonLat) => {
 
 const controlAtPixel = (map, pixel) => map.forEachFeatureAtPixel(pixel, (feature) => feature.get("gcp_id") || undefined, { hitTolerance: 7 });
 localMap.on("singleclick", ({ coordinate, pixel }) => {
+  if (!manualCorrection) return;
   if (reviewPageExpired || matchingBusy || controlsMutationPending || resultReloadPending) return;
   const controlId = controlAtPixel(localMap, pixel);
   if (controlId) return selectControl(controlId);
   selectCadPoint(coordinate);
 });
 worldMap.on("singleclick", async ({ coordinate, pixel }) => {
+  if (!manualCorrection) return;
   if (reviewPageExpired || matchingBusy || controlsMutationPending || resultReloadPending) return;
   const controlId = controlAtPixel(worldMap, pixel);
   if (controlId) return selectControl(controlId);
@@ -798,7 +812,7 @@ const renderRun = (run) => {
   $("#run-status").textContent = run.run_status || "UNKNOWN";
   const sourcePath = run.source?.path || "";
   const sourceName = sourcePath.split(/[\\/]/).pop() || "未命名 CAD 项目";
-  if (!window.CAD2GIS_DEMO?.active) {
+  if (!window.CAD2GIS_DEMO?.active && $("#demo-project-select")) {
     const selector = $("#demo-project-select");
     selector.textContent = "";
     const option = document.createElement("option");
@@ -823,7 +837,8 @@ const renderRun = (run) => {
   $("#review-current-source").title = sourceName;
   if (!window.CAD2GIS_DEMO?.active) {
     document.body.classList.add("live-review");
-    $("#hero-page").hidden = true;
+    const landing = $("#hero-page");
+    if (landing) landing.hidden = true;
   }
   $("#project-source").textContent = sourcePath || "未提供源路径";
   $("#map-reference-note").textContent = matching
@@ -1086,12 +1101,13 @@ function updatePrecisionState() {
 function updatePickGuide() {
   $("#pick-guide").classList.toggle("has-pending", Boolean(pendingCad));
   $("#pick-guide-text").textContent = reviewPageExpired ? "请返回工作空间重新打开当前结果。"
+    : !manualCorrection ? "先核对当前 OSM 匹配。位置符合要求即可继续；需要调整时再打开人工 GCP。"
     : controlsMutationPending ? "正在保存，请稍候。源点和目标点会保持成对。"
     : pendingCad ? "CAD 源点已吸附。现在点击右图的同一位置，或填写经纬度后保存。"
     : controls.length ? `已保存 ${controls.length} 个控制点。可点选已有点微调，也可继续在 CAD 中选新点。`
     : "在左侧 CAD 中放大并选择一个真实设施或清晰拐点。";
   $("#send-coordinate").disabled = !pendingCad || matchingBusy || controlsMutationPending || resultReloadPending || reviewPageExpired;
-  $("#pick-guide-action").textContent = pendingCad ? "填写目标坐标" : selectedGcpId ? "微调选中点" : "选点操作提示";
+  $("#pick-guide-action").textContent = !manualCorrection ? "人工 GCP（可选）" : pendingCad ? "填写目标坐标" : selectedGcpId ? "微调选中点" : "选点操作提示";
 }
 
 function updateSelectedControl() {
@@ -1171,6 +1187,17 @@ function toggleInspector(open, tab = null) {
 }
 
 function setReviewStage(stage) {
+  if (pageConfig.optionalGcp) {
+    const previous = manualCorrection;
+    manualCorrection = ["registration", "validation", "delivery"].includes(stage);
+    $("#stage-registration").hidden = !manualCorrection;
+    document.body.classList.toggle("manual-correction", manualCorrection);
+    $("#toggle-manual-gcp").textContent = manualCorrection ? "收起人工 GCP" : "人工 GCP（可选）";
+    $("#toggle-manual-gcp").setAttribute("aria-expanded", String(manualCorrection));
+    updatePickGuide();
+    if (previous !== manualCorrection) refreshPreview().catch((error) => toast(error.message, true));
+    notifyReviewState();
+  }
   document.body.classList.toggle("gcp-focused", ["registration", "validation", "delivery"].includes(stage));
   document.querySelectorAll(".workflow-step").forEach((button) => {
     const active = button.dataset.stage === stage;
@@ -1183,6 +1210,8 @@ function setReviewStage(stage) {
   if (stage === "delivery") $("#export-gcp").scrollIntoView({ block: "center" });
   requestAnimationFrame(() => { localMap.updateSize(); worldMap.updateSize(); });
 }
+
+$("#toggle-manual-gcp")?.addEventListener("click", () => setReviewStage(manualCorrection ? "source" : "registration"));
 
 function setOnlineBasemap(enabled) {
   if (enabled && !osmBaseLayer.getSource()) osmBaseLayer.setSource(new ol.source.OSM({
@@ -1368,12 +1397,15 @@ const boot = async () => {
     renderRun(run);
     await loadLayers();
     await loadControls();
-    setReviewStage("registration");
+    setReviewStage(pageConfig.optionalGcp ? "source" : "registration");
     connectSocket();
+    reviewInitialized = true;
+    notifyReviewState();
   } catch (error) {
     toast(error.message, true);
     $("#connection-dot").className = "status-dot offline";
     terminalEvent("error", `工作台初始化失败：${error.message}`);
+    if (applicationReviewId) parent.postMessage({type:"cad2gis-review-error", reviewId:applicationReviewId, viewId:reviewViewId, message:error.message}, location.origin);
   }
 };
 

@@ -1125,7 +1125,7 @@ def _svg_candidate_path(
     relative = Path(relative_path)
     if (relative.is_absolute() or relative.drive or ".." in relative.parts
             or "\\" in relative_path or relative.as_posix() != relative_path
-            or relative.suffix.casefold() not in {".html", ".json", ".svg", ".sqlite3"}):
+            or relative.suffix.casefold() not in {".html", ".json", ".svg", ".png", ".sqlite3"}):
         raise ReviewServerError("Invalid SVG candidate artifact path")
     root = run_dir.resolve() / "svg-candidates"
     path = (root / relative).resolve()
@@ -1857,7 +1857,7 @@ def create_review_app(
     hub = _WebSocketHub()
     svg_manifest_sha256 = _sha256_file(manifest_path)
     web_root = Path(__file__).resolve().parent / "webdemo"
-    if not (web_root / "index.html").is_file():
+    if not (web_root / "review.html").is_file():
         raise ReviewServerError(f"Review web assets are missing: {web_root}")
 
     app = FastAPI(title="CAD2GIS Review", version="1")
@@ -1871,7 +1871,7 @@ def create_review_app(
 
     @app.get("/")
     async def index():
-        return FileResponse(web_root / "index.html")
+        return FileResponse(web_root / "review.html", headers={"Cache-Control": "no-store"})
 
     @app.get("/assets/{asset_path:path}", include_in_schema=False)
     async def web_asset(asset_path: str):

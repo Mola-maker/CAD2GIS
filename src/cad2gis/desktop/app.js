@@ -239,6 +239,7 @@ function showPage(page){
   if(!["config","chat","osm","svg","sqlite"].includes(page))return;
   toolsPopup.close();
   ui.tab.show("#tab-"+page,false);
+  $(".main-workspace").scrollTop=0;
   for(const b of $$(".bottom-dock [data-page]")){
     const active=b.dataset.page===page;
     b.classList.toggle("active",active);
@@ -264,7 +265,7 @@ function updateWorkflow(){
   const hasSource=Boolean($("#source").value.trim());
   $("#workflow-source").textContent=hasSource?"已选择 DWG":"选择 DWG";
   $("#workflow-state").textContent=activeJob?"正在执行："+(actionNames[activeJob.action]||activeJob.action):reviewUrl?"已打开结果 · 可进入地图核对":hasSource?"下一步：检查源图与转换设置":"下一步：导入 DWG";
-  const current=reviewUrl?"gcp":hasSource?"inspect":"import";
+  const current=reviewUrl?(mapReviewed?"preview":"gcp"):hasSource?"inspect":"import";
   for(const button of $$("[data-workflow]")){
     if(button.dataset.workflow===current)button.setAttribute("aria-current","step");
     else button.removeAttribute("aria-current");
@@ -282,16 +283,13 @@ async function followWorkflow(step){
     if(run)await openReview(run);
     else{showPage("osm");$("#existing-run").focus();message("先打开一个转换结果，即可选择控制点、预览校正和生成新结果。");return;}
   }
+  if(step==="preview"){showPage("svg");return;}
+  if(step==="export"){
+    const run=await currentReviewRun();
+    $("#database-path").value=join(run.current_run_dir||run.run_dir||$("#existing-run").value,"delivery.gpkg");
+    showPage("sqlite");await openDatabase();return;
+  }
   showPage("osm");
-  const focusReview=()=>{
-    const doc=$("#osm-frame").contentDocument;
-    doc?.querySelector('[data-stage="registration"]')?.click();
-    const target=doc?.querySelector(step==="export"?"#export-gcp":step==="preview"?"#preview-gcp":"#gcp-role");
-    target?.scrollIntoView({block:"center"});
-    target?.focus();
-  };
-  if($("#osm-frame").contentDocument?.readyState==="complete")focusReview();
-  else $("#osm-frame").addEventListener("load",focusReview,{once:true});
 }
 function join(base,name){return base.replace(/[\\/]$/,"")+(base.includes("\\")?"\\":"/")+name;}
 function currentResultName(){return "run-"+new Date().toISOString().replace(/[:.]/g,"-");}
@@ -375,8 +373,54 @@ function renderDistricts(catalog){
   const unavailable=choices.filter(item=>!item.available).length;
   $("#review-district-count").textContent=`${choices.length} 个 GIS 分区${unavailable?`，${unavailable} 个需要检查`:"，可分别打开核对"}`;
 }
-async function openReview(run){const r=await request("review",{run});reviewUrl=r.url;reviewId=r.review_id;renderDistricts(r.districts);$("#existing-run").value=r.run_dir;$("#osm-frame").src=reviewUrl;$("#osm-frame").hidden=false;$("#osm-empty").hidden=true;$("#review-fullscreen").disabled=false;$("#review-focus").disabled=false;updateWorkflow();$("#svg-frame").hidden=true;$("#svg-frame").removeAttribute("src");projectPopup.close();showPage("osm");await loadSvg();}
-async function loadSvg(){if(!reviewId)return;const r=await fetch("/api/run?review="+encodeURIComponent(reviewId));const body=await r.json();if(!r.ok)throw new Error(body.detail||"读取审查结果失败");const record=body.svg_candidates||{};$("#svg-status").textContent=record.report_url?"来源已绑定 · SVG 对应审阅报告":record.report_blocker||"此结果尚未生成 SVG 候选报告";$("#svg-empty").hidden=Boolean(record.report_url);$("#svg-frame").hidden=!record.report_url;if(record.report_url){const url=record.report_url+"?review="+encodeURIComponent(reviewId);if($("#svg-frame").getAttribute("src")!==url)$("#svg-frame").src=url;}}
+let mapReviewed=false,reviewReady=false,reviewOpening=false,reviewViewId="",reviewRevision="",svgLoadRequest=0;
+async function currentReviewRun(){
+  const r=await fetch("/api/run?review="+encodeURIComponent(reviewId));
+  const body=await r.json();if(!r.ok)throw new Error(body.detail||"读取审查结果失败");return body;
+}
+async function openReview(run){
+  if(reviewOpening)return;
+  if(!run)throw new Error("请先选择或填写转换结果目录。");
+  reviewOpening=true;reviewReady=false;mapReviewed=false;
+  reviewViewId=crypto.randomUUID();reviewRevision="";++svgLoadRequest;
+  $("#confirm-map").disabled=true;$("#manual-gcp").disabled=true;
+  $("#review-load-status").textContent="正在打开结果并加载地图…";
+  $("#map-review-status").textContent="人工确认仅用于继续审阅，保留当前转换结果。";
+  showPage("osm");
+  try{
+    const r=await request("review",{run});reviewUrl=r.url;reviewId=r.review_id;
+    renderDistricts(r.districts);$("#existing-run").value=r.run_dir;
+    const frameUrl=new URL(reviewUrl,location.origin);
+    frameUrl.searchParams.set("view",reviewViewId);
+    $("#osm-frame").src=frameUrl.href;$("#osm-frame").hidden=false;$("#osm-empty").hidden=true;
+    $("#manual-gcp").textContent="人工 GCP 校正（可选）";
+    $("#map-review-actions").hidden=false;$("#review-fullscreen").disabled=false;$("#review-focus").disabled=false;
+    $("#svg-frame").hidden=true;$("#svg-frame").removeAttribute("src");
+    updateWorkflow();projectPopup.close();
+    // A missing SVG report must not turn a successfully opened map into a failed action.
+    loadSvg().catch(error=>{$("#svg-status").textContent=error.message;});
+  }catch(error){$("#review-load-status").textContent="打开失败："+error.message;throw error;}
+  finally{reviewOpening=false;}
+}
+async function loadSvg(){if(!reviewId)return;const selected=reviewId,epoch=++svgLoadRequest;const body=await currentReviewRun();if(selected!==reviewId||epoch!==svgLoadRequest)return;const record=body.svg_candidates||{};$("#svg-status").textContent=record.report_url?"来源已绑定 · SVG 对应审阅报告":record.report_blocker||"此结果尚未生成 SVG 候选报告";$("#svg-empty").hidden=Boolean(record.report_url);$("#svg-frame").hidden=!record.report_url;if(record.report_url){const url=new URL(record.report_url,location.origin);url.searchParams.set("review",reviewId);url.searchParams.set("revision",reviewRevision);if($("#svg-frame").src!==url.href)$("#svg-frame").src=url.href;}return (body.osm_matching?.record||body.osm_matching)?.match_sha256||"initial";}
+window.addEventListener("message",event=>{
+  if(event.origin!==location.origin||event.source!==$("#osm-frame").contentWindow||event.data?.reviewId!==reviewId||event.data?.viewId!==reviewViewId)return;
+  if(event.data.type==="cad2gis-review-state"){
+    reviewReady=event.data.ready===true;$("#confirm-map").disabled=!reviewReady;
+    $("#manual-gcp").disabled=false;
+    $("#manual-gcp").textContent=event.data.manual?"收起人工 GCP 校正":"人工 GCP 校正（可选）";
+    if(reviewRevision!==event.data.revision){
+      mapReviewed=false;reviewRevision=event.data.revision;++svgLoadRequest;
+      $("#svg-frame").hidden=true;$("#svg-frame").removeAttribute("src");
+      $("#svg-status").textContent="地图结果已更新，正在读取对应的 SVG 报告…";
+      loadSvg().catch(error=>{$("#svg-status").textContent=error.message;});updateWorkflow();
+    }
+    $("#review-load-status").textContent=reviewReady?"结果已打开。核对地图后可直接继续，人工 GCP 为可选操作。":event.data.manual?"人工 GCP 校正已展开。完成后收起校正，核对已应用结果即可继续。":"正在准备当前地图结果…";
+  }else if(event.data.type==="cad2gis-review-error"){
+    reviewReady=false;$("#confirm-map").disabled=true;
+    $("#review-load-status").textContent="地图加载失败："+event.data.message;
+  }
+});
 function displayProfile(provider){const p=aiConfig.profiles[provider];$("#ai-provider").value=provider;$("#ai-url").value=p.base_url;$("#ai-model").value=p.model;$("#ai-key").value="";$("#ai-capability").value=p.capability;$("#ai-token-field").value=p.token_field;$("#ai-timeout").value=p.timeout_s;$("#ai-max-tokens").value=p.max_tokens;$("#ai-max-requests").value=p.max_requests;$("#key-state").textContent=p.has_key?"已保存 · 留空保留":"尚未保存密钥";$("#config-badge").textContent=p.configured?"已配置":"待配置";$("#config-badge").classList.toggle("ready",p.configured);for(const b of $$("[data-provider]"))b.classList.toggle("button-active",b.dataset.provider===provider);$("#ai-test-result").textContent=p.configured?"配置已保存。点击测试连接，确认模型和工具均可使用。":p.issue;$("#ai-test-result").className="inline-result";}
 async function loadConfig(){aiConfig=await request("ai/config");displayProfile(aiConfig.active);$("#config-storage").textContent=aiConfig.storage+" · 密钥不写入浏览器存储";for(const el of $$("#ai-config-form input, #ai-config-form select, #save-ai"))el.disabled=!aiConfig.editable;$("#provider").value=aiConfig.active;if(appStatus){appStatus.ai_provider=aiConfig.active;for(const [key,p] of Object.entries(aiConfig.profiles))appStatus.provider_configured[key]=p.configured;}const a=aiConfig.profiles[aiConfig.active];$("#composer-model").textContent=a.configured?a.model+" · CAD2GIS tools":"先连接你的 AI 模型";$("#ai-dot").classList.toggle("ready",a.configured);updateProvider();}
 async function saveConfig(){const data={provider:$("#ai-provider").value,base_url:$("#ai-url").value.trim(),model:$("#ai-model").value.trim(),api_key:$("#ai-key").value.trim(),capability:$("#ai-capability").value,token_field:$("#ai-token-field").value,timeout_s:Number($("#ai-timeout").value),max_tokens:Number($("#ai-max-tokens").value),max_requests:Number($("#ai-max-requests").value)};await request("ai/config",data);$("#ai-key").value="";await loadConfig();}
@@ -402,6 +446,23 @@ on("#semantic-agent-draft","click",()=>{
   projectPopup.close();showPage("chat");$("#chat-input").focus();message("审阅提示已填入对话，检查后再发送。");
 });
 on("#review-focus","click",()=>setReviewFocus(!$("#app").classList.contains("review-expanded")));
+on("#confirm-map","click",async()=>{
+  if(!reviewReady)return;
+  const selected=reviewId,revision=reviewRevision;
+  const loadedRevision=await loadSvg();
+  if(!reviewReady||selected!==reviewId||revision!==reviewRevision)return;
+  if(loadedRevision!==revision){await openReview($("#existing-run").value);message("检测到新的匹配结果，请核对更新后的地图再继续。");return;}
+  mapReviewed=true;$("#map-review-status").textContent="已人工确认当前地图匹配，可继续审阅符号和交付结果。";
+  updateWorkflow();showPage("svg");
+});
+on("#manual-gcp","click",()=>{
+  const doc=$("#osm-frame").contentDocument;
+  const open=Boolean(doc?.querySelector("#stage-registration")?.hidden);
+  doc?.querySelector(open?'[data-stage="registration"]':'[data-stage="source"]')?.click();
+  $("#manual-gcp").textContent=open?"收起人工 GCP 校正":"人工 GCP 校正（可选）";
+  if(open)doc?.querySelector("#stage-registration")?.scrollIntoView({block:"nearest"});
+  $("#osm-frame").scrollIntoView({block:"start"});
+});
 on("#login-form","submit",async e=>{e.preventDefault();try{await request("login",{password:$("#password").value});$("#password").value="";$("#login-error").textContent="";await connected();}catch(error){$("#login-error").textContent=error.message;}});
 for(const id of ["show-project","choose-drawing","conversion-settings","browse-database"])on("#"+id,"click",()=>projectPopup.open());
 on("#new-chat","click",async()=>{const item=await request("conversations",{title:"新的转换对话"});conversation=item.id;$("#chat-messages").textContent="";$("#chat-messages").append(welcomeTemplate.cloneNode(true));$("#older-messages").hidden=true;showPage("chat");await loadConversations();});
