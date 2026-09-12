@@ -1,7 +1,9 @@
 """A shared browser login must never move an old page's edits to another run."""
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import threading
 
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.testclient import TestClient
@@ -112,3 +114,29 @@ def test_local_logout_preserves_access_and_shutdown_still_honors_active_jobs(rev
     assert client.post("/_app/api/shutdown", json={}).status_code == 200
     client.portal.call(asyncio.sleep, .4)
     assert stopped == [True]
+
+
+def test_review_admission_keeps_status_responsive_and_rechecks_run_switch(review_session, monkeypatch):
+    app, client, _, open_run = review_session
+    first = open_run("run-a")
+    entered, release = threading.Event(), threading.Event()
+    original = ApplicationConfig.admit_run
+
+    def slow_admission(config, directory, workspace):
+        if directory.name == "run-a":
+            entered.set()
+            assert release.wait(5), "Test did not release the pending admission"
+        return original(config, directory, workspace)
+
+    monkeypatch.setattr(ApplicationConfig, "admit_run", slow_admission)
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        pending = workers.submit(client.get, "/api/review/features",
+                                 headers={"X-CAD2GIS-Review": first["review_id"]})
+        try:
+            assert entered.wait(2)
+            status = workers.submit(client.get, "/_app/api/status")
+            assert status.result(timeout=1).status_code == 200
+            open_run("run-b")
+        finally:
+            release.set()
+        assert pending.result(timeout=2).status_code == 409

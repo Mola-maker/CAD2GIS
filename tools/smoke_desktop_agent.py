@@ -67,7 +67,7 @@ def run(bundle: Path, output: Path):
                 tool, arguments = selected[len(returned)]
                 assert tool in names
                 message = {'role': 'assistant', 'content': None, 'tool_calls': [{
-                    'id': f'{mode}-{len(returned)}', 'type': 'function',
+                    'id': 'success-reused' if mode == 'success' else f'{mode}-{len(returned)}', 'type': 'function',
                     'function': {'name': tool, 'arguments': json.dumps(arguments, ensure_ascii=False)},
                 }]}
             self.send_response(200)
@@ -128,11 +128,14 @@ def run(bundle: Path, output: Path):
                         time.sleep(.2)
                     raise AssertionError(f'Agent did not finish: {identifier}')
 
-                def assert_pair(state, call_id, name, terminal='tool_result'):
-                    registered = [event for event in state['events'] if event.get('tool_call_id') == call_id]
+                def assert_pair(state, call_id, name, terminal='tool_result', sequence=None):
+                    registered = [event for event in state['events'] if event.get('tool_call_id') == call_id
+                                  and (sequence is None or event.get('tool_call_sequence') == sequence)]
                     assert [(event['kind'], event['name']) for event in registered] == [
                         ('tool_call', name), (terminal, name)], registered
                     assert all(event['run_id'] == state['id'] for event in registered)
+                    assert len({event['event_id'] for event in registered}) == 2
+                    assert len({event['tool_call_sequence'] for event in registered}) == 1
                     return registered[-1]
                 post('login',{'token':parse_qs(parsed.fragment)['token'][0]})
                 post('ai/config',{'provider':'new-api','base_url':f'http://127.0.0.1:{model.server_port}/v1','api_key':'local-fixture-key','model':'fixture-model','token_field':'max_tokens'})
@@ -142,8 +145,8 @@ def run(bundle: Path, output: Path):
                 state = wait_run(started['id'])
                 assert state['status']=='succeeded',state
                 for index, (tool, _) in enumerate(steps):
-                    assert_pair(state, f'success-{index}', tool, 'tool_error' if index == 2 else 'tool_result')
-                assert 'Windows 中文 AI 输入输出核验' in assert_pair(state, 'success-3', 'read_project_text')['detail']
+                    assert_pair(state, 'success-reused', tool, 'tool_error' if index == 2 else 'tool_result', sequence=index + 1)
+                assert 'Windows 中文 AI 输入输出核验' in assert_pair(state, 'success-reused', 'read_project_text', sequence=4)['detail']
                 assert json.loads((projects / 'written.json').read_text()) == {'checked': True}
                 agent_requests = [body for body in requests if any(tool['function']['name'] == 'get_capabilities' for tool in body['tools'])]
                 advertised = {tool['function']['name'] for tool in agent_requests[0]['tools']}
