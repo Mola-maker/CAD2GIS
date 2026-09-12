@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager, contextmanager
-from datetime import timedelta
+from datetime import datetime, timedelta
 import hashlib
 from functools import wraps
 import json
@@ -42,8 +42,12 @@ class AgentStore:
               CREATE TABLE IF NOT EXISTS runs (
                 id TEXT PRIMARY KEY, conversation TEXT NOT NULL, status TEXT NOT NULL,
                 created REAL NOT NULL, updated REAL NOT NULL, progress TEXT NOT NULL DEFAULT '',
-                events TEXT NOT NULL DEFAULT '[]', error TEXT NOT NULL DEFAULT '', usage TEXT NOT NULL DEFAULT '{}');
+                events TEXT NOT NULL DEFAULT '[]', error TEXT NOT NULL DEFAULT '', usage TEXT NOT NULL DEFAULT '{}',
+                artifacts TEXT NOT NULL DEFAULT '[]');
             """)
+            if "artifacts" not in {row["name"] for row in db.execute("PRAGMA table_info(runs)")}:
+                db.execute("ALTER TABLE runs ADD COLUMN artifacts TEXT NOT NULL DEFAULT '[]'")
+            db.execute("CREATE INDEX IF NOT EXISTS runs_conversation_created ON runs(conversation,created DESC)")
         self.path.chmod(0o600)
 
     @contextmanager
@@ -85,7 +89,18 @@ class AgentStore:
                               (identifier, before, before, limit + 1)).fetchall()
         return {"id": identifier, "title": conversation["title"], "plan": json.loads(conversation["plan"]),
                 "messages": [dict(row) for row in reversed(rows[:limit])], "has_more": len(rows) > limit,
-                "before": rows[limit - 1]["id"] if len(rows) >= limit else 0}
+                "before": rows[limit - 1]["id"] if len(rows) >= limit else 0,
+                "artifacts": self.latest_artifacts(identifier)}
+
+    def latest_artifacts(self, identifier: str) -> list[dict[str, Any]]:
+        """Keep the latest real outcome across subsequent chat-only turns and restarts."""
+        self.conversation(identifier)
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT artifacts FROM runs WHERE conversation=? AND artifacts!='[]' "
+                "ORDER BY created DESC,rowid DESC LIMIT 1", (identifier,),
+            ).fetchone()
+        return json.loads(row["artifacts"]) if row else []
 
     def message(self, conversation: str, role: str, text: str):
         with self.connect() as db:
@@ -94,7 +109,7 @@ class AgentStore:
             db.execute("UPDATE conversations SET updated=? WHERE id=?", (time.time(), conversation))
 
     def update_run(self, identifier: str, **fields):
-        allowed = {"status", "progress", "events", "error", "usage"}
+        allowed = {"status", "progress", "events", "error", "usage", "artifacts"}
         if not fields.keys() <= allowed:
             raise ValueError("Invalid run fields")
         with self.connect() as db:
@@ -109,6 +124,7 @@ class AgentStore:
         result = dict(row)
         result["events"] = json.loads(result["events"])
         result["usage"] = json.loads(result["usage"])
+        result["artifacts"] = json.loads(result["artifacts"])
         return result
 
 
@@ -163,6 +179,53 @@ class DesktopAgent:
         self.tools: list[dict[str, str]] = []
         self.model_override = None  # Dependency injection for deterministic protocol tests only.
 
+    def _artifact_from_tool(self, name: str, result: Any) -> dict[str, Any] | None:
+        """Admit only known successful MCP results backed by existing project files."""
+        if name not in {"run_conversion", "inspect_run", "auto_onboard_and_convert", "package_qgis_delivery"} or not isinstance(result, dict):
+            return None
+
+        def admitted(value, *, directory=False):
+            path = self.config.path(value, kind="directory" if directory else "")
+            if path == self.settings.directory or self.settings.directory in path.parents:
+                raise ValueError("Artifact is inside the credential directory")
+            if not directory and not path.is_file():
+                raise ValueError("Artifact file is missing")
+            return path
+
+        try:
+            if name in {"run_conversion", "auto_onboard_and_convert"}:
+                manifest_path = admitted(result.get("run_manifest"))
+                if manifest_path.name != "run_manifest.json":
+                    return None
+                run = admitted(str(manifest_path.parent), directory=True)
+            else:
+                run = admitted(result.get("run_dir"), directory=True)
+                manifest_path = admitted(str(run / "run_manifest.json"))
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            artifact = {"kind": "run", "run_dir": str(run)}
+            if manifest.get("run_status") in {"VERIFIED", "CONDITIONAL", "UNSAFE", "FAILED"}:
+                artifact["run_status"] = manifest["run_status"]
+            if name == "package_qgis_delivery":
+                if result.get("status") != "completed" or result.get("verification", {}).get("status") != "PASS":
+                    return None
+                output = admitted(result.get("output_dir"), directory=True)
+                admitted(str(output / "delivery-manifest.json"))
+                archive = admitted(result.get("archive", {}).get("path"))
+                if archive != output.with_suffix(".zip") or output.is_relative_to(run):
+                    return None
+                projects = result.get("projects")
+                if not isinstance(projects, list) or not projects:
+                    return None
+                for project in projects:
+                    path = admitted(project.get("path"))
+                    if path.suffix.lower() != ".qgz" or not path.is_relative_to(output):
+                        return None
+                artifact.update(kind="qgis_package", output_dir=str(output))
+            return artifact
+        except (ValueError, OSError, AttributeError, TypeError):
+            # Capturing a card must not turn a completed mutation into a retry.
+            return None
+
     async def close(self):
         if self.task and not self.task.done():
             self.task.cancel()
@@ -216,6 +279,7 @@ class DesktopAgent:
         from pydantic_ai.usage import RunUsage, UsageLimits
 
         events: list[dict[str, Any]] = []
+        artifacts: list[dict[str, Any]] = []
         usage = RunUsage()
         tool_budget = ToolAttemptBudget()
         text_buffer = ""
@@ -226,6 +290,17 @@ class DesktopAgent:
             return str(text).replace(secret, "[已隐藏密钥]") if secret else str(text)
 
         def event(kind, name, detail=""):
+            if kind == "tool_result" and name in {"run_conversion", "inspect_run", "auto_onboard_and_convert", "package_qgis_delivery"}:
+                try:
+                    artifact = self._artifact_from_tool(name, json.loads(detail))
+                except (ValueError, TypeError):
+                    artifact = None
+                if artifact is not None:
+                    artifacts[:] = [item for item in artifacts if
+                                    (item["kind"], item.get("output_dir", item["run_dir"])) !=
+                                    (artifact["kind"], artifact.get("output_dir", artifact["run_dir"]))]
+                    artifacts.append(artifact)
+                    self.store.update_run(identifier, artifacts=json.dumps(artifacts, ensure_ascii=False))
             events.append({"kind": kind, "name": name, "detail": clean(detail)[:1200], "time": time.time()})
             self.store.update_run(identifier, events=json.dumps(events[-200:], ensure_ascii=False))
 
@@ -298,7 +373,23 @@ class DesktopAgent:
 
         def workspace_context() -> dict[str, Any]:
             """Return selected files, allowed roots, provider ID and standard conversion settings."""
+            now = datetime.now().astimezone()
+            parent = (Path(context["run"]).parent if context.get("run") else
+                      Path(context["source"]).parent if context.get("source") else
+                      Path(context["project"]) if context.get("project") else self.config.roots[0])
+            stamp = now.strftime("%Y%m%d-%H%M%S") + "-" + identifier[:8]
+            def new_directory(prefix, *, archive=False):
+                candidate = parent / (prefix + stamp)
+                while candidate.exists() or (archive and candidate.with_suffix(".zip").exists()):
+                    candidate = parent / (prefix + stamp + "-" + secrets.token_hex(3))
+                return admitted(str(candidate), False)
+            suggested_run = new_directory("run-")
+            suggested_package = new_directory("qgis-delivery-", archive=True)
             return {"roots": list(map(str, self.config.roots)), **context, "provider": profile["provider"],
+                    "current_datetime": now.isoformat(timespec="seconds"), "current_date": now.date().isoformat(),
+                    "timezone": now.tzname(), "suggested_run_dir": str(suggested_run),
+                    "suggested_qgis_output_dir": str(suggested_package),
+                    "artifacts": self.store.latest_artifacts(conversation),
                     "matching": "osm", "svg_mode": "candidate", "gcp": "preview_then_explicit_rematch"}
 
         async def stream(_ctx, stream_events):
@@ -329,7 +420,13 @@ class DesktopAgent:
             "使用 prepare_ai_onboarding 获取要求，使用 write_project_json 创建证据文件，"
             "然后通过 apply_ai_onboarding 等既有工具验证。用户尚未给出必要证据时清楚说明。"
             "默认 OSM 相对匹配和 SVG candidate，保存来源；GCP 先预览，仅在用户要求二次匹配时应用。"
-            "每次转换使用新的 run_dir，不覆盖旧结果；如果结果目录已存在，换一个带时间的目录。"
+            "每次转换使用新的 run_dir，不覆盖旧结果；使用 workspace_context 的真实当前日期与 suggested_run_dir，不编造日期。"
+            "用户明确要求生成 QGZ/QGIS 交付包时，直接 inspect_run 检查已有可用 run，再调用 package_qgis_delivery；"
+            "优先复用当前run或 workspace_context.artifacts 中的已有转换结果，不重新转换，不反复询问打包方式。"
+            "使用 suggested_qgis_output_dir 创建新包；输出存在则选择另一个新目录。"
+            "prepare_review_workspace 只创建地图审查工作区，run_conversion 只转换，均不代表已生成QGZ。"
+            "QGZ需要配套GeoPackage和样式，必须交付 package_qgis_delivery 返回的完整ZIP，不能只给孤立QGZ文件。"
+            "SVG candidate只表示生成候选图例，未自动应用到QGIS样式；如有未解析符号必须如实说明。"
             "auto_onboard_and_convert 使用 workspace_context 的 provider。"
             "大数据采用查询和分页，不全量塞入上下文。工具失败不可冒充成功。"
             "工具失败后先检查错误码与恢复提示，再修正参数或更换方法；不要原样循环。"

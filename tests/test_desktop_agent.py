@@ -266,3 +266,140 @@ def test_openai_http_protocol_probe_and_streamed_mcp_run(tmp_path, monkeypatch):
         server.shutdown()
         server.server_close()
         thread.join(5)
+
+
+def test_agent_artifact_schema_migrates_and_restores_latest_real_outcome(tmp_path):
+    from contextlib import closing
+
+    with closing(sqlite3.connect(tmp_path / 'conversations.sqlite3')) as db, db:
+        db.execute("""CREATE TABLE runs (
+            id TEXT PRIMARY KEY, conversation TEXT NOT NULL, status TEXT NOT NULL,
+            created REAL NOT NULL, updated REAL NOT NULL, progress TEXT NOT NULL DEFAULT '',
+            events TEXT NOT NULL DEFAULT '[]', error TEXT NOT NULL DEFAULT '', usage TEXT NOT NULL DEFAULT '{}')""")
+    store = AgentStore(tmp_path, 'one')
+    conversation = store.create('成果持久化')['id']
+    with store.connect() as db:
+        db.execute("INSERT INTO runs(id,conversation,status,created,updated) VALUES (?,?,?,?,?)",
+                   ('legacy', conversation, 'succeeded', 1, 1))
+    assert store.run('legacy')['artifacts'] == []
+    artifact = {'kind': 'run', 'run_dir': str(tmp_path / 'converted'), 'run_status': 'CONDITIONAL'}
+    store.update_run('legacy', artifacts=json.dumps([artifact]))
+    with store.connect() as db:
+        db.execute("INSERT INTO runs(id,conversation,status,created,updated) VALUES (?,?,?,?,?)",
+                   ('chat-only', conversation, 'succeeded', 2, 2))
+    restored = AgentStore(tmp_path, 'one')
+    assert restored.run('legacy')['artifacts'] == [artifact]
+    assert restored.messages(conversation)['artifacts'] == [artifact]
+    assert restored.messages(restored.create('新对话')['id'])['artifacts'] == []
+    with pytest.raises(ValueError):
+        AgentStore(tmp_path, 'other-scope').messages(conversation)
+
+
+def _desktop_qgis_run(tmp_path):
+    from contextlib import closing
+    import hashlib
+
+    run = tmp_path / 'conversion'
+    run.mkdir()
+    with closing(sqlite3.connect(run / 'delivery.gpkg')) as db, db:
+        db.executescript("""CREATE TABLE gpkg_geometry_columns(table_name,column_name,geometry_type_name,srs_id);
+          INSERT INTO gpkg_geometry_columns VALUES('CABLE','geom','LINESTRING',3857);
+          CREATE TABLE gpkg_contents(table_name,min_x,min_y,max_x,max_y);
+          INSERT INTO gpkg_contents VALUES('CABLE',0,0,10,20);
+          CREATE TABLE gpkg_spatial_ref_sys(srs_id,definition);
+          INSERT INTO gpkg_spatial_ref_sys VALUES(3857,'');
+          CREATE TABLE CABLE(fid INTEGER,geom BLOB,display_label TEXT);
+          INSERT INTO CABLE VALUES(1,NULL,'12.5m');""")
+    (run / 'run_manifest.json').write_text(json.dumps({
+        'run_status': 'CONDITIONAL', 'source': {'sha256': 'a' * 64},
+        'delivery_counts': {'CABLE': 1},
+        'artifacts': {'delivery': {'sha256': hashlib.sha256((run / 'delivery.gpkg').read_bytes()).hexdigest()}},
+    }))
+    return run
+
+
+def test_artifact_metadata_requires_known_tool_authorized_existing_files(tmp_path):
+    settings = configured(tmp_path)
+    agent = DesktopAgent(ApplicationConfig((tmp_path,), state_dir=settings.directory), settings, SimpleNamespace(active=''))
+    run = _desktop_qgis_run(tmp_path)
+    record = {'run_dir': str(run), 'api_key': 'must-not-be-copied'}
+    expected = {'kind': 'run', 'run_dir': str(run), 'run_status': 'CONDITIONAL'}
+    assert agent._artifact_from_tool('inspect_run', record) == expected
+    for name in ('run_conversion', 'auto_onboard_and_convert'):
+        assert agent._artifact_from_tool(name, {'run_manifest': str(run / 'run_manifest.json')}) == expected
+    assert agent._artifact_from_tool('prepare_review_workspace', record) is None
+    assert agent._artifact_from_tool('assistant', record) is None
+    for path in (tmp_path / 'missing', tmp_path.parent, settings.directory):
+        assert agent._artifact_from_tool('inspect_run', {'run_dir': str(path)}) is None
+    assert agent._artifact_from_tool('package_qgis_delivery', {'run_dir': str(run), 'status': 'failed'}) is None
+
+
+def test_qgz_request_uses_actual_sdk_and_mcp_package_and_persists_artifacts(tmp_path):
+    from datetime import datetime
+    from pathlib import Path
+    import zipfile
+    from pydantic_ai.models.function import FunctionModel, DeltaToolCall
+
+    source_run = _desktop_qgis_run(tmp_path)
+    before = {p.name: p.read_bytes() for p in source_run.iterdir()}
+
+    async def scenario():
+        settings = configured(tmp_path)
+        config = ApplicationConfig((tmp_path,), state_dir=settings.directory)
+        agent = DesktopAgent(config, settings, SimpleNamespace(active=''))
+        calls, contexts = [], []
+
+        async def stream(messages, info):
+            calls.append(messages)
+            assert 'package_qgis_delivery' in {tool.name for tool in info.function_tools}
+            assert '完整ZIP' in info.instructions and '不反复询问打包方式' in info.instructions
+            assert 'prepare_review_workspace 只创建地图审查工作区' in info.instructions
+            if len(calls) == 1:
+                yield {0: DeltaToolCall(name='workspace_context', json_args='{}', tool_call_id='context')}
+            elif len(calls) == 2:
+                context = next(part.content for message in reversed(messages) for part in message.parts
+                               if getattr(part, 'tool_name', '') == 'workspace_context')
+                contexts.append(context)
+                now = datetime.now().astimezone()
+                assert abs((datetime.fromisoformat(context['current_datetime']) - now).total_seconds()) < 10
+                assert context['current_date'] == now.date().isoformat()
+                assert Path(context['suggested_run_dir']).name.startswith('run-' + now.strftime('%Y%m%d'))
+                assert not Path(context['suggested_qgis_output_dir']).exists()
+                yield {0: DeltaToolCall(name='inspect_run', json_args=json.dumps({'run_dir': str(source_run)}), tool_call_id='inspect')}
+            elif len(calls) == 3:
+                yield {0: DeltaToolCall(name='package_qgis_delivery', json_args=json.dumps({
+                    'run_dir': str(source_run), 'output_dir': contexts[0]['suggested_qgis_output_dir'],
+                }), tool_call_id='package')}
+            else:
+                yield '已生成 QGZ 与完整 ZIP，原转换状态仍为 CONDITIONAL。'
+
+        agent.model_override = FunctionModel(stream_function=stream)
+        started = agent.start({'message': '请把已有结果生成qgz', 'run': str(source_run)})
+        await asyncio.wait_for(agent.task, 45)
+        state = agent.store.run(started['id'])
+        assert state['status'] == 'succeeded', state['error']
+        assert len(calls) == 4
+        assert [item['kind'] for item in state['artifacts']] == ['run', 'qgis_package']
+        packaged = state['artifacts'][-1]
+        assert packaged == {'kind': 'qgis_package', 'run_dir': str(source_run),
+                            'output_dir': contexts[0]['suggested_qgis_output_dir'], 'run_status': 'CONDITIONAL'}
+        output = Path(packaged['output_dir'])
+        with zipfile.ZipFile(output / 'delivery.qgz') as qgz:
+            assert b'./delivery.gpkg|layername=CABLE' in qgz.read('delivery.qgs')
+        with zipfile.ZipFile(output.with_suffix('.zip')) as archive:
+            assert archive.read('delivery.gpkg') == before['delivery.gpkg']
+            assert archive.read('delivery.qgz') == (output / 'delivery.qgz').read_bytes()
+        assert {p.name: p.read_bytes() for p in source_run.iterdir()} == before
+        assert 'test-private-key' not in json.dumps(state['artifacts'])
+        restored = DesktopAgent(config, settings, SimpleNamespace(active=''))
+        assert restored.store.messages(started['conversation'])['artifacts'] == state['artifacts']
+
+        async def summary_only(messages, info):
+            yield '文字里提到 /tmp/fictional-result.qgz，不构成工具产物。'
+        restored.model_override = FunctionModel(stream_function=summary_only)
+        next_run = restored.start({'message': '总结上一条结果', 'conversation': started['conversation']})
+        await asyncio.wait_for(restored.task, 35)
+        assert restored.store.run(next_run['id'])['artifacts'] == []
+        assert restored.store.messages(started['conversation'])['artifacts'] == state['artifacts']
+        assert 'fictional' not in json.dumps(restored.store.messages(started['conversation'])['artifacts'])
+    asyncio.run(scenario())

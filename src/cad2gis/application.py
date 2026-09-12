@@ -21,6 +21,7 @@ import subprocess
 import sys
 import threading
 import time
+import zipfile
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlsplit
 import webbrowser
@@ -32,6 +33,7 @@ LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 ASSETS = Path(__file__).resolve().parent / "desktop"
 MAX_UPLOAD_BYTES = 512 * 1024 * 1024
 _DELIVERY_FILES = {
+    "delivery-manifest.json": "QGIS 交付清单", "checksums.json": "文件校验清单", "README.md": "打开说明",
     "delivery.gpkg": "GIS 交付数据", "source.gpkg": "CAD 源事实数据", "evidence.gpkg": "来源证据数据",
     "run_manifest.json": "运行清单", "partition_manifest.json": "分区清单", "osm_matching.json": "OSM 匹配证据",
     "svg-candidates/index.html": "SVG / PNG 图例", "svg-candidates/correspondence.html": "SVG 来源对应报告",
@@ -43,7 +45,7 @@ _DELIVERY_FILES = {
 # output directories and file types can appear in the download catalog.
 _DELIVERY_SUFFIXES = {
     "": {".qgz", ".qgs", ".html", ".png", ".svg"},
-    "qgis": {".qgz", ".qgs"}, "qgis/styles": {".qml"},
+    "qgis": {".qgz", ".qgs"}, "qgis/styles": {".qml"}, "styles": {".qml"},
     "svg-candidates": set(), "svg-candidates/symbols": {".svg", ".png"},
     "reasoning/visual": {".png", ".svg"},
     "audit": {".html", ".png", ".json"}, "visual": {".html", ".png", ".json"},
@@ -395,7 +397,8 @@ class Jobs:
     def delivery_artifacts(self, run: str) -> dict[str, Any]:
         """List existing local outputs without changing or upgrading run status."""
         root = self._delivery_root(run)
-        manifest_name = "run_manifest.json" if (root / "run_manifest.json").exists() else "partition_manifest.json"
+        manifest_name = next((name for name in ("run_manifest.json", "partition_manifest.json", "delivery-manifest.json")
+                              if (root / name).exists()), "run_manifest.json")
         manifest = self._delivery_path(root, manifest_name)
         if manifest.stat().st_size > 8 * 1024 * 1024:
             raise ValueError("交付运行清单过大")
@@ -428,7 +431,31 @@ class Jobs:
             artifacts.append({"name": name, "label": _DELIVERY_FILES.get(name, path.name), "kind": kind,
                               "size": path.stat().st_size,
                               "url": "/_app/api/delivery/artifact?" + urlencode({"run": str(root), "name": name})})
-        return {"run_dir": str(root), "run_status": record.get("run_status", "UNKNOWN"), "artifacts": artifacts}
+        result = {"run_dir": str(root), "run_status": record.get("run_status", "UNKNOWN"), "artifacts": artifacts}
+        if manifest_name == "delivery-manifest.json":
+            archive = self.delivery_archive(str(root))
+            result["archive"] = {"name": archive.name, "size": archive.stat().st_size,
+                                 "url": "/_app/api/delivery/archive?" + urlencode({"run": str(root)})}
+        return result
+
+    def delivery_archive(self, run: str) -> Path:
+        """Serve only the sibling ZIP of an admitted portable delivery package."""
+        root = self._delivery_root(run)
+        manifest = self._delivery_path(root, "delivery-manifest.json")
+        archive = root.with_suffix(".zip")
+        if archive.is_symlink() or getattr(archive, "is_junction", lambda: False)():
+            raise ValueError("交付压缩包不能使用符号链接")
+        archive = self.config.path(str(archive))
+        if manifest.stat().st_size > 8 * 1024 * 1024:
+            raise ValueError("交付清单过大")
+        try:
+            with zipfile.ZipFile(archive) as bundle:
+                info = bundle.getinfo("delivery-manifest.json")
+                if info.file_size > 8 * 1024 * 1024 or bundle.read(info) != manifest.read_bytes():
+                    raise ValueError("ZIP 与当前交付目录不匹配，请重新打包")
+        except (OSError, KeyError, zipfile.BadZipFile) as exc:
+            raise ValueError("交付 ZIP 缺失或无效，请重新打包") from exc
+        return archive
 
     def list(self):
         with self.lock:
@@ -657,6 +684,11 @@ class Application:
                 raise ValueError("交付文件不存在或不在允许清单中")
             target = self.jobs._delivery_path(self.jobs._delivery_root(run), name)
             return FileResponse(target, filename=target.name)
+
+        @manager.get("/_app/api/delivery/archive")
+        async def delivery_archive(run: str):
+            target = await run_in_threadpool(self.jobs.delivery_archive, run)
+            return FileResponse(target, filename=target.name, media_type="application/zip")
 
         @manager.post("/_app/api/database/query")
         async def database_query(request: Request):

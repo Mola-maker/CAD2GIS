@@ -413,6 +413,52 @@ def test_review_serves_only_bound_svg_files_from_current_run(tmp_path):
     assert unavailable["report_url"] is None and "SHA-256" in unavailable["report_blocker"]
 
 
+def test_svg_report_serves_bound_png_previews_and_csv_queue(tmp_path):
+    from PIL import Image
+
+    run, _, manifest_path = _run_fixture(tmp_path)
+    manifest = json.loads(manifest_path.read_text())
+    root = _add_svg_fixture(run, manifest)
+    png_path = root / "symbols" / "instance-a.png"
+    Image.new("RGB", (2, 1), "red").save(png_path)
+    png = png_path.read_bytes()
+    queue = "source_handle,status\nA,待人工复核\n".encode()
+    (root / "svg-review-queue.csv").write_bytes(queue)
+    (root / "correspondence.html").write_text(
+        '<img src="symbols/instance-a.png"><a href="svg-review-queue.csv">Queue</a>',
+        encoding="utf-8",
+    )
+    for relative in ("symbols/instance-a.png", "svg-review-queue.csv", "correspondence.html"):
+        manifest["svg_candidates"]["files"][relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
+    manifest["artifacts"]["svg_candidates_html"]["sha256"] = manifest["svg_candidates"]["files"]["correspondence.html"]
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with TestClient(create_review_app(run, workspace_dir=tmp_path / "review")) as client:
+        url = client.get("/api/run").json()["svg_candidates"]["report_url"]
+        prefix = url.rsplit("/", 1)[0]
+        assert 'src="symbols/instance-a.png"' in client.get(url).text
+        for relative, expected, media_type in (
+            ("symbols/instance-a.png", png, "image/png"),
+            ("svg-review-queue.csv", queue, "text/csv"),
+        ):
+            response = client.get(f"{prefix}/{relative}")
+            assert response.status_code == 200
+            assert response.headers["content-type"].split(";")[0] == media_type
+            assert response.headers["x-content-type-options"] == "nosniff"
+            assert response.content == expected
+
+        # Adding supported suffixes never makes unsealed or outside-run files public.
+        (root / "symbols" / "unsealed.png").write_bytes(png)
+        (root / "unsealed.csv").write_bytes(queue)
+        for relative in ("symbols/unsealed.png", "unsealed.csv", "%2e%2e/run_manifest.json", "symbols/instance-a.png.exe"):
+            assert client.get(f"{prefix}/{relative}").status_code == 404
+        for relative in ("symbols/instance-a.png", "svg-review-queue.csv"):
+            (root / relative).write_bytes(b"changed after sealing")
+            response = client.get(f"{prefix}/{relative}")
+            assert response.status_code == 404
+            assert "SHA-256 mismatch" in response.json()["detail"]
+
+
 @pytest.mark.parametrize("relative", ["../fixture.dwg", "symbols/../../fixture.dwg", "/fixture.dwg",
     "symbols\\instance-a.svg", "C:/secret.json", "private.txt"])
 def test_svg_artifact_rejects_unsafe_paths_and_unapproved_suffixes(tmp_path, relative):

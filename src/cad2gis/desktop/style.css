@@ -228,3 +228,5 @@ html[data-motion-paused=true] *,html[data-motion-paused=true] *::before,html[dat
 }
 
 .delivery-files{display:grid;gap:12px;padding-bottom:36px}.delivery-file{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#ffffffb8}.delivery-file>div:first-child{min-width:0;overflow-wrap:anywhere}.delivery-file strong{font-size:13px}.delivery-file p,.delivery-file .review-actions{margin:0}.delivery-file a{text-decoration:none}#delivery-path{overflow-wrap:anywhere}@media(max-width:650px){.delivery-file{align-items:flex-start;flex-direction:column}}
+
+.chat-artifacts{flex-shrink:0;max-height:130px;overflow:auto;padding:8px 0}.chat-artifact{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:5px 0}.chat-artifact .secondary,.chat-artifact .primary{font-size:11px;padding:7px 10px;min-height:34px}.chat-artifact .muted{margin:0}
