@@ -251,18 +251,21 @@ def test_libredwg_cli_recovers_authoritative_geodata_lost_by_dxf(
 
 
 def test_legacy_apd_profile_can_gate_current_semantic_cable_collections() -> None:
-    from cad2gis.cad2gis_v3.config import SourceProfile
+    from cad2gis.cad2gis_v3.config import _legacy_apd_expectations
 
-    profile_path = (
-        Path(__file__).resolve().parents[1]
-        / "experiment"
-        / "config"
-        / "apd_source_profile.json"
-    )
-    expectations = SourceProfile.load(profile_path).expectations.feature_counts
+    # Exercise the legacy override contract with independent synthetic counts.
+    census = dict.fromkeys((
+        'model_entities', 'model_inserts', 'model_dimensions', 'plan_poles',
+        'plan_fat', 'plan_fdt', 'direct_fat_annotations',
+        'direct_new_pole_annotations', 'direct_existing_pole_annotations', 'homepass_labels',
+    ), 0)
+    census.update(positive_cable_routes=5, semantic_cable_features=3, infrastructure_features=2)
+    expectations = _legacy_apd_expectations(census).feature_counts
 
-    assert expectations["CABLE"] == 31
-    assert expectations["INFRASTRUCTURE"] == 31
+    assert expectations["CABLE"] == 3
+    assert expectations["INFRASTRUCTURE"] == 2
+    del census['semantic_cable_features']
+    assert _legacy_apd_expectations(census).feature_counts['CABLE'] == 5
 
 
 def test_libredwg_cli_prefers_dxf_actual_dimension_measurement() -> None:

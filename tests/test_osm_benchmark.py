@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from tools import benchmark_osm_matching as benchmark  # noqa: E402
+from baseline_materials import baseline_nominal_routes  # noqa: E402
 
 
 def make_layer(path, layer, routes, srs_id=3857):
@@ -91,20 +92,46 @@ def test_benchmark_detects_mutated_input_vectors(tmp_path):
         benchmark.benchmark_case(SimpleNamespace(_match_routes=mutate), tmp_path)
 
 
-def test_taipa_numerical_candidates_converge_before_ambiguity_decision():
+def test_taipa_numerical_candidates_converge_before_ambiguity_decision(tmp_path):
     """A 20-iteration cap left 0.385 m duplicates of the same local optimum.
 
-    The specimen is frozen under ``tests/data/taipa-osm-matching`` (the CABLE
-    and OSM road layers as they stood in ``baselines/taipa/delivery`` before
-    that package was republished). Reading the live package would silently
-    re-baseline this pin on every re-run of the drawing.
+    Read the protected QGZ and source-bound road snapshot at runtime. Joining
+    ordered source segments and undoing the recorded translation recovers the
+    nominal source routes without keeping another committed geometry copy.
+    A known perturbation checks the solution independently of its map position.
     """
     from cad2gis.cad2gis_v3 import osm_matching
 
-    result = benchmark.benchmark_case(osm_matching, ROOT / "tests/data/taipa-osm-matching")
+    # Keep this regression pinned even if a future conversion republishes the
+    # protected baseline. Deliberate fixture updates require reviewing the fit.
+    assert benchmark.file_hash(ROOT / 'baselines/taipa/delivery/view-with-source-SVG.qgz') == (
+        'dd60a386e9d52dad53ca13e0c93365461aae19800deee0e8603cd75fed4de199'
+    )
+    import hashlib
+    # Git may check this text out with LF or CRLF; pin identical JSON bytes
+    # after explicitly normalizing only line endings, not coordinate values.
+    raw = (ROOT / 'baselines/taipa/config/matching-manual-gcp.json').read_bytes()
+    assert hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest() == (
+        '9d9f07252ffd4f463a6da329c433d498d55f81bff80a11356aa127903f4cb280'
+    )
+    routes, match = baseline_nominal_routes('taipa')
+    make_layer(tmp_path / 'delivery.gpkg', 'CABLE', routes)
+    make_layer(tmp_path / 'osm-basemap.gpkg', 'roads', [road['points'] for road in match['osm_snapshot']['roads']])
+    result = benchmark.benchmark_case(osm_matching, tmp_path, [12, -7])
     fit = result["unperturbed"]
     assert fit["accepted"] is True
-    assert fit["translation_3857"] == pytest.approx([-2.309862, 0.549932], abs=0.1)
+    assert result['perturbation']['both_fits_accepted'] is True
+    assert result['perturbation']['accepted_solution_equivariance_error_m_approx'] < 0.1
     assert fit["quality"]["candidates"][0]["refinement_converged"] is True
     assert fit["quality"]["confidence_gap"] >= 0.06
     assert result["absolute_accuracy_verified"] is False
+
+
+def test_taipa_text_specimen_pin_is_checkout_independent():
+    import hashlib
+    raw = (ROOT / 'baselines/taipa/config/matching-manual-gcp.json').read_bytes()
+    lf = raw.replace(b'\r\n', b'\n')
+    for checkout in (lf, lf.replace(b'\n', b'\r\n')):
+        assert hashlib.sha256(checkout.replace(b'\r\n', b'\n')).hexdigest() == (
+            '9d9f07252ffd4f463a6da329c433d498d55f81bff80a11356aa127903f4cb280'
+        )

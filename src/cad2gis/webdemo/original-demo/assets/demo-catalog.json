@@ -1,21 +1,29 @@
 {
   "schema_version": "cad2gis.webdemo_catalog.v1",
-  "default_project": "hutabohu",
-  "publication_boundary": "公开页面仅含 Hutabohu 条件性交付的筛选派生证据，不包含 DWG/GPKG 原始文件，也不声明实测绝对定位精度",
+  "default_project": "kletek",
+  "publication_boundary": "保留九图中的 Kletek 派生预览；不公开 DWG/GPKG 原始文件；工程验收与绝对精度未建立。",
   "projects": [
     {
-      "id": "hutabohu",
-      "display_name": "Hutabohu / Gorontalo",
-      "short_name": "HUTABOHU",
-      "location": "Gorontalo, Indonesia",
-      "description": "完整 FTTH 派生运行，包含 8 个交付图层与独立 DIMENSION 长度证据；当前状态为 CONDITIONAL。",
-      "fixture": "demo-data.json",
-      "source_sha256": "557e01413c394421c55709ce94b091793196bee1ec0452c46f69a72e4e815557",
-      "source_entity_count": 9896,
-      "delivery_feature_count": 1150,
-      "map_reference": "DWG declared EPSG:3857",
-      "map_precision": "nominal_crs_no_surveyed_gcp",
-      "accuracy_note": "未提供实测 GCP 或独立控制点；地图仅表达图纸声明的名义 CRS，不作为绝对地理精度证明"
+      "id": "kletek",
+      "display_name": "Kletek RW 05 / Sidoarjo",
+      "short_name": "KLETEK",
+      "location": "Sidoarjo, Indonesia",
+      "description": "紧凑型社区网络，适合对照 CAD 几何与已落位的真实地图交付预览。",
+      "fixture": "../../demo-data-kletek.json",
+      "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
+      "source_entity_count": 1538,
+      "delivery_feature_count": 263,
+      "map_reference": "Kletek, Sidoarjo",
+      "map_precision": "coarse_bbox_centre",
+      "fixture_sha256": "de1cd5132dafe51ffca9cc29cba00df5918d4ff3df83d02cc2ddeb841f356221",
+      "fixture_hash_normalization": "CRLF-to-LF",
+      "publication_scope": "retained_bundled_preview",
+      "absolute_accuracy_verified": false,
+      "run_status": "CONDITIONAL",
+      "accuracy_note": "派生地图预览；未提供实测 GCP 与独立检查点，不构成绝对坐标精度验收。",
+      "preview_provenance": "already-bundled-nine-drawing-preview",
+      "new_publication_authorization": false,
+      "previous_release_record": "docs/derived-release.json"
     }
   ]
 }

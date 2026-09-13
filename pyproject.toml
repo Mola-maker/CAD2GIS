@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "0.7.8"
 description = "Deterministic CAD-to-GIS orchestration and verification CLI"
 readme = { text = "CAD2GIS provides a lightweight canonical API and CLI with a bundled cad2gis.cad2gis_v3 backend. The GIS runtime and backend deployment are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
 requires-python = ">=3.11,<3.13"
-license = "LicenseRef-Proprietary"
+license = "PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE.md", "NOTICE.md", "packaging/THIRD_PARTY_NOTICES.md", "packaging/patches/COPYING", "packaging/patches/NOTICE.md"]
 authors = [{ name = "CAD2GIS contributors" }]
 dependencies = [
   "numpy>=1.24",

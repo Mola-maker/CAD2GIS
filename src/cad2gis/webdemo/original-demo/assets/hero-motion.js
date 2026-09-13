@@ -321,7 +321,7 @@ const setupProcessTerminal = () => {
     pauseButton.disabled = false;
     pauseButton.setAttribute("aria-pressed", "false");
     pauseButton.textContent = "暂停";
-    statusLabel.textContent = "正在按 Hutabohu 证据顺序回放转换过程。";
+    statusLabel.textContent = "正在展示源绑定转换与核验流程。";
     revealNext();
   };
 
@@ -333,7 +333,7 @@ const setupProcessTerminal = () => {
       setState("running", "RUNNING");
       pauseButton.setAttribute("aria-pressed", "false");
       pauseButton.textContent = "暂停";
-      statusLabel.textContent = "继续回放 Hutabohu 转换过程。";
+      statusLabel.textContent = "继续展示转换与核验流程。";
       timer = window.setTimeout(revealNext, 180);
       return;
     }

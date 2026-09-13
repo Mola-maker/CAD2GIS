@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f5f8f7">
   <title>CAD2GIS — 可验证的 GIS 交付</title>
   <script id="cad2gis-page-config" type="application/json">
-    {"worldCenterLonLat":[0,0],"worldZoom":2,"localExtentControl":false,"worldExtentControl":null,"fixtureBaseUrl":"./assets/","fixtureCacheVersion":"runtime-fix-20260901"}
+    {"worldCenterLonLat":[0,0],"worldZoom":2,"localExtentControl":false,"worldExtentControl":null,"fixtureBaseUrl":"./assets/","fixtureCacheVersion":"retained-nine-20260913"}
   </script>
   <link rel="stylesheet" href="./assets/vendor/ol.css">
   <link rel="preload" href="./assets/cad2gis-hero-display.woff2?v=hero-font-20260827" as="font" type="font/woff2" crossorigin>
@@ -27,7 +27,7 @@
         <a href="#plugin-guide">PLUGIN GUIDE</a>
         <a href="#process-terminal">RUN REPLAY</a>
       </nav>
-      <div class="hero-nav-status"><span class="hero-live-dot"></span><span>HUTABOHU / LABEL PROVENANCE FIX 003</span><b>CONDITIONAL</b></div>
+      <div class="hero-nav-status"><span class="hero-live-dot"></span><span>SELECTED DRAWING / LABEL PROVENANCE FIX 003</span><b>CONDITIONAL</b></div>
     </header>
 
     <div class="hero-viewport">
@@ -39,37 +39,37 @@
         <p class="hero-guardrail">AI 负责理解与提案，不改写坐标。<a href="#plugin-guide">安装 CAD2GIS Agent <span>→</span></a></p>
       </div>
       <div class="hero-visual" data-parallax="0.12">
-        <div class="hero-visual-meta"><span>DERIVED RUN / HUTABOHU</span><span>01—05</span></div>
+        <div class="hero-visual-meta"><span>DERIVED RUN / SELECTED DRAWING</span><span>01—05</span></div>
         <img src="./assets/hero-evidence-graph.svg" alt="从源事实到 GIS 交付的证据链示意图">
-        <div class="hero-visual-readout"><span>GRAPH STATUS</span><strong>14,111 <small>nodes</small></strong><span>21,597 relationships / replayable</span></div>
+        <div class="hero-visual-readout"><span>GRAPH STATUS</span><strong>Source-bound <small>evidence</small></strong><span>inspect the selected run</span></div>
       </div>
     </div>
 
     <div class="hero-intro hero-section-width">
       <p class="hero-overline"><span>02</span> WHY THIS EXISTS</p>
       <div class="hero-intro-grid"><h3>几何会说真话。<br><span>坐标需要证据。</span></h3><p>一张 CAD 图可以有漂亮的线，也可以有正确的长度，但这并不自动证明它已经处于正确的地理位置。CAD2GIS 把这些声明拆开，让每一次理解、配准和交付都留下可审查的痕迹。</p></div>
-      <div class="hero-intro-note"><span>HUTABOHU REAL DERIVED RUN</span><strong>CONDITIONAL</strong><span>PUBLIC DERIVATIVE ONLY / NO RAW DWG</span></div>
+      <div class="hero-intro-note"><span>SELECTED DRAWING REAL DERIVED RUN</span><strong>CONDITIONAL</strong><span>PUBLIC DERIVATIVE ONLY / NO RAW DWG</span></div>
     </div>
 
     <section id="product-infinite" class="product-infinite hero-section-width" aria-labelledby="product-infinite-title">
       <div class="product-heading"><p class="hero-overline"><span>03</span> CRAFT INFINITE PRODUCT</p><h3 id="product-infinite-title">证据不是最后一页报告。<br><span>它是产品的连续表面。</span></h3><p>从第一条源曲线到最后一个交付图层，五个阶段都可以独立阅读、独立校验、独立重放。</p></div>
       <div class="stage-rail" aria-label="CAD2GIS 五阶段证据链">
         <div class="stage-rail-line" aria-hidden="true"></div>
-        <article class="stage-card-hero is-active" data-stage-card="source" tabindex="0"><span class="stage-index">01</span><h4>Source facts</h4><p>源实体、样式、标签、SHA-256 与原生曲线事实。</p><span class="stage-data">9,717 ENTITIES</span></article>
-        <article class="stage-card-hero" data-stage-card="semantic" tabindex="0"><span class="stage-index">02</span><h4>Semantic mapping</h4><p>来源绑定的分类，未解析对象不会被伪装成已知资产。</p><span class="stage-data">281 UNRESOLVED</span></article>
+        <article class="stage-card-hero is-active" data-stage-card="source" tabindex="0"><span class="stage-index">01</span><h4>Source facts</h4><p>源实体、样式、标签、SHA-256 与原生曲线事实。</p><span class="stage-data">BOUND INVENTORY</span></article>
+        <article class="stage-card-hero" data-stage-card="semantic" tabindex="0"><span class="stage-index">02</span><h4>Semantic mapping</h4><p>来源绑定的分类，未解析对象不会被伪装成已知资产。</p><span class="stage-data">UNRESOLVED → REVIEW</span></article>
         <article class="stage-card-hero" data-stage-card="registration" tabindex="0"><span class="stage-index">03</span><h4>Registration</h4><p>训练点、独立检查点、相似变换、残差与覆盖度。</p><span class="stage-data">GCP / RESIDUALS</span></article>
         <article class="stage-card-hero" data-stage-card="validation" tabindex="0"><span class="stage-index">04</span><h4>Independent validation</h4><p>几何、拓扑、长度和坐标精度四条互相独立的检查轨道。</p><span class="stage-data">4 TRACKS</span></article>
-        <article class="stage-card-hero" data-stage-card="delivery" tabindex="0"><span class="stage-index">05</span><h4>GIS delivery</h4><p>GeoPackage、QML、manifest 和证据图，动作可回放。</p><span class="stage-data">1,150 FEATURES</span></article>
+        <article class="stage-card-hero" data-stage-card="delivery" tabindex="0"><span class="stage-index">05</span><h4>GIS delivery</h4><p>GeoPackage、QML、manifest 和证据图，动作可回放。</p><span class="stage-data">8 DELIVERY LAYERS</span></article>
       </div>
     </section>
 
-    <section class="hero-metrics hero-section-width" aria-label="Hutabohu 真实派生运行指标">
-      <p class="hero-overline"><span>04</span> ONE RUN / MANY PROOFS</p>
+    <section class="hero-metrics hero-section-width" aria-label="转换演示与核验范围">
+      <p class="hero-overline"><span>04</span> SOURCE-BOUND REVIEW</p>
       <div class="metric-grid-hero">
-        <article><strong data-count="9717">0</strong><span>source entities</span><small>immutable inventory</small></article>
-        <article><strong data-count="1150">0</strong><span>delivery features</span><small>8 reviewed layers</small></article>
-        <article><strong data-count="14111">0</strong><span>evidence nodes</span><small>content-addressed graph</small></article>
-        <article><strong data-count="170">0</strong><span>DWG DIMENSION segments</span><small>of 179 cable segments</small></article>
+        <article><strong data-count="9">0</strong><span>retained drawing demos</span><small>derived previews</small></article>
+        <article><strong data-count="8">0</strong><span>delivery layers</span><small>standard GIS schema</small></article>
+        <article><strong data-count="4">0</strong><span>validation tracks</span><small>independent evidence</small></article>
+        <article><strong data-count="1">0</strong><span>review workspace</span><small>inspect the selected run</small></article>
       </div>
     </section>
 
@@ -296,7 +296,7 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
           <h3 id="process-terminal-title">把工作页，<br><em>播放成一条终端记录。</em></h3>
         </div>
         <div class="process-terminal-intro">
-          <p>按真实 Hutabohu 派生运行的证据顺序重放：读取、语义、配准、独立验证与交付。这里展示的是可审查记录，不是假装正在运行的后端。</p>
+          <p>按转换流程展示读取、语义、配准、独立核验与交付。以下为流程示意；所选图纸的实际证据与状态见工作台。</p>
           <div class="process-terminal-actions">
             <button type="button" data-terminal-replay>从头重播 <span aria-hidden="true">↻</span></button>
             <button type="button" data-terminal-pause disabled aria-pressed="false">暂停</button>
@@ -307,28 +307,23 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
       <div class="process-terminal-shell" data-process-terminal data-state="idle" style="--terminal-progress: 0%">
         <header class="process-terminal-bar">
           <div class="process-terminal-lights" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="process-terminal-title"><span>cad2gis://hutabohu/run-label-provenance-fix-003</span><small>DERIVED REPLAY · NOT LIVE EXECUTION</small></div>
+          <div class="process-terminal-title"><span>cad2gis://workflow/source-bound-review</span><small>WORKFLOW ILLUSTRATION · NOT LIVE EXECUTION</small></div>
           <span class="process-terminal-state"><i aria-hidden="true"></i><b data-terminal-state>READY</b></span>
         </header>
 
         <div class="process-terminal-grid">
           <div class="process-terminal-window">
-            <div class="process-terminal-command"><span aria-hidden="true">$</span><code>cad2gis convert hutabohu.dwg --crs EPSG:3857 --evidence-first</code></div>
-            <ol class="process-terminal-lines" data-terminal-lines aria-label="Hutabohu 转换回放记录">
-              <li data-terminal-line data-stage="boot" data-delay="180"><time>+00.0s</time><span class="process-terminal-tag">BOOT</span><span>pipeline schema cad2gis.run.v4 · evidence-first mode</span></li>
-              <li data-terminal-line data-stage="source" data-delay="260"><time>+00.2s</time><span class="process-terminal-tag">SRC</span><span>open “APD - DUSUN MENARA DAN PUSAT HUTABOHU GORONTALO.dwg”</span></li>
-              <li data-terminal-line data-stage="source" data-delay="320"><time>+00.5s</time><span class="process-terminal-tag ok">PASS</span><span>source SHA-256 <code>557e01413c39…</code> pinned</span></li>
-              <li data-terminal-line data-stage="source" data-delay="360"><time>+00.9s</time><span class="process-terminal-tag ok">READ</span><span>9,717 immutable source entities inventoried</span></li>
-              <li data-terminal-line data-stage="semantic" data-delay="420"><time>+01.4s</time><span class="process-terminal-tag warn">WARN</span><span>semantic registry left 281 entities unresolved for review</span></li>
-              <li data-terminal-line data-stage="registration" data-delay="320"><time>+01.8s</time><span class="process-terminal-tag">REG</span><span>declared coordinate domain EPSG:3857 · nominal direct model</span></li>
-              <li data-terminal-line data-stage="registration" data-delay="390"><time>+02.2s</time><span class="process-terminal-tag warn">WARN</span><span>no surveyed GCP supplied · absolute accuracy not verified</span></li>
-              <li data-terminal-line data-stage="validation" data-delay="360"><time>+02.6s</time><span class="process-terminal-tag ok">PASS</span><span>source geometry 31 / 31 cable curves immutable</span></li>
-              <li data-terminal-line data-stage="validation" data-delay="350"><time>+03.0s</time><span class="process-terminal-tag warn">WARN</span><span>proper interior crossings 1 · promoted connections 0</span></li>
-              <li data-terminal-line data-stage="validation" data-delay="400"><time>+03.4s</time><span class="process-terminal-tag warn">WARN</span><span>route components 21 ≠ segment graph components 1</span></li>
-              <li data-terminal-line data-stage="validation" data-delay="430"><time>+03.9s</time><span class="process-terminal-tag ok">PASS</span><span>DWG DIMENSION verified 170 / 179 spans · max |error| &lt; 0.001 m</span></li>
-              <li data-terminal-line data-stage="delivery" data-delay="380"><time>+04.4s</time><span class="process-terminal-tag">OUT</span><span>8 reviewed layers · 1,150 delivery features</span></li>
-              <li data-terminal-line data-stage="delivery" data-delay="360"><time>+04.8s</time><span class="process-terminal-tag ok">INDEX</span><span>evidence graph 14,111 nodes · 21,597 relationships</span></li>
-              <li data-terminal-line data-stage="delivery" data-delay="520"><time>+05.4s</time><span class="process-terminal-tag warn">DONE</span><span>delivery gate → <strong>CONDITIONAL</strong> · review required</span></li>
+            <div class="process-terminal-command"><span aria-hidden="true">$</span><code>cad2gis convert drawing.dwg --project reviewed-project</code></div>
+            <ol class="process-terminal-lines" data-terminal-lines aria-label="转换流程示意">
+              <li data-terminal-line data-stage="boot" data-delay="350"><time>01</time><span class="process-terminal-tag">FLOW</span><span>source-bound conversion workflow illustration</span></li>
+              <li data-terminal-line data-stage="source" data-delay="350"><time>02</time><span class="process-terminal-tag">READ</span><span>inspect source SHA-256, immutable entity inventory and reader completeness</span></li>
+              <li data-terminal-line data-stage="semantic" data-delay="350"><time>03</time><span class="process-terminal-tag">MAP</span><span>apply the reviewed semantic registry and retain unresolved evidence</span></li>
+              <li data-terminal-line data-stage="registration" data-delay="350"><time>04</time><span class="process-terminal-tag">CRS</span><span>inspect the declared CRS and recorded coordinate operation</span></li>
+              <li data-terminal-line data-stage="registration" data-delay="350"><time>05</time><span class="process-terminal-tag">GCP</span><span>OSM reference is relative evidence; surveyed accuracy requires independent checks</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="350"><time>06</time><span class="process-terminal-tag">CHECK</span><span>validate source geometry, topology and measurement evidence separately</span></li>
+              <li data-terminal-line data-stage="validation" data-delay="350"><time>07</time><span class="process-terminal-tag">REVIEW</span><span>missing thresholds or pending engineering review remain unverified</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="350"><time>08</time><span class="process-terminal-tag">GIS</span><span>write the eight delivery layers together with styles and provenance</span></li>
+              <li data-terminal-line data-stage="delivery" data-delay="350"><time>09</time><span class="process-terminal-tag">OPEN</span><span>load the selected retained drawing in the review workspace</span></li>
             </ol>
           </div>
 
@@ -355,7 +350,7 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
 
     <section class="hero-final hero-section-width" aria-labelledby="final-title">
       <img class="hero-stickers" src="./assets/hero-stickers.svg" alt="SHA-256、GCP、DWG DIMENSION、GPKG 标签">
-      <div class="hero-final-copy"><p class="hero-overline"><span>09</span> OPEN THE RUN</p><h3 id="final-title">把十张图，<br>变成十条可追溯的链。</h3><p>工作台现已加载 10 份来自 <code>run/delivery.gpkg</code> 的真实派生运行，覆盖 Gorontalo、Aceh、Sidoarjo、Pontianak、Manado、Semarang、Palu 与 Serang。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">选择转换案例 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
+      <div class="hero-final-copy"><p class="hero-overline"><span>09</span> OPEN THE RUN</p><h3 id="final-title">从图纸，<br>走向可追溯的交付。</h3><p>工作台按项目展示保留的派生预览。选择案例，查看来源、地图与待核验事项；预览本身不构成工程验收。公开页面不包含原始 DWG、GeoPackage 或本机路径。</p><div class="hero-actions"><a class="hero-button hero-button-dark" href="#console-app">选择转换案例 <span>↗</span></a><a class="hero-button hero-button-light" href="https://github.com/Mola-maker/CAD2GIS" target="_blank" rel="noreferrer">查看 GitHub <span>↗</span></a></div></div>
       <div class="hero-final-footer"><span>CAD2GIS / v4 EVIDENCE-FIRST PIPELINE</span><span>EPSG:3857 NOMINAL DOMAIN · ABSOLUTE ACCURACY NOT VERIFIED</span></div>
     </section>
   </section>
@@ -389,12 +384,12 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
         <span id="demo-project-location" class="project-location">等待读取坐标与地图参考</span>
         <p id="demo-project-description" class="project-description">正在读取所选结果的源事实、图层与审计证据。</p>
         <div class="project-proof-grid" aria-label="项目派生数据摘要">
-          <span><small>SOURCE</small><strong id="demo-project-source-count">—</strong></span>
-          <span><small>DELIVERY</small><strong id="demo-project-delivery-count">—</strong></span>
+          <span><small>SOURCE</small><strong id="demo-project-source-count">正在读取所选图纸…</strong></span>
+          <span><small>DELIVERY</small><strong id="demo-project-delivery-count">正在读取所选图纸…</strong></span>
         </div>
         <dl class="project-proof-list">
-          <div><dt>地图参考</dt><dd id="demo-project-map-reference">等待当前结果</dd></div>
-          <div><dt>源哈希</dt><dd><code id="demo-project-sha">—</code></dd></div>
+          <div><dt>地图参考</dt><dd id="demo-project-map-reference">正在读取所选图纸…</dd></div>
+          <div><dt>源哈希</dt><dd><code id="demo-project-sha">正在读取所选图纸…</code></dd></div>
         </dl>
         <span class="section-kicker project-current-kicker">当前工作流</span>
         <strong id="project-name">未加载运行</strong>
@@ -561,7 +556,7 @@ claude plugin uninstall cad2gis-agent@cad2gis-tools</code></pre></div>
 
   <script src="./assets/vendor/ol.js"></script>
   <!-- public-demo-only:start -->
-  <script src="./assets/demo-fixture.js?v=runtime-fix-20260901"></script>
+  <script src="./assets/demo-fixture.js?v=retained-nine-20260913"></script>
   <script type="module" src="./assets/hero-motion.js?v=font-system-20260829"></script>
   <!-- public-demo-only:end -->
   <script type="module" src="./assets/app.js?v=precision-workspace-20260909"></script>

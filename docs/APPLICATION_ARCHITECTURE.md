@@ -83,8 +83,9 @@ OpenLayers 10.6.1 渲染资源本地化，因此工作台加载不依赖 CDN；O
 修改说明随原 OpenLayers 许可证保留。工作台导入仅接受现有引擎支持的 DWG；
 DXF 提示先在 CAD 软件中另存为 DWG，不为安装封装另建一套读取算法。
 
-现有项目声明 Proprietary，而 pyramids-gis 和 LibreDWG 包含 GPL 组件。构建本地
-开发测试包时保留组件原始许可和上游源码，公开再分发前需明确组合许可方案。
+原创源码采用 PolyForm Noncommercial 1.0.0，商用须单独书面授权；具体范围见
+根目录 LICENSE.md 和 NOTICE.md。pyramids-gis 和 LibreDWG 包含 GPL 组件，
+继续保留组件原始许可和上游源码，公开再分发前需明确组合许可方案。
 不能将当前依赖组合描述为“全部宽松开源”或“已完成商业分发合规”。
 
 ## 验收要求

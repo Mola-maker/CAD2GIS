@@ -24,6 +24,28 @@ __pycache__/
 # Demo output
 demo/output/
 
+# Retired real-project inputs and duplicate derived fixtures.
+# Retained baselines, final nine-drawing reports and QGZ outputs are managed
+# explicitly; they are not part of this input-data cleanup.
+/demo/source/
+/demo/DS_02_GIS.qgz
+/APD_test/
+/Standard_qgis_projects/
+/CAD2GIS/plugincad2gis/data/organizer/
+/tools/road_match_p1/data/
+/tools/road_match_p1/results/
+/tools/road_match_p2/data/
+/tools/road_match_p2/results/
+/experiment/output/
+/experiment/runs/
+/experiment/config/apd_gcp_profile.json
+/experiment/config/apd_mapping_registry.json
+/experiment/config/apd_source_profile.json
+/tests/data/baseline-osm-thresholds.json
+/tests/data/taipa-osm-matching/
+/src/cad2gis/webdemo/demo-data.json
+/src/cad2gis/webdemo/original-demo/assets/demo-data.json
+
 # Temp
 *.tmp
 *.bak

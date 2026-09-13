@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -28,7 +29,7 @@ DEMO_REQUIRED = (
     "assets/demo-catalog.json",
 )
 
-# Only these data-free assets are shared with the local, ten-case console.
+# These data-free assets are shared with the local, nine-case console.
 # Public fixtures and their publication gate remain under original-demo/assets.
 SHARED_DEMO_SCRIPTS = ("app.js", "demo-fixture.js")
 SHARED_DEMO_ASSETS = (
@@ -58,12 +59,34 @@ FORBIDDEN_DEMO_SUFFIXES = {
     ".sqlite3",
 }
 
-CONDITIONAL_LEGACY_PROJECT_ID = "hutabohu"
+RETAINED_PREVIEW_PROVENANCE = "already-bundled-nine-drawing-preview"
+# Fixed identity of the preview already bundled before data cleanup. Catalog
+# declarations cannot extend this list or authorize a different specimen.
+# Text hashes normalize CRLF to LF so Git checkout policy does not change them.
+RETAINED_PREVIEWS = {
+    "kletek": {
+        "fixture": "../../demo-data-kletek.json",
+        "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
+        "fixture_sha256": "de1cd5132dafe51ffca9cc29cba00df5918d4ff3df83d02cc2ddeb841f356221",
+        "fixture_hash_normalization": "CRLF-to-LF",
+    },
+}
 
 
 def _publication_gate_passed(project: dict[str, object]) -> bool:
-    if project.get("id") == CONDITIONAL_LEGACY_PROJECT_ID:
-        return True
+    # Retain an already bundled preview; this branch grants no new publication
+    # authorization or engineering acceptance. Check its exact source-bound
+    # bytes below. New external releases still use verify_derived_release.
+    if project.get("publication_scope") == "retained_bundled_preview":
+        retained = RETAINED_PREVIEWS.get(project.get("id"))
+        return bool(
+            retained
+            and all(project.get(key) == value for key, value in retained.items())
+            and project.get("preview_provenance") == RETAINED_PREVIEW_PROVENANCE
+            and project.get("new_publication_authorization") is False
+            and project.get("absolute_accuracy_verified") is False
+            and project.get("run_status") == "CONDITIONAL"
+        )
     gate = project.get("publication_gate")
     if not isinstance(gate, dict):
         return False
@@ -123,16 +146,27 @@ def _validate_demo() -> None:
         (DEMO_ROOT / "assets" / "demo-catalog.json").read_text(encoding="utf-8")
     )
     projects = catalog.get("projects", [])
-    if not projects or projects[0].get("id") != CONDITIONAL_LEGACY_PROJECT_ID:
-        raise ValueError("Public demo must retain the conditional Hutabohu case")
+    if not projects or catalog.get('default_project') not in {project.get('id') for project in projects}:
+        raise ValueError("Public demo must select an available project")
     for project in projects:
         if not _publication_gate_passed(project):
             raise ValueError(
                 f"Public demo calibration gate failed: {project.get('id')!r}"
             )
         fixture = project.get("fixture")
-        if not isinstance(fixture, str) or not (DEMO_ROOT / "assets" / fixture).is_file():
+        if not isinstance(fixture, str):
             raise ValueError(f"Public demo fixture is missing: {fixture!r}")
+        path = (DEMO_ROOT / "assets" / fixture).resolve()
+        if not path.is_relative_to(WEB_ROOT.resolve()) or not path.is_file():
+            raise ValueError(f"Public demo fixture is missing: {fixture!r}")
+        if project.get('publication_scope') == 'retained_bundled_preview':
+            raw = path.read_bytes().replace(b'\r\n', b'\n')
+            data = json.loads(raw)
+            if (hashlib.sha256(raw).hexdigest() != project.get('fixture_sha256')
+                    or data.get('provenance', {}).get('project_id') != project.get('id')
+                    or data.get('provenance', {}).get('source_sha256') != project.get('source_sha256')
+                    or data.get('run', {}).get('run_status') != project.get('run_status')):
+                raise ValueError(f"Public demo preview binding failed: {project.get('id')!r}")
 
 
 def _workspace_page(source: str) -> str:
@@ -232,10 +266,32 @@ def build(output: Path, *, release_root: Path | None = None) -> None:
     workspace_dir = output / "workspace"
     workspace_assets = workspace_dir / "assets"
     shutil.copytree(DEMO_ROOT / "assets", workspace_assets)
+    # A source page can reference the retained shared fixture without another
+    # tracked data copy. Resolve it into this self-contained build only.
+    catalog_path = workspace_assets / 'demo-catalog.json'
+    catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
+    for project in catalog['projects']:
+        source_fixture = (DEMO_ROOT / 'assets' / project['fixture']).resolve()
+        project['fixture'] = source_fixture.name
+        shutil.copy2(source_fixture, workspace_assets / source_fixture.name)
+    catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding='utf-8')
     if release_catalog is not None:
         shutil.copytree(release_root, output / "deliveries")
         catalog_path = workspace_assets / "demo-catalog.json"
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        # Release IDs may differ from preview IDs. Replace the same source's
+        # preview with its main delivery, while retaining every release partition.
+        retained_projects = []
+        for preview in catalog['projects']:
+            replacement = next((project for project in release_catalog['projects']
+                                if project['id'] == preview['id'] or (
+                                    not project.get('parent_project_id')
+                                    and project.get('source_sha256') == preview['source_sha256'])), None)
+            if replacement is None:
+                retained_projects.append(preview)
+            elif catalog.get('default_project') == preview['id']:
+                catalog['default_project'] = replacement['id']
+        catalog["projects"] = retained_projects
         catalog["projects"].extend(release_catalog["projects"])
         catalog["publication_boundary"] = "含授权九图完整派生成果；不含 DWG；CONDITIONAL，绝对 GCP 精度未验收。"
         catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -254,7 +310,7 @@ def build(output: Path, *, release_root: Path | None = None) -> None:
     )
     demo_source = (DEMO_ROOT / "index.html").read_text(encoding="utf-8")
     if release_catalog is not None:
-        demo_source = demo_source.replace('multi-demo-20260829', 'nine-delivery-20260906')
+        demo_source = demo_source.replace('retained-nine-20260913', 'nine-delivery-20260906')
         demo_source = demo_source.replace('左图始终保留原始 CAD 坐标，图层开关同步作用于右侧预览。', '左图显示交付坐标几何，右图按声明 CRS 投影。原 CAD 对比见九图审查叠图。')
         demo_source = demo_source.replace('<b>CAD</b> 原始坐标', '<b>GIS</b> 交付坐标')
         demo_source = demo_source.replace('源几何 ↔ 地理预览', '交付几何 ↔ 地理预览')
@@ -277,7 +333,7 @@ def build(output: Path, *, release_root: Path | None = None) -> None:
                 "workspace/index.html",
             ],
             "mode": "static-github-pages",
-            "workspace": "authorized-derived-delivery-console" if release_catalog else "data-free-original-console",
+            "workspace": "authorized-derived-delivery-console" if release_catalog else "retained-derived-preview-console",
             "contains_derived_qgis_deliveries": release_catalog is not None,
             "contains_source_binaries": False,
         }, ensure_ascii=False, indent=2) + "\n",

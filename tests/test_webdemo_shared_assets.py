@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from urllib.parse import urljoin
 
 import pytest
 
@@ -47,18 +48,25 @@ const vm = require("node:vm");
 const input = JSON.parse(fs.readFileSync(0, "utf8"));
 class Options { constructor(options) { Object.assign(this, options); } }
 class Projection extends Options { getExtent() { return this.extent; } }
+class MapOptions extends Options {
+  getTargetElement() { return {addEventListener() {}}; }
+  on() {}
+}
 const ol = {
   format: { GeoJSON: Options }, extent: { createEmpty: () => [] },
   source: { Vector: Options, OSM: Options },
-  layer: { Vector: Options, Tile: Options }, Map: Options, View: Options,
+  layer: { Vector: Options, Tile: Options }, Map: MapOptions, View: Options,
   proj: { Projection, fromLonLat: (value) => value },
   control: { ZoomToExtent: Options, defaults: { defaults: () => ({
     items: [], extend(items) { this.items.push(...items); return this; },
   }) } },
 };
-const context = { ol, URLSearchParams, location: {search: ""}, document: { getElementById: () => ({
+const context = { ol, URLSearchParams, location: {search: ""},
+  ResizeObserver: class { observe() {} }, window: {addEventListener() {}},
+  document: {addEventListener() {}, querySelector: () => null, querySelectorAll: () => [],
+  getElementById: () => ({
   textContent: JSON.stringify(input.config),
-}) } };
+}), createElement: () => ({getContext: () => ({measureText: () => ({width: 0})})}) } };
 const script = fs.readFileSync(input.app, "utf8").split("const refreshPreview =")[0];
 const maps = vm.runInNewContext(script + "\n({local: localMap, world: worldMap})", context);
 process.stdout.write(JSON.stringify(maps));
@@ -79,7 +87,8 @@ process.stdout.write(JSON.stringify(maps));
 
 
 @pytest.mark.parametrize("surface", ["local", "pages", "original"])
-def test_shared_fixture_keeps_catalog_scope_cache_urls_and_project_state(surface: str) -> None:
+@pytest.mark.parametrize("project_query", ["", "&project=hutabohu"])
+def test_shared_fixture_keeps_catalog_scope_cache_urls_and_project_state(surface: str, project_query: str) -> None:
     public = surface != "local"
     source = WEBDEMO / "original-demo/index.html" if public else WEBDEMO / "index.html"
     page = source.read_text(encoding="utf-8")
@@ -88,7 +97,7 @@ def test_shared_fixture_keeps_catalog_scope_cache_urls_and_project_state(surface
     asset_root = WEBDEMO / "original-demo/assets" if public else WEBDEMO
     catalog = json.loads((asset_root / "demo-catalog.json").read_text(encoding="utf-8"))
     fixtures = {
-        item["fixture"]: json.loads((asset_root / item["fixture"]).read_text(encoding="utf-8"))
+        Path(item["fixture"]).name: json.loads((asset_root / item["fixture"]).read_text(encoding="utf-8"))
         for item in catalog["projects"]
     }
     prefix = {"local": "/repo/", "pages": "/repo/workspace/", "original": "/repo/original-demo/"}[surface]
@@ -100,7 +109,7 @@ const input = JSON.parse(fs.readFileSync(0, "utf8"));
 const requested = [];
 const context = {
   URL, URLSearchParams, window: {},
-  location: new URL("https://example.test" + input.prefix + "?demo=1&project=unknown"),
+  location: new URL("https://example.test" + input.prefix + "?demo=1" + input.projectQuery),
   history: { replaceState() {} },
   document: {
     currentScript: { src: "https://example.test" + input.scriptPath },
@@ -117,39 +126,51 @@ const context = {
 vm.runInNewContext(fs.readFileSync(input.script, "utf8"), context);
 (async () => {
   const demo = context.window.CAD2GIS_DEMO;
+  // Match the real boot order: selector initialization precedes /api/run.
+  const selector = { innerHTML: "", value: "", addEventListener() {} };
+  context.$ = () => selector;
+  context.renderProjectMeta = (project) => { selector.projectId = project.id; };
+  const app = fs.readFileSync(input.app, "utf8");
+  const start = app.indexOf("const setupProjectSelector = async () => {");
+  const end = app.indexOf("\n};", start) + 3;
+  await vm.runInNewContext(app.slice(start, end) + "\nsetupProjectSelector()", context);
+  const selectorBeforeRun = {value: selector.value, projectId: selector.projectId};
   const run = await demo.request("/api/run");
   const ids = (await demo.catalog()).projects.map((project) => project.id);
   const feature = { id: "saved", properties: {}, geometry: { type: "Point", coordinates: [0, 0] } };
   await demo.request("/api/review/features", { method: "POST", body: JSON.stringify({ feature }) });
   let switchedReviewCount;
-  for (const id of ids.slice(1)) {
+  for (const id of ids.filter((id) => id !== run.demo.project_id)) {
     await demo.selectProject(id);
     const nextRun = await demo.request("/api/run");
     if (nextRun.demo.project_id !== id) throw new Error("Wrong fixture for " + id);
     switchedReviewCount = (await demo.request("/api/review/features")).features.length;
     if (switchedReviewCount !== 0) throw new Error("Review state crossed projects");
   }
-  await demo.selectProject("hutabohu");
+  await demo.selectProject(run.demo.project_id);
   const saved = await demo.request("/api/review/features");
   process.stdout.write(JSON.stringify({ ids, requested, initial: run.demo.project_id,
-    restoredReviewCount: saved.features.length, switchedReviewCount }));
+    restoredReviewCount: saved.features.length, switchedReviewCount, selectorBeforeRun }));
 })().catch((error) => { console.error(error); process.exitCode = 1; });
 """, {
         "script": str(WEBDEMO / "demo-fixture.js"), "config": _page_config(page),
         "prefix": prefix, "scriptPath": script_path, "catalog": catalog, "fixtures": fixtures,
+        "projectQuery": project_query, "app": str(WEBDEMO / "app.js"),
     })
     assert result["ids"] == [item["id"] for item in catalog["projects"]]
-    assert len(result["ids"]) == (1 if public else 10)
-    assert result["initial"] == "hutabohu"
+    assert len(result["ids"]) == (1 if public else 9)
+    assert result["initial"] == "kletek"
+    assert result["selectorBeforeRun"] == {"value": "kletek", "projectId": "kletek"}
     assert result["restoredReviewCount"] == 1
     if not public:
         assert result["switchedReviewCount"] == 0
     assert result["requested"][0] == (
-        f"https://example.test{prefix}assets/demo-catalog.json?v=multi-demo-20260829"
+        f"https://example.test{prefix}assets/demo-catalog.json?v=retained-nine-20260913"
     )
-    version = "multi-demo-20260829" if public else "runtime-fix-20260901"
+    version = "retained-nine-20260913"
     assert set(result["requested"][1:]) == {
-        f"https://example.test{prefix}assets/{name}?v={version}" for name in fixtures
+        urljoin(f"https://example.test{prefix}assets/", f"{project['fixture']}?v={version}")
+        for project in catalog['projects']
     }
 
 
@@ -162,11 +183,14 @@ def test_pages_copies_shared_assets_and_authorized_derived_release(tmp_path: Pat
     projects = []
     for identifier in [f'drawing-{i:02}' for i in range(1, 10)] + ['drawing-03-emr28560', 'drawing-03-emr29619']:
         fixture = identifier + '.json'
-        project = {'id': identifier, 'fixture': fixture, 'source_sha256': '0' * 64, 'delivery_feature_count': 0}
+        source_id = 'drawing-03' if 'emr' in identifier else identifier
+        source_sha = (build_pages.RETAINED_PREVIEWS['kletek']['source_sha256'] if identifier == 'drawing-08'
+                      else hashlib.sha256(('synthetic-' + source_id).encode()).hexdigest())
+        project = {'id': identifier, 'fixture': fixture, 'source_sha256': source_sha, 'delivery_feature_count': 0}
         if 'emr' in identifier:
             project['parent_project_id'] = 'drawing-03'
         projects.append(project)
-        (release / 'assets' / fixture).write_text(json.dumps({'provenance': {'source_sha256': '0' * 64},
+        (release / 'assets' / fixture).write_text(json.dumps({'provenance': {'source_sha256': source_sha},
             'run': {'run_status': 'CONDITIONAL'}, 'layers': {}}), encoding='utf-8')
     (release / 'assets/catalog.json').write_text(json.dumps({'projects': projects}), encoding='utf-8')
     (release / 'index.html').write_text('<!doctype html><title>Synthetic delivery fixture</title>', encoding='utf-8')
@@ -186,10 +210,13 @@ def test_pages_copies_shared_assets_and_authorized_derived_release(tmp_path: Pat
             assert not (WEBDEMO / "original-demo/assets" / name).exists()
         for name in build_pages.SHARED_DEMO_SCRIPTS:
             assert (assets / name).read_bytes() == (WEBDEMO / name).read_bytes()
-        assert sorted(path.name for path in assets.glob("demo-data*.json")) == ["demo-data.json"]
+        assert sorted(path.name for path in assets.glob("demo-data*.json")) == ["demo-data-kletek.json"]
         catalog = json.loads((assets / "demo-catalog.json").read_text(encoding="utf-8"))
-        assert catalog["projects"][0]["id"] == "hutabohu"
-        assert {p["id"] for p in catalog["projects"][1:] if not p.get("parent_project_id")} == {f"drawing-{i:02}" for i in range(1, 10)}
+        assert catalog["default_project"] == "drawing-08"
+        assert {p["id"] for p in catalog["projects"] if not p.get("parent_project_id")} == {f"drawing-{i:02}" for i in range(1, 10)}
+        assert len(catalog['projects']) == 11
+        assert [p['id'] for p in catalog['projects'] if p['source_sha256'] ==
+                build_pages.RETAINED_PREVIEWS['kletek']['source_sha256']] == ['drawing-08']
         assert {p["id"] for p in catalog["projects"] if p.get("parent_project_id")} == {"drawing-03-emr28560", "drawing-03-emr29619"}
         assert (destination / "deliveries" / "publication.json").is_file()
         assert len(list((assets / "font-licenses").glob("*.txt"))) == 4

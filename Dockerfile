@@ -5,7 +5,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /build
-COPY pyproject.toml ./
+COPY pyproject.toml LICENSE.md NOTICE.md ./
+COPY packaging/THIRD_PARTY_NOTICES.md ./packaging/
+COPY packaging/patches/COPYING packaging/patches/NOTICE.md ./packaging/patches/
 COPY src ./src
 RUN pip install '.[agent]' && cad2gis runtime install
 
@@ -13,6 +15,7 @@ FROM python:3.12-slim-bookworm AS runtime
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="CAD2GIS" \
       org.opencontainers.image.source="https://github.com/Mola-maker/CAD2GIS" \
+      org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0" \
       org.opencontainers.image.revision=$VCS_REF
 ENV PATH="/opt/venv/bin:$PATH" \
     CAD2GIS_CACHE_DIR=/opt/cad2gis-cache \

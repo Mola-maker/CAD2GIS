@@ -3,6 +3,11 @@
 [![CAD2GIS CI](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml)
 [![Web Demo](https://github.com/Mola-maker/CAD2GIS/actions/workflows/pages.yml/badge.svg)](https://mola-maker.github.io/CAD2GIS/?demo=1)
 
+**许可：源码可见，非商用。** 原创代码采用
+[PolyForm Noncommercial 1.0.0](LICENSE.md)，商用须取得适用版权人的单独书面授权。
+这不是 OSI 开源许可。版权归属、授权入口、第三方组件和项目数据的许可边界见
+[版权与许可声明](NOTICE.md)。
+
 **Linux 0.7.0-1 安装包（预发布）**：[Linux 修复版](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.7.0-linux.1) ·
 [Ubuntu x86_64 `.deb`](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/cad2gis_0.7.0-1_amd64.deb) ·
 [Linux 便携包](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/cad2gis-0.7.0-1-linux-x86_64.tar.gz) ·

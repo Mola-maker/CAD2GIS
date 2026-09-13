@@ -1,7 +1,9 @@
 # CAD2GIS application bundle — third-party components
 
-The CAD2GIS source currently declares `LicenseRef-Proprietary` in pyproject.toml.
-This notice does not change the project's license or grant redistribution rights.
+Original CAD2GIS source declares `PolyForm-Noncommercial-1.0.0` in pyproject.toml.
+See the accompanying LICENSE.md and NOTICE.md for its noncommercial terms,
+copyright notices and separate commercial-authorization process. Third-party
+components retain their existing licenses; this notice does not relicense them.
 
 This development installer includes separate third-party components. Their original
 license files are retained in `runtime/` (Python), installed `*.dist-info/licenses/`

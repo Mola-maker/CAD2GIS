@@ -20,7 +20,6 @@ PUBLIC_FILES = (
     "demo-catalog.json",
 )
 EXPECTED_PROJECT_IDS = (
-    "hutabohu",
     "lamteh-main",
     "lamteh-sf",
     "kletek",
@@ -84,8 +83,8 @@ def _assert_source_boundary() -> tuple[str, ...]:
         raise ValueError("WebDemo project catalog is not valid JSON") from exc
     projects = catalog.get("projects", [])
     project_ids = tuple(str(project.get("id", "")) for project in projects)
-    if project_ids != EXPECTED_PROJECT_IDS or catalog.get("default_project") != "hutabohu":
-        raise ValueError("WebDemo project catalog must define the ten reviewed fixtures")
+    if project_ids != EXPECTED_PROJECT_IDS or catalog.get("default_project") != "kletek":
+        raise ValueError("WebDemo project catalog must define the nine retained fixtures")
     fixtures: list[dict[str, object]] = []
     fixture_names: list[str] = []
     for project in projects:

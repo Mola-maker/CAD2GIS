@@ -46,7 +46,6 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
             "assets/cad2gis-hero-display.woff2",
             "assets/demo-catalog.json",
             "assets/demo-data-darat-sekip-sf.json",
-            "assets/demo-data.json",
             "assets/demo-data-kletek.json",
             "assets/demo-data-lamteh-main.json",
             "assets/demo-data-lamteh-sf.json",
@@ -80,7 +79,8 @@ def test_webdemo_build_matches_browser_asset_contract(tmp_path: Path) -> None:
         ])
         assert (destination / "assets" / "app.js").is_file()
         assert (destination / "assets" / "demo-catalog.json").is_file()
-        assert (destination / "assets" / "demo-data.json").is_file()
+        assert not (destination / "assets" / "demo-data.json").exists()
+        assert (destination / "assets" / "demo-data-kletek.json").is_file()
         catalog = json.loads(
             (destination / "assets" / "demo-catalog.json").read_text(encoding="utf-8")
         )

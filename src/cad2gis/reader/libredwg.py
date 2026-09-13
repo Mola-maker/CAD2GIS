@@ -45,6 +45,64 @@ _LIBRARY_ENV = "CAD2GIS_LIBREDWG_LIBRARY"
 _LEGACY_LIBRARY_ENV = "CAD2GIS_LIBREDWG_DLL"
 _OS_NAME = os.name
 
+# LibreDWG 0.14 include/dwg.h: DWG_ERROR is a bitmask, with critical
+# errors starting at DWG_ERR_CLASSESNOTFOUND (DWG_ERR_CRITICAL = 1 << 7).
+# Keep the names here because not every supported SWIG module exports them.
+_LIBREDWG_ERROR_FLAGS = {
+    1 << 0: "DWG_ERR_WRONGCRC",
+    1 << 1: "DWG_ERR_NOTYETSUPPORTED",
+    1 << 2: "DWG_ERR_UNHANDLEDCLASS",
+    1 << 3: "DWG_ERR_INVALIDTYPE",
+    1 << 4: "DWG_ERR_INVALIDHANDLE",
+    1 << 5: "DWG_ERR_INVALIDEED",
+    1 << 6: "DWG_ERR_VALUEOUTOFBOUNDS",
+    1 << 7: "DWG_ERR_CLASSESNOTFOUND",
+    1 << 8: "DWG_ERR_SECTIONNOTFOUND",
+    1 << 9: "DWG_ERR_PAGENOTFOUND",
+    1 << 10: "DWG_ERR_INTERNALERROR",
+    1 << 11: "DWG_ERR_INVALIDDWG",
+    1 << 12: "DWG_ERR_IOERROR",
+    1 << 13: "DWG_ERR_OUTOFMEM",
+}
+_LIBREDWG_KNOWN_ERROR_MASK = sum(_LIBREDWG_ERROR_FLAGS)
+_LIBREDWG_CRITICAL_ERROR_MASK = _LIBREDWG_KNOWN_ERROR_MASK & ~((1 << 7) - 1)
+
+
+def _read_error_diagnostics(read_error: int) -> dict[str, Any]:
+    """Decode native status without treating recoverable bits as fatal."""
+    flags = [
+        name for bit, name in _LIBREDWG_ERROR_FLAGS.items()
+        if read_error >= 0 and read_error & bit
+    ]
+    unknown_bits = read_error & ~_LIBREDWG_KNOWN_ERROR_MASK if read_error >= 0 else None
+    if read_error < 0 or unknown_bits:
+        status = "unknown"
+    elif read_error & _LIBREDWG_CRITICAL_ERROR_MASK:
+        status = "critical"
+    else:
+        status = "warning" if read_error else "ok"
+    return {
+        "libredwg_read_error": read_error,
+        "libredwg_read_error_flags": flags,
+        "libredwg_read_unknown_bits": unknown_bits,
+        "libredwg_read_status": status,
+    }
+
+
+class LibreDWGReadError(RuntimeError):
+    """Native read failure with structured diagnostics attached."""
+
+    def __init__(self, source: Path, diagnostics: dict[str, Any]):
+        self.diagnostics = dict(diagnostics)
+        detail = ", ".join(diagnostics["libredwg_read_error_flags"])
+        if diagnostics["libredwg_read_status"] == "unknown":
+            detail = f"{detail}; unknown native status" if detail else "unknown native status"
+        super().__init__(
+            f"LibreDWG failed to read DWG (error {diagnostics['libredwg_read_error']}: "
+            f"{detail}): {source}; diagnostics: {diagnostics['cursor_path']}"
+        )
+
+
 _BINDING_EXPORTS = (
     "Dwg_Data",
     "Dwg_Object_Array_getitem",
@@ -1671,15 +1729,31 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
 
     data = Dwg_Data()
     data.object = new_Dwg_Object_Array(500000)
-    read_err = dwg_read_file(str(source), data)
-    if read_err != 0:
-        # LibreDWG may return warnings (e.g. 68 = classes not found) and still
-        # populate the file; only treat hard errors as incomplete.
-        hard_errors = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
-        if read_err in hard_errors:
-            raise RuntimeError(
-                f"LibreDWG failed to read DWG (error {read_err}): {source}"
-            )
+    read_err = int(dwg_read_file(str(source), data))
+    fd, cursor_path = tempfile.mkstemp(prefix="libredwg_reader_", suffix=".json")
+    os.close(fd)
+    cursor_path = Path(cursor_path)
+
+    diagnostics: dict[str, Any] = {
+        "extraction_backend": "libredwg",
+        "skipped_rows": 0,
+        # Only a successful native read and finished traversal can establish
+        # completeness. Recoverable warnings still permit record inspection.
+        "inventory_complete": False,
+        "metadata_evidence": "reader",
+        **_read_error_diagnostics(read_err),
+        "source_file": str(source),
+        "source_sha256": source_sha256,
+        "total_objects": int(data.num_objects),
+        "unsupported_reason_counts": {},
+        "reader_failures": [],
+        "object_access_failures": 0,
+        "cursor_path": str(cursor_path),
+    }
+    _flush_cursor(diagnostics, cursor_path)
+    if diagnostics["libredwg_read_status"] not in {"ok", "warning"}:
+        # Critical or unrecognized codes must never reach object traversal.
+        raise LibreDWGReadError(source, diagnostics)
 
     anon_block_names, dimension_display_texts = _read_anon_block_names_json(
         source, source_sha256,
@@ -1689,26 +1763,14 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
         _read_block_header_metadata(data, anon_fallback=anon_block_names)
     )
     layer_styles = _read_layer_styles(data)
-    fd, cursor_path = tempfile.mkstemp(prefix="libredwg_reader_", suffix=".json")
-    os.close(fd)
-    cursor_path = Path(cursor_path)
-
-    diagnostics: dict[str, Any] = {
-        "extraction_backend": "libredwg",
-        "skipped_rows": 0,
-        "inventory_complete": True,
-        "metadata_evidence": "reader",
-        "libredwg_read_error": read_err,
-        "total_objects": int(data.num_objects),
-        "unsupported_reason_counts": {},
-        "cursor_path": str(cursor_path),
+    diagnostics.update({
         "anon_block_names_resolved": len(anon_block_names),
         "layout_names_resolved": len(entity_layout_map),
         "block_base_points_resolved": sum(
             1 for status in block_base_point_statuses.values()
             if status == "available"
         ),
-    }
+    })
 
     # Pre-index ATTRIB entities by ownerhandle for INSERT attribute traversal.
     owner_attribs: dict[int, list] = {}
@@ -1740,9 +1802,18 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
     for i in range(data.num_objects):
         try:
             obj = Dwg_Object_Array_getitem(data.object, i)
-        except Exception:
-            continue
-        if obj.supertype != DWG_SUPERTYPE_ENTITY:
+            if obj.supertype != DWG_SUPERTYPE_ENTITY:
+                continue
+        except Exception as exc:
+            diagnostics["skipped_rows"] += 1
+            diagnostics["object_access_failures"] += 1
+            diagnostics["reader_failures"].append({
+                "object_index": i,
+                "stage": "object_access",
+                "exception_type": type(exc).__name__,
+                "message": str(exc),
+            })
+            unsupported_reason_counts[f"libredwg_object_access_failed[{type(exc).__name__}]"] += 1
             continue
 
         # Per-entity crash isolation: catch Python exceptions and keep going.
@@ -1801,7 +1872,13 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
         except Exception as exc:
             crash_count += 1
             unsupported_reason_counts[f"libredwg_reader_crash[{type(exc).__name__}]"] += 1
-            diagnostics["inventory_complete"] = False
+            diagnostics["skipped_rows"] += 1
+            diagnostics["reader_failures"].append({
+                "object_index": i,
+                "stage": "entity_record",
+                "exception_type": type(exc).__name__,
+                "message": str(exc),
+            })
             continue
 
         processed += 1
@@ -1890,6 +1967,7 @@ def extract_dwg_records(source_path, *, layout_filter: str | None = None) -> DWG
     diagnostics["processed_entities"] = processed
     diagnostics["crash_count"] = crash_count
     diagnostics["returned_records"] = len(records)
+    diagnostics["inventory_complete"] = read_err == 0 and diagnostics["skipped_rows"] == 0
     _flush_cursor(diagnostics, cursor_path)
 
     # Spatial filtering is deferred to the semantic pipeline stage.

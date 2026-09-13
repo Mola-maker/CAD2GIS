@@ -42,6 +42,10 @@ def _sample(sample_id: str, seed: str, *, absolute: bool = False) -> dict:
         "style": {"passed": True},
         "length": {"passed": True, "closure_passed": True},
         "nominal_crs": {"passed": True},
+        "validation": {
+            "reviewer_acceptance": {"status": "passed", "passed": True},
+            "engineering_review": {"status": "passed", "passed": True},
+        },
         "gcp": {
             "surveyed": absolute,
             "training_control_count": 4 if absolute else 0,

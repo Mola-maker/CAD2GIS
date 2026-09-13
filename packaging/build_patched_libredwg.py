@@ -113,7 +113,8 @@ def build(target, resume=False, jobs=2, work_root=Path('/tmp')):
     source_delivery.mkdir(exist_ok=resume)
     for path in (archive, patch, reproducer):
         shutil.copy2(path, source_delivery / path.name)
-    shutil.copy2(ROOT / "packaging/patches/README.md", source_delivery / "README.md")
+    for name in ("README.md", "NOTICE.md", "COPYING"):
+        shutil.copy2(ROOT / "packaging/patches" / name, source_delivery / name)
     shutil.copy2(Path(__file__), source_delivery / "build_patched_libredwg.py")
     shutil.copy2(source / "COPYING", runtime / "COPYING")
     if target == "windows":

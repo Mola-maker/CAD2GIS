@@ -984,6 +984,7 @@ def _has_osm_registration(georeference_diagnostics):
 def _manifest_validation_summary(
     entities, features, policy_diagnostics, topology_diagnostics,
     georeference_diagnostics, delivery_counts=None,
+    *, measurement_gates=(),
 ):
     """Expose the production gates without requiring a GeoPackage query.
 
@@ -1074,18 +1075,9 @@ def _manifest_validation_summary(
             ],
             "crossing_connections": policy_diagnostics["crossing_connections"],
         },
-        "measurements": {
-            "passed": True,
-            "route_segments_with_span_dimension": topology_diagnostics.get(
-                "route_segments_with_span_dimension", 0
-            ),
-            "route_segments_without_span_dimension": topology_diagnostics.get(
-                "route_segments_without_span_dimension", 0
-            ),
-            "span_measurement_max_abs_error_m": topology_diagnostics.get(
-                "span_measurement_max_abs_error_m", 0.0
-            ),
-        },
+        "measurements": _measurement_validation_summary(
+            topology_diagnostics, measurement_gates,
+        ),
         "segment_delivery": _segment_delivery_summary(features, delivery_counts),
         "coordinate_accuracy": {
             "passed": coordinate_accuracy_passed,
@@ -1118,10 +1110,9 @@ def _diagnostic_value(value, path):
     return current
 
 
-def _evaluate_diagnostic_gates(domain, gates, diagnostics):
-    """Evaluate only reviewer-declared gates; no project names are implicit."""
+def _diagnostic_gate_results(gates, diagnostics):
+    """Evaluate declared predicates without converting missing evidence to PASS."""
     results = []
-    failures = []
     for gate in gates:
         actual = _diagnostic_value(diagnostics, gate.path)
         if actual is _MISSING:
@@ -1158,8 +1149,13 @@ def _evaluate_diagnostic_gates(domain, gates, diagnostics):
             "passed": bool(passed),
         }
         results.append(result)
-        if not passed:
-            failures.append(result)
+    return results
+
+
+def _evaluate_diagnostic_gates(domain, gates, diagnostics):
+    """Evaluate only reviewer-declared gates; no project names are implicit."""
+    results = _diagnostic_gate_results(gates, diagnostics)
+    failures = [result for result in results if not result["passed"]]
     if failures:
         details = "; ".join(
             f"{item['path']} {item['operator']} {item['expected']!r}, "
@@ -1167,7 +1163,127 @@ def _evaluate_diagnostic_gates(domain, gates, diagnostics):
             for item in failures
         )
         raise RuntimeError(f"{domain} contract gates failed: {details}")
-    return {"domain": domain, "passed": True, "gates": results}
+    return {
+        "domain": domain, "passed": True if results else None,
+        "status": "passed" if results else "not_verified", "gates": results,
+        "reason": None if results else "no_reviewer_declared_gates",
+    }
+
+
+def _measurement_validation_summary(diagnostics, gates):
+    """Keep span-dimension validation distinct from numerical length closure.
+
+    A census or lower bound is not a maximum permissible measurement error.
+    Only an explicitly declared upper bound/exact error predicate can establish
+    this check, and unmeasured route segments remain unverified.
+    """
+    metric = "span_measurement_max_abs_error_m"
+    declared = [gate for gate in gates if gate.path == (metric,)
+                and gate.operator in {"le", "eq"}
+                and not isinstance(gate.value, bool)
+                and isinstance(gate.value, (int, float))
+                and math.isfinite(float(gate.value)) and gate.value >= 0]
+    results = _diagnostic_gate_results(declared, diagnostics)
+    measured = diagnostics.get("route_segments_with_span_dimension")
+    unmeasured = diagnostics.get("route_segments_without_span_dimension")
+    reasons = []
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 0
+           for value in (measured, unmeasured)):
+        reasons.append("missing_or_invalid_dimension_coverage")
+    else:
+        if measured == 0:
+            reasons.append("no_span_dimensions")
+        if unmeasured:
+            reasons.append("unmeasured_route_segments")
+    if not declared:
+        reasons.append("no_reviewer_declared_measurement_tolerance")
+    if metric not in diagnostics:
+        reasons.append("missing_measurement_diagnostics")
+    if metric not in diagnostics or measured == 0:
+        for result in results:
+            result["passed"] = None
+    elif results:
+        error = diagnostics[metric]
+        if (isinstance(error, bool) or not isinstance(error, (int, float))
+                or not math.isfinite(float(error)) or error < 0):
+            for result in results:
+                result["passed"] = False
+    failed = any(result["passed"] is False for result in results)
+    passed = False if failed else None if reasons else True
+    return {
+        "passed": passed,
+        "status": "failed" if failed else "not_verified" if reasons else "passed",
+        "reason_codes": reasons,
+        "route_segments_with_span_dimension": measured,
+        "route_segments_without_span_dimension": unmeasured,
+        metric: diagnostics.get(metric),
+        "declared_tolerance_checks": results,
+        "numerical_length_closure_is_measurement_acceptance": False,
+    }
+
+
+def _reviewer_acceptance_summary(contract_gates, delivery_gate):
+    """Require populated reviewer checks independently of mandatory invariants."""
+    gates = {**contract_gates, "delivery": delivery_gate}
+    domains = {}
+    for name in ("source_inventory", "features", "source_geometry", "topology", "segments", "delivery"):
+        section = gates.get(name) or {}
+        populated = bool(
+            section.get("gates") or section.get("counts")
+            or section.get("declared_counts") or section.get("expected")
+        )
+        passed = section.get("passed")
+        domains[name] = False if passed is False else True if passed is True and populated else None
+    failed = any(value is False for value in domains.values())
+    missing = [name for name, value in domains.items() if value is None]
+    return {
+        "passed": False if failed else None if missing else True,
+        "status": "failed" if failed else "not_verified" if missing else "passed",
+        "domain_passed": domains,
+        "unverified_domains": missing,
+        "scope": "reviewer_declared_contracts_only",
+    }
+
+
+def _engineering_review_summary(
+    features, unresolved, semantic_diagnostics, *,
+    scope="provided_features", region_ids=(), output_region_ids=(),
+):
+    """Expose outstanding derivations without changing geometry or warning records."""
+    operations = Counter()
+    affected = set()
+    for feature in features:
+        for item in feature.lineage:
+            operation = item.get("operation")
+            if operation in {"collocate_with_support", "bridge_cable_endpoint_to_pole", "repair_boundary_polygon"}:
+                operations[operation] += 1
+                affected.add(feature.feature_key)
+    selected = {
+        item.get("annotation_key")
+        for item in semantic_diagnostics.get("annotation_candidates", [])
+        if item.get("selected") is True or item.get("status") == "selected"
+    }
+    failed_then_selected = sorted({
+        item["entity_key"] for item in unresolved
+        if isinstance(item, Mapping) and item.get("kind") == "annotation"
+        and item.get("entity_key")
+        and item["entity_key"] in selected
+    })
+    pending = bool(affected or unresolved or failed_then_selected)
+    return {
+        "passed": None if pending else True,
+        "status": "not_verified" if pending else "passed",
+        "engineering_acceptance": "not_established" if pending else "no_pending_derivations",
+        "scope": scope,
+        "region_ids": sorted(region_ids),
+        "output_region_ids": sorted(output_region_ids),
+        "geometry_change_feature_count": len(affected),
+        "geometry_lineage_operation_counts": dict(sorted(operations.items())),
+        "annotation_failed_then_selected_count": len(failed_then_selected),
+        "annotation_failed_then_selected_keys": failed_then_selected,
+        "unresolved_count": len(unresolved),
+        "source_geometry_or_annotation_rules_changed": False,
+    }
 
 
 def _validate_exact_counts(domain, expected, actual):
@@ -1192,6 +1308,7 @@ def _validate_exact_counts(domain, expected, actual):
     return {
         "domain": domain,
         "passed": True,
+        "declared_counts": {str(key): int(value) for key, value in expected.items()},
         "expected": normalized_expected,
         "actual": normalized_actual,
     }
@@ -1224,7 +1341,11 @@ def _validate_declared_counts(domain, expected, actual):
             f"{domain} census mismatch for {failures}: "
             f"{ {key: results[key] for key in failures} }"
         )
-    return {"domain": domain, "passed": True, "counts": results}
+    return {
+        "domain": domain, "passed": True if results else None,
+        "status": "passed" if results else "not_verified", "counts": results,
+        "reason": None if results else "no_reviewer_declared_counts",
+    }
 
 
 def _validate_annotation_families(expectations, semantic_diagnostics, registry):
@@ -1340,7 +1461,7 @@ def _derive_conversion_status(
     serious_failures: list[str] = []
     for domain in (
         "source_geometry", "topology", "measurements", "segment_delivery",
-        "coordinate_accuracy",
+        "coordinate_accuracy", "reviewer_acceptance", "engineering_review",
     ):
         section = validation_summary.get(domain)
         if isinstance(section, Mapping) and section.get("passed") is False:
@@ -1437,14 +1558,12 @@ def _derive_conversion_status(
         style_counts = {}
     warning_count += _status_count(semantic_counts, "warned")
     warning_count += _status_count(style_counts, "warned")
-    coordinate_accuracy = validation_summary.get("coordinate_accuracy")
-    if (
-        isinstance(coordinate_accuracy, Mapping)
-        and coordinate_accuracy.get("passed") is None
-    ):
-        # Nominal CRS plausibility and DWG GEODATA are not independent
-        # absolute-accuracy validation.  Keep usable output CONDITIONAL.
-        warning_count += 1
+    for domain in ("coordinate_accuracy", "measurements", "reviewer_acceptance", "engineering_review"):
+        section = validation_summary.get(domain)
+        if not isinstance(section, Mapping) or section.get("passed") is None:
+            # Missing engineering evidence is neither an unsafe artifact nor
+            # evidence of acceptance. Keep usable output CONDITIONAL.
+            warning_count += 1
     semantic_coverage_status = semantic_diagnostics.get("coverage", {})
     if (
         isinstance(semantic_coverage_status, Mapping)
@@ -2717,6 +2836,22 @@ def convert(request: ConversionRequest) -> ConversionResult:
             topology_diagnostics,
             diagnostics["georeference"],
             counts,
+            measurement_gates=profile.expectations.segment_gates,
+        )
+        validation_summary["reviewer_acceptance"] = _reviewer_acceptance_summary(
+            diagnostics["project_contract"]["gates"], delivery_gate,
+        )
+        validation_summary["engineering_review"] = _engineering_review_summary(
+            # Matching a selected panel narrows the export, but run-level
+            # diagnostics still cover the source drawing and every partition.
+            [feature for scoped in all_partitioned_features.values() for feature in scoped],
+            unresolved, semantic_diagnostics,
+            scope="all_source_regions",
+            region_ids=all_partitioned_features,
+            output_region_ids=(
+                [output_partition_id] if output_partition_id is not None
+                else all_partitioned_features
+            ),
         )
         if validation_summary["segment_delivery"]["passed"] is not True:
             raise RuntimeError(

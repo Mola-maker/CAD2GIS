@@ -10,12 +10,12 @@
   const baseUrl = pageConfig.fixtureBaseUrl
     ? new URL(pageConfig.fixtureBaseUrl, location.href)
     : new URL(document.currentScript?.src || location.href);
-  const fixtureCacheVersion = pageConfig.fixtureCacheVersion || "runtime-fix-20260901";
-  const catalogUrl = new URL("./demo-catalog.json?v=multi-demo-20260829", baseUrl);
+  const fixtureCacheVersion = pageConfig.fixtureCacheVersion || "retained-nine-20260913";
+  const catalogUrl = new URL("./demo-catalog.json?v=retained-nine-20260913", baseUrl);
   const requestedProject = new URLSearchParams(location.search).get("project");
   const reviewByProject = new Map();
   const revisionByProject = new Map();
-  let activeProjectId = requestedProject || "hutabohu";
+  let activeProjectId = requestedProject || null;
   let catalogPromise;
   let fixturePromise;
 
@@ -23,7 +23,12 @@
   const loadCatalog = async () => {
     catalogPromise = catalogPromise || fetch(catalogUrl).then(async (response) => {
       if (!response.ok) throw new Error(`无法加载演示项目目录：${response.status}`);
-      return response.json();
+      const catalog = await response.json();
+      const selected = catalog.projects.find((project) => project.id === activeProjectId)
+        || catalog.projects.find((project) => project.id === catalog.default_project);
+      if (!selected) throw new Error("演示项目目录为空");
+      activeProjectId = selected.id;
+      return catalog;
     });
     return catalogPromise;
   };

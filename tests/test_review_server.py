@@ -1112,10 +1112,18 @@ def test_matching_profile_preserves_initial_pick_and_undo_in_a_new_workspace(tmp
 def test_registration_export_keeps_the_original_coverage_policy(tmp_path, monkeypatch):
     run, _, manifest_path = _run_fixture(tmp_path)
     manifest = json.loads(manifest_path.read_text())
-    template = Path(__file__).resolve().parents[1] / "experiment/config/apd_source_profile.json"
+    template = Path(__file__).resolve().parents[1] / "baselines/kletek/config/source_profile.json"
     source_profile = json.loads(template.read_text())
-    source_profile.update(source_sha256=manifest["source"]["sha256"],
-                          source_crs="EPSG:32749", target_crs="EPSG:32749")
+    source_profile['source_binding']['source_sha256'] = manifest['source']['sha256']
+    source_profile['crs'].update(source_crs="EPSG:32749", target_crs="EPSG:32749")
+    source_profile['spatial_coverage_policy'] = {
+        'min_training_extent_x_ratio': 0.7, 'min_training_extent_y_ratio': 0.7,
+        'min_training_hull_area_ratio': 0.3,
+        'max_drawing_vertices_outside_training_bbox_ratio': 0.04,
+        'max_drawing_vertices_outside_training_hull_ratio': 0.04,
+        'min_check_baseline_to_drawing_diagonal_ratio': 0.3,
+        'min_check_hull_area_ratio': 0.06,
+    }
     source = tmp_path / "source-profile.json"
     source.write_text(json.dumps(source_profile))
     manifest["profiles"] = {"source_profile": {"path": str(source),

@@ -19,6 +19,7 @@ CORE_FIDELITY_DIMENSIONS = (
     "style",
     "length",
 )
+ENGINEERING_ACCEPTANCE_GATES = ("reviewer_acceptance", "engineering_review")
 
 CLAIM_INVENTORY_ONLY = (
     "Inventory only: no conversion-quality or accuracy claim is supported."
@@ -113,6 +114,35 @@ def _all_pass(samples: list[Mapping[str, Any]], dimensions: tuple[str, ...]) -> 
     return True
 
 
+def _acceptance_qualifier(samples: list[Mapping[str, Any]]) -> str:
+    """Keep engineering acceptance separate from verified dimension facts."""
+    missing = pending = failed = False
+    for sample in samples:
+        acceptance = sample.get("acceptance")
+        acceptance = acceptance if isinstance(acceptance, Mapping) else {}
+        gates = acceptance.get("gates")
+        gates = gates if isinstance(gates, Mapping) else {}
+        for name in ENGINEERING_ACCEPTANCE_GATES:
+            gate = gates.get(name)
+            if not isinstance(gate, Mapping) or gate.get("evidence_provided") is not True:
+                missing = True
+                continue
+            gate_status = _status(gate)
+            failed = failed or gate_status == "FAIL"
+            pending = pending or gate_status != "PASS"
+        run_status = acceptance.get("run_status", sample.get("run_status"))
+        if run_status is not None:
+            failed = failed or run_status in {"UNSAFE", "FAILED"}
+            pending = pending or run_status != "VERIFIED"
+    if failed:
+        return " Engineering acceptance is not established: an acceptance gate or run status failed."
+    if pending:
+        return " Engineering acceptance is not established: acceptance gates or run status remain unverified."
+    if missing:
+        return " Engineering acceptance is not established: reviewer or engineering gate evidence was not provided."
+    return ""
+
+
 def strongest_allowed_claim(report: Mapping[str, Any]) -> str:
     """Return the strongest claim justified by an evaluated matrix report.
 
@@ -130,6 +160,7 @@ def strongest_allowed_claim(report: Mapping[str, Any]) -> str:
     core_pass = _all_pass(samples, CORE_FIDELITY_DIMENSIONS)
     nominal_crs_pass = _all_pass(samples, ("nominal_crs",))
     absolute_pass = _all_pass(samples, ("absolute_accuracy",))
+    qualifier = _acceptance_qualifier(samples)
 
     # Absolute status has already passed the surveyed, independent check-GCP
     # gate in evaluate_matrix.  Requiring geometry, length and nominal CRS here
@@ -138,16 +169,16 @@ def strongest_allowed_claim(report: Mapping[str, Any]) -> str:
         samples, ("geometry", "length", "nominal_crs", "absolute_accuracy")
     )
     if spatial_pass:
-        return CLAIM_CROSS_ABSOLUTE if cross_cad else CLAIM_SINGLE_ABSOLUTE
+        return (CLAIM_CROSS_ABSOLUTE if cross_cad else CLAIM_SINGLE_ABSOLUTE) + qualifier
     if core_pass and nominal_crs_pass:
-        return CLAIM_CROSS_NOMINAL_CRS if cross_cad else CLAIM_SINGLE_NOMINAL_CRS
+        return (CLAIM_CROSS_NOMINAL_CRS if cross_cad else CLAIM_SINGLE_NOMINAL_CRS) + qualifier
     if core_pass:
-        return CLAIM_CROSS_FIDELITY if cross_cad else CLAIM_SINGLE_FIDELITY
+        return (CLAIM_CROSS_FIDELITY if cross_cad else CLAIM_SINGLE_FIDELITY) + qualifier
     if absolute_pass:
         # This is defensive: malformed external reports must not obtain an
         # absolute claim without the prerequisite spatial dimensions.
-        return CLAIM_DIMENSION_ONLY
-    return CLAIM_DIMENSION_ONLY
+        return CLAIM_DIMENSION_ONLY + qualifier
+    return CLAIM_DIMENSION_ONLY + qualifier
 
 
 __all__ = [

@@ -306,8 +306,8 @@ def export_fixture(
     run_dir: Path,
     output: Path,
     *,
-    project_id: str = "hutabohu",
-    project_name: str = "Hutabohu",
+    project_id: str,
+    project_name: str,
     map_anchor: Path | None = None,
 ) -> dict[str, Any]:
     run_dir = run_dir.expanduser().resolve()
@@ -386,13 +386,13 @@ def export_fixture(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-dir", type=Path, required=True)
-    parser.add_argument("--project-id", default="hutabohu")
-    parser.add_argument("--project-name", default="Hutabohu")
+    parser.add_argument("--project-id", required=True)
+    parser.add_argument("--project-name", required=True)
     parser.add_argument("--map-anchor", type=Path)
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "src/cad2gis/webdemo/demo-data.json",
+        required=True,
     )
     args = parser.parse_args()
     print(json.dumps(export_fixture(

@@ -166,6 +166,9 @@ def test_independent_panels_match_separately_and_refinement_only_publishes_selec
                 "source_observed", model.CadStyle(aci_color=1), display_label=region,
                 label_provenance="DWG_DIRECT:fixture-text",
             ) for region, point in origins.items()]
+            # The selected PANEL is clean; the source MAIN panel still has an
+            # engineering derivation requiring review during the second run.
+            features[0].lineage.append({"operation": "collocate_with_support"})
             patch.setattr(module, "classify_entities", lambda *_args, **_kwargs: (
                 features, [], [], {"annotation_assignments_by_family": {}, "coverage": {"conversion_allowed": True}},
             ))
@@ -234,6 +237,13 @@ def test_independent_panels_match_separately_and_refinement_only_publishes_selec
     second_manifest = json.loads(second.run_manifest_path.read_text(encoding="utf-8"))
     assert second_manifest["delivery_partition"]["region_id"] == "PANEL"
     assert second_manifest["delivery_partitions"] == {}
+    engineering = second_manifest["validation"]["engineering_review"]
+    assert engineering["passed"] is None
+    assert engineering["scope"] == "all_source_regions"
+    assert engineering["region_ids"] == ["MAIN", "PANEL"]
+    assert engineering["output_region_ids"] == ["PANEL"]
+    assert engineering["geometry_change_feature_count"] == 1
+    assert engineering["geometry_lineage_operation_counts"] == {"collocate_with_support": 1}
     assert not (second.delivery_path.parent / "PANEL").exists()
     assert point(second.delivery_path) == pytest.approx((12_605_700, -800_300), abs=0.1)
     assert (first.delivery_path.read_bytes(), panel_path.read_bytes()) == saved_bytes

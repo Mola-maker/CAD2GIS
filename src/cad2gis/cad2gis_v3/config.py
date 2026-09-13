@@ -369,9 +369,9 @@ def _legacy_apd_expectations(census: Mapping[str, int]) -> ProjectExpectations:
         segment_values["route_segment_occurrences"] = census.get(
             "semantic_route_segment_occurrences", route_occurrences
         )
-    if "span_measurement_max_abs_error_m" not in census:
+    if "span_measurement_max_abs_error_m" in census:
         segment_values["span_measurement_max_abs_error_m"] = {
-            "operator": "le", "value": 1e-6,
+            "operator": "le", "value": census["span_measurement_max_abs_error_m"],
         }
     if "source_route_native_lengths" in census:
         segment_values["source_route_native_length_max_abs_delta_m"] = {

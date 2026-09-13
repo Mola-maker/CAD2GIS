@@ -25,7 +25,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
-from .claims import strongest_allowed_claim
+from .claims import ENGINEERING_ACCEPTANCE_GATES, strongest_allowed_claim
 
 
 MATRIX_SCHEMA_VERSION = "cad2gis-verification-matrix-v1"
@@ -670,6 +670,57 @@ def _absolute_accuracy(sample: Mapping[str, Any]) -> tuple[str, list[str]]:
     return "WATCH", reasons
 
 
+def _normalise_acceptance_evidence(sample: Mapping[str, Any]) -> dict[str, Any]:
+    """Retain declared engineering gates without changing fidelity dimensions."""
+    validation = _dict(sample.get("validation"))
+    gates: dict[str, Any] = {}
+    reasons: list[str] = []
+    for name in ENGINEERING_ACCEPTANCE_GATES:
+        records = [container[name] for container in (validation, sample) if name in container]
+        statuses = []
+        for record in records:
+            if not isinstance(record, Mapping):
+                statuses.append("WATCH")
+                continue
+            # An explicit false/null must survive even a conflicting status
+            # string.  In particular, null is missing evidence, not a failure.
+            status = _status(record) or "WATCH"
+            if record.get("passed") is False:
+                status = "FAIL"
+            elif "passed" in record and record["passed"] is None and status != "FAIL":
+                status = "WATCH"
+            statuses.append(status)
+        status = "FAIL" if "FAIL" in statuses else "PASS" if statuses and all(
+            value == "PASS" for value in statuses
+        ) else "WATCH"
+        reason = None if status == "PASS" else (
+            "evidence_not_provided" if not records else
+            "declared_check_failed" if status == "FAIL" else "evidence_not_verified"
+        )
+        if reason:
+            reasons.append(f"{name}: {reason}")
+        gates[name] = {
+            "status": status,
+            "evidence_provided": bool(records),
+            "evidence": _copy_json(records[0] if len(records) == 1 else records) if records else None,
+            "reason": reason,
+        }
+    statuses = [gate["status"] for gate in gates.values()]
+    run_status = sample.get("run_status")
+    if run_status is not None:
+        run_status = str(run_status).strip().upper()
+        if run_status != "VERIFIED":
+            statuses.append("FAIL" if run_status in {"UNSAFE", "FAILED"} else "WATCH")
+            reasons.append(f"run_status: {run_status or 'not_provided'}")
+    return {
+        "status": "FAIL" if "FAIL" in statuses else "WATCH" if "WATCH" in statuses else "PASS",
+        "scope": "engineering_acceptance_separate_from_source_fidelity",
+        "gates": gates,
+        "run_status": run_status,
+        "reasons": reasons,
+    }
+
+
 def _normalise_sample(
     raw: Mapping[str, Any],
     index: int,
@@ -685,6 +736,9 @@ def _normalise_sample(
     reasons.extend(hash_reasons)
 
     validation = _dict(sample.get("validation"))
+    acceptance = _normalise_acceptance_evidence(sample)
+    if not inventory:
+        reasons.extend(acceptance["reasons"])
     evaluated = sample.get("evaluated") is True
     if not evaluated:
         evaluated = bool(validation) or sample.get("status") in {"PASS", "WATCH", "FAIL"}
@@ -731,11 +785,13 @@ def _normalise_sample(
         status = "INVENTORY_ONLY"
     elif (
         any(value == "FAIL" for value in (*dims.values(), *architecture_dims.values()))
+        or acceptance["status"] == "FAIL"
         or not input_verified
     ):
         status = "FAIL"
     elif (
         any(value == "WATCH" for value in (*dims.values(), *architecture_dims.values()))
+        or acceptance["status"] == "WATCH"
         or not evaluated
     ):
         status = "WATCH"
@@ -787,6 +843,7 @@ def _normalise_sample(
         "dimension_reasons": dim_reasons,
         "architecture_dimensions": architecture_dims,
         "architecture_reasons": architecture_reasons,
+        "acceptance": acceptance,
         "reasons": sorted(set(str(reason) for reason in reasons if reason)),
     }
     # Include stable source/schema metadata without exposing arbitrary mutable
@@ -926,11 +983,28 @@ def evaluate_matrix(path: str | Path) -> dict[str, Any]:
             dimension: _aggregate_architecture_dimension(samples, dimension)
             for dimension in ARCHITECTURE_DIMENSIONS
         },
+        "acceptance": _aggregate_acceptance(samples),
         "errors": errors,
     }
     # Claim calculation intentionally consumes only normalized sample evidence.
     report["claim"] = strongest_allowed_claim(report)
     return report
+
+
+def _aggregate_acceptance(samples: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    statuses = [
+        sample["acceptance"]["status"] for sample in samples
+        if sample.get("evaluated") is True and not sample.get("inventory_only")
+    ]
+    return {
+        "status": "FAIL" if "FAIL" in statuses else "PASS" if statuses and all(
+            status == "PASS" for status in statuses
+        ) else "WATCH",
+        "evaluated_samples": len(statuses),
+        "pass_count": statuses.count("PASS"),
+        "watch_count": statuses.count("WATCH"),
+        "fail_count": statuses.count("FAIL"),
+    }
 
 
 def _aggregate_dimension(samples: Sequence[Mapping[str, Any]], dimension: str) -> dict[str, Any]:

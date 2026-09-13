@@ -1,6 +1,13 @@
 **
 !Dockerfile
 !pyproject.toml
+!LICENSE.md
+!NOTICE.md
+!packaging/
+!packaging/THIRD_PARTY_NOTICES.md
+!packaging/patches/
+!packaging/patches/COPYING
+!packaging/patches/NOTICE.md
 !src/
 !src/**
 **/__pycache__/

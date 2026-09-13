@@ -6,6 +6,10 @@ final NUL placement in `src/out_dxf.c::cquote()`: it terminates at the actual
 output cursor when space remains. Allocation, escaping, pointer ownership and
 the return value are unchanged. Unwritten heap bytes must not become MTEXT.
 
+Standalone source checkouts also include the complete upstream license in
+[COPYING](COPYING) and retained source attribution in [NOTICE.md](NOTICE.md).
+The CAD2GIS root license does not replace these third-party terms.
+
 Original upstream source:
 https://github.com/LibreDWG/libredwg/releases/download/0.14/libredwg-0.14.tar.gz
 

@@ -78,7 +78,8 @@ for name in dwg2dxf dwgread dxf2dwg; do
 done
 
 mkdir "$runtime/source"
-cp "$archive" "$patch_file" "$repro_file" "$repo/packaging/patches/README.md" "$runtime/source/"
+cp "$archive" "$patch_file" "$repro_file" "$repo/packaging/patches/README.md" \
+  "$repo/packaging/patches/NOTICE.md" "$repo/packaging/patches/COPYING" "$runtime/source/"
 cp "$repo/.github/scripts/build-ci-libredwg.sh" "$runtime/source/"
 cp COPYING "$runtime/COPYING"
 dwg2dxf_sha=$(sha256sum "$runtime/dwg2dxf.exe" | cut -d ' ' -f 1)

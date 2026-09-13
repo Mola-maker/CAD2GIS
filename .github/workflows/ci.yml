@@ -61,6 +61,8 @@ jobs:
           tests/test_gcp_workflow.py
           tests/test_review_native_geometry.py
           tests/test_runtime_archive_permissions.py
+          tests/test_libredwg_error_status.py
+          tests/test_pipeline_acceptance_gates.py
           --junitxml=test-results/precision-agent.xml
       - name: Summarize precision results
         if: always()

@@ -9,13 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 WEBDEMO = ROOT / "src" / "cad2gis" / "webdemo"
 
 
-def test_catalog_exposes_ten_source_bound_real_runs() -> None:
+def test_catalog_exposes_nine_retained_source_bound_real_runs() -> None:
     catalog = json.loads((WEBDEMO / "demo-catalog.json").read_text(encoding="utf-8"))
 
     assert catalog["schema_version"] == "cad2gis.webdemo_catalog.v1"
-    assert catalog["default_project"] == "hutabohu"
+    assert catalog["default_project"] == "kletek"
     assert [project["id"] for project in catalog["projects"]] == [
-        "hutabohu",
         "lamteh-main",
         "lamteh-sf",
         "kletek",
@@ -102,9 +101,9 @@ def test_demo_selector_and_typography_assets_are_self_hosted() -> None:
     assert 'id="demo-project-select"' in page
     assert 'id="map-reference-note"' in page
     assert "app.js?v=precision-workspace-20260909" in page
-    assert "demo-fixture.js?v=runtime-fix-20260901" in page
+    assert "demo-fixture.js?v=retained-nine-20260913" in page
     assert "demo-catalog.json" in fixture_script
-    assert '"runtime-fix-20260901"' in fixture_script
+    assert '"retained-nine-20260913"' in fixture_script
     assert "history.replaceState" in fixture_script
     assert "reviewByProject" in fixture_script
 
