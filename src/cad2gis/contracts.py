@@ -7,7 +7,7 @@ import json
 from typing import Any
 
 
-PLUGIN_CONTRACT_VERSION = "0.7.5"
+PLUGIN_CONTRACT_VERSION = "0.7.8"
 SKILL_CONTRACT_VERSION = "cad2gis.convert_skill.v3"
 ITERATION_SKILL_CONTRACT_VERSION = "cad2gis.iterate_skill.v1"
 SKILL_CONTRACTS = {

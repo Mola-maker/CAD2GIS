@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager, contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timedelta
 import hashlib
 from functools import wraps
@@ -302,9 +303,17 @@ class DesktopAgent:
             return []  # An incomplete or changed package is not a successful card.
 
     async def close(self):
-        if self.task and not self.task.done():
-            self.task.cancel()
-            await asyncio.gather(self.task, return_exceptions=True)
+        task, identifier = self.task, self.active
+        if task and not task.done():
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+        # A task cancelled before its first scheduling never enters _run's
+        # exception/finally handlers. Release that run here as well.
+        if task and task.cancelled() and identifier and self.active == identifier:
+            run = self.store.run(identifier)
+            self.store.message(run["conversation"], "system", "任务在开始前已停止。")
+            self.store.update_run(identifier, status="cancelled", progress="")
+            self.active = ""
 
     def start(self, payload: dict[str, Any]) -> dict[str, Any]:
         # Fail synchronously before creating a run if an installation is incomplete.
@@ -357,7 +366,10 @@ class DesktopAgent:
         from mcp import ClientSession, StdioServerParameters
         from mcp.client.stdio import stdio_client
         from pydantic_ai import Agent
-        from pydantic_ai.messages import ModelMessagesTypeAdapter, PartDeltaEvent, TextPartDelta, PartStartEvent, TextPart
+        from pydantic_ai.messages import (
+            FunctionToolCallEvent, FunctionToolResultEvent, ModelMessagesTypeAdapter,
+            PartDeltaEvent, PartStartEvent, RetryPromptPart, TextPart, TextPartDelta,
+        )
         from pydantic_ai.tools import Tool
         from pydantic_ai.usage import RunUsage, UsageLimits
 
@@ -368,11 +380,36 @@ class DesktopAgent:
         text_buffer = ""
         last_flush = 0.0
         secret = profile["api_key"]
+        active_tool = ContextVar("desktop_active_tool", default=None)
+        registered_events: set[tuple[int, str]] = set()
+        tool_occurrences: dict[str, int] = {}
+        pending_tools: dict[int, tuple[str, str]] = {}
+        call_sequence = 0
 
         def clean(text):
             return str(text).replace(secret, "[已隐藏密钥]") if secret else str(text)
 
-        def event(kind, name, detail=""):
+        def event(kind, name, detail="", *, tool_call_id="", tool_call_sequence=0, **metadata):
+            active = active_tool.get()
+            if active:
+                if name == active[1]:
+                    tool_call_id = tool_call_id or active[0]
+                    tool_call_sequence = tool_call_sequence or active[2]
+                else:
+                    metadata.setdefault("parent_tool_call_id", active[0])
+                    metadata.setdefault("parent_tool_call_sequence", active[2])
+            # The SDK observes every model call (including schema failures),
+            # while the MCP bridge records the authoritative execution receipt.
+            # Providers can reuse call IDs in later responses. Deduplicate only
+            # within the particular SDK call occurrence, retaining both IDs.
+            if tool_call_id:
+                tool_call_sequence = tool_call_sequence or tool_occurrences[tool_call_id]
+                key = (tool_call_sequence, kind)
+                if key in registered_events:
+                    return
+                registered_events.add(key)
+                if kind in {"tool_result", "tool_error", "tool_interrupted"}:
+                    pending_tools.pop(tool_call_sequence, None)
             if kind == "tool_result" and name in {"run_conversion", "inspect_run", "auto_onboard_and_convert", "package_qgis_delivery",
                                                   "publish_matched_delivery", "build_qgis_review"}:
                 try:
@@ -385,8 +422,16 @@ class DesktopAgent:
                                     (artifact["kind"], artifact.get("output_dir") or artifact.get("run_dir"))]
                     artifacts.append(artifact)
                     self.store.update_run(identifier, artifacts=json.dumps(artifacts, ensure_ascii=False))
-            events.append({"kind": kind, "name": name, "detail": clean(detail)[:1200], "time": time.time()})
+            detail = clean(detail)
+            events.append({"kind": kind, "name": name, "detail": detail[:1200], "time": time.time(),
+                           "run_id": identifier, "event_id": f"{identifier}:{len(events) + 1}",
+                           **({"tool_call_id": tool_call_id, "tool_call_sequence": tool_call_sequence} if tool_call_id else {}),
+                           **({"detail_truncated": True} if len(detail) > 1200 else {}), **metadata})
             self.store.update_run(identifier, events=json.dumps(events[-200:], ensure_ascii=False))
+
+        def finish_pending(kind, detail):
+            for sequence, (call_id, name) in list(pending_tools.items()):
+                event(kind, name, detail, tool_call_id=call_id, tool_call_sequence=sequence)
 
         def recoverable(function):
             @wraps(function)
@@ -396,7 +441,6 @@ class DesktopAgent:
                 try:
                     return function(*args, **kwargs)
                 except (ValueError, OSError) as exc:
-                    event("tool_error", function.__name__, str(exc))
                     raise ModelRetry(clean(str(exc))[:1200]) from None
             return wrapped
 
@@ -455,7 +499,6 @@ class DesktopAgent:
             target.parent.mkdir(parents=True, exist_ok=True)
             with target.open("x", encoding="utf-8") as output:
                 output.write(data)
-            event("tool_result", "write_project_json", str(target))
             return {"path": str(target), "created": True}
 
         def query_project_database(path: str, sql: str = "", page: int = 1) -> dict[str, Any]:
@@ -487,16 +530,37 @@ class DesktopAgent:
                     "matching": "osm", "svg_mode": "candidate", "gcp": "preview_then_explicit_rematch"}
 
         async def stream(_ctx, stream_events):
-            nonlocal text_buffer, last_flush
+            nonlocal text_buffer, last_flush, call_sequence
+            response_started = False
             async for item in stream_events:
+                if isinstance(item, FunctionToolCallEvent):
+                    call_sequence += 1
+                    tool_occurrences[item.tool_call_id] = call_sequence
+                    pending_tools[call_sequence] = (item.tool_call_id, item.part.tool_name)
+                    arguments = item.part.args if isinstance(item.part.args, str) else json.dumps(item.part.args or {}, ensure_ascii=False)
+                    event("tool_call", item.part.tool_name, arguments,
+                          tool_call_id=item.tool_call_id, args_valid=item.args_valid)
+                elif isinstance(item, FunctionToolResultEvent):
+                    failed = isinstance(item.part, RetryPromptPart) or getattr(item.part, "outcome", "") == "failed"
+                    content = item.part.content
+                    if isinstance(content, dict) and "is_error" in content and "result" in content:
+                        content = content["result"]
+                    detail = content if isinstance(content, str) else json.dumps(content, ensure_ascii=False, default=str)
+                    event("tool_error" if failed else "tool_result", item.part.tool_name, detail,
+                          tool_call_id=item.tool_call_id)
                 chunk = item.part.content if isinstance(item, PartStartEvent) and isinstance(item.part, TextPart) else (
                     item.delta.content_delta if isinstance(item, PartDeltaEvent) and isinstance(item.delta, TextPartDelta) else "")
                 if chunk:
+                    if not response_started:
+                        text_buffer, last_flush = "", 0.0
+                        response_started = True
                     text_buffer = (text_buffer + chunk)[-100000:]
                     now = time.monotonic()
                     if now - last_flush > 0.15:
                         self.store.update_run(identifier, progress=clean(text_buffer))
                         last_flush = now
+            if response_started:
+                self.store.update_run(identifier, progress=clean(text_buffer))
 
         environment = dict(os.environ)
         for name in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV", "CAD2GIS_BACKEND_PATH"):
@@ -561,34 +625,40 @@ class DesktopAgent:
                             event("tool_result", "当前图纸转换完成", artifacts["run_dir"])
                             return artifacts
 
-                        async def convert_selected_drawing() -> dict[str, Any]:
+                        async def convert_selected_drawing(ctx) -> dict[str, Any]:
                             """Convert the selected DWG end to end using saved AI settings and OSM. Reuse reviewed config, otherwise onboard first. No path arguments needed. Returns verified artifacts; never overwrites an old run."""
                             from pydantic_ai import ModelRetry
                             tool_budget.consume()
+                            token = active_tool.set((ctx.tool_call_id, "convert_selected_drawing", tool_occurrences[ctx.tool_call_id]))
                             try:
                                 await conversion.execute()
                                 return publish_conversion(conversion)
                             except (ValueError, OSError) as exc:
-                                event("tool_error", "convert_selected_drawing", str(exc))
                                 raise ModelRetry(clean(str(exc))[:1200]) from None
+                            finally:
+                                active_tool.reset(token)
 
                         def bridge(name):
-                            async def call(**kwargs):
-                                response = await mcp_bridge.call(name, kwargs)
-                                if name in {"run_conversion", "auto_onboard_and_convert"}:
-                                    completed = SelectedConversion(workspace, mcp_bridge.call)
-                                    completed.arguments = kwargs
-                                    completed.result = response.get("conversion") or json.loads(response["result"])
-                                    publish_conversion(completed)
-                                return response
+                            async def call(ctx, **kwargs):
+                                token = active_tool.set((ctx.tool_call_id, name, tool_occurrences[ctx.tool_call_id]))
+                                try:
+                                    response = await mcp_bridge.call(name, kwargs)
+                                    if name in {"run_conversion", "auto_onboard_and_convert"}:
+                                        completed = SelectedConversion(workspace, mcp_bridge.call)
+                                        completed.arguments = kwargs
+                                        completed.result = response.get("conversion") or json.loads(response["result"])
+                                        publish_conversion(completed)
+                                    return response
+                                finally:
+                                    active_tool.reset(token)
                             return call
 
                         for tool in listed.tools:
                             tools.append(Tool.from_schema(bridge(tool.name), tool.name, tool.description,
-                                                          tool.inputSchema, sequential=True))
+                                                          tool.inputSchema, takes_ctx=True, sequential=True))
                         tools += [Tool(recoverable(function), sequential=True) for function in
                                   (workspace_context, update_plan, read_project_text, write_project_json, query_project_database, list_project_files)]
-                        tools.append(Tool(convert_selected_drawing, sequential=True))
+                        tools.append(Tool(convert_selected_drawing, takes_ctx=True, sequential=True))
                         event("status", "工具已就绪", f"{len(listed.tools)} 个 CAD2GIS 工具 + 7 个工作台工具")
                         stored = self.store.conversation(conversation)
                         history = ModelMessagesTypeAdapter.validate_json(stored["history"])
@@ -625,12 +695,14 @@ class DesktopAgent:
             # next task and normal application shutdown are immediately available.
             self.store.update_run(identifier, status="succeeded", progress="")
         except asyncio.CancelledError:
+            finish_pending("tool_interrupted", "任务已停止；已开始的写入需要检查现有产物。")
             save_interruption()
             self.store.message(conversation, "system", "任务已停止。已写出的项目文件保留，可以检查后继续。")
             self.store.update_run(identifier, status="cancelled", progress="")
         except Exception as exc:
-            save_interruption()
             error = safe_ai_error(exc)
+            finish_pending("tool_error", error)
+            save_interruption()
             self.store.message(conversation, "system", error)
             self.store.update_run(identifier, status="failed", error=error, progress="")
         finally:
