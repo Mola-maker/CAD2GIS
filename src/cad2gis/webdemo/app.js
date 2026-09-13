@@ -195,6 +195,7 @@ const displayLabel = (feature) => {
   return String(feature.get("display_label") || "");
 };
 
+const labelMeasureContext = document.createElement("canvas").getContext("2d");
 const featureStyle = (feature, resolution) => {
   const name = String(feature.get("_layer") || feature.get("feature_class") || "").toUpperCase();
   const color = palette[name] || "#557b78";
@@ -285,14 +286,53 @@ const worldMap = new ol.Map({
 const overviewMaps = new Set([localMap, worldMap]);
 const mapExtent = (map) => map === localMap ? localExtent : [...previewLayers.values()]
   .reduce((extent, layer) => ol.extent.extend(extent, layer.getSource().getExtent()), ol.extent.createEmpty());
+const overviewPadding = (map, size) => {
+  const base = Math.min(40, Math.floor(Math.min(...size) / 8));
+  const padding = [base, base, base, base];
+  for (const layer of map.getLayers().getArray()) {
+    if (!layer.getVisible()) continue;
+    for (const feature of layer.getSource()?.getFeatures?.() || []) {
+      // Measure the current styles with labels visible and symbols at their
+      // maximum size. The old, possibly hidden, view resolution must not decide
+      // whether text contributes to an overview fit (labels appear below 2).
+      const styles = (feature.getStyleFunction() || layer.getStyleFunction())?.(feature, 0.01);
+      for (const style of (Array.isArray(styles) ? styles : [styles])) {
+        if (!style) continue;
+        const symbol = style.getImage();
+        const radius = (symbol?.getRadius?.() || 0) + (symbol?.getStroke?.()?.getWidth() || 0) / 2;
+        const edge = Math.max(radius, (style.getStroke()?.getWidth() || 0) / 2) + 2;
+        padding.forEach((value, index) => { padding[index] = Math.max(value, edge); });
+        const text = style.getText();
+        if (!text?.getText()) continue;
+        labelMeasureContext.font = text.getFont();
+        const lines = String(text.getText()).split("\n");
+        const metrics = lines.map((line) => labelMeasureContext.measureText(line || "Mg"));
+        const width = Math.max(...metrics.map((metric) => metric.width));
+        // Font bounding boxes cover the loaded font's ascenders/descenders;
+        // retain a normal line-height floor for empty lines and older browsers.
+        const fontSize = Number(text.getFont().match(/([\d.]+)px/)?.[1]) || 11;
+        const lineHeight = Math.max(fontSize * 1.5, ...metrics.map((metric) =>
+          (metric.fontBoundingBoxAscent || metric.actualBoundingBoxAscent || 0)
+          + (metric.fontBoundingBoxDescent || metric.actualBoundingBoxDescent || 0)));
+        const border = (text.getStroke()?.getWidth() || 0) / 2 + 3;
+        const halfWidth = width / 2 + border, halfHeight = lines.length * lineHeight / 2 + border;
+        const x = text.getOffsetX(), y = text.getOffsetY();
+        [halfHeight - y, halfWidth + x, halfHeight + y, halfWidth - x].forEach((value, index) => {
+          padding[index] = Math.max(padding[index], Math.ceil(value));
+        });
+      }
+    }
+  }
+  // Keep a positive drawable area even in exceptionally small host windows.
+  return padding.map((value, index) => Math.min(value, Math.max(0, size[index % 2 ? 0 : 1] / 2 - 4)));
+};
 const fitMapOverview = (map) => {
   const target = map.getTargetElement();
   if (!target.clientWidth || !target.clientHeight) return;
   map.updateSize();
   const extent = mapExtent(map), size = map.getSize();
   if (!size || ol.extent.isEmpty(extent)) return;
-  const padding = Math.min(40, Math.floor(Math.min(...size) / 8));
-  map.getView().fit(extent, { size, padding: [padding, padding, padding, padding] });
+  map.getView().fit(extent, { size, padding: overviewPadding(map, size) });
 };
 let mapLayoutFrame;
 const scheduleMapLayout = () => {
@@ -322,6 +362,14 @@ for (const map of [localMap, worldMap]) {
 }
 window.addEventListener("resize", scheduleMapLayout);
 document.addEventListener("visibilitychange", scheduleMapLayout);
+// A late webfont changes label widths. Repaint all maps, but only refit maps
+// still in overview mode; user pan/zoom must survive font loading as well.
+const mapFontsLoaded = () => {
+  for (const map of [localMap, worldMap]) map.render();
+  scheduleMapLayout();
+};
+document.fonts?.ready.then(mapFontsLoaded);
+document.fonts?.addEventListener("loadingdone", mapFontsLoaded);
 const toggleLayerPanel = (open) => {
   const restoreFocus = !open && $("#review-layers")?.contains(document.activeElement);
   document.body.classList.toggle("layers-open", open);
