@@ -27,13 +27,14 @@
     <div class="run-state" aria-label="服务状态">
       <span id="connection-dot" class="status-dot pending"></span>
       <span id="connection-label">正在连接</span>
-      <span id="run-status" class="badge">—</span><button id="toggle-evidence" class="ghost" aria-expanded="false" aria-controls="review-inspector">证据与工具</button>
+      <span id="run-status" class="badge">—</span><button id="toggle-layers" class="ghost" aria-expanded="false" aria-controls="review-layers">交付图层</button><button id="toggle-evidence" class="ghost" aria-expanded="false" aria-controls="review-inspector">证据与工具</button>
     </div>
   </header>
 
   <details id="review-guide" class="review-guide"><summary>第一次配准？查看操作提示</summary><div class="review-guide-content"><img src="./assets/onboarding-map-v1.png" width="1536" height="1024" alt="" aria-hidden="true" loading="lazy"><div><strong>选同一个真实位置，分别落在两张图上。</strong><ol><li>先核对左侧源几何，放大并选择设施或清晰拐点。</li><li>在右图选相同位置，或输入测量得到的经纬度。</li><li>用下方方向按钮微调目标点；检查残差后再生成新结果。</li></ol><p>训练点用于拟合。独立检查点只用于验证，不能与训练点重复。OSM 是地图参考，测量精度需要独立证据。</p><button id="start-guided-correction" class="primary">开始选择控制点</button></div></div></details>
   <main class="workspace">
-    <aside class="panel navigation-panel">
+    <aside id="review-layers" class="panel navigation-panel">
+      <button id="close-layers" class="ghost" aria-label="收起图层与校正面板">收起</button>
       <section class="project-card">
         <span class="section-kicker project-current-kicker">当前工作流</span>
         <strong id="project-name">未加载运行</strong>
@@ -115,6 +116,7 @@
 
     <section class="map-workspace" aria-label="CAD 与地图叠加工作区">
       <div class="map-toolbar">
+        <div class="review-map-switch" role="group" aria-label="切换完整地图"><button type="button" data-map-view="cad" aria-pressed="true">CAD 源图</button><button type="button" data-map-view="gis" aria-pressed="false">GIS 地图</button></div>
         <div class="mode-switch"><span class="mode-label">DUAL VIEW</span><strong>源几何 ↔ 地图位置</strong></div>
         <div class="map-actions">
           <button id="toggle-manual-gcp" class="ghost" aria-expanded="false" aria-controls="stage-registration">人工 GCP（可选）</button>
@@ -129,11 +131,11 @@
       <div class="precision-summary" aria-label="校正精度状态"><div><span>当前视图</span><strong id="precision-view">已应用结果</strong></div><div><span>训练 RMSE</span><strong id="precision-train">—</strong></div><div><span>独立检查 RMSE</span><strong id="precision-check">尚未验证</strong></div><div><span>精度依据</span><strong id="precision-evidence">等待控制点</strong></div></div>
       <div id="pick-guide" class="pick-guide" role="status" aria-live="polite"><b>下一步</b><span id="pick-guide-text">在左侧 CAD 中放大并选择一个真实设施或拐点。</span><button id="pick-guide-action" class="ghost" type="button">选择控制点</button></div>
       <section class="map-grid">
-        <article class="map-pane">
+        <article id="cad-pane" class="map-pane">
           <header><span><b>CAD</b> 原始坐标</span><code id="cad-coordinate">—</code></header>
           <div id="local-map" class="map" tabindex="0" aria-label="CAD 源几何地图，可用方向键平移，加减键缩放"></div>
         </article>
-        <article class="map-pane">
+        <article id="gis-pane" class="map-pane">
           <header><span><b>GIS</b> OSM 匹配与人工校正预览</span><code id="map-coordinate">—</code></header>
           <div id="map" class="map" tabindex="0" aria-label="OSM 地图与 GIS 结果，可用方向键平移，加减键缩放"></div>
         </article>

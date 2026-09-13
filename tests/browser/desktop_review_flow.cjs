@@ -144,7 +144,9 @@ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png'
 
   // Confirmation rechecks the backend revision, even when this iframe claims it is ready.
   await notifyMap('ready','retry-review',true,undefined,{revision:'stale-map-revision'});
-  await page.locator('#confirm-map').click();await waitMapShell();
+  const staleView=await page.evaluate(()=>reviewViewId);
+  await page.locator('#confirm-map').click();
+  await page.waitForFunction(previous=>reviewViewId!==previous,staleView);await waitMapShell();
   assert.equal(mapLoadsById['retry-review'],4);assert.ok(await page.locator('#confirm-map').isDisabled());
   assert.ok(await page.locator('#tab-osm').evaluate(e=>e.classList.contains('tab-active')));
   pass('revision_mismatch_reloads_map_and_cannot_advance');

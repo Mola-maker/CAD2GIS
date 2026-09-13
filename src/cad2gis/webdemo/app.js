@@ -195,6 +195,7 @@ const displayLabel = (feature) => {
   return String(feature.get("display_label") || "");
 };
 
+const labelMeasureContext = document.createElement("canvas").getContext("2d");
 const featureStyle = (feature, resolution) => {
   const name = String(feature.get("_layer") || feature.get("feature_class") || "").toUpperCase();
   const color = palette[name] || "#557b78";
@@ -279,6 +280,111 @@ const worldMap = new ol.Map({
     maxZoom: 50, constrainResolution: false,
   }),
 });
+
+// An overview belongs to the visible map size, not to an earlier hidden iframe.
+// Keep user navigation when resizing; only overview views follow new dimensions.
+const overviewMaps = new Set([localMap, worldMap]);
+const mapExtent = (map) => map === localMap ? localExtent : [...previewLayers.values()]
+  .reduce((extent, layer) => ol.extent.extend(extent, layer.getSource().getExtent()), ol.extent.createEmpty());
+const overviewPadding = (map, size) => {
+  const base = Math.min(40, Math.floor(Math.min(...size) / 8));
+  const padding = [base, base, base, base];
+  for (const layer of map.getLayers().getArray()) {
+    if (!layer.getVisible()) continue;
+    for (const feature of layer.getSource()?.getFeatures?.() || []) {
+      // Measure the current styles with labels visible and symbols at their
+      // maximum size. The old, possibly hidden, view resolution must not decide
+      // whether text contributes to an overview fit (labels appear below 2).
+      const styles = (feature.getStyleFunction() || layer.getStyleFunction())?.(feature, 0.01);
+      for (const style of (Array.isArray(styles) ? styles : [styles])) {
+        if (!style) continue;
+        const symbol = style.getImage();
+        const radius = (symbol?.getRadius?.() || 0) + (symbol?.getStroke?.()?.getWidth() || 0) / 2;
+        const edge = Math.max(radius, (style.getStroke()?.getWidth() || 0) / 2) + 2;
+        padding.forEach((value, index) => { padding[index] = Math.max(value, edge); });
+        const text = style.getText();
+        if (!text?.getText()) continue;
+        labelMeasureContext.font = text.getFont();
+        const lines = String(text.getText()).split("\n");
+        const metrics = lines.map((line) => labelMeasureContext.measureText(line || "Mg"));
+        const width = Math.max(...metrics.map((metric) => metric.width));
+        // Font bounding boxes cover the loaded font's ascenders/descenders;
+        // retain a normal line-height floor for empty lines and older browsers.
+        const fontSize = Number(text.getFont().match(/([\d.]+)px/)?.[1]) || 11;
+        const lineHeight = Math.max(fontSize * 1.5, ...metrics.map((metric) =>
+          (metric.fontBoundingBoxAscent || metric.actualBoundingBoxAscent || 0)
+          + (metric.fontBoundingBoxDescent || metric.actualBoundingBoxDescent || 0)));
+        const border = (text.getStroke()?.getWidth() || 0) / 2 + 3;
+        const halfWidth = width / 2 + border, halfHeight = lines.length * lineHeight / 2 + border;
+        const x = text.getOffsetX(), y = text.getOffsetY();
+        [halfHeight - y, halfWidth + x, halfHeight + y, halfWidth - x].forEach((value, index) => {
+          padding[index] = Math.max(padding[index], Math.ceil(value));
+        });
+      }
+    }
+  }
+  // Keep a positive drawable area even in exceptionally small host windows.
+  return padding.map((value, index) => Math.min(value, Math.max(0, size[index % 2 ? 0 : 1] / 2 - 4)));
+};
+const fitMapOverview = (map) => {
+  const target = map.getTargetElement();
+  if (!target.clientWidth || !target.clientHeight) return;
+  map.updateSize();
+  const extent = mapExtent(map), size = map.getSize();
+  if (!size || ol.extent.isEmpty(extent)) return;
+  map.getView().fit(extent, { size, padding: overviewPadding(map, size) });
+};
+let mapLayoutFrame;
+const scheduleMapLayout = () => {
+  cancelAnimationFrame(mapLayoutFrame);
+  mapLayoutFrame = requestAnimationFrame(() => {
+    for (const map of [localMap, worldMap]) {
+      const target = map.getTargetElement();
+      if (!target.clientWidth || !target.clientHeight) continue;
+      map.updateSize();
+      if (overviewMaps.has(map)) fitMapOverview(map);
+    }
+  });
+};
+const mapLayoutObserver = new ResizeObserver(scheduleMapLayout);
+for (const map of [localMap, worldMap]) {
+  const target = map.getTargetElement();
+  mapLayoutObserver.observe(target);
+  map.on("pointerdrag", () => { overviewMaps.delete(map); });
+  target.addEventListener("wheel", () => overviewMaps.delete(map), { passive: true });
+  target.addEventListener("keydown", (event) => {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "+", "-", "=", "PageUp", "PageDown"].includes(event.key)) overviewMaps.delete(map);
+  });
+  target.addEventListener("click", (event) => {
+    if (event.target.closest(".ol-zoom")) overviewMaps.delete(map);
+  });
+  target.addEventListener("dblclick", () => overviewMaps.delete(map));
+}
+window.addEventListener("resize", scheduleMapLayout);
+document.addEventListener("visibilitychange", scheduleMapLayout);
+// A late webfont changes label widths. Repaint all maps, but only refit maps
+// still in overview mode; user pan/zoom must survive font loading as well.
+const mapFontsLoaded = () => {
+  for (const map of [localMap, worldMap]) map.render();
+  scheduleMapLayout();
+};
+document.fonts?.ready.then(mapFontsLoaded);
+document.fonts?.addEventListener("loadingdone", mapFontsLoaded);
+const toggleLayerPanel = (open) => {
+  const restoreFocus = !open && $("#review-layers")?.contains(document.activeElement);
+  document.body.classList.toggle("layers-open", open);
+  $("#toggle-layers")?.setAttribute("aria-expanded", String(open));
+  if (restoreFocus) $("#toggle-layers")?.focus({ preventScroll: true });
+};
+$("#toggle-layers")?.addEventListener("click", () => toggleLayerPanel(!document.body.classList.contains("layers-open")));
+$("#close-layers")?.addEventListener("click", () => toggleLayerPanel(false));
+const selectReviewMap = (name) => {
+  document.body.dataset.mapView = name;
+  document.querySelectorAll("button[data-map-view]").forEach((item) => item.setAttribute("aria-pressed", String(item.dataset.mapView === name)));
+  toggleLayerPanel(false);
+  scheduleMapLayout();
+};
+document.querySelectorAll("button[data-map-view]").forEach((button) => button.addEventListener("click", () => selectReviewMap(button.dataset.mapView)));
 
 const refreshPreview = async ({ fitView = false } = {}) => {
   const epoch = ++previewEpoch;
@@ -399,7 +505,10 @@ const refreshPreview = async ({ fitView = false } = {}) => {
   const extents = [...previewLayers.values()].map((layer) => layer.getSource().getExtent());
   if (extents.length && (firstPreview || fitView)) {
     const extent = extents.reduce((acc, value) => ol.extent.extend(acc, value), ol.extent.createEmpty());
-    if (!ol.extent.isEmpty(extent)) worldMap.getView().fit(extent, { padding: [50, 50, 50, 50] });
+    if (!ol.extent.isEmpty(extent)) {
+      overviewMaps.add(worldMap);
+      fitMapOverview(worldMap);
+    }
   }
   updatePrecisionState();
   return !previewError;
@@ -639,6 +748,7 @@ const showSelected = (map) => {
       // picked geometry resolvable instead of buried in an overview blob.
       const geometry = feature.getGeometry();
       if (geometry && map === localMap) {
+        overviewMaps.delete(localMap);
         const currentZoom = localMap.getView().getZoom() || 0;
         localMap.getView().fit(geometry.getExtent(), {
           padding: [40, 40, 40, 40],
@@ -696,7 +806,8 @@ const loadLayers = async () => {
     });
   }
   if (!ol.extent.isEmpty(localExtent)) {
-    localMap.getView().fit(localExtent, { padding: [40, 40, 40, 40] });
+    overviewMaps.add(localMap);
+    fitMapOverview(localMap);
   }
   const visibleCount = layers.filter((descriptor) => descriptor.feature_count > 0).length;
   terminalEvent("ok", `已加载 ${visibleCount} 个非空图层，共 ${layers.length} 个图层定义`);
@@ -1050,7 +1161,8 @@ $("#copy-command").addEventListener("click", async () => {
   }
 });
 $("#tool-fit").addEventListener("click", () => {
-  if (!ol.extent.isEmpty(localExtent)) localMap.getView().fit(localExtent, { padding: [40, 40, 40, 40] });
+  overviewMaps.add(localMap);overviewMaps.add(worldMap);
+  fitMapOverview(localMap);
   refreshPreview({ fitView: true }).catch((error) => toast(error.message, true));
 });
 $("#open-visual").addEventListener("click", async () => {
@@ -1202,6 +1314,7 @@ function setReviewStage(stage) {
     manualCorrection = ["registration", "validation", "delivery"].includes(stage);
     $("#stage-registration").hidden = !manualCorrection;
     document.body.classList.toggle("manual-correction", manualCorrection);
+    toggleLayerPanel(manualCorrection);
     $("#toggle-manual-gcp").textContent = manualCorrection ? "收起人工 GCP" : "人工 GCP（可选）";
     $("#toggle-manual-gcp").setAttribute("aria-expanded", String(manualCorrection));
     updatePickGuide();
@@ -1294,7 +1407,8 @@ $("#close-inspector").addEventListener("click", () => toggleInspector(false));
 $("#start-guided-correction").addEventListener("click", () => {
   $("#review-guide").open = false;
   setReviewStage("registration");
-  $("#local-map").focus();
+  selectReviewMap("cad");
+  requestAnimationFrame(() => $("#local-map").focus({ preventScroll: true }));
 });
 $("#review-guide").addEventListener("toggle", () => requestAnimationFrame(() => { localMap.updateSize(); worldMap.updateSize(); }));
 $("#pick-guide-action").addEventListener("click", () => {
@@ -1314,6 +1428,7 @@ $("#reset-gcp").addEventListener("click", () => adjustControl("reset"));
 $("#center-gcp").addEventListener("click", () => {
   const pair = controls.find((item) => item.id === selectedGcpId);
   if (!pair) return;
+  overviewMaps.delete(localMap);overviewMaps.delete(worldMap);
   const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 200;
   localMap.getView().animate({ center: pair.cad, duration });
   worldMap.getView().animate({ center: pair.map, duration });
@@ -1327,6 +1442,7 @@ $("#evidence-layer-menu").addEventListener("toggle", () => {
 document.querySelectorAll("[data-evidence-layer]").forEach((input) => input.addEventListener("change", () => evidenceLayers.get(input.dataset.evidenceLayer)?.setVisible(input.checked)));
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !$("#review-inspector").hidden) toggleInspector(false);
+  if (event.key === "Escape") toggleLayerPanel(false);
 });
 
 
