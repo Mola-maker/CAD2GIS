@@ -8,6 +8,9 @@ const results={scope:'Real application assets and OpenLayers; synthetic rectangl
 const profile={base_url:'https://example.invalid/v1',model:'fixture',has_key:false,configured:false};
 const local={type:'FeatureCollection',features:[{type:'Feature',properties:{display_label:'LAYOUT FIXTURE'},geometry:{type:'LineString',coordinates:[[0,0],[1000,0],[1000,400],[0,400],[0,0]]}},...[[-30,-20],[1030,420]].map(coordinates=>({type:'Feature',properties:{},geometry:{type:'Point',coordinates}}))]};
 const geographic=JSON.parse(JSON.stringify(local));for(const f of geographic.features){const transform=c=>[124+c[0]/100000,1+c[1]/100000];f.geometry.coordinates=f.geometry.type==='Point'?transform(f.geometry.coordinates):f.geometry.coordinates.map(transform);}
+let useLabelFixture=false;
+const labelLocal={type:'FeatureCollection',features:[[0,0],[300,0],[300,120],[0,120]].map((coordinates,index)=>({type:'Feature',properties:{display_label:index<2?'ENDPOINT.ASSET.000123456789':'工程端点标识与完整业务文字\nSECOND.LINE.000123456789',_layer:'PTECH'},geometry:{type:'Point',coordinates}}))};
+const labelGeographic=JSON.parse(JSON.stringify(labelLocal));for(const feature of labelGeographic.features)feature.geometry.coordinates=[124+feature.geometry.coordinates[0]/100000,1+feature.geometry.coordinates[1]/100000];
 const run={run_dir:'/fixture/run',run_status:'CONDITIONAL',source:{path:'/fixture/source.dwg'},delivery_counts:{CABLE:3},svg_candidates:{report_url:null},crs:{source_crs:'CAD:LOCAL',target_crs:'EPSG:4326'}};
 const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png':'image/png','.woff2':'font/woff2','.svg':'image/svg+xml'};
 const captureMaps=()=>{let library;Object.defineProperty(window,'ol',{configurable:true,get(){return library;},set(value){library=value;value.Map=new Proxy(value.Map,{construct(target,args,newTarget){const map=Reflect.construct(target,args,newTarget);(window.__layoutMaps ||= []).push(map);return map;}});}});};
@@ -17,6 +20,22 @@ async function readMaps(frame){return frame.evaluate(()=>window.__layoutMaps.map
  const view=map.getView(),extent=view.calculateExtent(size);let count=0,inside=0;
  for(const layer of map.getLayers().getArray())for(const f of layer.getSource()?.getFeatures?.()||[]){count++;if(ol.extent.containsExtent(extent,f.getGeometry().getExtent()))inside++;}
  return {id:target.id,visible:true,size,width:r.width,height:r.height,top:r.top,bottom:r.bottom,left:r.left,right:r.right,count,inside,resolution:view.getResolution(),center:view.getCenter(),canvas:[...target.querySelectorAll('canvas')].map(c=>({width:c.width,height:c.height}))};
+}));}
+// Independently measure the actual resolved text at its point anchor, rather
+// than reusing the production overview padding calculation. Geometry-only
+// assertions cannot detect a long label cut by the canvas boundary.
+async function readLabelBounds(frame){return frame.evaluate(()=>window.__layoutMaps.filter(map=>map.getTargetElement().clientWidth).map(map=>{
+ const size=map.getSize(),context=document.createElement('canvas').getContext('2d'),labels=[],symbols=[];
+ for(const layer of map.getLayers().getArray())for(const feature of layer.getSource()?.getFeatures?.()||[]){
+  if(feature.getGeometry().getType()!=='Point')continue;
+  const point=map.getPixelFromCoordinate(feature.getGeometry().getCoordinates());
+  const style=layer.getStyleFunction()(feature,map.getView().getResolution()),text=style.getText(),circle=style.getImage();
+  const radius=circle.getRadius()+circle.getStroke().getWidth()/2;symbols.push({left:point[0]-radius,right:point[0]+radius,top:point[1]-radius,bottom:point[1]+radius});
+  if(!text)continue;context.font=text.getFont();const lines=text.getText().split('\n'),width=Math.max(...lines.map(line=>context.measureText(line).width));
+  const ruler=document.createElement('span');Object.assign(ruler.style,{position:'absolute',visibility:'hidden',font:text.getFont(),whiteSpace:'pre'});ruler.textContent=lines.join('\n');document.body.appendChild(ruler);const height=ruler.getBoundingClientRect().height;ruler.remove();
+  const stroke=text.getStroke().getWidth()/2;labels.push({original:feature.get('display_label'),rendered:text.getText(),font:text.getFont(),width,height,left:point[0]+text.getOffsetX()-width/2-stroke,right:point[0]+text.getOffsetX()+width/2+stroke,top:point[1]+text.getOffsetY()-height/2-stroke,bottom:point[1]+text.getOffsetY()+height/2+stroke});
+ }
+ return {id:map.getTarget(),size,labels,symbols,fontReady:document.fonts.status==='loaded'&&document.fonts.check("500 11px 'Noto Sans SC'")};
 }));}
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.CAD2GIS_BROWSER_EXECUTABLE?{executablePath:process.env.CAD2GIS_BROWSER_EXECUTABLE}:{channel:process.env.CAD2GIS_BROWSER_CHANNEL||'msedge'})});
@@ -37,8 +56,8 @@ async function readMaps(frame){return frame.evaluate(()=>window.__layoutMaps.map
   if(key==='jobs')return json({jobs:[]});if(key==='conversations')return json({items:[],has_more:false});
   if(key==='review')return json({url:'/?review=layout-review',review_id:'layout-review',run_dir:'/fixture/run',districts:{scopes:[]}});
   if(u.pathname==='/api/run')return json(run);
-  if(u.pathname==='/api/layers'){if(layerGate)await layerGate;return json({layers:[{name:'CABLE',feature_count:3}]});}
-  if(u.pathname.endsWith('/local-geojson'))return json(local);if(u.pathname.endsWith('/geojson'))return json(geographic);
+  if(u.pathname==='/api/layers'){if(layerGate)await layerGate;return json({layers:[{name:'CABLE',feature_count:useLabelFixture?4:3}]});}
+  if(u.pathname.endsWith('/local-geojson'))return json(useLabelFixture?labelLocal:local);if(u.pathname.endsWith('/geojson'))return json(useLabelFixture?labelGeographic:geographic);
   if(u.pathname==='/api/review/features')return json({type:'FeatureCollection',features:[]});
   if(u.pathname==='/api/registration')return json({controls:[]});
   return json({});
@@ -56,7 +75,7 @@ async function readMaps(frame){return frame.evaluate(()=>window.__layoutMaps.map
    assert.ok(m.height>=120&&m.top>=0&&m.bottom<=outer.frame.height+1,JSON.stringify(m));assert.ok(m.right<=outer.frame.width+1,JSON.stringify(m));
    assert.ok(Math.abs(m.size[0]-m.width)<=1&&Math.abs(m.size[1]-m.height)<=1,JSON.stringify(m));
    assert.ok(m.canvas.some(c=>Math.abs(c.width-m.size[0])<=1&&Math.abs(c.height-m.size[1])<=1),JSON.stringify(m));
-   if(fit)assert.equal(m.inside,m.count,JSON.stringify(m));assert.equal(m.count,3);
+   if(fit)assert.equal(m.inside,m.count,JSON.stringify(m));assert.equal(m.count,useLabelFixture?4:3);
   }
   pass(name,{outer,maps});return maps;
  }
@@ -88,6 +107,15 @@ async function readMaps(frame){return frame.evaluate(()=>window.__layoutMaps.map
   assert.deepEqual(guided,{map:'cad',drawer:false,focused:'local-map',hit:true});await visible('guided_correction_from_GIS_reveals_CAD');await page.frameLocator('#osm-frame').locator('#toggle-manual-gcp').click();
   let release;layerGate=new Promise(resolve=>release=resolve);await page.reload();await page.waitForFunction(()=>appStatus&&!document.querySelector('#workspace').hidden);await page.locator('.bottom-dock [data-page="osm"]').click();await page.locator('#existing-run').fill('/fixture/run');await page.locator('#open-review').click();await page.frameLocator('#osm-frame').locator('#local-map').waitFor();await page.locator('.bottom-dock [data-page="chat"]').click();release();layerGate=null;await page.waitForFunction(()=>reviewReady);await page.locator('.bottom-dock [data-page="osm"]').click();await visible('initialized_while_hidden_refits_on_return');
   await page.screenshot({path:path.join(output,'narrow-map-complete.png')});assert.deepEqual(results.errors,[]);
+  useLabelFixture=true;await page.reload();await page.waitForFunction(()=>appStatus&&!document.querySelector('#workspace').hidden);await page.locator('.bottom-dock [data-page="osm"]').click();await page.locator('#existing-run').fill('/fixture/run');await page.locator('#open-review').click();await page.waitForFunction(()=>reviewReady);
+  for(const viewport of [{width:1920,height:1080},{width:1280,height:800},{width:711,height:898}]){
+   await page.setViewportSize(viewport);await (await frame()).evaluate(()=>document.fonts.ready);await visible(`label_fixture_geometry_${viewport.width}`);
+   const maps=await readLabelBounds(await frame());assert.ok(maps.length>0);
+   for(const map of maps){assert.ok(map.fontReady);assert.equal(map.labels.length,4);assert.equal(map.symbols.length,4);for(const label of map.labels)assert.equal(label.original,label.rendered);for(const bounds of [...map.labels,...map.symbols])assert.ok(bounds.left>=0&&bounds.right<=map.size[0]&&bounds.top>=0&&bounds.bottom<=map.size[1],JSON.stringify({map:map.id,size:map.size,bounds}));}
+   pass(`full_multiline_endpoint_labels_and_symbols_${viewport.width}`,{maps});await page.screenshot({path:path.join(output,`full-endpoint-labels-${viewport.width}.png`)});
+  }
+  const labelFrame=await frame();await page.frameLocator('#osm-frame').locator('#local-map .ol-zoom-in').click();await labelFrame.waitForFunction(()=>window.__layoutMaps.every(map=>!map.getView().getAnimating()));const fontBefore=(await readMaps(labelFrame)).find(map=>map.id==='local-map');
+  await labelFrame.evaluate(()=>document.fonts.dispatchEvent(new Event('loadingdone')));await settle();const fontAfter=(await readMaps(labelFrame)).find(map=>map.id==='local-map');assert.deepEqual(fontAfter.center,fontBefore.center);assert.equal(fontAfter.resolution,fontBefore.resolution);pass('font_loadingdone_preserves_user_navigation');assert.deepEqual(results.errors,[]);
  }catch(error){results.failure=error.message;results.dom=await page.locator('body').innerText();results.frame_dom=await (await frame()).locator('body').innerText();throw error;}finally{fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(results,null,2));await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
 
