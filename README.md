@@ -27,8 +27,8 @@ canonical 流水线，不为某张测试图维护硬编码分支。
 地图工作区可切换同一 DWG 的 GIS 分区；多分区交付包含 `all-districts.qgz`。
 缺失分区会明确报错，纸空间图框和设计汇总不会自动变成地理分区。
 
-[产品首页](https://mola-maker.github.io/CAD2GIS/) ·
-[九图交付与演示](https://mola-maker.github.io/CAD2GIS/deliveries/) ·
+[产品首页](https://cad2gis.molamaker.cn/) ·
+[QGZ / OSM 交互地图](https://cad2gis.molamaker.cn/docs/osm-gcp.html) ·
 [OSM 标准匹配与二次校正](docs/OSM_STANDARD_MATCHING.md) ·
 [SVG 提取与 QGZ](docs/OPTIONAL_SYMBOL_ASSETS.md) · [发布审查](docs/RELEASE_REVIEW_2026-09-06.md)
 
