@@ -1,6 +1,6 @@
 # CAD2GIS Wiki · From drawings to reviewable GIS delivery
 
-[中文](Home) · [Official architecture report](https://cad2gis.molamaker.cn/) · [Styled bilingual guide](https://mola-maker.github.io/CAD2GIS/wiki/en.html) · [Install and releases](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0)
+[中文](Home) · [Official architecture report](https://cad2gis.molamaker.cn/) · [Styled bilingual guide](https://mola-maker.github.io/CAD2GIS/wiki/en.html) · [Install and releases](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0-site.20261013)
 
 CAD2GIS converts DWG/DXF drawings into GIS deliverables with layers, declared coordinates, validation results and source evidence. MCP exposes local conversion, inspection and review tools to agents. The plugin supplies workflow instructions, skills and client configuration. Together they support a practical cycle: understand a drawing, edit a copy, convert it, inspect the result and prepare a QGIS delivery with records another person can review.
 

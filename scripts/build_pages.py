@@ -192,7 +192,7 @@ def build(
             except ModuleNotFoundError:
                 from current_site_content import current_homepage
             page = current_homepage(page)
-            banner = '<aside class="cad2gis-current"><a href="wiki/index.html">MCP / 插件 0.8.0 · 中文指南</a> · <a href="wiki/en.html">English</a> · <a href="https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0">下载 / Download</a></aside>'
+            banner = '<aside class="cad2gis-current"><a href="wiki/index.html">MCP / 插件 0.8.0 · 中文指南</a> · <a href="wiki/en.html">English</a> · <a href="https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0-site.20261013">下载 / Download</a></aside>'
             style = '<style>.cad2gis-current{position:relative;z-index:100;padding:12px 20px;border-bottom:1px solid #d7d7ce;background:#fffff8;color:#142a33;font:14px "et-book","Songti SC",serif;line-height:1.6}.cad2gis-current a{color:inherit;text-decoration:underline}</style>'
             page = page.replace("</head>", style + "</head>", 1)
             page = re.sub(r"(<body\b[^>]*>)", r"\1" + banner, page, count=1)
