@@ -7,9 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_cross_platform_ci_uses_portable_agent_runtime() -> None:
-    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
-        encoding="utf-8"
-    )
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "actions/setup-python@v6" in workflow
     assert 'python -m pip install -e ".[agent,test]"' in workflow
     assert "cad2gis runtime install" in workflow
@@ -43,7 +41,10 @@ def test_pages_cd_builds_only_the_verified_site_directory() -> None:
     assert '- "tests/test_plugin_contracts.py"' in workflow
     assert '- "tests/test_webdemo_plugin_guide.py"' in workflow
     assert '- "scripts/build_pages.py"' in workflow
-    assert "tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py" in workflow
+    assert (
+        "tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py"
+        in workflow
+    )
     assert "node --check src/cad2gis/webdemo/install.js" in workflow
     assert "path: _site" in workflow
     assert "path: src/cad2gis/webdemo" not in workflow
@@ -52,8 +53,12 @@ def test_pages_cd_builds_only_the_verified_site_directory() -> None:
 
 
 def test_project_root_overrides_are_combined_for_local_and_ci_runs() -> None:
-    source = (ROOT / "src" / "cad2gis" / "agent_mcp.py").read_text(
-        encoding="utf-8"
-    )
+    source = (ROOT / "src" / "cad2gis" / "agent_mcp.py").read_text(encoding="utf-8")
     assert '"CAD2GIS_PROJECT_ROOTS", "CAD2GIS_PROJECT_ROOT"' in source
     assert "if root not in roots" in source
+
+
+def test_pages_contract_runtime_can_import_source_contracts_without_gis_install():
+    workflow = (ROOT / ".github/workflows/pages.yml").read_text(encoding="utf8")
+    assert "PYTHONPATH: src" in workflow
+    assert "scripts/current_site_content.py" in workflow

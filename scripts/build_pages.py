@@ -187,6 +187,11 @@ def build(
         for name in ("index.html", "cad2gis-report.html"):
             path = stage / name
             page = path.read_text(encoding="utf8")
+            try:
+                from scripts.current_site_content import current_homepage
+            except ModuleNotFoundError:
+                from current_site_content import current_homepage
+            page = current_homepage(page)
             banner = '<aside class="cad2gis-current"><a href="wiki/index.html">MCP / 插件 0.8.0 · 中文指南</a> · <a href="wiki/en.html">English</a> · <a href="https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0">下载 / Download</a></aside>'
             style = '<style>.cad2gis-current{position:relative;z-index:100;padding:12px 20px;border-bottom:1px solid #d7d7ce;background:#fffff8;color:#142a33;font:14px "et-book","Songti SC",serif;line-height:1.6}.cad2gis-current a{color:inherit;text-decoration:underline}</style>'
             page = page.replace("</head>", style + "</head>", 1)
@@ -208,13 +213,13 @@ def build(
 """,
             encoding="utf8",
         )
-        manual = stage / "docs/index.html"
-        page = manual.read_text(encoding="utf8").replace(
-            '<main class="doc-main">',
-            '<main class="doc-main"><div class="doc-wrap"><p class="doc-kicker">CURRENT AGENT / 0.8.0</p><p>以下手册保留历史快照。当前 MCP 与插件能力、Apache-2.0 许可和安装说明：<a href="../wiki/index.html">中文 Wiki</a> · <a href="../wiki/en.html">English Wiki</a>。</p></div>',
-            1,
-        )
-        manual.write_text(page, encoding="utf8")
+        for manual in sorted((stage / "docs").glob("*.html")):
+            page = manual.read_text(encoding="utf8")
+            notice = '<div class="doc-wrap"><p class="doc-kicker">CURRENT AGENT / 0.8.0</p><p>当前 MCP 与插件、Apache-2.0 许可和安装说明：<a href="../wiki/index.html">中文 Wiki</a> · <a href="../wiki/en.html">English Wiki</a>。以下过程演示与桌面说明保留原版本/来源；九图仍 CONDITIONAL，未独立验证绝对精度。</p></div>'
+            page = page.replace(
+                '<main class="doc-main">', '<main class="doc-main">' + notice, 1
+            )
+            manual.write_text(page, encoding="utf8")
         pages = sorted(p.relative_to(stage).as_posix() for p in stage.rglob("*.html"))
         (stage / "sitemap.xml").write_text(
             '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'

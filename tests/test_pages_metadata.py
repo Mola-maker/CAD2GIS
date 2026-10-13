@@ -17,7 +17,7 @@ def test_pages_uses_official_archive_and_canonical_on_both_hosts(
     output = tmp_path / "site"
     build_pages.build(output, public_base_url=base)
     html = (output / "index.html").read_text(encoding="utf8")
-    assert "从图纸到证据：CAD2GIS 的架构突破" in html
+    assert "从图纸到证据：CAD2GIS" in html
     assert 'rel="canonical" href="https://cad2gis.molamaker.cn/"' in html
     assert "wiki/index.html" in html
     assert not (output / "assets/hero-tube.js").exists()
@@ -159,3 +159,35 @@ def test_unmanifested_directory_symlink_cannot_publish_external_files(
     with pytest.raises(ValueError, match="symlink"):
         build_pages.build(tmp_path / "site")
     assert not (tmp_path / "site/unmanifested/private.txt").exists()
+
+
+def test_homepage_primary_copy_tracks_current_code_not_historical_metrics(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(build_pages, "PROJECT_ROOT", tmp_path)
+    output = tmp_path / "site"
+    build_pages.build(output)
+    html = (output / "index.html").read_text(encoding="utf8")
+    current = html.split('<details id="historical-report"', 1)[0]
+    assert "CAD2GIS / 0.8.0" in current
+    assert "63 个 MCP 接口" in current
+    assert "15 个已验证" in current
+    assert "get_cad_bundle_status" in current
+    assert "call_cad_bundle_tool" in current
+    assert "Apache-2.0" in current
+    assert "1661 passed" in current
+    assert "50 个 MCP 工具" not in current
+    assert "1,300 项通过" not in current
+    assert "用 48 天、91 次提交" not in current
+    assert 'data-goto="#current-install"' in current
+    assert 'id="current-install"' in current
+    assert "历史证据" in html
+
+
+def test_bilingual_cad_tool_table_matches_current_allowed_names():
+    from cad2gis.cad_bundle_policy import ALLOWED_TOOLS
+
+    for name in ["Home.md", "Home-EN.md"]:
+        guide = (ROOT / "docs/wiki" / name).read_text(encoding="utf8")
+        for tool in ALLOWED_TOOLS:
+            assert f"`{tool}`" in guide

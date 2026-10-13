@@ -22,7 +22,7 @@ MCP connects an agent to the local CAD2GIS runtime. The user selects an authoriz
 
 The plugin packages MCP configuration, task skills and workflow instructions. It helps an agent choose tools, interpret validation results, iterate on a review and prepare deliverables. Output quality still depends on source drawings, coordinate and control information, and the operator's review of the checks.
 
-Core workflows cover drawing understanding, DWG/DXF conversion, project validation, review and QGIS delivery. An optional CAD runtime adds layer/entity queries, 2D editing, topology checks and revision comparisons. Public directory status is recorded in `registries/publication-status.json`; client compatibility does not itself mean acceptance into a client's official directory.
+The current code registers **63 MCP interfaces**, including four CAD wrappers. The 15 sidecar tools are optional capabilities within those wrappers; the two counts must not be added as independent MCP interfaces. Core workflows cover drawing understanding, DWG/DXF conversion, project validation, review and QGIS delivery. An optional CAD runtime adds layer/entity queries, 2D editing, topology checks and revision comparisons. Public directory status is recorded in `registries/publication-status.json`; client compatibility does not itself mean acceptance into a client's official directory.
 
 ## Optional CAD tools: 15 tools exercised through the adapter
 
@@ -30,7 +30,7 @@ The sidecar uses MIT-licensed U-C4N/Autocad-MCP v1.6.0 at a fixed source revisio
 
 | Category | Current tools | Purpose |
 | --- | --- | --- |
-| Understanding and checks | `drawing_understand`, `topology_check`, `diff` | Inspect structure, connections and revision differences |
+| Understanding and checks | `drawing_understand`, `drawing_topology_check`, `drawing_diff` | Inspect structure, connections and revision differences |
 | Selection and queries | `analysis_select_by_layer`, `analysis_select_by_type`, `entity_get`, `layer_list` | Locate objects and read their properties |
 | Layer management | `layer_create` | Create layers for revisions |
 | 2D creation | `entity_create_line`, `entity_create_circle`, `entity_create_arc`, `entity_create_polyline`, `entity_create_rectangle`, `entity_create_text` | Add basic geometry and annotations |

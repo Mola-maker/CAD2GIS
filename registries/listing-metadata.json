@@ -8,7 +8,7 @@
   "bundle_url": "https://github.com/Mola-maker/CAD2GIS/releases/download/v0.8.0/cad2gis-agent-0.8.0.mcpb",
   "bundle_sha256": "d460908adcb41dfd360e52dfb31fa95c35bca0809f00ceab9ebfe2cffd6b52ce",
   "support_url": "https://github.com/Mola-maker/CAD2GIS/issues",
-  "gallery_url": "https://mola-maker.github.io/CAD2GIS/deliveries/",
+  "gallery_url": "https://mola-maker.github.io/CAD2GIS/docs/osm-gcp.html",
   "transport": "stdio",
   "client_supported": [
     "Codex",

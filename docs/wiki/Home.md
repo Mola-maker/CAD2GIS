@@ -22,7 +22,7 @@ MCP 是智能体与本地 CAD2GIS 运行时之间的工具接口。用户指定�
 
 插件提供 MCP 配置、任务技能和工作流程。它让智能体知道什么时候调用转换、如何读检查结果、怎样迭代审查，再生成交付成果。插件的价值在于让工具按流程配合；输出的质量仍取决于输入图纸、坐标与控制点资料，以及操作者对检查结果的判断。
 
-已有核心流程覆盖图纸理解、DWG/DXF 转换、工程检查、审查与 QGIS 交付。可选 CAD 能力包补充图层/实体查询、二维编辑、拓扑检查与差异比较。公开注册状态以仓库的 `registries/publication-status.json` 为准；客户端可接入不等于已进入每个平台的官方目录。
+当前代码注册 **63 个 MCP 接口**，包含四个 CAD 包装接口；15 个旁路工具是包装器中的可选能力，两个数字不能相加作为独立 MCP 接口数量。已有核心流程覆盖图纸理解、DWG/DXF 转换、工程检查、审查与 QGIS 交付。可选 CAD 能力包补充图层/实体查询、二维编辑、拓扑检查与差异比较。公开注册状态以仓库的 `registries/publication-status.json` 为准；客户端可接入不等于已进入每个平台的官方目录。
 
 ## 可选 CAD 能力：15 个已经实际调用的工具
 
@@ -30,7 +30,7 @@ MCP 是智能体与本地 CAD2GIS 运行时之间的工具接口。用户指定�
 
 | 类别 | 当前工具 | 用途 |
 | --- | --- | --- |
-| 理解和检查 | `drawing_understand`, `topology_check`, `diff` | 理解结构、检查连接、比较修订 |
+| 理解和检查 | `drawing_understand`, `drawing_topology_check`, `drawing_diff` | 理解结构、检查连接、比较修订 |
 | 筛选和查询 | `analysis_select_by_layer`, `analysis_select_by_type`, `entity_get`, `layer_list` | 按图层或实体类型定位对象并读取属性 |
 | 图层管理 | `layer_create` | 建立修订用图层 |
 | 二维创建 | `entity_create_line`, `entity_create_circle`, `entity_create_arc`, `entity_create_polyline`, `entity_create_rectangle`, `entity_create_text` | 创建基本二维图元和标注 |
