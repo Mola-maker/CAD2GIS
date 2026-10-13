@@ -83,6 +83,9 @@ def test_tampered_or_linked_revision_is_rejected(tmp_path):
     root = tmp_path / "workspace"
     create_workspace(source, root)
     revision = root / "revisions/000000.dxf"
+    revision.chmod(
+        0o600
+    )  # Windows readonly flag must be cleared before deliberate tampering.
     revision.unlink()
     revision.symlink_to(source)
     with pytest.raises(ValueError, match="symlink"):
