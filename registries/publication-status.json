@@ -3,58 +3,90 @@
   "platforms": [
     {
       "platform": "Official MCP Registry",
-      "status": "prepared",
-      "url": null,
+      "status": "published",
+      "url": "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.Mola-maker%2Fcad2gis-agent/versions/0.8.0",
       "version": "0.8.0",
-      "checked_at": "2026-10-13T04:04:38.800361+00:00",
+      "checked_at": "2026-10-13T06:16:29.486245+00:00",
       "evidence": {
-        "submission_file": "registries/listing-metadata.json"
+        "public_record": {
+          "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+          "name": "io.github.Mola-maker/cad2gis-agent",
+          "description": "DWG/DXF to GIS, QGIS delivery and source-preserving CAD tools with validation evidence.",
+          "title": "CAD2GIS",
+          "repository": {
+            "url": "https://github.com/Mola-maker/CAD2GIS",
+            "source": "github"
+          },
+          "version": "0.8.0",
+          "websiteUrl": "https://cad2gis.molamaker.cn/",
+          "packages": [
+            {
+              "registryType": "mcpb",
+              "identifier": "https://github.com/Mola-maker/CAD2GIS/releases/download/v0.8.0/cad2gis-agent-0.8.0.mcpb",
+              "version": "0.8.0",
+              "fileSha256": "d460908adcb41dfd360e52dfb31fa95c35bca0809f00ceab9ebfe2cffd6b52ce",
+              "transport": {
+                "type": "stdio"
+              }
+            }
+          ]
+        },
+        "workflow_run": "https://github.com/Mola-maker/CAD2GIS/actions/runs/38354786752"
       },
       "required_user_action": null
     },
     {
       "platform": "Smithery",
-      "status": "prepared",
-      "url": null,
+      "status": "published",
+      "url": "https://smithery.ai/servers/chenlihuasb123/cad2gis-agent",
       "version": "0.8.0",
-      "checked_at": "2026-10-13T04:04:38.800379+00:00",
+      "checked_at": "2026-10-13T06:16:29.486245+00:00",
       "evidence": {
-        "submission_file": "registries/listing-metadata.json"
+        "release_id": "eed1becf-39aa-4a2d-84b6-1a1f0595b088",
+        "release_status": "SUCCESS",
+        "public_page": "Published Oct13,2026;63 actual tool schemas visible",
+        "bundle": "cad2gis-agent-0.8.0-smithery.mcpb",
+        "bundle_sha256": "85b4fecb75dc7adb2dd5f8dc536a22b1364bc681f6bc5c33f64f517bb3f994b2",
+        "original_mcpb_unchanged": true
       },
       "required_user_action": null
     },
     {
       "platform": "Glama",
-      "status": "prepared",
-      "url": null,
+      "status": "submitted",
+      "url": "https://glama.ai/mcp/servers",
       "version": "0.8.0",
-      "checked_at": "2026-10-13T04:04:38.800384+00:00",
+      "checked_at": "2026-10-13T06:16:29.486245+00:00",
       "evidence": {
-        "submission_file": "registries/listing-metadata.json"
+        "submission": "Runs from source form: CAD2GIS,description,https://github.com/Mola-maker/CAD2GIS; after submit dialog closed",
+        "public_search": "No CAD2GIS result yet; not claimed indexed",
+        "review_requirement": "Approval and automated safety/quality checks required by form"
       },
       "required_user_action": null
     },
     {
       "platform": "OpenAI Plugins Directory",
-      "status": "prepared",
+      "status": "requires_user_action",
       "url": null,
       "version": "0.8.0",
       "checked_at": "2026-10-13T04:04:38.800388+00:00",
       "evidence": {
-        "submission_file": "registries/listing-metadata.json"
+        "official_docs": "https://developers.openai.com/plugins/build/mcp-server",
+        "local_distribution": "Codex repository marketplace"
       },
-      "required_user_action": null
+      "required_user_action": "A separately designed authenticated public HTTPS MCP service and verified publisher identity are required; current plugin is local stdio."
     },
     {
       "platform": "Anthropic official marketplace",
-      "status": "prepared",
-      "url": null,
+      "status": "requires_user_action",
+      "url": "https://claude.ai/directory/manage",
       "version": "0.8.0",
       "checked_at": "2026-10-13T04:04:38.800392+00:00",
       "evidence": {
-        "submission_file": "registries/listing-metadata.json"
+        "official_docs": "https://code.claude.com/docs/en/plugins/publish",
+        "local_distribution": "Claude Code repository marketplace"
       },
-      "required_user_action": null
+      "required_user_action": "Sign in to a paid Claude account at claude.ai/directory/manage for directory submission. Official marketplace listings require an Anthropic partner contact."
     }
   ]
 }

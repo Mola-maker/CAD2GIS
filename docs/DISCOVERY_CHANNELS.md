@@ -12,8 +12,8 @@
 | Codex | 仓库 marketplace `cad2gis-agent@cad2gis` | 仓库安装入口可用；官方目录收录另需提交与审核 |
 | Claude Code | 仓库 marketplace `cad2gis-agent@cad2gis-tools` | 仓库安装入口可用；官方目录收录另需提交与审核 |
 | Cursor / VS Code | [客户端模板](../plugins/cad2gis-agent/clients/README.md) | 标准 MCP 客户端支持，不属于公开目录收录 |
-| Official MCP Registry | `io.github.Mola-maker/cad2gis-agent` | 待打包、命名空间认证与公开记录核验 |
-| Smithery | MCPB 分发 | 账号认证已完成；MCPB 发布与公开回读进行中 |
+| Official MCP Registry | `io.github.Mola-maker/cad2gis-agent` | 已发布0.8.0；公开名称、版本与 MCPB SHA-256 回读一致 |
+| Smithery | MCPB 分发 | 已发布0.8.0；63工具在公开页面可见 |
 | Glama | GitHub 仓库收录 | 已提交 Runs from source 审核；公开搜索尚未收录 |
 
 曝光路径：GitHub description/topics 与英文关键词 → README 实测能力 → 官网效果与安装 → 有版本和哈希的 Release → 仓库 marketplace/MCP 配置 → 公开目录。没有访问统计时只报告入口与发布状态，不报告访问量增长。

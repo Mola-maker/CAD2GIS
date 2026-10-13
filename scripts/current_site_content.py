@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import ast
+import json
 import re
 from pathlib import Path
 
@@ -111,4 +112,18 @@ cad2gis cad-bundle status --json</code></pre><p>可选 CAD 旁路单独安装：
     )
     page = page.replace("</main>", "</details></main>", 1)
     style = "<style>#current-install pre{overflow-x:auto;border:1px solid var(--line);padding:20px;line-height:1.7;white-space:pre}#current-install pre code{font-size:13px}#current-tools code{overflow-wrap:anywhere}#historical-report{border-top:1px solid var(--line)}#historical-report>summary{font-family:var(--mono);color:var(--red)}.prose ol{line-height:1.9}</style>"
-    return page.replace("</head>", style + "</head>", 1)
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "CAD2GIS",
+        "softwareVersion": version,
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Windows, macOS, Linux",
+        "url": "https://cad2gis.molamaker.cn/",
+        "license": "https://www.apache.org/licenses/LICENSE-2.0",
+        "downloadUrl": f"https://github.com/Mola-maker/CAD2GIS/releases/tag/v{version}",
+        "description": f"DWG/DXF to GIS, {count} local MCP interfaces and {optional} optional source-preserving CAD tools.",
+    }
+    metadata = '<script type="application/ld+json">' + json.dumps(schema) + "</script>"
+    metadata += '<meta property="og:image" content="https://cad2gis.molamaker.cn/docs/assets/img/first-open/drawing-01.jpg">'
+    return page.replace("</head>", style + metadata + "</head>", 1)
