@@ -1,6 +1,6 @@
 # CAD2GIS Wiki · 图纸到可审查的 GIS 交付
 
-[English](Home-EN) · [官网研究报告](https://cad2gis.molamaker.cn/) · [完整视觉版 / 双语切换](https://mola-maker.github.io/CAD2GIS/wiki/index.html) · [安装与发布](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0)
+[English](Home-EN) · [官网研究报告](https://cad2gis.molamaker.cn/) · [完整视觉版 / 双语切换](https://mola-maker.github.io/CAD2GIS/wiki/index.html) · [安装与发布](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0-site.20261013)
 
 CAD2GIS 把 DWG/DXF 图纸转成有图层、有坐标声明、有检查结果和来源证据的 GIS 交付。MCP 让智能体调用转换、检查和审查工具；插件把任务流程、技能说明与工具配置送到智能体客户端。两者共同帮助用户完成“理解图纸 → 修订副本 → 转换 → 检查 → QGIS 交付”，并留下可以复查的记录。
 
