@@ -1,7 +1,7 @@
 # CAD2GIS：CAD 能力旁路、Apache-2.0 与公开交付设计
 
-日期：2026-10-13  
-状态：方向已获用户批准；本文等待用户审阅。  
+日期：2026-10-13
+状态：用户已批准具体设计；已纳入随后补充的曝光、九图复用与主流平台注册要求。
 基线：Mola-maker/CAD2GIS main，提交 a75d15ebe0b854bd667390c6c05dbfe56cd10d91，版本 0.7.8。
 
 ## 1. 用户目标与已确认事项
@@ -19,7 +19,7 @@
 - GitHub 仓库 homepage 未设置、topics 为空，README 顶部 Linux 链接停留在 .1，而现有交付中有 .3。
 - 官网与 GitHub Pages 当前 HTTPS 均返回 200；下载包中的旧备案阻塞记录是历史信息。
 - Pages 使用 scripts/build_pages.py 和 GitHub Actions。九图公开交付已有独立哈希与来源核验，不将软件开源许可自动扩展到图纸数据。
-- 九图包中九个 delivery-manifest 均为 CONDITIONAL，absolute_accuracy_verified=false。展示和下载保留这些边界。
+- 九图包中九个 delivery-manifest 均为 CONDITIONAL，absolute_accuracy_verified=false。效果展示保留这些边界。
 - 正确指定 PYTHONPATH=src 后，插件与 Pages 相关 39 项基线检查通过；这不代表全仓库测试通过。
 - 工作副本位于 outputs/cad2gis-upgrade-2026-10-13/repo，不改写旧 CAD2GIS checkout 或其历史。
 
@@ -58,7 +58,7 @@
 2. 建立全新旁路 workspace；保存只读源快照、当前副本、source_sha256 与清单。拒绝覆盖已存在 workspace，拒绝符号链接逃逸和越界路径。
 3. 每次调用打开指定副本，使用白名单工具，成功后保存独立修订；失败不替换当前副本。避免跨 workspace 共享上游当前图纸状态。
 4. 返回结果、前后哈希、修订路径、上游提交和工具名。结构化结果可以进入 Agent 推理，但不直接将旁路判断写成 CAD2GIS VERIFIED。
-5. 需要交付 GIS 时，将新副本作为新来源，通过现有 project/onboarding/convert/audit 流程生成新 run。旁路结果属于新的输入，原图的几何保真声明不能自动继承。
+5. 需要交付 GIS 时，将新副本作为新来源，通过 project/onboarding/convert/audit 流程生成新 run。现有核心来源检查主要只接受 DWG，实施中需补齐原生 DXF 接入口：复用当前 LibreDWG→DXF reader 的实体/块/属性解析逻辑，记录 native_dxf 来源和真实副本哈希，不走 injected_records 模拟入口，也不把 DXF 改后缀冒充 DWG。旁路结果属于新的输入，原图的几何保真声明不能自动继承。
 
 首期白名单为官方固定源码中存在的：
 drawing_understand、drawing_topology_check、drawing_diff、
@@ -93,6 +93,8 @@ README.md 保留中文为默认，新增 README.en.md。开头直接解释 DWG/D
 
 增加 CONTRIBUTING、问题模板、PR 模板和明确的复现实例要求；项目描述突出 DWG/DXF、GeoPackage、QGIS、MCP，设置 homepage 为 https://cad2gis.molamaker.cn/，topics 使用 cad、gis、dwg、dxf、qgis、geopackage、mcp、geospatial 等真实关键词。
 
+曝光路径包括 GitHub 搜索与 topics、官网搜索收录、中英文文档、可复制安装入口、公开 Release，以及主流 Agent 插件/MCP 目录。记录每条路径的实际落地链接和状态，不将配置文件生成视为平台公开注册。
+
 网站补齐 description、Open Graph、canonical、SoftwareApplication JSON-LD、robots 和 sitemap，展示新增能力及安装入口。GitHub Pages 与官网使用各自正确的 base URL；不以未经验证的工具数量、测量精度或平台能力宣传曝光。
 
 ## 7. Pages、官网与交付包
@@ -104,17 +106,26 @@ nine-svg-portable-20260906.zip：1248 个文件、9 张图。
 
 Pages 输入包含生产站点、备份、历史部署材料等多个目录，不将整个压缩包直接作为站点根目录。现有仓库构建为可维护基线；下载包中的生产素材经文件级比较后按需合入。保留公开已有的 docs、报告与下载 URL，必要时通过重定向兼容。
 
-九图报告/派生产物按已有 publication 验证规则核验，保留 CONDITIONAL 和 false 精度标识。不为了放入网站把状态改为 VERIFIED。九图报告包本身没有 publication.json，需与已有获准发布版本及其哈希关联，或生成与本次用户公开交付请求相符且可校验的新发布清单。原始 DWG/DXF 不放入公开演示包。
+用户补充：九图只需要展示效果；Pages 已有则不上传。已现场核验 https://mola-maker.github.io/CAD2GIS/deliveries/ 返回 200，包含九张主图；assets/catalog.json 含九个主图和两个分区共 11 条记录。下载的 Pages 包也含主图效果资源。优先链接/复用这些已有展示，保留 CONDITIONAL 和 false 精度标识；不新建或上传九图完整报告 ZIP、QGZ/GPKG 副本。既有报告和下载 URL 保持可达。原始 DWG/DXF 不放入新增公开演示包。
 
 最终输出：
 - cad2gis-0.8.0-pages.zip：可部署站点根目录、构建清单、SHA256SUMS；
 - cad2gis-0.8.0-agent-delivery.zip：新源码、wheel/sdist、插件 ZIP、安装与旁路配置、验证记录、第三方声明；
-- nine-drawings-report.zip：核验后的九图报告及必要派生下载，保留数据来源与状态；
 - release-manifest.json：每项产物的版本、源码提交、大小、SHA-256 和实际验证范围。
 
 GitHub Pages 通过现有 Actions 部署。官网在现有托管路径和凭据确实可用时部署相同内容并验证；若当前环境没有官网管理通道，交付可部署包和准确的待部署状态，继续完成 GitHub Pages，不把打包当作官网上线。
 
-网站公开访问 smoke 检查至少覆盖首页、安装、旁路能力、九图目录、一个报告、一个 QGZ 下载及其相对资源；页面展示还需浏览器交互验证。发布到远端以本次明确部署要求为授权范围，不发送社区邮件或代发宣传消息。
+网站公开访问 smoke 检查至少覆盖首页、安装、旁路能力、现有九图目录及九张效果图；抽查现有报告/下载兼容性，不因此生成新上传；页面展示还需浏览器交互验证。发布到远端以本次明确部署要求为授权范围，不发送社区邮件或代发宣传消息。
+
+### 主流平台注册与可发现性
+
+用户已明确“主流平台”。执行目标为 Codex 与 Claude Code 的仓库 marketplace、Cursor/VS Code 的 MCP 接入，以及官方 MCP Registry、Smithery、Glama 的公开收录。另核验 OpenAI 公共 Plugins Directory 和 Anthropic 官方 marketplace 的提交条件；它们与自行托管 marketplace 是不同状态。
+
+官方 MCP Registry 当前 search=cad2gis 为空，PyPI cad2gis 返回 404。优先将新版 MCPB 放入 GitHub Release，登记 io.github.Mola-maker/cad2gis-agent 并提供真实 fileSha256。Smithery 的 stdio MCPB 发布与 Glama GitHub 源码收录按当前官方流程执行。
+
+身份、命名空间和审核要求由平台控制。复用已有授权登录；缺少登录或遇到需要用户身份验证时，先完成可校验的提交包、文案、图标和安装验证，只暂停对应平台，记录具体待办。不得把本地 stdio 服务伪装为公开 HTTPS 服务，不向公网开放当前无认证的文件操作服务。公开 MCP 目录的 server listing、GitHub marketplace 可安装性与审核中的公共插件目录 listing 分别记录。
+
+产物增加 cad2gis-agent-0.8.0.mcpb 与 registries/publication-status.json。状态枚举为 prepared、submitted、under_review、published、requires_user_action、failed；只有保存实际公开 URL 并通过读回检索才能标为 published。
 
 ## 8. 验收与风险控制
 
@@ -135,7 +146,7 @@ GitHub Pages 通过现有 Actions 部署。官网在现有托管路径和凭据�
 
 ## 9. 审阅后续
 
-用户批准本文后，进入 writing-plans，写出具体实施计划并让用户选择执行方式。当前会话不主动委派子代理；除非用户选择并授权委派，默认在当前会话执行。本文批准前不进行产品代码、许可、站点或远端元数据修改。
+用户已批准本文，现进入 writing-plans。按能力、许可/曝光/网站、发行/平台注册三个可独立验收的子项目编写计划，用户审阅整组计划并选择执行方式后开始实施。当前会话不主动委派子代理；除非用户选择并授权委派，默认建议在当前会话执行。
 
 主要原始来源：
 - https://github.com/U-C4N/Autocad-MCP
