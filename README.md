@@ -1,38 +1,95 @@
-# CAD2GIS
+# CAD2GIS · CAD → GIS for AI agents
 
-[![CAD2GIS CI](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml)
-[![Web Demo](https://github.com/Mola-maker/CAD2GIS/actions/workflows/pages.yml/badge.svg)](https://mola-maker.github.io/CAD2GIS/?demo=1)
+[![CI](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml)
+[![License Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE.md)
+[![Python 3.11–3.12](https://img.shields.io/badge/Python-3.11–3.12-3776AB)](pyproject.toml)
 
-**原创代码许可：[Apache-2.0](LICENSE.md)**，允许商用与二次开发。
-第三方组件与图纸数据保留各自许可，详见 [版权与许可声明](NOTICE.md)。
+**把 DWG/DXF 转成可复核的 GIS，并让 AI Agent 检查、编辑 CAD 副本和交付 QGIS 项目。**
 
-**Linux 0.7.0-1 安装包（预发布）**：[Linux 修复版](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.7.0-linux.1) ·
-[Ubuntu x86_64 `.deb`](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/cad2gis_0.7.0-1_amd64.deb) ·
-[Linux 便携包](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.1/cad2gis-0.7.0-1-linux-x86_64.tar.gz) ·
-[Linux 安装说明](docs/INSTALL_LINUX.md)。要求 glibc 2.39 或更新版本。
-预发布不进入 GitHub 的 `releases/latest` 入口，请使用上述版本链接。
+[官方网站](https://cad2gis.molamaker.cn/) · [九图效果展示](https://mola-maker.github.io/CAD2GIS/deliveries/) · [安装指南](https://mola-maker.github.io/CAD2GIS/install.html) · [发行版本](https://github.com/Mola-maker/CAD2GIS/releases) · [English](README.en.md)
 
-CAD2GIS 是一个证据优先、可重放的 DWG → GIS 转换系统。CLI、Python API、
-Web 审查界面和 `cad2gis-agent` MCP 服务共享 `src/cad2gis` 中的同一条
-canonical 流水线，不为某张测试图维护硬编码分支。
+CAD2GIS 将源实体、语义映射、几何、拓扑、长度与坐标证据串成可重放流程。
+CLI、Python API、审查工作台和 `cad2gis-agent` MCP 插件使用同一条转换流水线。
+适合 CAD/GIS 工程师，以及使用 Codex、Claude Code、Cursor、VS Code 的 Agent 工作流。
 
-**0.6.0 升级交付**：[安装与新功能](docs/UPGRADE_0_6_0.md) ·
-[OSM 算法与证据层](docs/UPGRADE_OSM.md) · [GCP 微调](docs/UPGRADE_GCP.md) ·
-[九图旧配置兼容性](docs/UPGRADE_BASELINE_COMPATIBILITY.md)。本次源码归档和安装包的
-验证记录随交付提供；上方远端 badge 不代表这些本地改动已在 GitHub 发布。
+## 0.8.0 能做什么
 
-**多分区与九图复核**：[真实 DWG 验证说明](docs/MULTI_DISTRICT_VERIFICATION_2026-09-10.md)。
-地图工作区可切换同一 DWG 的 GIS 分区；多分区交付包含 `all-districts.qgz`。
-缺失分区会明确报错，纸空间图框和设计汇总不会自动变成地理分区。
+| 能力 | 入口与条件 |
+| --- | --- |
+| DWG/DXF 来源检查 | DWG 使用托管 LibreDWG；DXF 在 CLI/API/MCP 中原生读取，保留实体 handle、块、属性和源哈希 |
+| CAD → GeoPackage | 先复核语义、单位和 CRS，再转换；输出几何、拓扑、长度及位置验收证据 |
+| CAD 副本编辑 | 可选独立开源 CAD 运行时；4 个 MCP 入口受控调用 15 个已实测 CAD 工具 |
+| OSM 与 GCP 配准 | OSM 相对匹配、冻结快照、人工控制点与二次匹配；绝对精度需要可靠控制与检查点 |
+| QGIS 交付 | GeoPackage、QGZ/QML、SVG 对照及校验清单；独立渲染验证需要 QGIS runtime |
+| 多 Agent 接入 | Codex/Claude Code 仓库 marketplace，以及 Cursor/VS Code 标准 MCP 配置 |
 
-[产品首页](https://mola-maker.github.io/CAD2GIS/) ·
-[九图交付与演示](https://mola-maker.github.io/CAD2GIS/deliveries/) ·
-[OSM 标准匹配与二次校正](docs/OSM_STANDARD_MATCHING.md) ·
-[SVG 提取与 QGZ](docs/OPTIONAL_SYMBOL_ASSETS.md) · [发布审查](docs/RELEASE_REVIEW_2026-09-06.md)
+旁路固定使用 [U-C4N/Autocad-MCP](https://github.com/U-C4N/Autocad-MCP) 的 MIT 许可
+无界面 DXF 引擎，独立安装。它只编辑副本，结果重新进入 CAD2GIS 验收。
+详见 [CAD 能力与安装](docs/CAD_BUNDLES.md)。
 
-> DWG 中声明了 CRS，不代表实体已经正确落在该 CRS 的真实地面位置。
-> 源几何、拓扑、长度和坐标精度会分别验证。缺少可信控制点时，系统不会把
-> OSM 视觉重合宣传为测量级绝对精度。
+## 先看效果
+
+[![原图与 GIS 交付叠加效果](https://mola-maker.github.io/CAD2GIS/deliveries/drawing-01/process/source-delivery-overlay.png)](https://mola-maker.github.io/CAD2GIS/deliveries/)
+
+[查看九张图的效果、图层与过程](https://mola-maker.github.io/CAD2GIS/deliveries/)。
+展示复用既有 Pages 内容；九图仍为 `CONDITIONAL`，没有验证测量级绝对定位精度。
+图纸声明 CRS 或视觉重合，均不能单独证明位置准确。
+
+## 三步接入 Agent
+
+先安装 [uv](https://docs.astral.sh/uv/)，使用 Python 3.12：
+
+```shell
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --profile full --json
+```
+
+DWG 转换另运行 `cad2gis runtime install`。DXF 检查不需要 LibreDWG；GIS 转换仍需要 GIS runtime。
+
+Codex：
+
+```shell
+codex plugin marketplace add Mola-maker/CAD2GIS --ref main
+codex plugin add cad2gis-agent@cad2gis
+```
+
+Claude Code：
+
+```shell
+claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools
+```
+
+其他客户端使用 [MCP 配置模板](plugins/cad2gis-agent/clients/README.md)。
+让 Agent 从 `get_capabilities`、`get_runtime_status`、`inspect_source` 开始。
+可选 CAD 编辑另调用 `get_cad_bundle_status`，按 [旁路参考](docs/CAD_BUNDLES.md) 安装。
+
+## 下载与版本
+
+0.8.0 是本次 Python/Agent 源码发行；桌面安装包按其实际版本提供。
+
+| 平台 | 已有可下载版本 |
+| --- | --- |
+| Windows x64 | [0.7.8 安装程序](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.8/CAD2GIS-0.7.8-windows-x64-setup.exe) |
+| Linux x86_64 | [0.7.0-3 `.deb`](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.3/cad2gis_0.7.0-3_amd64.deb) · [便携包](https://github.com/Mola-maker/CAD2GIS/releases/download/v0.7.0-linux.3/cad2gis-0.7.0-3-linux-x86_64.tar.gz) |
+| macOS Apple Silicon / Intel | [0.7.0 安装包](https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.7.0) |
+
+Linux 安装要求见 [安装说明](docs/INSTALL_LINUX.md)。预发布请使用明确版本链接。
+旧安装包保持其原始许可与验证范围；Apache-2.0 适用于本次新版原创代码。
+
+## 文档与参与
+
+[插件指南](plugins/cad2gis-agent/README.md) · [贡献指南](CONTRIBUTING.md) ·
+[问题反馈](https://github.com/Mola-maker/CAD2GIS/issues) · [发现与分发渠道](docs/DISCOVERY_CHANNELS.md) ·
+[OSM 匹配](docs/OSM_STANDARD_MATCHING.md) · [SVG 与 QGZ](docs/OPTIONAL_SYMBOL_ASSETS.md) ·
+[多分区复核](docs/MULTI_DISTRICT_VERIFICATION_2026-09-10.md) · [Docker](docs/DOCKER.md)
+
+原创代码采用 [Apache-2.0](LICENSE.md)，允许商用、修改和分发。
+第三方组件与客户图纸保留各自权利，见 [NOTICE](NOTICE.md)。
+欢迎用合成或可公开分享的图纸提交复现与新工作流；不要在公开 issue 上传客户原图。
+
+---
 
 ## 术语
 

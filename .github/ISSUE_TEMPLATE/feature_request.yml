@@ -1,0 +1,16 @@
+name: Feature request / 能力建议
+description: Describe a CAD/GIS or agent workflow
+title: "[Feature] "
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow and problem / 工作流与问题
+      description: Explain the input, user action and desired output.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Acceptance evidence / 验收依据
+      description: Describe a synthetic example and how the result can be verified.

@@ -31,3 +31,10 @@ a shell command. Missing QGIS does not disable source inspection or conversion.
 `CAD2GIS_QGIS_FONT` may point to a local font file for headless QGIS processes.
 The font is loaded only into that process; no system font settings are changed.
 Review verification rejects missing fonts and unsupported rendered label glyphs.
+
+## Optional CAD sidecar
+
+Set `CAD2GIS_CAD_BUNDLE_COMMAND` to the absolute executable returned by
+`cad2gis cad-bundle install --prefix "<NEW_PREFIX>"`. Restart the client, then
+call `get_cad_bundle_status`. Codex forwards the variable explicitly; other
+stdio hosts must inherit or pass it in their launch environment.

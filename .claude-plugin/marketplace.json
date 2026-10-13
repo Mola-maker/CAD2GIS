@@ -3,14 +3,22 @@
   "owner": {
     "name": "CAD2GIS contributors"
   },
-  "description": "Evidence-first CAD conversion, registration, validation, and GIS delivery tools.",
+  "description": "DWG/DXF to GeoPackage, QGIS delivery and source-preserving CAD tools for AI agents.",
   "plugins": [
     {
       "name": "cad2gis-agent",
       "source": "./plugins/cad2gis-agent",
-      "description": "Source-bound DWG conversion and geospatial review over MCP.",
+      "description": "DWG/DXF to GeoPackage, QGIS delivery and source-preserving CAD tools for AI agents.",
       "category": "development",
-      "tags": ["cad", "gis", "mcp", "geopackage"]
+      "tags": [
+        "cad",
+        "gis",
+        "dwg",
+        "dxf",
+        "qgis",
+        "mcp",
+        "geopackage"
+      ]
     }
   ]
 }
