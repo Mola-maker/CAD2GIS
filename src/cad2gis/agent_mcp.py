@@ -73,6 +73,7 @@ MAX_EVIDENCE_GRAPH_BYTES = 256 * 1024 * 1024
 def get_capabilities() -> dict[str, Any]:
     """Describe the stable cross-agent protocol and accuracy boundaries."""
 
+    from .agent_cad import get_cad_bundle_status
     return {
         "schema_version": "cad2gis.mcp_capabilities.v1",
         "package_version": __version__,
@@ -100,6 +101,7 @@ def get_capabilities() -> dict[str, Any]:
         ),
         "filesystem_roots": [str(root) for root in _roots()],
         "runtime": _runtime_status(),
+        "optional_cad_bundle": get_cad_bundle_status(),
         "scene_evidence": {
             "visual_schema": "cad2gis.scene_visual_bundle.v1",
             "role_plan_schema": "cad2gis.scene_interpretation_plan.v1",
@@ -1716,6 +1718,8 @@ from .agent_qgis import (
     audit_visual_conversion, build_qgis_review, build_source_svg_delivery, publish_matched_delivery, verify_qgis_review,
 )
 from .agent_review import get_review_server_status, start_review_server, stop_review_server
+from .agent_cad import (get_cad_bundle_status, prepare_cad_bundle_workspace,
+                        list_cad_bundle_tools, call_cad_bundle_tool)
 
 
 def create_server(
@@ -1799,6 +1803,10 @@ def create_server(
         return report
 
     registrations = (
+        ("get_cad_bundle_status", get_cad_bundle_status),
+        ("prepare_cad_bundle_workspace", prepare_cad_bundle_workspace),
+        ("list_cad_bundle_tools", list_cad_bundle_tools),
+        ("call_cad_bundle_tool", call_cad_bundle_tool),
         ("audit_visual_conversion", audit_visual_conversion),
         ("build_qgis_review", build_qgis_review),
         ("build_source_svg_delivery", build_source_svg_delivery),
