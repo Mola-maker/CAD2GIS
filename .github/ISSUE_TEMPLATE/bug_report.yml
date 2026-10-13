@@ -1,0 +1,23 @@
+name: Bug report / 问题反馈
+description: Report a reproducible CAD2GIS problem
+title: "[Bug] "
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Version, OS and client / 版本、系统与客户端
+      description: Include relevant doctor/runtime status; remove secrets and personal paths.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected result / 步骤与预期
+      description: Use a synthetic or authorized public sample. Do not upload customer drawings.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence / 证据
+      description: Source SHA-256, run status and relevant sanitized diagnostics.

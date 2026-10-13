@@ -56,6 +56,15 @@ def _parser() -> argparse.ArgumentParser:
     register_batch(commands)
     from .match_delivery import register as register_match_delivery
     register_match_delivery(commands)
+    bundle = commands.add_parser("cad-bundle", help="Install or inspect optional isolated CAD tools.")
+    bundle_commands = bundle.add_subparsers(dest="bundle_action", required=True)
+    bundle_status = bundle_commands.add_parser("status", help="Inspect the optional CAD sidecar.")
+    _add_json(bundle_status)
+    bundle_status.set_defaults(handler=_cad_bundle)
+    bundle_install = bundle_commands.add_parser("install", help="Install the pinned upstream in a new isolated prefix.")
+    bundle_install.add_argument("--prefix", type=Path, required=True)
+    _add_json(bundle_install)
+    bundle_install.set_defaults(handler=_cad_bundle)
     #若用户选择了doctor命令，则调用_doctor函数处理
     doctor.add_argument(
             "--profile",
@@ -495,6 +504,11 @@ def _runtime_install(args: argparse.Namespace) -> tuple[Any, int]:
     from .native_runtime import install_portable_runtime
 
     return install_portable_runtime(), 0
+
+
+def _cad_bundle(args: argparse.Namespace) -> tuple[Any, int]:
+    from .cad_bundles import get_bundle_status, install_bundle
+    return (install_bundle(args.prefix) if args.bundle_action == "install" else get_bundle_status()), 0
 
 
 def _inspect(args: argparse.Namespace) -> tuple[Any, int]:

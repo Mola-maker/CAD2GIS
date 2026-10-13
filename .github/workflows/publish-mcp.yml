@@ -1,0 +1,33 @@
+name: Publish CAD2GIS to MCP Registry
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install verified official publisher
+        run: |
+          curl -fLsS https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz -o publisher.tar.gz
+          echo "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  publisher.tar.gz" | sha256sum -c -
+          tar xzf publisher.tar.gz mcp-publisher
+      - name: Verify released bundle matches registration
+        run: |
+          python - <<'PY'
+          import hashlib,json,urllib.request
+          package=json.load(open('server.json'))['packages'][0]
+          data=urllib.request.urlopen(package['identifier'],timeout=60).read()
+          assert hashlib.sha256(data).hexdigest()==package['fileSha256']
+          PY
+      - name: Authenticate with short-lived GitHub identity
+        run: ./mcp-publisher login github-oidc
+      - name: Validate and publish
+        run: |
+          ./mcp-publisher validate
+          ./mcp-publisher publish

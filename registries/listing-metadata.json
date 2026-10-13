@@ -1,0 +1,23 @@
+{
+  "name": "CAD2GIS",
+  "version": "0.8.0",
+  "github_url": "https://github.com/Mola-maker/CAD2GIS",
+  "homepage": "https://cad2gis.molamaker.cn/",
+  "description": "DWG/DXF to GIS, QGIS delivery and source-preserving CAD tools with validation evidence.",
+  "details": "Local stdio MCP for validated DWG/DXF-to-GIS workflows. Four optional CAD wrappers expose 15 verified tools through an independently installed MIT runtime. Edits preserve the source and return to CAD2GIS acceptance. Existing nine examples are CONDITIONAL; absolute accuracy is not verified.",
+  "bundle_url": "https://github.com/Mola-maker/CAD2GIS/releases/download/v0.8.0/cad2gis-agent-0.8.0.mcpb",
+  "bundle_sha256": "d460908adcb41dfd360e52dfb31fa95c35bca0809f00ceab9ebfe2cffd6b52ce",
+  "support_url": "https://github.com/Mola-maker/CAD2GIS/issues",
+  "gallery_url": "https://mola-maker.github.io/CAD2GIS/deliveries/",
+  "transport": "stdio",
+  "client_supported": [
+    "Codex",
+    "Claude Code",
+    "Cursor",
+    "VS Code"
+  ],
+  "schema_sources": {
+    "registry": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    "glama": "https://glama.ai/mcp/schemas/server.json"
+  }
+}

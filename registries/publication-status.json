@@ -1,0 +1,60 @@
+{
+  "version": "0.8.0",
+  "platforms": [
+    {
+      "platform": "Official MCP Registry",
+      "status": "prepared",
+      "url": null,
+      "version": "0.8.0",
+      "checked_at": "2026-10-13T04:04:38.800361+00:00",
+      "evidence": {
+        "submission_file": "registries/listing-metadata.json"
+      },
+      "required_user_action": null
+    },
+    {
+      "platform": "Smithery",
+      "status": "prepared",
+      "url": null,
+      "version": "0.8.0",
+      "checked_at": "2026-10-13T04:04:38.800379+00:00",
+      "evidence": {
+        "submission_file": "registries/listing-metadata.json"
+      },
+      "required_user_action": null
+    },
+    {
+      "platform": "Glama",
+      "status": "prepared",
+      "url": null,
+      "version": "0.8.0",
+      "checked_at": "2026-10-13T04:04:38.800384+00:00",
+      "evidence": {
+        "submission_file": "registries/listing-metadata.json"
+      },
+      "required_user_action": null
+    },
+    {
+      "platform": "OpenAI Plugins Directory",
+      "status": "prepared",
+      "url": null,
+      "version": "0.8.0",
+      "checked_at": "2026-10-13T04:04:38.800388+00:00",
+      "evidence": {
+        "submission_file": "registries/listing-metadata.json"
+      },
+      "required_user_action": null
+    },
+    {
+      "platform": "Anthropic official marketplace",
+      "status": "prepared",
+      "url": null,
+      "version": "0.8.0",
+      "checked_at": "2026-10-13T04:04:38.800392+00:00",
+      "evidence": {
+        "submission_file": "registries/listing-metadata.json"
+      },
+      "required_user_action": null
+    }
+  ]
+}

@@ -510,3 +510,5 @@ button:focus-visible, a:focus-visible {
   #flow-canvas { opacity: .36; }
   .flow-word { transform: rotate(-1.5deg) !important; }
 }
+
+.effect-gallery{position:fixed;bottom:2.8rem;left:1.5rem;z-index:30;background:var(--bg,#071b67);color:inherit;max-width:min(92vw,850px);padding:.6rem;border:1px solid currentColor;border-radius:.5rem}.effect-gallery[open]{max-height:65vh;overflow:auto}.effect-gallery summary{cursor:pointer}.effect-gallery p{max-width:65ch}.effect-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem}.effect-grid img{width:100%;height:auto;object-fit:contain}.effect-gallery a{color:inherit}@media(max-width:600px){.effect-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.effect-gallery{left:.5rem;bottom:3rem;font-size:.8rem}}

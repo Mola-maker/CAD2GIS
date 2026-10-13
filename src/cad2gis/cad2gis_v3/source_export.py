@@ -76,8 +76,8 @@ def export_source(
     root = Path(run_dir).expanduser().resolve()
     if root.exists() and (not root.is_dir() or any(root.iterdir())):
         raise FileExistsError(f"Source snapshot destination must be absent or empty: {root}")
-    if not source_path.is_file() or source_path.suffix.lower() != ".dwg":
-        raise ValueError(f"Source must be an existing DWG: {source_path}")
+    if not source_path.is_file() or source_path.suffix.lower() not in {".dwg", ".dxf"}:
+        raise ValueError(f"Source must be an existing DWG or DXF: {source_path}")
     if source_crs is not None and not str(source_crs).strip():
         raise ValueError("source_crs must be None or a nonblank declaration")
     source_hash = _sha256(source_path)

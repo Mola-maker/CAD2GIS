@@ -1,8 +1,20 @@
 {
   "name": "cad2gis-agent",
-  "version": "0.7.8",
-  "description": "Evidence-first DWG to GIS conversion and review over MCP.",
+  "version": "0.8.0",
+  "description": "Evidence-first DWG/DXF to GIS conversion, source-preserving CAD tools and QGIS delivery over MCP.",
   "author": {
     "name": "CAD2GIS contributors"
-  }
+  },
+  "homepage": "https://cad2gis.molamaker.cn/",
+  "repository": "https://github.com/Mola-maker/CAD2GIS",
+  "license": "Apache-2.0",
+  "keywords": [
+    "cad",
+    "gis",
+    "dwg",
+    "dxf",
+    "qgis",
+    "mcp",
+    "geopackage"
+  ]
 }

@@ -1,16 +1,23 @@
 # CAD2GIS Agent
 
-Required Notice: Copyright 2026 Mola-maker and CAD2GIS contributors.
-Required Notice: CAD2GIS original source is available under PolyForm Noncommercial License 1.0.0. Commercial uses outside its permitted purposes require separate written authorization from the applicable copyright holders.
+Copyright 2026 Mola-maker and CAD2GIS contributors.
 
-This plugin is source-available under
-[PolyForm Noncommercial 1.0.0](https://github.com/Mola-maker/CAD2GIS/blob/main/LICENSE.md).
-See the [copyright and licensing notice](https://github.com/Mola-maker/CAD2GIS/blob/main/NOTICE.md)
-for commercial authorization and third-party/data exclusions.
+Original plugin code is licensed under [Apache-2.0](https://github.com/Mola-maker/CAD2GIS/blob/main/LICENSE.md).
+Third-party components and drawing data retain their own terms; see
+[NOTICE](https://github.com/Mola-maker/CAD2GIS/blob/main/NOTICE.md).
 
 CAD2GIS Agent is the thin, cross-agent registration layer for the canonical
 CAD2GIS Python package. It adds conversion/iteration skills and one MCP server; it does not copy
 reader, mapping, topology, length, CRS, or GeoPackage logic.
+
+## Optional CAD workspace tools
+
+The 0.8.0 plugin adds `get_cad_bundle_status`, `prepare_cad_bundle_workspace`,
+`list_cad_bundle_tools` and `call_cad_bundle_tool`. Fifteen tested headless CAD
+tools run in an optional isolated process; edits produce source-preserving
+revisions and re-enter canonical GIS validation. See [the guide](https://github.com/Mola-maker/CAD2GIS/blob/main/docs/CAD_BUNDLES.md).
+
+[Official site](https://cad2gis.molamaker.cn/) · [Nine drawing effects](https://mola-maker.github.io/CAD2GIS/deliveries/) · [Cross-client configuration](clients/README.md)
 
 ## Install the runtime
 

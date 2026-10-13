@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Mola-maker/cad2gis-agent",
+  "title": "CAD2GIS",
+  "description": "DWG/DXF to GIS, QGIS delivery and source-preserving CAD tools with validation evidence.",
+  "version": "0.8.0",
+  "websiteUrl": "https://cad2gis.molamaker.cn/",
+  "repository": {
+    "url": "https://github.com/Mola-maker/CAD2GIS",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "registryBaseUrl": "https://github.com",
+      "identifier": "https://github.com/Mola-maker/CAD2GIS/releases/download/v0.8.0/cad2gis-agent-0.8.0.mcpb",
+      "version": "0.8.0",
+      "fileSha256": "d460908adcb41dfd360e52dfb31fa95c35bca0809f00ceab9ebfe2cffd6b52ce",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

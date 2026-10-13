@@ -1,15 +1,15 @@
 {
   "name": "cad2gis-agent",
-  "version": "0.7.8",
-  "description": "Evidence-first DWG to GIS conversion, registration, and review through one canonical MCP service.",
+  "version": "0.8.0",
+  "description": "Evidence-first DWG/DXF to GIS conversion, source-preserving CAD tools and QGIS delivery over MCP.",
   "author": {
     "name": "CAD2GIS contributors"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "CAD2GIS Agent",
-    "shortDescription": "Evidence-first CAD conversion and geospatial review.",
-    "longDescription": "Inspect a DWG, build source-bound semantic decisions, run deterministic geometry/topology/length/CRS validation, and review GeoPackage delivery without duplicating the conversion engine.",
+    "shortDescription": "CAD to GIS with evidence",
+    "longDescription": "Inspect DWG/DXF, review source-bound semantic decisions, validate GIS delivery and edit source-preserving CAD copies through an optional isolated runtime.",
     "developerName": "CAD2GIS contributors",
     "category": "Developer Tools",
     "capabilities": [
@@ -24,5 +24,17 @@
     ],
     "brandColor": "#0B6B61"
   },
-  "mcpServers": "./.mcp.json"
+  "mcpServers": "./.mcp.json",
+  "homepage": "https://cad2gis.molamaker.cn/",
+  "repository": "https://github.com/Mola-maker/CAD2GIS",
+  "license": "Apache-2.0",
+  "keywords": [
+    "cad",
+    "gis",
+    "dwg",
+    "dxf",
+    "qgis",
+    "mcp",
+    "geopackage"
+  ]
 }

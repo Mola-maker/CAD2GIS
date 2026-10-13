@@ -1,0 +1,35 @@
+name: Windows CAD and site boundaries
+on:
+  push:
+    paths:
+      - '.github/workflows/windows-boundaries.yml'
+      - 'tests/test_cad_bundle_workspace.py'
+      - 'tests/test_pages_metadata.py'
+      - 'src/cad2gis/cad_bundle_workspace.py'
+      - 'scripts/build_pages.py'
+  pull_request:
+    paths:
+      - '.github/workflows/windows-boundaries.yml'
+      - 'tests/test_cad_bundle_workspace.py'
+      - 'tests/test_pages_metadata.py'
+      - 'src/cad2gis/cad_bundle_workspace.py'
+      - 'scripts/build_pages.py'
+permissions:
+  contents: read
+concurrency:
+  group: windows-boundaries-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  boundaries:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install lightweight boundary test runtime
+        run: |
+          python -m pip install pytest ezdxf
+          python -m pip install --no-deps -e .
+      - name: Verify filesystem and UTF-8 site boundaries
+        run: python -m pytest -q tests/test_cad_bundle_workspace.py tests/test_pages_metadata.py

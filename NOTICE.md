@@ -1,42 +1,43 @@
 # CAD2GIS copyright and licensing notice
 
-Required Notice: Copyright 2026 Mola-maker and CAD2GIS contributors.
-Required Notice: CAD2GIS original source is available under PolyForm Noncommercial License 1.0.0. Commercial uses outside its permitted purposes require separate written authorization from the applicable copyright holders.
+Copyright 2026 Mola-maker and CAD2GIS contributors.
 
-The unmodified license text is in [LICENSE.md](LICENSE.md). This is
-source-available software with noncommercial terms, not OSI open-source software.
-For commercial licensing, contact the repository maintainer through
-<https://github.com/Mola-maker/CAD2GIS>. A request, issue, download or payment
-without a written license does not itself grant commercial rights.
+Original CAD2GIS source and plugin material in this release are licensed under
+the Apache License, Version 2.0. The complete license is in [LICENSE.md](LICENSE.md).
+It permits commercial use, modification and distribution subject to its terms.
+Preserve copyright and attribution notices when redistributing the software.
+Each contributor retains copyright in their contributions; this notice does
+not transfer their rights. Licenses already granted for earlier copies are not
+revoked by this change.
 
-Each contributor retains the copyright in their contributions unless a separate
-agreement provides otherwise. This notice does not assign another contributor's
-rights to the maintainer or retroactively revoke licenses already granted for
-earlier copies. Existing copyright and attribution notices must be preserved.
+## Third-party components
 
-## Scope and third-party components
-
-These terms cover original CAD2GIS material made available under this license.
 Third-party code, fonts, libraries, native runtimes and upstream-derived patches
-retain their own licenses. In particular, vendor assets and font licenses under
-`src/cad2gis/desktop/vendor/`, `src/cad2gis/webdemo/assets/vendor/` and
-`src/cad2gis/webdemo/assets/font-licenses/`, and LibreDWG patches under
-`packaging/patches/`, are not relicensed by this notice. See
-[THIRD_PARTY_NOTICES.md](packaging/THIRD_PARTY_NOTICES.md) and the individual
-component notices.
+retain their own licenses. The project license does not relicense vendor assets
+under `src/cad2gis/desktop/vendor/`, `src/cad2gis/webdemo/assets/vendor/`, font
+licenses under `src/cad2gis/webdemo/assets/font-licenses/`, or LibreDWG patches
+under `packaging/patches/`.
 
-No license to project/customer data, baseline datasets, drawing contents,
-conversion results, trademarks or branding is granted by the software license.
-Their presence in a repository or a QGZ project is not permission to redistribute
-them. Conversion does not transfer ownership of input data or results to CAD2GIS.
+LibreDWG and its patches retain GPLv3-or-later; pyramids-gis retains GPLv3.
+Redistribution of these components requires the applicable notices and complete
+corresponding source/build materials. Consult
+[THIRD_PARTY_NOTICES.md](packaging/THIRD_PARTY_NOTICES.md) and each component's
+license. A complete installed runtime contains components under multiple
+licenses and must not be labeled as entirely Apache-2.0.
 
-A commercial CAD2GIS authorization does not replace the licenses or obligations
-of its third-party dependencies. This change does not establish that a combined
-distribution with GPL components is eligible for proprietary commercial release.
+The optional U-C4N/Autocad-MCP sidecar retains its upstream MIT license and runs
+as a separately installed process. Its identity and license remain distinct
+from the CAD2GIS adapter.
+
+## Drawing data and names
+
+The software license grants no rights to project/customer data, baseline
+datasets, drawing contents, conversion results, trademarks or branding.
+Conversion does not transfer ownership of inputs or results to CAD2GIS.
+The existing public nine-drawing effects retain their provenance and stated
+accuracy limits; their presence on a website does not change their data license.
 
 ## License text provenance
 
-The license was copied without changing its terms from the PolyForm Project:
-<https://github.com/polyformproject/polyform-licenses/blob/76a278c402bc43b8d2b561da140b0f3e17263015/PolyForm-Noncommercial-1.0.0.md>.
-The PolyForm Project permits reuse of its license text; its license and trademark
-notice is at <https://github.com/polyformproject/polyform-licenses>.
+Apache License 2.0 text:
+<https://www.apache.org/licenses/LICENSE-2.0.txt>.

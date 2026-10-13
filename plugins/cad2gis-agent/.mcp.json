@@ -22,7 +22,8 @@
         "CAD2GIS_ACCORECONSOLE",
         "CAD2GIS_ACCORECONSOLE_TIMEOUT",
         "DEEPSEEK_API_KEY",
-        "NEWAPI_API_KEY"
+        "NEWAPI_API_KEY",
+        "CAD2GIS_CAD_BUNDLE_COMMAND"
       ]
     }
   }
