@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cad2gis"
-version = "0.7.8"
-description = "Deterministic CAD-to-GIS orchestration and verification CLI"
-readme = { text = "CAD2GIS provides a lightweight canonical API and CLI with a bundled cad2gis.cad2gis_v3 backend. The GIS runtime and backend deployment are preflighted with `cad2gis doctor`.", content-type = "text/markdown" }
+version = "0.8.0"
+description = "Evidence-first DWG/DXF to GIS conversion, QGIS delivery and CAD MCP tools for AI agents"
+keywords = ["cad", "gis", "dwg", "dxf", "qgis", "geopackage", "mcp", "geospatial"]
+readme = "README.md"
 requires-python = ">=3.11,<3.13"
-license = "PolyForm-Noncommercial-1.0.0"
+license = "Apache-2.0"
 license-files = ["LICENSE.md", "NOTICE.md", "packaging/THIRD_PARTY_NOTICES.md", "packaging/patches/COPYING", "packaging/patches/NOTICE.md"]
 authors = [{ name = "CAD2GIS contributors" }]
 dependencies = [
@@ -24,6 +25,12 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent",
 ]
+
+[project.urls]
+Homepage = "https://cad2gis.molamaker.cn/"
+Repository = "https://github.com/Mola-maker/CAD2GIS"
+Documentation = "https://github.com/Mola-maker/CAD2GIS/tree/main/docs"
+Issues = "https://github.com/Mola-maker/CAD2GIS/issues"
 
 [project.optional-dependencies]
 symbols = ["ezdxf>=1.4,<2"]

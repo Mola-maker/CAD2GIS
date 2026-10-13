@@ -1,8 +1,7 @@
 # CAD2GIS application bundle — third-party components
 
-Original CAD2GIS source declares `PolyForm-Noncommercial-1.0.0` in pyproject.toml.
-See the accompanying LICENSE.md and NOTICE.md for its noncommercial terms,
-copyright notices and separate commercial-authorization process. Third-party
+Original CAD2GIS source declares `Apache-2.0` in pyproject.toml.
+See LICENSE.md and NOTICE.md for its license and copyright notices. Third-party
 components retain their existing licenses; this notice does not relicense them.
 
 This development installer includes separate third-party components. Their original
@@ -26,11 +25,10 @@ directories, `libredwg/`, and Web UI asset directories. Consult
   uses the operating system WebView. The SDK/JDK build tools are not redistributed
   inside the CAD2GIS installer.
 
-These are local development/test packages, not a declaration that the combined
-proprietary/GPL distribution has been legally cleared for public redistribution.
-A public commercial release requires resolving the combined licensing terms and
-providing complete corresponding source/build materials as applicable. Code-signing
-certificates and Android production signing keys are also separate release inputs.
+A source license change does not replace component licenses in installed runtimes.
+Redistributors must retain notices and provide complete corresponding source and
+build materials for GPL components as applicable. Code-signing certificates and
+Android production signing keys are separate platform release inputs.
 
 Network services are not bundled: OSM lookup/tiles and optional AI onboarding require
 network access. Offline OSM snapshots can be selected through the canonical CLI.
