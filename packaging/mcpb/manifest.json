@@ -1,0 +1,66 @@
+{
+  "manifest_version": "0.3",
+  "name": "cad2gis-agent",
+  "display_name": "CAD2GIS",
+  "version": "0.8.0",
+  "description": "Evidence-first DWG/DXF to GIS and source-preserving CAD tools for AI agents.",
+  "author": {
+    "name": "Mola-maker",
+    "url": "https://github.com/Mola-maker"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mola-maker/CAD2GIS.git"
+  },
+  "homepage": "https://cad2gis.molamaker.cn/",
+  "support": "https://github.com/Mola-maker/CAD2GIS/issues",
+  "license": "Apache-2.0",
+  "keywords": [
+    "cad",
+    "gis",
+    "dwg",
+    "dxf",
+    "qgis",
+    "mcp",
+    "geopackage"
+  ],
+  "server": {
+    "type": "python",
+    "entry_point": "server/entrypoint.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--python",
+        "3.12",
+        "--with",
+        "__VERSIONED_WHEEL_REQUIREMENT__",
+        "python",
+        "${__dirname}/server/entrypoint.py"
+      ],
+      "env": {
+        "CAD2GIS_PROJECT_ROOT": "${user_config.project_root}"
+      }
+    }
+  },
+  "user_config": {
+    "project_root": {
+      "type": "directory",
+      "title": "Authorized CAD/GIS project directory",
+      "description": "Only this selected project root is authorized. Choose a project, not your entire home directory.",
+      "required": true
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.11 <3.13"
+    }
+  },
+  "tools_generated": false,
+  "long_description": "Local stdio MCP. Requires uv and network to install the SHA-256-pinned 0.8.0 wheel on first launch. DWG requires managed LibreDWG; GIS conversion requires GIS runtime. Optional CAD editing uses a separately installed MIT runtime. No project drawings are bundled."
+}

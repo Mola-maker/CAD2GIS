@@ -38,3 +38,7 @@ Set `CAD2GIS_CAD_BUNDLE_COMMAND` to the absolute executable returned by
 `cad2gis cad-bundle install --prefix "<NEW_PREFIX>"`. Restart the client, then
 call `get_cad_bundle_status`. Codex forwards the variable explicitly; other
 stdio hosts must inherit or pass it in their launch environment.
+
+## MCPB 0.8.0
+
+发行页的 `.mcpb` 通过 uv 下载 SHA-256 固定的新版 wheel。首次启动需要 uv、Python 3.12 与网络；必须选择授权项目目录，不能留空。插件包不含图纸。CAD 编辑运行时仍按旁路指南单独安装；GIS/DWG readiness 用 doctor 验证。
