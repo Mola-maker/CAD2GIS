@@ -154,3 +154,5 @@ raw/
 !scripts/build_local_demo.py
 
 /_official_preview/
+
+!scripts/current_site_content.py
