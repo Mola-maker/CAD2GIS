@@ -15,7 +15,7 @@
       "registryBaseUrl": "https://github.com",
       "identifier": "https://github.com/Mola-maker/CAD2GIS/releases/download/v0.8.0/cad2gis-agent-0.8.0.mcpb",
       "version": "0.8.0",
-      "fileSha256": "dad498a79eecea955447c8107ccc123ac24f66337e3529bab416643905ee8836",
+      "fileSha256": "d460908adcb41dfd360e52dfb31fa95c35bca0809f00ceab9ebfe2cffd6b52ce",
       "transport": {
         "type": "stdio"
       }
