@@ -139,3 +139,7 @@ raw/
 # Local browser acceptance artifacts and Chromium diagnostics.
 /output/
 /debug.log
+
+# Source verifier and local custom-domain preview.
+!scripts/verify_public_site.py
+/_official_site/

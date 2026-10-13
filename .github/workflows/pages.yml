@@ -11,6 +11,8 @@ on:
       - "plugins/cad2gis-agent/**"
       - "src/cad2gis/webdemo/**"
       - "scripts/build_pages.py"
+      - "scripts/verify_public_site.py"
+      - "tests/test_pages_metadata.py"
       - "scripts/verify_derived_release.py"
       - "scripts/fetch_derived_release.py"
       - "docs/derived-release.json"
@@ -56,7 +58,7 @@ jobs:
           node --check src/cad2gis/webdemo/app.js
           node --check src/cad2gis/webdemo/demo-fixture.js
           node --check src/cad2gis/webdemo/original-demo/assets/app.js
-          python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py tests/test_webdemo_shared_assets.py -q
+          python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py tests/test_webdemo_shared_assets.py tests/test_pages_metadata.py -q
 
       - name: Fetch and verify authorized derived demonstration
         env:

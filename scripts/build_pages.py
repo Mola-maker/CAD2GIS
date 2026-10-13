@@ -4,6 +4,8 @@ import argparse
 import hashlib
 import json
 import shutil
+from html import escape
+from urllib.parse import urlsplit
 from pathlib import Path
 
 
@@ -227,7 +229,29 @@ def _demo_redirect() -> str:
 '''
 
 
-def build(output: Path, *, release_root: Path | None = None) -> None:
+
+def _metadata(source: str, url: str, title: str) -> str:
+    description = "DWG/DXF 转 GIS、QGIS 交付与 AI Agent CAD 副本编辑；保留来源哈希和验收证据。"
+    schema = {"@context": "https://schema.org", "@type": "SoftwareApplication",
+              "name": "CAD2GIS", "softwareVersion": "0.8.0", "url": url,
+              "applicationCategory": "DeveloperApplication", "operatingSystem": "Windows, macOS, Linux",
+              "description": description, "license": "https://www.apache.org/licenses/LICENSE-2.0"}
+    tags = (f'<link rel="canonical" href="{escape(url, quote=True)}">\n'
+            f'<meta name="description" content="{description}">\n'
+            f'<meta property="og:title" content="{escape(title, quote=True)}">\n'
+            f'<meta property="og:description" content="{description}">\n'
+            f'<meta property="og:url" content="{escape(url, quote=True)}">\n'
+            '<meta property="og:type" content="website">\n'
+            '<meta property="og:image" content="https://mola-maker.github.io/CAD2GIS/deliveries/drawing-01/process/source-delivery-overlay.png">\n'
+            '<script type="application/ld+json">' + json.dumps(schema, ensure_ascii=False) + '</script>\n')
+    return source.replace('</head>', tags + '</head>', 1)
+
+def build(output: Path, *, release_root: Path | None = None,
+          public_base_url: str = "https://mola-maker.github.io/CAD2GIS/") -> None:
+    parsed = urlsplit(public_base_url)
+    if parsed.scheme not in {"https", "http"} or not parsed.netloc or parsed.query or parsed.fragment or parsed.username:
+        raise ValueError("public_base_url must be an absolute HTTP(S) site URL")
+    public_base_url = public_base_url.rstrip("/") + "/"
     _validate_demo()
     release_root = release_root or PROJECT_ROOT / "pages-delivery" / "nine-drawings"
     release_catalog = None
@@ -251,10 +275,10 @@ def build(output: Path, *, release_root: Path | None = None) -> None:
     landing = (WEB_ROOT / "landing.html").read_text(encoding="utf-8")
     install = (WEB_ROOT / "install.html").read_text(encoding="utf-8")
     (output / "index.html").write_text(
-        _rewrite_landing(landing), encoding="utf-8",
+        _metadata(_rewrite_landing(landing), public_base_url, "CAD2GIS · CAD to GIS for AI agents"), encoding="utf-8",
     )
     (output / "install.html").write_text(
-        _rewrite_install(install), encoding="utf-8",
+        _metadata(_rewrite_install(install), public_base_url + "install.html", "安装 CAD2GIS Agent"), encoding="utf-8",
     )
     # Preserve already-shared URLs after reverting the architecture presentation.
     (output / "architecture.html").write_text(
@@ -322,10 +346,18 @@ def build(output: Path, *, release_root: Path | None = None) -> None:
     (demo_redirect_dir / "index.html").write_text(
         _demo_redirect(), encoding="utf-8",
     )
+    (output / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {public_base_url}sitemap.xml\n", encoding="utf-8")
+    locations = [public_base_url + suffix for suffix in ("", "install.html", "workspace/")]
+    (output / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
+        ''.join(f'<url><loc>{escape(url)}</loc></url>' for url in locations) + '</urlset>\n', encoding="utf-8")
     (output / ".nojekyll").write_text("", encoding="utf-8")
     (output / "build-manifest.json").write_text(
         json.dumps({
             "site": "CAD2GIS Agent",
+            "public_base_url": public_base_url,
+            "version": "0.8.0",
+            "gallery_url": "https://mola-maker.github.io/CAD2GIS/deliveries/",
             "pages": [
                 "index.html",
                 "install.html",
@@ -350,8 +382,9 @@ def main() -> None:
         type=Path,
         default=PROJECT_ROOT / "_site",
     )
+    parser.add_argument("--public-base-url", default="https://mola-maker.github.io/CAD2GIS/")
     args = parser.parse_args()
-    build(args.output)
+    build(args.output, public_base_url=args.public_base_url)
     print(f"Built GitHub Pages artifact: {args.output.resolve()}")
 
 
