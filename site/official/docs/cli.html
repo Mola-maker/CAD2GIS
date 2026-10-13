@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>终端与 CLI · CAD2GIS 文档中心</title>
+<meta name="description" content="终端打字机四章剧场（安装 / 首个转换 / 审查发布 / MCP 智能体）+ 全量命令参考总表 + 七参数卡。">
+<link rel="canonical" href="https://cad2gis.molamaker.cn/docs/cli.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CAD2GIS · molamaker">
+<meta property="og:title" content="终端与 CLI · CAD2GIS 文档中心">
+<meta property="og:description" content="终端打字机四章剧场（安装 / 首个转换 / 审查发布 / MCP 智能体）+ 全量命令参考总表 + 七参数卡。">
+<meta property="og:url" content="https://cad2gis.molamaker.cn/docs/cli.html">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<main class="doc-main">
+  <div class="doc-wrap">
+    <p class="doc-kicker">DOCS / 03 · TERMINAL &amp; CLI</p>
+    <h1 class="doc-h1">终端与 CLI</h1>
+    <p class="doc-lede">一条命令安装，一条命令体检，四条命令完成首个转换。下面是一台真实的终端：四章剧场演示完整使用旅程；其后是本仓库全部公开命令的逐字总表与七参数卡。</p>
+    <p class="doc-anchor">命令逐字转录自仓库文档（README / INSTALL_WINDOWS / INSTALL_LINUX / OSM_STANDARD_MATCHING / OPTIONAL_SYMBOL_ASSETS），尖括号 &lt;...&gt; 为需替换的本地路径/值；终端输出为真实流程的精简重放，未虚构任何能力。</p>
+  </div>
+
+  <!-- ═══ §1 终端剧场 ═══ -->
+  <section class="doc-sec" data-toc="§1 终端剧场">
+    <div class="doc-wrap">
+      <p class="sec-no">§1 · 终端剧场</p>
+      <h2>四章：从安装到智能体</h2>
+      <p class="dek">打字机重放真实命令流。可播放 / 暂停 / 倍速 / 章节跳转。CH2 收尾的 <code>run_status: CONDITIONAL</code> 是全站最重要的一个词。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="term-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §2 命令参考总表 ═══ -->
+  <section class="doc-sec" data-toc="§2 命令参考总表">
+    <div class="doc-wrap">
+      <p class="sec-no">§2 · 命令参考总表</p>
+      <h2>全部公开命令，七组逐字收录</h2>
+      <p class="dek">这是「最完整使用说明」的命令层。每条命令逐字转录，出处挂在组标题后。</p>
+
+      <h3>① 安装 · Windows（README「1. 安装本地运行时」/ INSTALL_WINDOWS）</h3>
+      <div class="codeblk">winget install --id=astral-sh.uv -e
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
+Get-Command cad2gis-agent-mcp
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --profile full --json</div>
+      <p class="code-cap">免安装器的 uv 运行时路径 · 安装包自带 Python 3.12、GIS 库与 LibreDWG，无需先装 Python/uv/AutoCAD/Conda/QGIS</p>
+      <div class="codeblk">cad2gis doctor --deep --strict --profile full --json</div>
+      <p class="code-cap">安装器方式的运行库检查 · 桌面启动日志：%LOCALAPPDATA%\CAD2GIS\logs</p>
+
+      <h3>② 安装 · Linux（INSTALL_LINUX / README）</h3>
+      <div class="codeblk">sha256sum --check SHA256SUMS --ignore-missing
+sudo apt install ./cad2gis_0.7.0_amd64.deb</div>
+      <p class="code-cap">.deb 安装 + 校验（Ubuntu 24.04 x86_64，glibc 2.39+）· 卸载 sudo apt remove cad2gis 不删项目与用户设置</p>
+      <div class="codeblk">bin/cad2gis doctor --deep --strict --profile full --json</div>
+      <p class="code-cap">免管理员便携方式的运行库检查 · 便携包要求系统已有 libstdc++6、libgomp1、CA 证书与可用字体</p>
+      <div class="codeblk">/opt/cad2gis/runtime/bin/python3 -I -B packaging/linux/verify_install.py \
+  --bundle /opt/cad2gis --output tmp/linux-installed-verification</div>
+      <p class="code-cap">安装后完整验证（用安装目录自带 Python）</p>
+      <div class="codeblk">curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install  # 无 Homebrew 时从校验过的官方源码构建到用户缓存
+command -v cad2gis-agent-mcp
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --profile full --json</div>
+      <p class="code-cap">README 的 uv 路径（Linux）</p>
+
+      <h3>③ 转换（README「新图纸的推荐流程」/ OSM_STANDARD_MATCHING）</h3>
+      <div class="codeblk">cad2gis inspect "&lt;SOURCE.dwg&gt;" --json
+cad2gis bootstrap "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --json</div>
+      <p class="code-cap">每个新 DWG 都必须建立自己的 source-bound profile 和 mapping registry</p>
+      <div class="codeblk">cad2gis validate --project "&lt;PROJECT_DIR&gt;" --json
+cad2gis convert "&lt;SOURCE.dwg&gt;" `
+  --project "&lt;PROJECT_DIR&gt;" `
+  --run-dir "&lt;NEW_RUN_DIR&gt;" `
+  --json</div>
+      <p class="code-cap">检查并完成生成的源配置与语义映射后，再验证和转换</p>
+      <div class="codeblk">$env:DEEPSEEK_API_KEY = "&lt;secret&gt;"
+cad2gis auto-convert "&lt;SOURCE.dwg&gt;" `
+  --project "&lt;PROJECT_DIR&gt;" `
+  --run-dir "&lt;NEW_RUN_DIR&gt;" `
+  --provider deepseek `
+  --force-bootstrap `
+  --json</div>
+      <p class="code-cap">使用 DeepSeek 自动完成受约束的 onboarding · 密钥不写入项目、日志或 manifest · New API 聚合网关用 --provider new-api</p>
+      <div class="codeblk">cad2gis validate --project "&lt;PROJECT_DIR&gt;" --json
+cad2gis convert "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --run-dir "&lt;FIRST_RUN_DIR&gt;" --json</div>
+      <p class="code-cap">已有验证通过的项目配置时的最短命令（OSM_STANDARD_MATCHING）</p>
+
+      <h3>④ OSM 参数（OSM_STANDARD_MATCHING）</h3>
+      <div class="codeblk">cad2gis convert "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --run-dir "&lt;OFFLINE_RUN_DIR&gt;" --osm-data "&lt;OVERPASS.json&gt;" --json</div>
+      <p class="code-cap">离线道路快照：接收已保存的 Overpass JSON · 道路匹配无需在线 OSM，但 Web 工作台 OSM 栅格底图仍需浏览器联网</p>
+      <div class="codeblk">cad2gis convert "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --run-dir "&lt;PLACE_RUN_DIR&gt;" --osm-place "&lt;PLACE_NAME&gt;" --json</div>
+      <p class="code-cap">显式地点提示：地点应足够具体；地点中心只提供粗定位</p>
+      <div class="codeblk">cad2gis convert "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --run-dir "&lt;NOMINAL_RUN_DIR&gt;" --matching nominal --json</div>
+      <p class="code-cap">标称坐标兼容流程</p>
+      <div class="codeblk">cad2gis convert "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --run-dir "&lt;REPLAY_RUN_DIR&gt;" --match-profile "&lt;SAVED_MATCH_PROFILE.json&gt;" --json</div>
+      <p class="code-cap">匹配记录重放</p>
+
+      <h3>⑤ SVG（OPTIONAL_SYMBOL_ASSETS）</h3>
+      <div class="codeblk">python -m cad2gis.symbol_assets extract --source drawing.dwg --selection selection.json --output symbol-review-v1
+python -m cad2gis.symbol_assets qml --store symbol-review-v1/symbols.sqlite3 --symbol-id pole-source-candidate --output pole-candidate.qml --size-mm 6</div>
+      <p class="code-cap">独立运行（不依赖转换）· 也可用 tools/extract_svg_symbols.py，或安装后的 cad2gis-symbols</p>
+      <div class="codeblk">python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz --output EMR29619-standard.qgz
+python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz --output EMR29619-with-SVG.qgz --store source-symbols/symbols.sqlite3 --bindings bindings.json --delivery-manifest delivery/delivery-manifest.json</div>
+      <p class="code-cap">人工绑定到 QGZ（需 PyQGIS 环境，如 Windows 的 python-qgis.bat）</p>
+      <div class="codeblk">cad2gis-svg-delivery --baseline &lt;完整交付目录&gt; --assets &lt;候选目录&gt; --output &lt;新目录&gt;
+python tools/verify_qgis_standalone.py --project output.qgz --output verification</div>
+      <p class="code-cap">候选目录接入完整交付 + 生成后必须退出进程再独立复验（可加 --font /path/to/font.ttf）</p>
+
+      <h3>⑥ 审查发布（README / OSM_STANDARD_MATCHING §2–§3）</h3>
+      <div class="codeblk">cad2gis review "&lt;RUN_DIR&gt;" --workspace "&lt;REVIEW_DIR&gt;" --port 8765</div>
+      <p class="code-cap">启动审查工作台，打开 http://127.0.0.1:8765/ · 界面提供 ?demo=1 合成交互模式（不读取/上传真实 DWG）</p>
+      <div class="codeblk"># RUN_DIR 位于 &lt;PROJECT_DIR&gt;/run.review/matching/r&lt;N&gt;-&lt;uuid&gt;/run 时自动推导交付目录
+cad2gis publish-match "&lt;RUN_DIR&gt;"
+
+# 其他位置需显式指定
+cad2gis publish-match "&lt;RUN_DIR&gt;" --delivery-root "&lt;PROJECT_DIR&gt;/delivery"</div>
+      <p class="code-cap">版本目录名取自 osm_matching.revision（r2、r3……）；已存在版本目录被拒绝，不覆盖旧版本</p>
+
+      <h3>⑦ MCP（README「MCP 与主流智能体」）</h3>
+      <div class="codeblk"># stdio（通常由智能体自动启动）
+cad2gis-agent-mcp --transport stdio
+
+# 本机 Streamable HTTP
+python -m cad2gis.agent_mcp `
+  --transport streamable-http `
+  --host 127.0.0.1 `
+  --port 8768</div>
+      <p class="code-cap">HTTP endpoint 为 http://127.0.0.1:8768/mcp · 默认只允许本机 loopback，网络部署必须增加认证反向代理</p>
+      <div class="codeblk"># Codex
+codex plugin marketplace add Mola-maker/CAD2GIS --ref main
+codex plugin add cad2gis-agent@cad2gis
+codex plugin list
+
+# Claude Code
+claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools
+claude plugin list</div>
+      <p class="code-cap">Cursor / VS Code：下载 plugins/cad2gis-agent/clients 下的 cursor.mcp.json / vscode.mcp.json 到 .cursor/mcp.json / .vscode/mcp.json，重启客户端</p>
+      <div class="codeblk">$env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"</div>
+      <p class="code-cap">目录授权：MCP 只能访问客户端工作区或显式授权根目录中的文件（Linux 用冒号分隔）</p>
+    </div>
+  </section>
+
+  <!-- ═══ §3 参数卡 ═══ -->
+  <section class="doc-sec" data-toc="§3 参数卡">
+    <div class="doc-wrap">
+      <p class="sec-no">§3 · 参数卡</p>
+      <h2>七个参数，两条互斥规则</h2>
+      <p class="dek">参数表逐字转录自 OSM_STANDARD_MATCHING。<code>convert</code> 和 <code>auto-convert</code> 默认使用 <code>--matching osm</code>。</p>
+      <table class="doc-table">
+        <thead><tr><th>参数</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>--matching osm</code></td><td>默认标准模式：尝试 OSM 相对匹配。</td></tr>
+          <tr><td><code>--matching nominal</code></td><td>使用原标称坐标兼容流程，保留其现有验证要求。</td></tr>
+          <tr><td><code>--osm-data "&lt;OVERPASS.json&gt;"</code></td><td>使用离线 Overpass 道路快照。</td></tr>
+          <tr><td><code>--osm-place "&lt;PLACE_NAME&gt;"</code></td><td>显式指定地点搜索地域，优先于标称坐标推定的在线范围。</td></tr>
+          <tr><td><code>--match-profile "&lt;SAVED_MATCH_PROFILE.json&gt;"</code></td><td>使用完整、原样保存的匹配记录，重放同一基础坐标操作和匹配平移。</td></tr>
+          <tr><td><code>--gcp-profile "&lt;GCP_PROFILE.json&gt;"</code></td><td>显式使用已有 GCP 校准流程，仍须满足其训练、检查与精度验证要求。</td></tr>
+          <tr><td><code>--svg-mode candidate</code></td><td>默认提取原图 SVG 与图例对应候选；不自动应用到交付样式。</td></tr>
+          <tr><td><code>--svg-mode off</code></td><td>显式关闭 SVG 提取；不传字体目录。</td></tr>
+          <tr><td><code>--svg-font-dir "&lt;FONT_DIR&gt;"</code></td><td>SVG 提取所用的原图字体目录，可以重复指定。</td></tr>
+        </tbody>
+      </table>
+      <div class="warn-box">
+        <p><b>互斥规则。</b><code>--matching nominal</code> 不能与 OSM 输入混用；<code>--match-profile</code> 不能同时传入新 <code>--osm-data</code>、<code>--osm-place</code> 或 <code>--gcp-profile</code>。不要手动编辑匹配记录（摘要绑定源文件、CRS、单位、基础操作、版本与道路快照，改动导致校验失败）。</p>
+      </div>
+      <div class="note-box">
+        <p><b>关键说明。</b>标称坐标兼容流程需显式 <code>--matching nominal</code>；测量 GCP 配置需显式 <code>--gcp-profile "&lt;GCP_PROFILE.json&gt;"</code>。标准 OSM 模式不会自动启用项目目录中发现的 GCP 文件。有效坐标域、地点提示或离线 OSM 快照提供匹配搜索参考；无任何地理参考的本地 CAD 仍需补充定位输入；系统不会从文件名隐式猜测城市。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="doc-wrap"><div id="docs-pager"></div></div>
+</main>
+
+<script src="assets/docs.js"></script>
+<script src="assets/page-cli.js"></script>
+</body>
+</html>

@@ -1,0 +1,4784 @@
+{
+  "archive": "07_Pages网页.zip",
+  "archive_sha256": "bd2772327a87b08718d3f12a77a5d44d62faa2a32ee989e3e7e59ed7705210fb",
+  "prefix": "07_Pages网页/tencent-deploy-20260912/publish/",
+  "official_url": "https://cad2gis.molamaker.cn/",
+  "homepage_matches_live_on": "2026-10-13",
+  "files": [
+    {
+      "path": "cad2gis-report.html",
+      "sha256": "ec4fc24d00fa4e220d1856c3b32c5048ca7a240c934fba91c497c90796a33266",
+      "bytes": 1335316
+    },
+    {
+      "path": "docs/app.html",
+      "sha256": "67f86ca4d56aaea1d67d56f8996c52a07caf43d5cb6063be0d5ccc29fbc08119",
+      "bytes": 4603
+    },
+    {
+      "path": "docs/assets/docs-data.js",
+      "sha256": "95fc526d29b50eff0eb0c01edf7c2a7ff1e4a4e2832af460e7cee0614af36a61",
+      "bytes": 25554
+    },
+    {
+      "path": "docs/assets/docs-data.json",
+      "sha256": "82d79ef0a2105db1ab6009fdccbd068507005c47e700b9986d49e3e60da4e4af",
+      "bytes": 25532
+    },
+    {
+      "path": "docs/assets/docs.css",
+      "sha256": "818645f5c88f3c4532e3fb53bfaaf76993b560ddcd133ad8a029cb54e64b1b1a",
+      "bytes": 46685
+    },
+    {
+      "path": "docs/assets/docs.js",
+      "sha256": "26edf1eab0ddff3570c2173629e11204f88dd45f6498066bf242a749b1fec6f5",
+      "bytes": 7031
+    },
+    {
+      "path": "docs/assets/fonts.css",
+      "sha256": "54c10c52fdfe357f56a627d38ad8deba2a26961c59c505222099697a2c47f925",
+      "bytes": 178100
+    },
+    {
+      "path": "docs/assets/img/alignment/lamteh_main-after.jpg",
+      "sha256": "5d75ea18638de5ec2939e8eadffeee9520b13bf255708c40082ef25e8c34268d",
+      "bytes": 186304
+    },
+    {
+      "path": "docs/assets/img/alignment/lamteh_main-before.jpg",
+      "sha256": "fe6c2185eeffdd5caf92562eb5fe6885d5a7bf8a3ac381ed134894fca155ae8a",
+      "bytes": 186724
+    },
+    {
+      "path": "docs/assets/img/alignment/lamteh_main-overview.jpg",
+      "sha256": "5d75ea18638de5ec2939e8eadffeee9520b13bf255708c40082ef25e8c34268d",
+      "bytes": 186304
+    },
+    {
+      "path": "docs/assets/img/alignment/lamteh_sf-after.jpg",
+      "sha256": "7e742d7d06d52ec31145791a6a5a0b1bcbdbdba3891ca73f4d75790ca80427d8",
+      "bytes": 82232
+    },
+    {
+      "path": "docs/assets/img/alignment/lamteh_sf-before.jpg",
+      "sha256": "2c43c972ddbc034783e8c38fb5d1e48e927f0d994c317e30cd86a1f62dd458fa",
+      "bytes": 83713
+    },
+    {
+      "path": "docs/assets/img/alignment/lamteh_sf-overview.jpg",
+      "sha256": "7e742d7d06d52ec31145791a6a5a0b1bcbdbdba3891ca73f4d75790ca80427d8",
+      "bytes": 82232
+    },
+    {
+      "path": "docs/assets/img/alignment/tinggede-after.jpg",
+      "sha256": "fa8615edf0afed1c95f5a32a3b296a508849b37dc2a21363049c35701ae4d025",
+      "bytes": 157824
+    },
+    {
+      "path": "docs/assets/img/alignment/tinggede-before.jpg",
+      "sha256": "2246b82f663daa1991d972eeb273e9c4ded9bcd8358ea0df3f10340d1b6b51b5",
+      "bytes": 166071
+    },
+    {
+      "path": "docs/assets/img/alignment/tinggede-overview.jpg",
+      "sha256": "fa8615edf0afed1c95f5a32a3b296a508849b37dc2a21363049c35701ae4d025",
+      "bytes": 157824
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-01.jpg",
+      "sha256": "520b4b2312a4bcd00e0200384199bcaad3074781964bbf8e609db5f37bdb0af8",
+      "bytes": 30588
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-02.jpg",
+      "sha256": "ecdb6abbc9ace23ab6964c3f30f61111caec5b79904652c609b1ae9cd8de5531",
+      "bytes": 133689
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-03-emr28560.jpg",
+      "sha256": "0d509cc5777827dd397a1535e9f7691f04bc42aa231c9ff1f9f12debe2e60862",
+      "bytes": 30748
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-03-emr29619.jpg",
+      "sha256": "9429448ff6f6f6759edd2bee511ae6f9741ed399f84d0adaed7c190509f67281",
+      "bytes": 47726
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-03.jpg",
+      "sha256": "71a154f69617c1b107b90d1e8db3659bd80334c0cd0a1048c42d3841bff281c1",
+      "bytes": 140215
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-04.jpg",
+      "sha256": "e8ad47bf2fd8644742f121577256e6fedaa693685f3238af9cd0fc9de52e8865",
+      "bytes": 142410
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-05.jpg",
+      "sha256": "ffb4561c152baf698e8a8684ad48315c32d73c69ef04022a880c7c67908f2272",
+      "bytes": 112529
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-06.jpg",
+      "sha256": "aa7afe2c301496639954dcdaba978ef78db4491040e8d514b4d5600ed2139159",
+      "bytes": 140525
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-07.jpg",
+      "sha256": "3fe11f4fa858fb75d225d0f13b86f55dac2773f4eb3b5f3bc55e4a7f63f3db2a",
+      "bytes": 37911
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-08.jpg",
+      "sha256": "0cc11d925cd49f4f8ef914be38f742038b989849ff149a508490a69629d0b0c1",
+      "bytes": 81508
+    },
+    {
+      "path": "docs/assets/img/first-open/drawing-09.jpg",
+      "sha256": "640f5f0bff584ca5c8167db11fd360c0d2be4334e6229949af4a0d3f1d518888",
+      "bytes": 38216
+    },
+    {
+      "path": "docs/assets/img/oc/molamaker-6states.png",
+      "sha256": "cf37c76fa48335594b7d175bef5c915f6a242fa5e7b9dbc8df61c020613030a3",
+      "bytes": 789608
+    },
+    {
+      "path": "docs/assets/img/oc/molamaker-layers.jpg",
+      "sha256": "b711189a6df2637c61f9b80992988fa31f62c63dc49ca4dbbd504ade3cc57f79",
+      "bytes": 241003
+    },
+    {
+      "path": "docs/assets/img/qgis/darat-1.jpg",
+      "sha256": "0469454300416005ec961913bd8eb5a3ee947916eb82957234e1d4a3c18eb579",
+      "bytes": 203311
+    },
+    {
+      "path": "docs/assets/img/qgis/darat-2.jpg",
+      "sha256": "a038e802c9c10af9b9adbe289b249dd36c859c982c3907f5ffd923ce9662f9b0",
+      "bytes": 299830
+    },
+    {
+      "path": "docs/assets/img/qgis/full/darat-1.png",
+      "sha256": "cf940ffbe0eff3f6ea115e80a1b1c41f0433377d68014f652e7cb114e6a13604",
+      "bytes": 489620
+    },
+    {
+      "path": "docs/assets/img/qgis/full/darat-2.png",
+      "sha256": "aaafe940dea7d6ce91e3912c517b187c360808a3d4b9a90569e29032c0ea0da4",
+      "bytes": 1758426
+    },
+    {
+      "path": "docs/assets/img/qgis/full/hutabohu-1.png",
+      "sha256": "d63614e9b77a1424835bbb5cc187c10b2c35b8986c521dd99462efeb00c524f3",
+      "bytes": 698118
+    },
+    {
+      "path": "docs/assets/img/qgis/full/hutabohu-2.png",
+      "sha256": "094d6a0bd014028df91ea4bde63b2733996e3af6f27e6fc37f8d9f4739652fe6",
+      "bytes": 930582
+    },
+    {
+      "path": "docs/assets/img/qgis/full/hutabohu-3.png",
+      "sha256": "c7f6a8072dd8fb5e08d7b0d82fc8c722d4fba324be5190888f4c9e02003f2a86",
+      "bytes": 825696
+    },
+    {
+      "path": "docs/assets/img/qgis/full/kletek-1.png",
+      "sha256": "57a557511469e98d897ef69fe29eac725180f780dcc989598ab524b8c5ffb54a",
+      "bytes": 547886
+    },
+    {
+      "path": "docs/assets/img/qgis/full/kletek-2.png",
+      "sha256": "b026e796d155671478ee39c8f43c00d717bb15088db2dbb875b1c734afed13fa",
+      "bytes": 1077338
+    },
+    {
+      "path": "docs/assets/img/qgis/hutabohu-1.jpg",
+      "sha256": "3c0e8ba032fd0c20a6a99631baabbb294ac419969c61764134918c1b747cf0a4",
+      "bytes": 244243
+    },
+    {
+      "path": "docs/assets/img/qgis/hutabohu-2.jpg",
+      "sha256": "20858a5da402caa157c09bf581ba1a5b7567bae814e49fe571109cab6978083c",
+      "bytes": 240708
+    },
+    {
+      "path": "docs/assets/img/qgis/hutabohu-3.jpg",
+      "sha256": "6530d0d1d7a4f92acad9d076580e081426aacb11cdd2df51ef39a9dd0ab75121",
+      "bytes": 234298
+    },
+    {
+      "path": "docs/assets/img/qgis/kletek-1.jpg",
+      "sha256": "172cf826389236679d1a5fd59ee2dcbaa11d51334fd8c8e62c624d8635807ae8",
+      "bytes": 211570
+    },
+    {
+      "path": "docs/assets/img/qgis/kletek-2.jpg",
+      "sha256": "d4800f6edfb7a1f02923ef5cb8f9cd304addc4b34088107bedea56abe4996940",
+      "bytes": 248304
+    },
+    {
+      "path": "docs/assets/map.css",
+      "sha256": "6f221e9b3f63f8c34ee8b849768160d902542e5d00a011895d878589c1b9bd7e",
+      "bytes": 5949
+    },
+    {
+      "path": "docs/assets/maps/asset-verification.json",
+      "sha256": "135147cb787b2398cf425c35bff449b1ab14d3fb8a78925a8a054bf7741737c3",
+      "bytes": 202
+    },
+    {
+      "path": "docs/assets/maps/darat_sekip_sf.js",
+      "sha256": "a804f48b25be9fe092873f3423c2b7a9103e58db3820767a34995cd5d82f1987",
+      "bytes": 96399
+    },
+    {
+      "path": "docs/assets/maps/darat_sekip_sf.json",
+      "sha256": "fefa3860105fd9ed86724b66d10939cf3886a59be9ab0408a56dbe86a3ce6a09",
+      "bytes": 96325
+    },
+    {
+      "path": "docs/assets/maps/hutabohu.js",
+      "sha256": "09089be9b3bd0e7bca5f4b9af3daa07095f6aa37e9cb690e94bb47159b9682e0",
+      "bytes": 2029435
+    },
+    {
+      "path": "docs/assets/maps/hutabohu.json",
+      "sha256": "f3412992ffc68f50eb737417ea60894253c99a01e949a4ee21a350af4e16402e",
+      "bytes": 2029367
+    },
+    {
+      "path": "docs/assets/maps/index.js",
+      "sha256": "a0585641b081ba1c8179ec3dff2f5ef2abfbcd85e5c2be14a31cf27a2a35839e",
+      "bytes": 11238
+    },
+    {
+      "path": "docs/assets/maps/index.json",
+      "sha256": "db578df0ef98731d70a0d90c5a19e6b9bdecd57c28447fa93aae01409d4f5c3e",
+      "bytes": 11173
+    },
+    {
+      "path": "docs/assets/maps/kletek.js",
+      "sha256": "0314a5cf34a3d4314ea5938efcc9aa9e00789c9e3f16fbfbb38aa0dc848cd47c",
+      "bytes": 405420
+    },
+    {
+      "path": "docs/assets/maps/kletek.json",
+      "sha256": "e091642bd2d198efd5ffdacbdb489e90210ce8b2eef4fd69be67ba0ab905bacc",
+      "bytes": 405354
+    },
+    {
+      "path": "docs/assets/maps/lamteh_main.before.js",
+      "sha256": "b0eac87aa09c472416cf98f18c6fecb3e911601a8f427418207c0dda6d71f2e9",
+      "bytes": 1185487
+    },
+    {
+      "path": "docs/assets/maps/lamteh_main.before.json",
+      "sha256": "e9027cf96dd98841d8bb0393f2423f7c91719712c3c1a9ad2928c7ca445eac1f",
+      "bytes": 1185409
+    },
+    {
+      "path": "docs/assets/maps/lamteh_main.js",
+      "sha256": "0925ea4d6d47003f91bdd14d9bfc6ec14e65c82d10df190b912f0df5d1b401f9",
+      "bytes": 1866618
+    },
+    {
+      "path": "docs/assets/maps/lamteh_main.json",
+      "sha256": "c831b6f2425e364185733db9f9c413e85a014448877edb43378bf0d545379f6e",
+      "bytes": 1866547
+    },
+    {
+      "path": "docs/assets/maps/lamteh_sf.before.js",
+      "sha256": "844d9ed5e6179b700ea4dfc3a8f16489b3e97cbee1e0a05c2d8e208169e40851",
+      "bytes": 80730
+    },
+    {
+      "path": "docs/assets/maps/lamteh_sf.before.json",
+      "sha256": "018d469c902f69f49b90a5abcdfcf5947685812c5285ddbf4c5ce1c62ce40b1a",
+      "bytes": 80654
+    },
+    {
+      "path": "docs/assets/maps/lamteh_sf.js",
+      "sha256": "efc6556e044e53fb1b2a85e5f167edb606f3e56bbbe8b030e1f38ac7e10d20a3",
+      "bytes": 171416
+    },
+    {
+      "path": "docs/assets/maps/lamteh_sf.json",
+      "sha256": "0b66e5f250a7cf76a09fd8b70b3325e176a6151a6ce5548c48cbe68ff54ebb4d",
+      "bytes": 171347
+    },
+    {
+      "path": "docs/assets/maps/manado_emr28560.js",
+      "sha256": "b86c91d147132060a04ecf08d0403c63c773136df2c234d1ace8a629f4eb0756",
+      "bytes": 53203
+    },
+    {
+      "path": "docs/assets/maps/manado_emr28560.json",
+      "sha256": "e12cdf8492c7fb64a0581cb49cbcf2879a711a8273ff487dd01716cba10cbd88",
+      "bytes": 53128
+    },
+    {
+      "path": "docs/assets/maps/manado_emr29619.js",
+      "sha256": "6bd52d036cec74c058a8493fd1247923cb58397e70ee731550455d75cc73b452",
+      "bytes": 77129
+    },
+    {
+      "path": "docs/assets/maps/manado_emr29619.json",
+      "sha256": "71868bb8add4b65addd45d3c1eb35c4ed0ea81825a14b5fd8688549deae78f1b",
+      "bytes": 77054
+    },
+    {
+      "path": "docs/assets/maps/manado_tomohon.js",
+      "sha256": "251b195093ecaf65b3cfe7ad9713d37bbd382bf1c24946861eb2e6cf00c3be83",
+      "bytes": 655335
+    },
+    {
+      "path": "docs/assets/maps/manado_tomohon.json",
+      "sha256": "66dd719d1c890984a19aeb372e796a20275bcc32bfac122a58f749b0bbeb2fca",
+      "bytes": 655261
+    },
+    {
+      "path": "docs/assets/maps/previews/darat_sekip_sf.png",
+      "sha256": "84537f48f218a3b6291a57453e8335681040f0955e12690f10b9f9cab99d0799",
+      "bytes": 283804
+    },
+    {
+      "path": "docs/assets/maps/previews/hutabohu.png",
+      "sha256": "0a93ea3396b517c40e08197ca517925edd6a81286d15cbaa1a5497808e20e5e6",
+      "bytes": 617244
+    },
+    {
+      "path": "docs/assets/maps/previews/kletek.png",
+      "sha256": "1bd2735bfaeb1309f2c90346033cc6c2b13cc95b83610e6bbeddb3c938373b69",
+      "bytes": 401413
+    },
+    {
+      "path": "docs/assets/maps/previews/lamteh_main.png",
+      "sha256": "cf8ae7ed31494cae52287c8c06ca5a593c8fb6de68a406e2bc8a92a5ad32e915",
+      "bytes": 690685
+    },
+    {
+      "path": "docs/assets/maps/previews/lamteh_sf.png",
+      "sha256": "820c34d463205d99efba9df08d5db5deca8e77173c23c4e133a168f6117e2235",
+      "bytes": 226103
+    },
+    {
+      "path": "docs/assets/maps/previews/manado_emr28560.png",
+      "sha256": "2324bc6c5e8f31ceb69eff9d83e82b6c0cb0e53864a196364643dc1847a63e43",
+      "bytes": 111764
+    },
+    {
+      "path": "docs/assets/maps/previews/manado_emr29619.png",
+      "sha256": "3626c35092874103fec317851d438db68512396ab7b3adc3fccae53a62666e4b",
+      "bytes": 178040
+    },
+    {
+      "path": "docs/assets/maps/previews/manado_tomohon.png",
+      "sha256": "3152245ba11e88e0c18c70fb526909fda299d23bd691964c52a3dd8612c83bd5",
+      "bytes": 498565
+    },
+    {
+      "path": "docs/assets/maps/previews/semarang_sf.png",
+      "sha256": "198f28339bd284dd37a0ef08c12d3f220d813aceaed7f1f7aea8f11a7f5aab29",
+      "bytes": 196097
+    },
+    {
+      "path": "docs/assets/maps/previews/taipa.png",
+      "sha256": "acd9908b44d4b15642d9302a2bfbdc883cc406f3541b05ee2338961d3b560f53",
+      "bytes": 519563
+    },
+    {
+      "path": "docs/assets/maps/previews/tinggar.png",
+      "sha256": "96561b634ea53b0785736e81afef646277d4cb7da601d3f806cc93383d64c917",
+      "bytes": 535282
+    },
+    {
+      "path": "docs/assets/maps/previews/tinggede.png",
+      "sha256": "cf7893e17b78ca573df1507c1232d70c4eb87c73d17fc80929e0dfce046674ef",
+      "bytes": 534615
+    },
+    {
+      "path": "docs/assets/maps/qgz/darat_sekip_sf.qgz",
+      "sha256": "57e069267e7446272a0edacab07f1b410ad61811e6fc612583b62a7d12634eff",
+      "bytes": 252558
+    },
+    {
+      "path": "docs/assets/maps/qgz/hutabohu.qgz",
+      "sha256": "86f4d2bbcc554161e1505c944cb51b3c416881ba595c38f0dc9cf2c02dd0b37c",
+      "bytes": 377899
+    },
+    {
+      "path": "docs/assets/maps/qgz/kletek.qgz",
+      "sha256": "6e9d6c7e22039edca72a97ff031eb13cf78a096b66e44da27e8fdda89db20df0",
+      "bytes": 184759
+    },
+    {
+      "path": "docs/assets/maps/qgz/lamteh_main.qgz",
+      "sha256": "c73e05770ed4dabd2cb247aebb609a765dde93366223cf713d71f11ce37912fd",
+      "bytes": 594685
+    },
+    {
+      "path": "docs/assets/maps/qgz/lamteh_sf.qgz",
+      "sha256": "a7685246057c0e0e8bc0db6e55da01f4df04545495086452e493502417dfad4c",
+      "bytes": 232917
+    },
+    {
+      "path": "docs/assets/maps/qgz/manado_emr28560.qgz",
+      "sha256": "ec84c7209b793b37858b09c2ebe35778a8e7f1c01dc6653693ebe3302ac27bfa",
+      "bytes": 102224
+    },
+    {
+      "path": "docs/assets/maps/qgz/manado_emr29619.qgz",
+      "sha256": "5ccf82bd85e8ec1776c37709c949276290c5299963011322ffd0366a5daa4ebb",
+      "bytes": 110751
+    },
+    {
+      "path": "docs/assets/maps/qgz/manado_tomohon.qgz",
+      "sha256": "289b0dab02efafc6bcf7455c263af152f274569d19e261438864f29a5c1eacde",
+      "bytes": 186730
+    },
+    {
+      "path": "docs/assets/maps/qgz/semarang_sf.qgz",
+      "sha256": "6abfb00bd86fc23aa0181f9bcfc106ae41f7268d59e50ffda178fc652633fa23",
+      "bytes": 110880
+    },
+    {
+      "path": "docs/assets/maps/qgz/taipa.qgz",
+      "sha256": "dd60a386e9d52dad53ca13e0c93365461aae19800deee0e8603cd75fed4de199",
+      "bytes": 274684
+    },
+    {
+      "path": "docs/assets/maps/qgz/tinggar.qgz",
+      "sha256": "24775d990a9ab6163e70825bd9b15d4d57dee379f784477e07efb8794722a9f2",
+      "bytes": 299528
+    },
+    {
+      "path": "docs/assets/maps/qgz/tinggede.qgz",
+      "sha256": "0a9f49be1929298452d768375c767975ab3ff951e814976724f32162f5ef30d6",
+      "bytes": 219316
+    },
+    {
+      "path": "docs/assets/maps/semarang_sf.js",
+      "sha256": "7633025ed0b3b06928c70a1a3f2891286dd93edcd4eb589243841f339f34e91c",
+      "bytes": 122032
+    },
+    {
+      "path": "docs/assets/maps/semarang_sf.json",
+      "sha256": "6075f5e49dc6f4fefa4a1207b38a397f5039f807721411e9a3a969f2362e9c00",
+      "bytes": 121961
+    },
+    {
+      "path": "docs/assets/maps/sources.json",
+      "sha256": "f514303116d1afc8bfb27d88de4d519b79ad5e0d08d7f70446cb121147311966",
+      "bytes": 7643
+    },
+    {
+      "path": "docs/assets/maps/symbols/09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21.svg",
+      "sha256": "09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21",
+      "bytes": 1715
+    },
+    {
+      "path": "docs/assets/maps/symbols/09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/maps/symbols/0a82a83ea32aa524fc849bc2a949f1bde6598398ce2020d15b0f19b3e32a06f6.svg",
+      "sha256": "0a82a83ea32aa524fc849bc2a949f1bde6598398ce2020d15b0f19b3e32a06f6",
+      "bytes": 1521
+    },
+    {
+      "path": "docs/assets/maps/symbols/0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944.svg",
+      "sha256": "0e71308c37489d881db5227b2f895d51a3b1f4c10328aa7ccb285826a04fd944",
+      "bytes": 2175
+    },
+    {
+      "path": "docs/assets/maps/symbols/0fd92709a9f3c48cb9fe429a526ccd5a18d7ea2f5612fc1448cbe6955ca91ffd.svg",
+      "sha256": "0fd92709a9f3c48cb9fe429a526ccd5a18d7ea2f5612fc1448cbe6955ca91ffd",
+      "bytes": 1556
+    },
+    {
+      "path": "docs/assets/maps/symbols/181ddddc5fd7072e01e2b6ca5b61917b94b1c4c66c4b09071076ad986d6c0de9.svg",
+      "sha256": "181ddddc5fd7072e01e2b6ca5b61917b94b1c4c66c4b09071076ad986d6c0de9",
+      "bytes": 1192
+    },
+    {
+      "path": "docs/assets/maps/symbols/1b8f767acce1eab1f39a9eb18b2d4396535ec16c9ed9f9a4923af097f9161599.svg",
+      "sha256": "1b8f767acce1eab1f39a9eb18b2d4396535ec16c9ed9f9a4923af097f9161599",
+      "bytes": 2348
+    },
+    {
+      "path": "docs/assets/maps/symbols/1ecda5f9fca541904a35ece6b4640435b4b5b9c3ff21f218aaf496f4825609e8.svg",
+      "sha256": "1ecda5f9fca541904a35ece6b4640435b4b5b9c3ff21f218aaf496f4825609e8",
+      "bytes": 2345
+    },
+    {
+      "path": "docs/assets/maps/symbols/20431ba99d817cd00f6a8e5c7b7ff859d72941863907a22097ec2ef15a724422.svg",
+      "sha256": "20431ba99d817cd00f6a8e5c7b7ff859d72941863907a22097ec2ef15a724422",
+      "bytes": 1824
+    },
+    {
+      "path": "docs/assets/maps/symbols/226c761d8b3902d0f811ec879651c696f2d0cd507a02a7f38b77a3d376a84c24.svg",
+      "sha256": "226c761d8b3902d0f811ec879651c696f2d0cd507a02a7f38b77a3d376a84c24",
+      "bytes": 2259
+    },
+    {
+      "path": "docs/assets/maps/symbols/260d3ca99ed9a2cd453d961c7656e7c20bce064b0aaac906143cc8668f87aed6.svg",
+      "sha256": "260d3ca99ed9a2cd453d961c7656e7c20bce064b0aaac906143cc8668f87aed6",
+      "bytes": 2364
+    },
+    {
+      "path": "docs/assets/maps/symbols/26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/maps/symbols/27990727a0874c983220afb9baa7e0f08f644b4fc07c77886a9215472b65fd75.svg",
+      "sha256": "27990727a0874c983220afb9baa7e0f08f644b4fc07c77886a9215472b65fd75",
+      "bytes": 1290
+    },
+    {
+      "path": "docs/assets/maps/symbols/28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb.svg",
+      "sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb",
+      "bytes": 1668
+    },
+    {
+      "path": "docs/assets/maps/symbols/2a86adb643851f8ba54e2f3bd21e363966373891f6f7eec520a617a6ca99b64a.svg",
+      "sha256": "2a86adb643851f8ba54e2f3bd21e363966373891f6f7eec520a617a6ca99b64a",
+      "bytes": 2338
+    },
+    {
+      "path": "docs/assets/maps/symbols/31a6a1c1f2cf2c36bcdfb33a309f0b7796bbc7cdc1c5811dcbf46186ef7acd39.svg",
+      "sha256": "31a6a1c1f2cf2c36bcdfb33a309f0b7796bbc7cdc1c5811dcbf46186ef7acd39",
+      "bytes": 1974
+    },
+    {
+      "path": "docs/assets/maps/symbols/34d09cb7b08844f6f7238857ca8ce55d3077043d070293c05b213e85d4810afe.svg",
+      "sha256": "34d09cb7b08844f6f7238857ca8ce55d3077043d070293c05b213e85d4810afe",
+      "bytes": 1910
+    },
+    {
+      "path": "docs/assets/maps/symbols/377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7.svg",
+      "sha256": "377e1f368480686e4cae96cfc4ea62369a80847a9f77b1986764f52c7e348cd7",
+      "bytes": 1910
+    },
+    {
+      "path": "docs/assets/maps/symbols/3b3b7011dc2f445866fd5197bfc20461e542e8c7a95f9c1c6b69aff6f46e5e00.svg",
+      "sha256": "3b3b7011dc2f445866fd5197bfc20461e542e8c7a95f9c1c6b69aff6f46e5e00",
+      "bytes": 2101
+    },
+    {
+      "path": "docs/assets/maps/symbols/48cabde83910b238ba2ebe99576352a385217ae98d923525cb9b6e0f81ab182f.svg",
+      "sha256": "48cabde83910b238ba2ebe99576352a385217ae98d923525cb9b6e0f81ab182f",
+      "bytes": 2082
+    },
+    {
+      "path": "docs/assets/maps/symbols/49937eb61d65d51b95b310344b03e758658eb2784c561168965ed1b2d8e16bde.svg",
+      "sha256": "49937eb61d65d51b95b310344b03e758658eb2784c561168965ed1b2d8e16bde",
+      "bytes": 1906
+    },
+    {
+      "path": "docs/assets/maps/symbols/49c2ad48fc98d13196534e2862b4a5d2c1b0481f90a4609e51c72a4153194772.svg",
+      "sha256": "49c2ad48fc98d13196534e2862b4a5d2c1b0481f90a4609e51c72a4153194772",
+      "bytes": 2347
+    },
+    {
+      "path": "docs/assets/maps/symbols/5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/maps/symbols/5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583.svg",
+      "sha256": "5cf79d0b381fdb7f1bdb328fb66f7d5199d0997746cb6dd7fa1688725786e583",
+      "bytes": 2364
+    },
+    {
+      "path": "docs/assets/maps/symbols/6bb20b25c285bf8968dec2c87203e56889ac8ad215472d93cda3e3222511a57b.svg",
+      "sha256": "6bb20b25c285bf8968dec2c87203e56889ac8ad215472d93cda3e3222511a57b",
+      "bytes": 1525
+    },
+    {
+      "path": "docs/assets/maps/symbols/6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc.svg",
+      "sha256": "6bbf94dfedad78a88e650e34bc846380c0cf03aca018402cde33b768387f38fc",
+      "bytes": 1974
+    },
+    {
+      "path": "docs/assets/maps/symbols/71a175043c5fd22d1aae4d2f4d85e12fa741c90a621e5f23b58319f0146de880.svg",
+      "sha256": "71a175043c5fd22d1aae4d2f4d85e12fa741c90a621e5f23b58319f0146de880",
+      "bytes": 1672
+    },
+    {
+      "path": "docs/assets/maps/symbols/71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9.svg",
+      "sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9",
+      "bytes": 1271
+    },
+    {
+      "path": "docs/assets/maps/symbols/7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/maps/symbols/7b04a5b36852bb0bbd893c9485b3f598cd77bd70ac6b67eed1bc2f928f1c5e66.svg",
+      "sha256": "7b04a5b36852bb0bbd893c9485b3f598cd77bd70ac6b67eed1bc2f928f1c5e66",
+      "bytes": 1521
+    },
+    {
+      "path": "docs/assets/maps/symbols/828fe784d305838c5be467cbb2b079284060fac9e3725cce0166eefdcbaf7ede.svg",
+      "sha256": "828fe784d305838c5be467cbb2b079284060fac9e3725cce0166eefdcbaf7ede",
+      "bytes": 1326
+    },
+    {
+      "path": "docs/assets/maps/symbols/83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/maps/symbols/8dc0fbfaf8b378e0d3930b8b9ad35317a1573f0af82fff636fd2605bb61aff9c.svg",
+      "sha256": "8dc0fbfaf8b378e0d3930b8b9ad35317a1573f0af82fff636fd2605bb61aff9c",
+      "bytes": 1659
+    },
+    {
+      "path": "docs/assets/maps/symbols/8f815f9e0a110c414ab0f0289de15f9f54f852cfe02b730561fc079d86476619.svg",
+      "sha256": "8f815f9e0a110c414ab0f0289de15f9f54f852cfe02b730561fc079d86476619",
+      "bytes": 1564
+    },
+    {
+      "path": "docs/assets/maps/symbols/90f185458fafdefa622a5fa3f8ca3dcd51f75e570dd1ca90646e8a09d7ae4ba4.svg",
+      "sha256": "90f185458fafdefa622a5fa3f8ca3dcd51f75e570dd1ca90646e8a09d7ae4ba4",
+      "bytes": 1565
+    },
+    {
+      "path": "docs/assets/maps/symbols/91bd23536b97215821f50d707648dbcb1a33093ff752e8ed34feb7cbd775624d.svg",
+      "sha256": "91bd23536b97215821f50d707648dbcb1a33093ff752e8ed34feb7cbd775624d",
+      "bytes": 1691
+    },
+    {
+      "path": "docs/assets/maps/symbols/9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487.svg",
+      "sha256": "9639ce1e4363e922eb290fd78fd45a83841b5ebebc2d5a1bd258ebd05eefc487",
+      "bytes": 1910
+    },
+    {
+      "path": "docs/assets/maps/symbols/9ca6dd3b422ddec074c230ccd3eb318e36f06c8e2561d6508cd8b8eac9624a76.svg",
+      "sha256": "9ca6dd3b422ddec074c230ccd3eb318e36f06c8e2561d6508cd8b8eac9624a76",
+      "bytes": 1723
+    },
+    {
+      "path": "docs/assets/maps/symbols/9ef12a2e981902cf20faeb88b7b5ed33ec40f5d275f1c4c81c22771c7fe5a0d1.svg",
+      "sha256": "9ef12a2e981902cf20faeb88b7b5ed33ec40f5d275f1c4c81c22771c7fe5a0d1",
+      "bytes": 1525
+    },
+    {
+      "path": "docs/assets/maps/symbols/a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1.svg",
+      "sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1",
+      "bytes": 1484
+    },
+    {
+      "path": "docs/assets/maps/symbols/ac236d2e54e14293224229dc2efccbe9f2cf25d3cebcfbd7cd9aaa2d93a62e06.svg",
+      "sha256": "ac236d2e54e14293224229dc2efccbe9f2cf25d3cebcfbd7cd9aaa2d93a62e06",
+      "bytes": 1525
+    },
+    {
+      "path": "docs/assets/maps/symbols/be1e219fc958cbc8a821e3fdbcf7c8e4362705533df502f081d61213881b4e3f.svg",
+      "sha256": "be1e219fc958cbc8a821e3fdbcf7c8e4362705533df502f081d61213881b4e3f",
+      "bytes": 3277
+    },
+    {
+      "path": "docs/assets/maps/symbols/be8dfd59add8d89809de3da941535a50309cdf7255b2fd9a195cc934794ead90.svg",
+      "sha256": "be8dfd59add8d89809de3da941535a50309cdf7255b2fd9a195cc934794ead90",
+      "bytes": 1298
+    },
+    {
+      "path": "docs/assets/maps/symbols/bec6209994463fa52166ff44e6920e3af88bccc6ac32d2f5ccbc90f78850bd03.svg",
+      "sha256": "bec6209994463fa52166ff44e6920e3af88bccc6ac32d2f5ccbc90f78850bd03",
+      "bytes": 1525
+    },
+    {
+      "path": "docs/assets/maps/symbols/c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589.svg",
+      "sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589",
+      "bytes": 1529
+    },
+    {
+      "path": "docs/assets/maps/symbols/cdec97f9c0cedeb2f9af777fc263fddca6f5638c7c04c4f572d41ad684ba31d4.svg",
+      "sha256": "cdec97f9c0cedeb2f9af777fc263fddca6f5638c7c04c4f572d41ad684ba31d4",
+      "bytes": 1333
+    },
+    {
+      "path": "docs/assets/maps/symbols/d3f9f4747adf62f27c889607bfe128d3c2b2e01d240831966909a384eeefa20d.svg",
+      "sha256": "d3f9f4747adf62f27c889607bfe128d3c2b2e01d240831966909a384eeefa20d",
+      "bytes": 1707
+    },
+    {
+      "path": "docs/assets/maps/symbols/d41e9662c06efb24ac1f3b3940e7d632e988f236fbdc3d15c0b2323ecbd56b80.svg",
+      "sha256": "d41e9662c06efb24ac1f3b3940e7d632e988f236fbdc3d15c0b2323ecbd56b80",
+      "bytes": 369057
+    },
+    {
+      "path": "docs/assets/maps/symbols/d6342b86c68448cb59a1f1f57f96b1ca6f7de7ceb7d8e4f83d3aa63819fce772.svg",
+      "sha256": "d6342b86c68448cb59a1f1f57f96b1ca6f7de7ceb7d8e4f83d3aa63819fce772",
+      "bytes": 1906
+    },
+    {
+      "path": "docs/assets/maps/symbols/d6656ab6f75aebb6964744103f82c64540b3d1165231a5e5ada871ca1ad33db7.svg",
+      "sha256": "d6656ab6f75aebb6964744103f82c64540b3d1165231a5e5ada871ca1ad33db7",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/maps/symbols/d707bd344ffcb443dce31cd6b662e395a8ebb0a8e9ff917d46112a4c06b720d6.svg",
+      "sha256": "d707bd344ffcb443dce31cd6b662e395a8ebb0a8e9ff917d46112a4c06b720d6",
+      "bytes": 1302
+    },
+    {
+      "path": "docs/assets/maps/symbols/dc247c7cc9bbf4265b4b3732bb7f6f7062a421e147278abc61749665e996374f.svg",
+      "sha256": "dc247c7cc9bbf4265b4b3732bb7f6f7062a421e147278abc61749665e996374f",
+      "bytes": 1546
+    },
+    {
+      "path": "docs/assets/maps/symbols/e4329f0e0e9f69dcb54ce69755d319a2afbda2bce9de9dfb2d6df6c41be37c90.svg",
+      "sha256": "e4329f0e0e9f69dcb54ce69755d319a2afbda2bce9de9dfb2d6df6c41be37c90",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/maps/symbols/e490add2dd434a6323909ac0c8e45d5b94d2aea97893bec41ed40f92273c64f7.svg",
+      "sha256": "e490add2dd434a6323909ac0c8e45d5b94d2aea97893bec41ed40f92273c64f7",
+      "bytes": 1290
+    },
+    {
+      "path": "docs/assets/maps/symbols/ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e.svg",
+      "sha256": "ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/maps/symbols/f18169328a237693d3bbfd01f2ee2ae56dc338ad6e0d491159a8fdfa057b53ad.svg",
+      "sha256": "f18169328a237693d3bbfd01f2ee2ae56dc338ad6e0d491159a8fdfa057b53ad",
+      "bytes": 1975
+    },
+    {
+      "path": "docs/assets/maps/symbols/f60e6ab5308827651b155841af095a56444681ce0e94f912a82c5cc522f93546.svg",
+      "sha256": "f60e6ab5308827651b155841af095a56444681ce0e94f912a82c5cc522f93546",
+      "bytes": 2179
+    },
+    {
+      "path": "docs/assets/maps/symbols/f988439991fe87bf1b34811a6a8f3a8e3733dca71584346794bbbec720347c4d.svg",
+      "sha256": "f988439991fe87bf1b34811a6a8f3a8e3733dca71584346794bbbec720347c4d",
+      "bytes": 1894
+    },
+    {
+      "path": "docs/assets/maps/symbols/fe503c11d37e5c7d5248f1c00316a2a3413840d47eb4be2e90be506f8e363d9c.svg",
+      "sha256": "fe503c11d37e5c7d5248f1c00316a2a3413840d47eb4be2e90be506f8e363d9c",
+      "bytes": 2270
+    },
+    {
+      "path": "docs/assets/maps/symbols/fe760e964be63d4d8279253f377e5d570e8b1abf2a00e0df1df2fda1ece835c2.svg",
+      "sha256": "fe760e964be63d4d8279253f377e5d570e8b1abf2a00e0df1df2fda1ece835c2",
+      "bytes": 1597
+    },
+    {
+      "path": "docs/assets/maps/symbols/fed37bada48030590b7b3ca9f46a6868546b4a52be1fdafb371cb46db1ff203c.svg",
+      "sha256": "fed37bada48030590b7b3ca9f46a6868546b4a52be1fdafb371cb46db1ff203c",
+      "bytes": 2298
+    },
+    {
+      "path": "docs/assets/maps/symbols/feeb9f3d36ca7cf7b07c05e9b0f7eee0a97fe51dbc9462cec9d1bd82d112f0e1.svg",
+      "sha256": "feeb9f3d36ca7cf7b07c05e9b0f7eee0a97fe51dbc9462cec9d1bd82d112f0e1",
+      "bytes": 2030
+    },
+    {
+      "path": "docs/assets/maps/taipa.js",
+      "sha256": "51c1efa18b8a7955a7f082dbef43a539370b5daad5a6ea81c5fa992292f05d5e",
+      "bytes": 1254548
+    },
+    {
+      "path": "docs/assets/maps/taipa.json",
+      "sha256": "e370a23cb34ba018fc618bb1ae20d7b94825908d2fae54415587246865ed2991",
+      "bytes": 1254483
+    },
+    {
+      "path": "docs/assets/maps/tinggar.js",
+      "sha256": "533143150637df5011ef8818b00fcc34f96ae745aeff012f79fb2e6b3acb768c",
+      "bytes": 994518
+    },
+    {
+      "path": "docs/assets/maps/tinggar.json",
+      "sha256": "98f3d83bf2034aff5e913791bcbb974fa18bc8d5bf9ececf94f9263787b72be5",
+      "bytes": 994451
+    },
+    {
+      "path": "docs/assets/maps/tinggede.before.js",
+      "sha256": "e4950a6bd61c4cc00bd5f6d530eec863b14cc342de42681b2c986fa85bc0c11b",
+      "bytes": 513263
+    },
+    {
+      "path": "docs/assets/maps/tinggede.before.json",
+      "sha256": "d3678557b04abc8dc1a33dc51cad64678fb1614fb09e2ec9ed9ffbce732d58d8",
+      "bytes": 513188
+    },
+    {
+      "path": "docs/assets/maps/tinggede.js",
+      "sha256": "505fb71cb17b8727e50b28cf34cd414d5c1c03e5416638f3bab5d6e6755dc796",
+      "bytes": 858281
+    },
+    {
+      "path": "docs/assets/maps/tinggede.json",
+      "sha256": "97d96b4b6c241b772b558d67d541ce7624f4141fcdc39d6f3e89c855fffd4291",
+      "bytes": 858213
+    },
+    {
+      "path": "docs/assets/maps/validation.json",
+      "sha256": "142eb26a1158b5915ca8325fa4af5dfe02094823d388931203458c3907ad535a",
+      "bytes": 67686
+    },
+    {
+      "path": "docs/assets/page-app.js",
+      "sha256": "57258f98b53bb1d435693bb45d473b7178bd732a6d6f79856190e2be41ead116",
+      "bytes": 11985
+    },
+    {
+      "path": "docs/assets/page-cli.js",
+      "sha256": "83eac500823b50cb80f7bb7fa8471f47e7f466767edcda7695368cc67735f33a",
+      "bytes": 11018
+    },
+    {
+      "path": "docs/assets/page-manual.js",
+      "sha256": "186b8a4c32a854749948621e66720a6074f1f907041a987e585dbb648a873cad",
+      "bytes": 3936
+    },
+    {
+      "path": "docs/assets/page-map.js",
+      "sha256": "7a4b08c3a1678bcf8fab21d076bce4b089c9fcefcabe22408a31cde9a893d0d0",
+      "bytes": 13986
+    },
+    {
+      "path": "docs/assets/page-osm-gcp.js",
+      "sha256": "751e3ed745c7af6edf12921a98cce687ddf01707da0a5e1ee5b26713d27d0d07",
+      "bytes": 32395
+    },
+    {
+      "path": "docs/assets/page-svg.js",
+      "sha256": "cd51d0a76000e39e808d224049f7015461571b45c59ac66e2d288bce6e729210",
+      "bytes": 11735
+    },
+    {
+      "path": "docs/assets/svg-symbols/catalog.json",
+      "sha256": "701a4c6e03cf51b9f025adbbf2775fa653948810bc77ebfc4c93062425c4b33a",
+      "bytes": 22181
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/correspondence.json",
+      "sha256": "b8daee4594902429f7548dc17026095de6bedb81e0318251a0c8b4e562f64c15",
+      "bytes": 17804
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1ac878.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1ae9f0.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1ae9f8.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aea00.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aea08.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aea10.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aea88.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aea90.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aea98.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aeaa0.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aeaa8.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aeab0.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1aeab8.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1b051c.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1b0564.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1b056c.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1b3e06.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1ba661.svg",
+      "sha256": "3e7f568fc10c72a52527aa1536efaa8be2f026a543df589deff9366a2df56bd2",
+      "bytes": 1898
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1babb4.svg",
+      "sha256": "0aa5a41a82b0157df7ea84a896f8416f93d021e561be31a261a2659d42c4c9a1",
+      "bytes": 2299
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9847.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c984f.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9d5d.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9d65.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9d6d.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9d75.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9d7d.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9d85.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/instance-1c9d8d.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/legend-139995.svg",
+      "sha256": "71efe721ba71cf59c9da7e545d8ba61c4f5f51647b2bcf60fc481edff696aa71",
+      "bytes": 764
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-01/legend-1399b4.svg",
+      "sha256": "920c7238433d95f0051c8ffbd4850473c2ded59c6921624b2734591d79008c2a",
+      "bytes": 1493
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/correspondence.json",
+      "sha256": "c97493885066c2b14a2628152a533498c206a781182b30047a3e5d5c8fb7bbbb",
+      "bytes": 231099
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac878.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac880.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac888.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac890.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac898.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8a0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8a8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8b0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8b8.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8c0.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8c8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8d0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8d8.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8e0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8e8.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8f0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac8f8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac900.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac908.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac918.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac921.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac929.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac931.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac939.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac941.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac949.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac951.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac959.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac961.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac969.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac971.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac979.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac981.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac989.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac991.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac999.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9a1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9a9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9b1.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9b9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9c1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9c9.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9d1.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9d9.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9e1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9e9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9f1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ac9f9.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aca01.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf05.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf0d.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf15.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf1d.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf25.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf2d.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf35.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf3d.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf45.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf4d.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf55.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf5d.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf65.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf6d.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf75.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf85.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1acf8d.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad491.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad499.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4a1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4a9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4b1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4b9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4c1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4c9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4d1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4d9.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4e1.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4e9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4f1.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad4f9.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad501.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad509.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad511.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad519.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad521.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad529.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad531.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad539.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad541.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad549.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad551.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad559.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad561.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad569.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ad571.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ada7c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adf80.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adf88.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adf90.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adf98.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfa0.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfa8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfb0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfb8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfc0.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfc8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfd0.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfd8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1adfe0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ae9e0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ae9e8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ae9f0.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ae9f8.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea00.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea08.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea10.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea18.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea20.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea28.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea30.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea38.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea40.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea48.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea50.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea58.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea60.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea68.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea70.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea78.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea80.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea88.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea90.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aea98.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeaa0.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeaa8.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeab0.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeab8.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeac0.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeac8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aead0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aead8.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeae0.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeae9.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeaf1.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeaf9.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeb01.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeb09.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1aeb11.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b051c.svg",
+      "sha256": "72124dfec2f05d90c3fd6d625ef3630f240c8c99fa156177c2727b9a98e914b1",
+      "bytes": 1491
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0524.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b052c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0534.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b053c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0544.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b054c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0554.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b055c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0564.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b056c.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0574.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b057c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0584.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b058c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0594.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b059c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05a4.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05ac.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05b4.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05bc.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05c4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05cc.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05d4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05e4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05ec.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05f4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b05fc.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0604.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b060c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0614.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b061c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0624.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b062c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0634.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b063c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0644.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b064c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0654.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b065c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0664.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b066c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0674.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b067c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0684.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b068c.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b0694.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b069c.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b06a4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b06ac.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b06b4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b06bc.svg",
+      "sha256": "5e9df24827cb7ac635ef2e6f3adf11b184b0478275843a15375efd31af31edbe",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b06c4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b06cc.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b06d4.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b29de.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b29e6.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b29f0.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b29f8.svg",
+      "sha256": "ab8bfb8f6ca11073738bd89679c1009b223989bc2e24633c9ff302dd5e11db97",
+      "bytes": 1859
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b3e06.svg",
+      "sha256": "09b22513c33df5d35c866e3b17fafb8ad63f60e7251a64c4cfef7daecc3664a8",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b33.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b38.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b3d.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b42.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b47.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b4c.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b51.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b56.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b5b.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b60.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b65.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b6a.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b6f.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b74.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b79.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b7e.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b83.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b88.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b8d.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b92.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b97.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6b9c.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6ba1.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6ba6.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bab.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bb0.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bb5.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bba.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bbf.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bc4.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bc9.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bce.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bd3.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bd8.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bdd.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6be2.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6be7.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1b6bec.svg",
+      "sha256": "c8569ae42bc096b707c9b70a0920db317f35dc6c2e215a41120b0ae3276c0f12",
+      "bytes": 1613
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1ba661.svg",
+      "sha256": "3e7f568fc10c72a52527aa1536efaa8be2f026a543df589deff9366a2df56bd2",
+      "bytes": 1898
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/instance-1babb4.svg",
+      "sha256": "0aa5a41a82b0157df7ea84a896f8416f93d021e561be31a261a2659d42c4c9a1",
+      "bytes": 2299
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/legend-13998d.svg",
+      "sha256": "f09cb00dde06102e10e32f88783d69a4c5a429683d9d12b9f932a2d3876d64a2",
+      "bytes": 1861
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/legend-139995.svg",
+      "sha256": "71efe721ba71cf59c9da7e545d8ba61c4f5f51647b2bcf60fc481edff696aa71",
+      "bytes": 764
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-02/legend-1399b4.svg",
+      "sha256": "920c7238433d95f0051c8ffbd4850473c2ded59c6921624b2734591d79008c2a",
+      "bytes": 1493
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/correspondence.json",
+      "sha256": "11fbf9ee3a808f249c1f592348d2df530c4b3dd543a40b41b4b22395bb139d17",
+      "bytes": 97657
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1933.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1942.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1949.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1957.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-196d.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1974.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-197b.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1989.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1990.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1997.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-19a5.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-19c8.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-19dd.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-19f2.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1a00.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1a15.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1a31.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1b77.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1b85.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1b8c.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1b93.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1ba1.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1baf.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1bb6.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1d58.svg",
+      "sha256": "269fa0815888d4fffc90e677b85344735bf78dd2cddf81bd9b1c6368e443520a",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-1d79.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-2075.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-207c.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-2083.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-20b1.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-20ec.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-20f4.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-2198.svg",
+      "sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb",
+      "bytes": 1668
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21a7.svg",
+      "sha256": "8dc0fbfaf8b378e0d3930b8b9ad35317a1573f0af82fff636fd2605bb61aff9c",
+      "bytes": 1659
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21aa.svg",
+      "sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9",
+      "bytes": 1271
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21ad.svg",
+      "sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9",
+      "bytes": 1271
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21b0.svg",
+      "sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9",
+      "bytes": 1271
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21b3.svg",
+      "sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1",
+      "bytes": 1484
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21b6.svg",
+      "sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1",
+      "bytes": 1484
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21b9.svg",
+      "sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1",
+      "bytes": 1484
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21bc.svg",
+      "sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1",
+      "bytes": 1484
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21bf.svg",
+      "sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9",
+      "bytes": 1271
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21c2.svg",
+      "sha256": "71b2feff637017ac4356a8e43257fccdf5f271012a7aa311fc6ff36a5add02e9",
+      "bytes": 1271
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21c5.svg",
+      "sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb",
+      "bytes": 1668
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21cb.svg",
+      "sha256": "a8af288cdebaaaa09c745507592d3dcf74bbf31beb535c186dd9df3b9289d2c1",
+      "bytes": 1484
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-21ce.svg",
+      "sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb",
+      "bytes": 1668
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-2e21.svg",
+      "sha256": "28389d7cee483027d4eee303355bdce47be91f66fc4bc696e27130b5008bf4fb",
+      "bytes": 1668
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-3027.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-303f.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-3144.svg",
+      "sha256": "1ecda5f9fca541904a35ece6b4640435b4b5b9c3ff21f218aaf496f4825609e8",
+      "bytes": 2345
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-31b9.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-320a.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-3218.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-3229.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-394e.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-3955.svg",
+      "sha256": "da8ad0355e8460a324945f7e70eb45367a99fa3599243b3888d649ec24046f36",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-395c.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-4339.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-4340.svg",
+      "sha256": "7ca1bdb147ab9c8c62c9ed653ca157461a361868a0029de8ce70ff0778e3b313",
+      "bytes": 2061
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-75a2.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-75ab.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-75c1.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-75c9.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-75d1.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-75d9.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-76ea.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-78f3.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-78fb.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-7903.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-7913.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-791b.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-7923.svg",
+      "sha256": "5475d57556d515878236273555deb5a5286c45327a56db34519ca6579822da0f",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-792b.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-7933.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-793b.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-7943.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-794c.svg",
+      "sha256": "8975a0b2dc7c4c26141bb7734f222236606539fcf85e392c4260b911fccd4db8",
+      "bytes": 1513
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-03/instance-79d1.svg",
+      "sha256": "9ca6dd3b422ddec074c230ccd3eb318e36f06c8e2561d6508cd8b8eac9624a76",
+      "bytes": 1723
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/correspondence.json",
+      "sha256": "9ea5768592fdf49ad8d0654716457ca89b5547d93cd70da278d7faace0f87344",
+      "bytes": 170835
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a25.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a2c.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a33.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a3a.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a41.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a4f.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a56.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a5d.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a64.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a6b.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a72.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a79.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a80.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a87.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a8e.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a95.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5a9c.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5aa3.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5aaa.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ab1.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ab8.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5abf.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ac6.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5acd.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ad4.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5adb.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ae2.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ae9.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5af0.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5af7.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5afe.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5b05.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5b0c.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5b13.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5b1a.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5b21.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5c9b.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ca2.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ca9.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cb0.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cb7.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cbe.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cc5.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ccc.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cd3.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cda.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ce1.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ce8.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cef.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cf6.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5cfd.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d04.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d0b.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d12.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d19.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d20.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d27.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d2e.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d35.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d3c.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d43.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d4a.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d51.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d58.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d5f.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d66.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d6d.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d74.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d7b.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d82.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d89.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d90.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5d97.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5da5.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5dac.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5db3.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5dba.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5dc1.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5dc8.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5dcf.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5dd6.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5ddd.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5de4.svg",
+      "sha256": "aeef2021eb11167a9c7c0f05aa60e8183473a3a58b21b415fd8c8de156f155a0",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5df2.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5df9.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e00.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e07.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e0e.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e15.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e1c.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e2a.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e31.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e38.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e3f.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e46.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e4d.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e54.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e5b.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e62.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e69.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e70.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e77.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e7e.svg",
+      "sha256": "9379a09f167f4725a1b4c89bfaab9c501eb921b2673eef2f6d84b2e60c5fb625",
+      "bytes": 2128
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e91.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e98.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/instance-a5e9f.svg",
+      "sha256": "7a478e2068644a98eaa377928bd4e0ab32311e49bb7fa49f8974bb1b3cfb74ce",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/legend-99e45.svg",
+      "sha256": "0ac2ce737489ca7a60ba9aa796a136fdcc470656777ef906698d834013deb602",
+      "bytes": 1856
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-04/legend-99e8c.svg",
+      "sha256": "580796f5c50f99b4a8326e33b14c05090a82a59ff9948b8857b1eccfdab3df2e",
+      "bytes": 761
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/correspondence.json",
+      "sha256": "9676077f7868b978db9486564cc05503b57a7766e298ece7be785f7bf2e337da",
+      "bytes": 152049
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cdad.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cdb5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cdbd.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cdc5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cdcd.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cddd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cde5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cded.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cdf5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cdfd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce05.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce0d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce15.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce1d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce25.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce2d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce35.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce3d.svg",
+      "sha256": "0a71a48c077c3f5e8fa23314907948b2514610ef2f922386d084c499df260aa5",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce45.svg",
+      "sha256": "1102dfd9e24cf6e7bd4090fee5c381f11858f3d9f374e0c2cec4fa332795a469",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce4d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce55.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce5d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce65.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce6d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce75.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce7d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce85.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce8d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce95.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ce9d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cea5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cead.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ceb5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cebd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cec5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cecd.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ced5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cedd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cee5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4ceed.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cefd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf05.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf0d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf15.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf1d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf25.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf2d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf35.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf3d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf45.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf4d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf55.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf5d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf65.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf6d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf75.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf7d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf85.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf8d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf95.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cf9d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfa5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfad.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfb5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfbd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfc5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfcd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfd5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfdd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfe5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cfed.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cff5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4cffd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d005.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d00d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d015.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d01d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d025.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d02d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d035.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d03d.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d045.svg",
+      "sha256": "0a71a48c077c3f5e8fa23314907948b2514610ef2f922386d084c499df260aa5",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d04d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d055.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d05d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d065.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d06d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d075.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d07d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d085.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d08d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d095.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d09d.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0a5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0ad.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0b5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0bd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0c5.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0cd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0d5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0dd.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0e5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0ed.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0f5.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d0fd.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d105.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d11b.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d12b.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d133.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d154.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d172.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d180.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1b8.svg",
+      "sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589",
+      "bytes": 1529
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1bc.svg",
+      "sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589",
+      "bytes": 1529
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1c0.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1c4.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1c8.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1cc.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1d0.svg",
+      "sha256": "8f815f9e0a110c414ab0f0289de15f9f54f852cfe02b730561fc079d86476619",
+      "bytes": 1564
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1d4.svg",
+      "sha256": "20431ba99d817cd00f6a8e5c7b7ff859d72941863907a22097ec2ef15a724422",
+      "bytes": 1824
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1d8.svg",
+      "sha256": "90f185458fafdefa622a5fa3f8ca3dcd51f75e570dd1ca90646e8a09d7ae4ba4",
+      "bytes": 1565
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1dc.svg",
+      "sha256": "fe760e964be63d4d8279253f377e5d570e8b1abf2a00e0df1df2fda1ece835c2",
+      "bytes": 1597
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1e0.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1e4.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1e8.svg",
+      "sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589",
+      "bytes": 1529
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1ec.svg",
+      "sha256": "0fd92709a9f3c48cb9fe429a526ccd5a18d7ea2f5612fc1448cbe6955ca91ffd",
+      "bytes": 1556
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1f0.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1f4.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1f8.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d1fc.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d200.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d204.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d208.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d20c.svg",
+      "sha256": "d3f9f4747adf62f27c889607bfe128d3c2b2e01d240831966909a384eeefa20d",
+      "bytes": 1707
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d210.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d214.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d218.svg",
+      "sha256": "181ddddc5fd7072e01e2b6ca5b61917b94b1c4c66c4b09071076ad986d6c0de9",
+      "bytes": 1192
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d225.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-05/instance-4d9b7.svg",
+      "sha256": "48cabde83910b238ba2ebe99576352a385217ae98d923525cb9b6e0f81ab182f",
+      "bytes": 2082
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/correspondence.json",
+      "sha256": "9b29c708a1cf3a2efd28557b99f250a45d6d2212cad7f2c30a1e69a33efe133e",
+      "bytes": 116203
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cdbc.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cdc4.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cdcc.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cdd4.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cddc.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cde4.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cdec.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cdf4.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce04.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce14.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce1c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce24.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce34.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce3c.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce4c.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce54.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce5c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce64.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce6c.svg",
+      "sha256": "1102dfd9e24cf6e7bd4090fee5c381f11858f3d9f374e0c2cec4fa332795a469",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce74.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce84.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce8c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce94.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ce9c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cea4.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ceac.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ceb4.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cebc.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cec4.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cecc.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ced4.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cedc.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cee4.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4ceec.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cef4.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf04.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf0c.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf14.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf1c.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf2c.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf3c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf44.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf4c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf54.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf74.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf7c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf8c.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf94.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cf9c.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cfc7.svg",
+      "sha256": "86e90f9c6f3dc8e33fa1ce69fbaba0e2064009e4e9e7222d529077f9c3ea84d7",
+      "bytes": 1860
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4cfcf.svg",
+      "sha256": "eb0e6cc43efd84c56f17bc111b236f4a6ac486a11febd87d71fd9748f122d371",
+      "bytes": 2233
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d0b5.svg",
+      "sha256": "fed37bada48030590b7b3ca9f46a6868546b4a52be1fdafb371cb46db1ff203c",
+      "bytes": 2298
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d2f1.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d2f5.svg",
+      "sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589",
+      "bytes": 1529
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d2f9.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d2fd.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d301.svg",
+      "sha256": "d3f9f4747adf62f27c889607bfe128d3c2b2e01d240831966909a384eeefa20d",
+      "bytes": 1707
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d305.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d309.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d30d.svg",
+      "sha256": "c98bfdfb380a3603e80ed8f57063c3eb1a0a2e24f87788bbe1c524ab6c78f589",
+      "bytes": 1529
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d311.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d315.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d319.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d31d.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d321.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d325.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d329.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d32d.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d331.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d335.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d339.svg",
+      "sha256": "828fe784d305838c5be467cbb2b079284060fac9e3725cce0166eefdcbaf7ede",
+      "bytes": 1326
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d33d.svg",
+      "sha256": "be8dfd59add8d89809de3da941535a50309cdf7255b2fd9a195cc934794ead90",
+      "bytes": 1298
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d341.svg",
+      "sha256": "26cf354089d9769736a723d390e8c9c0585a432f82b9b32e5677832885124737",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-06/instance-4d347.svg",
+      "sha256": "0fd92709a9f3c48cb9fe429a526ccd5a18d7ea2f5612fc1448cbe6955ca91ffd",
+      "bytes": 1556
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/correspondence.json",
+      "sha256": "37e399b2b573d945c525af7b85240281660f573c763b949ea4125d2c379b6ab7",
+      "bytes": 12924
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-278e6.svg",
+      "sha256": "d6656ab6f75aebb6964744103f82c64540b3d1165231a5e5ada871ca1ad33db7",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-2793c.svg",
+      "sha256": "aed140deedf49571d8857f89c10ac4d8f86431d76ef7a16de6bf5ee380dc15da",
+      "bytes": 2375
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-28601.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-28635.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-2867c.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-286c3.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-2870a.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-2873e.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-28772.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-287a6.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-287da.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-2880e.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-28842.svg",
+      "sha256": "d3f3eb456dfec3279a121953b9b3d3e09cd8f0a518b8d79721874608ce43f165",
+      "bytes": 1492
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-29540.svg",
+      "sha256": "d6656ab6f75aebb6964744103f82c64540b3d1165231a5e5ada871ca1ad33db7",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-07/instance-2988d.svg",
+      "sha256": "d1b046b5adf9617c73b3983e4bf202f15ba9cb6a328f2476dad18f838f47d1a7",
+      "bytes": 369057
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/correspondence.json",
+      "sha256": "905e61cbb3ea6d545da8a3dfa10c5011475dc4e3e41da8097c2b86ebe2e4f1be",
+      "bytes": 58459
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-127e.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1281.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1284.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1287.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-128a.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-128d.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1290.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1296.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1299.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-129c.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-129f.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12a2.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12a5.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12a8.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12ab.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12ae.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12b1.svg",
+      "sha256": "db68bfd74930346a4f177ada582ce7117f045352539bffdb461f4119047e696d",
+      "bytes": 1922
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12b4.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12b7.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12ba.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12bd.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12c0.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12c4.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12c7.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12cd.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12d3.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12d9.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12dc.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-12df.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-133e.svg",
+      "sha256": "ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1343.svg",
+      "sha256": "09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21",
+      "bytes": 1715
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1348.svg",
+      "sha256": "ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-134d.svg",
+      "sha256": "09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21",
+      "bytes": 1715
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1352.svg",
+      "sha256": "ecb905ae9e2cf2f9feafc9b303e91a088b7db961c7af3138e3045736359b1b0e",
+      "bytes": 1714
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1357.svg",
+      "sha256": "09471e475d1775646f30aac66c1ded18b5cfe83edc851f99d6ca8089f728fc21",
+      "bytes": 1715
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-135c.svg",
+      "sha256": "cdec97f9c0cedeb2f9af777fc263fddca6f5638c7c04c4f572d41ad684ba31d4",
+      "bytes": 1333
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1361.svg",
+      "sha256": "cdec97f9c0cedeb2f9af777fc263fddca6f5638c7c04c4f572d41ad684ba31d4",
+      "bytes": 1333
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-1369.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-c35.svg",
+      "sha256": "be1e219fc958cbc8a821e3fdbcf7c8e4362705533df502f081d61213881b4e3f",
+      "bytes": 3277
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-c87.svg",
+      "sha256": "31e50c202873c2995fb226388867a79b2da35e69d6a8f7c34c3ac4befc716ae3",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-cd8.svg",
+      "sha256": "d707bd344ffcb443dce31cd6b662e395a8ebb0a8e9ff917d46112a4c06b720d6",
+      "bytes": 1302
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-cf3.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-08/instance-cf6.svg",
+      "sha256": "c579b7c6267b5fb0ded458895430ce152c11ba0edcc17a5c1e3d7068531cc04f",
+      "bytes": 1921
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/correspondence.json",
+      "sha256": "3ac7b44dc4ad377fb8017b557f2a8b9bb09adc53cf4dfafa0fe228d68b21419f",
+      "bytes": 14466
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-2090b.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-20912.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-20958.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-2104e.svg",
+      "sha256": "2a86adb643851f8ba54e2f3bd21e363966373891f6f7eec520a617a6ca99b64a",
+      "bytes": 2338
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a56.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a64.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a6b.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a79.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a80.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a87.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a8e.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a95.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21a9c.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21aa3.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21aaa.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21ab1.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21ab8.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21abf.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21ac6.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/instance-21acd.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/svg-symbols/drawing-09/legend-18b39.svg",
+      "sha256": "83ac12169c0814cc285d24b235e57208a42229580a9b12fa35a33819e990df6d",
+      "bytes": 765
+    },
+    {
+      "path": "docs/assets/theme.css",
+      "sha256": "1c035b0733e39fb04fde2cbd8d4b9564af078b5eaa18fc4a7a0e5caac256b5a1",
+      "bytes": 20900
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/images/layers-2x.png",
+      "sha256": "066daca850d8ffbef007af00b06eac0015728dee279c51f3cb6c716df7c42edf",
+      "bytes": 1259
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/images/layers.png",
+      "sha256": "1dbbe9d028e292f36fcba8f8b3a28d5e8932754fc2215b9ac69e4cdecf5107c6",
+      "bytes": 696
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/images/marker-icon-2x.png",
+      "sha256": "00179c4c1ee830d3a108412ae0d294f55776cfeb085c60129a39aa6fc4ae2528",
+      "bytes": 2464
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/images/marker-icon.png",
+      "sha256": "574c3a5cca85f4114085b6841596d62f00d7c892c7b03f28cbfa301deb1dc437",
+      "bytes": 1466
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/images/marker-shadow.png",
+      "sha256": "264f5c640339f042dd729062cfc04c17f8ea0f29882b538e3848ed8f10edb4da",
+      "bytes": 618
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/leaflet.css",
+      "sha256": "a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6",
+      "bytes": 14806
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/leaflet.js",
+      "sha256": "db49d009c841f5ca34a888c96511ae936fd9f5533e90d8b2c4d57596f4e5641a",
+      "bytes": 147552
+    },
+    {
+      "path": "docs/assets/vendor/leaflet/LICENSE",
+      "sha256": "53e8dc25862014e4324741ca18fbe3611e11d42ef69f59f86ea8c5389647d4cb",
+      "bytes": 1395
+    },
+    {
+      "path": "docs/cli.html",
+      "sha256": "873e35b26550f9eeb5f23849ccae9b9b31397597febdbe0f91490013e0aae246",
+      "bytes": 13537
+    },
+    {
+      "path": "docs/index.html",
+      "sha256": "acdc6c42d68815c51dc9322da468090894af79f250691a30724ee9939b761986",
+      "bytes": 31434
+    },
+    {
+      "path": "docs/map.html",
+      "sha256": "a6f7999ba199d8b41857b812024b4b4d2c9d81fb2d588320636bd653c04502c8",
+      "bytes": 3660
+    },
+    {
+      "path": "docs/osm-gcp.html",
+      "sha256": "8952c49465433de958cc1dd8c76cb15bd6f1b91c935f0432a8170ad4148bb0e2",
+      "bytes": 8434
+    },
+    {
+      "path": "docs/svg.html",
+      "sha256": "67635be1993fdbfa36f95374d21e78ef6c31c1321f86459b31e5c0fe49a27d4f",
+      "bytes": 6691
+    },
+    {
+      "path": "index.html",
+      "sha256": "ec4fc24d00fa4e220d1856c3b32c5048ca7a240c934fba91c497c90796a33266",
+      "bytes": 1335316
+    }
+  ]
+}

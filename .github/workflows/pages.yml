@@ -16,7 +16,8 @@ on:
       - "scripts/verify_derived_release.py"
       - "scripts/fetch_derived_release.py"
       - "docs/derived-release.json"
-      - "pages-delivery/**"
+      - "site/**"
+      - "docs/wiki/**"
       - "tests/test_ci_contracts.py"
       - "tests/test_plugin_contracts.py"
       - "tests/test_webdemo_plugin_guide.py"
@@ -58,14 +59,10 @@ jobs:
           node --check src/cad2gis/webdemo/app.js
           node --check src/cad2gis/webdemo/demo-fixture.js
           node --check src/cad2gis/webdemo/original-demo/assets/app.js
+          find site/official -name "*.js" -print0 | xargs -0 -n1 node --check
           python -m pytest tests/test_ci_contracts.py tests/test_webdemo_plugin_guide.py tests/test_pages_publication_gate.py tests/test_webdemo_shared_assets.py tests/test_pages_metadata.py -q
 
-      - name: Fetch and verify authorized derived demonstration
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/fetch_derived_release.py
-
-      - name: Build Pages with verified derived demonstrations
+      - name: Build Pages from the official local production archive
         run: python scripts/build_pages.py --output _site
 
       - name: Upload verified site

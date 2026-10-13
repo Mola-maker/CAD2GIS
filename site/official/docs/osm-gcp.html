@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>路网匹配与人工校验 · CAD2GIS 文档中心</title>
+<meta name="description" content="CAD2GIS baselines 真实交互地图：从 QGZ 工程的矢量要素查看图层、标签与属性，另有 QGIS 参考图和历史配准报告。Original character · molamaker。">
+<link rel="canonical" href="https://cad2gis.molamaker.cn/docs/osm-gcp.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CAD2GIS · molamaker">
+<meta property="og:title" content="路网匹配与人工校验 · CAD2GIS 文档中心">
+<meta property="og:description" content="CAD2GIS baselines 真实交互地图：从 QGZ 工程的矢量要素查看图层、标签与属性，另有 QGIS 参考图和历史配准报告。Original character · molamaker。">
+<meta property="og:url" content="https://cad2gis.molamaker.cn/docs/osm-gcp.html">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body class="osm-review-page">
+
+<main class="doc-main">
+  <div class="doc-wide">
+    <header class="review-cover">
+      <div class="review-cover-copy">
+        <p class="doc-kicker">CAD2GIS / OSM REVIEW</p>
+        <h1 class="doc-h1">从图纸，<br>走进真实地图。</h1>
+        <p class="review-cover-subtitle">路网匹配与人工校验</p>
+        <p class="doc-lede">打开 baselines 工程中的真实矢量地图，缩放查看图层与标签，点击要素读取属性。</p>
+        <div class="review-cover-actions">
+          <a class="review-primary" href="#baseline-maps">浏览真实交互地图 <span aria-hidden="true">↗</span></a>
+          <a href="#qgis-gallery">QGIS 参考图 <span aria-hidden="true">↓</span></a>
+        </div>
+        <p class="review-signature">Original character <span>· molamaker</span></p>
+      </div>
+      <figure class="review-artwork">
+        <div class="review-artwork-image"><img src="assets/img/oc/molamaker-layers.jpg" width="1400" height="933" alt="个人 OC molamaker：蓝发角色手持放大镜检查图纸，身旁呈现道路、设备与定位图层" fetchpriority="high"></div>
+        <figcaption>OC 形象 · molamaker <span>DRAWING → LAYERS → EVIDENCE</span></figcaption>
+      </figure>
+    </header>
+  </div>
+  <div class="doc-wrap review-method">
+    <p>OSM 自动匹配 → SVG 图例候选 → GIS 复核 → 人工控制点预览 → 确认后二次匹配。地图重合与小残差只提供相对配准证据。</p>
+    <p class="doc-anchor"><code>authority: relative_osm</code> · <code>absolute_accuracy_verified: false</code> · 不代表测量级绝对精度</p>
+  </div>
+
+  <section id="baseline-maps" class="doc-sec baseline-section" data-toc="§0 基线地图入口">
+    <div class="doc-wrap">
+      <p class="sec-no">§0 · BASELINES</p>
+      <h2>基线工程 · 真实交互地图</h2>
+      <p class="dek">每个入口加载对应 QGZ 工程的真实矢量要素：可平移缩放、开关图层、查看标签并点击读取属性。QGIS 参考图用于核对画面；历史配准报告在下方保留作对照。</p>
+    </div>
+    <div class="doc-wide"><div id="baseline-map-list" class="baseline-map-list" aria-live="polite"></div></div>
+  </section>
+
+  <!-- ═══ §1 动态匹配剧场 ═══ -->
+  <section class="doc-sec" data-toc="§1 动态匹配剧场">
+    <div class="doc-wrap">
+      <p class="sec-no">§1 · 动态匹配剧场</p>
+      <h2>OSM 标准匹配的五幕</h2>
+      <p class="dek">弧长采样 → 可观测性门 → 平移投票 → corridor 评分 → Huber 精化。可播放、可单步、可重播；参数全部为真实默认值。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="match-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §2 真实配准对照 ═══ -->
+  <section class="doc-sec" data-toc="§2 历史配准报告">
+    <div class="doc-wrap">
+      <p class="sec-no">§2 · 历史配准报告</p>
+      <h2>历史配准报告 · before / after</h2>
+      <p class="dek">拖动分割线查看 lamteh_main、lamteh_sf、tinggede 的历史对齐报告。这些静态报告记录当时的配准过程；当前基线以各项目交互地图的来源记录为准，不能由截图推断精度提升。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="ba-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §3 人工 GCP 校验 ═══ -->
+  <section class="doc-sec" data-toc="§3 人工 GCP 校验">
+    <div class="doc-wrap">
+      <p class="sec-no">§3 · 人工 GCP 校验</p>
+      <h2>0.01 m 步长的微调台</h2>
+      <p class="dek">左 CAD 点、右地图点。四向按钮按所选步长移动预览点；train/check 角色可切换——独立检查点只评估残差，不参与拟合。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="gcp-fig"></div>
+    </div>
+    <div class="doc-wrap">
+      <h3>六步操作流</h3>
+      <ol class="six-flow">
+        <li>右图先显示当前已应用的 GIS 匹配结果，与 OSM 底图对照；</li>
+        <li>左图点击 CAD 实体，系统吸附到真实几何；右图点击同一位置，或输入 EPSG:4326 经度/纬度；</li>
+        <li>保存至少两个位置不同的训练点后，查看人工平移校正预览。独立检查点只评估残差，不参与拟合；</li>
+        <li>确认预览后点击「二次匹配并生成新结果」，由正式转换管线创建新的 GIS；</li>
+        <li>完成后自动加载新结果，保留控制点；可继续修改、预览和再次匹配；</li>
+        <li>复核版交付用 <code>cad2gis publish-match "&lt;新RUN_DIR&gt;"</code> 发布。</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ═══ §4 匹配状态四态 ═══ -->
+  <section class="doc-sec" data-toc="§4 匹配状态四态">
+    <div class="doc-wrap">
+      <p class="sec-no">§4 · 匹配状态四态</p>
+      <h2>每一次匹配都以四态之一收尾</h2>
+      <p class="dek">四态语义逐字转录自 OSM_STANDARD_MATCHING。</p>
+      <div class="state-cards">
+        <div class="state-card s-matched">
+          <div class="st-name">matched</div>
+          <div class="st-desc">自动网络匹配通过相对匹配门槛，或已计算人工平移；仍需核对地理对应关系。</div>
+        </div>
+        <div class="state-card s-coarse">
+          <div class="st-name">coarse</div>
+          <div class="st-desc">地域可用，但道路不足、网络拟合较弱或存在多解；保留粗定位以供人工校正。</div>
+        </div>
+        <div class="state-card s-unavailable">
+          <div class="st-name">unavailable</div>
+          <div class="st-desc">缺少可用匹配输入或可匹配路线；有可信标称坐标时可查看其结果，本地 CAD 需补充定位输入。</div>
+        </div>
+        <div class="state-card s-abstained">
+          <div class="st-name">abstained</div>
+          <div class="st-desc">自动候选未获接受；查看诊断并补充参考，不应把候选解释为已确认匹配。</div>
+        </div>
+      </div>
+      <div class="note-box">
+        <p><b>残差口径。</b>人工匹配记录用 WGS84 椭球测地距离计算 <code>error_m</code>/RMSE/最大残差（<code>residual_distance_method: WGS84_ellipsoidal_geodesic</code>）；另存 <code>grid_error_m</code> 为目标投影平面距离；EPSG:3857 的坐标米不能直接视为地面米。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ §5 真实成果画廊 ═══ -->
+  <section id="qgis-gallery" class="doc-sec" data-toc="§5 QGIS 参考图">
+    <div class="doc-wrap">
+      <p class="sec-no">§5 · QGIS 参考图</p>
+      <h2>QGIS 截图 · 画面参考</h2>
+      <p class="dek">darat_sekip_sf、hutabohu、kletek 的七张真实 QGIS 截图，点击可放大。查看和操作矢量要素，请使用图片下方的「打开真实交互地图」。参考图保留拍摄时的 nominal CAD registration 标题。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="qgis-fig"></div>
+    </div>
+  </section>
+
+  <div class="doc-wrap"><div id="docs-pager"></div></div>
+</main>
+
+<script src="assets/docs.js"></script>
+<script src="assets/maps/index.js"></script>
+<script src="assets/page-osm-gcp.js"></script>
+</body>
+</html>

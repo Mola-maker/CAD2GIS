@@ -1,0 +1,80 @@
+/* Atlas layout uses the document's existing paper / ink / blue tokens. */
+body.map-page { height:100dvh; }
+#map-topbar { height:auto; min-height:56px; flex-wrap:wrap; gap:10px; padding:10px 18px; }
+#map-topbar .tb-back { font-size:11px; }
+#map-project { max-width:min(310px,50vw); height:34px; }
+.map-view-switch { display:flex; margin-left:auto; border:1px solid var(--line-lo); border-radius:5px; padding:2px; gap:2px; }
+.map-view-switch button { padding:7px 13px; background:transparent; border:0; border-radius:3px; font:12px var(--serif,serif); color:var(--ink-md); cursor:pointer; }
+.map-view-switch button[aria-pressed="true"] { background:var(--blue,#2251ff); color:#fff; }
+#map-banner { font-size:10px; white-space:normal; text-align:center; padding:7px 12px; }
+#map-toc { width:250px; flex:0 0 250px; padding:20px 18px; overflow:auto; }
+.map-identity { display:flex; align-items:center; gap:10px; margin-bottom:24px; font-size:16px; }
+.map-identity .oc-badge { width:60px;height:60px;flex-basis:60px; }
+.map-identity small { font-size:10px; color:var(--ink-lo); }
+#map-title { font-size:24px; line-height:1.25; margin:0 0 12px; overflow-wrap:anywhere; }
+#map-view-description { font-size:13px; line-height:1.8; color:var(--ink-md); }
+.map-source-actions { display:grid; gap:10px; margin:20px 0; font-size:12px; }
+.map-source-actions a { color:var(--blue,#2251ff); text-underline-offset:4px; }
+.map-source-actions a[hidden] { display:none; }
+#map-provenance { font-size:10px; color:var(--ink-md); border-top:1px solid var(--line-lo); padding:12px 0 20px; }
+#map-provenance summary { cursor:pointer; font-size:12px; }
+#map-provenance-text { overflow-wrap:anywhere; white-space:pre-wrap; line-height:1.8; margin-top:10px; }
+#map-stage { background:#eff2f0; background-image:radial-gradient(#b9c6c455 .75px,transparent .75px);background-size:12px 12px; }
+#map-svg { outline-offset:-3px; }
+#map-status { max-width:calc(100% - 28px); pointer-events:none; }
+#map-status-text { white-space:normal; line-height:1.6; }
+#map-note { top:12px; left:16px; transform:none; width:auto; max-width:calc(100% - 100px); font-size:11px; pointer-events:none; }
+#map-drill { top:16px;right:60px;left:auto;bottom:auto;max-width:calc(100% - 90px);max-height:70%;overflow:auto; }
+#map-drill .md-rows dt { color:#aac2d6; margin-top:9px; }
+#map-drill .md-rows dd { margin:0; overflow-wrap:anywhere; }
+#map-layers .lyr-sw { width:10px;height:10px;border-radius:2px; }
+#map-error { position:absolute; z-index:9; inset:25% 12% auto; background:var(--paper,#fff); padding:24px; border:1px solid var(--line-lo); box-shadow:0 12px 35px #172d4018; line-height:1.8; }
+#map-error[hidden] {display:none;}
+#map-error button { margin:15px 18px 0 0;padding:8px 14px;cursor:pointer; }
+#map-error a {font-size:13px;}
+button:focus-visible,a:focus-visible,select:focus-visible,summary:focus-visible { outline:2px solid var(--blue,#2251ff);outline-offset:3px; }
+@media(max-width:800px) {
+  #map-topbar .tb-brand {display:none;}
+  #map-topbar {gap:8px;padding:8px 12px;}
+  #map-topbar .tb-pick {order:3;flex:1;}
+  #map-project {width:100%;max-width:none;flex:1;min-width:0;}
+  .map-view-switch {order:4;margin-left:0;}
+  .map-view-switch button {padding:9px 10px;}
+  #map-toc {position:absolute;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:10;width:250px;background:rgba(255,255,255,.95);backdrop-filter:blur(16px);}
+  #map-toc.open {transform:none;}
+  #toc-burger {display:block;position:absolute;top:10px;left:12px;z-index:11;width:auto;height:36px;padding:0 10px;font-size:11px;}
+  #map-toc.open {padding-top:58px;}
+  #map-note {top:56px;max-width:calc(100% - 80px);}
+  #map-status {left:8px;bottom:10px;max-width:calc(100% - 16px);}
+  #map-status-text {font-size:9px;}
+  #map-drill {top:55px;right:10px;max-width:calc(100% - 20px);}
+  #map-error {inset:22% 8% auto;}
+}
+#map-svg .feat:focus-visible { outline:none; filter:drop-shadow(0 0 3px #2251ff); }
+#map-svg .feat:focus-visible { stroke:#2251ff; stroke-width:3px; }
+/* Real QGZ features rendered over OSM through Leaflet. */
+#leaflet-map { position:absolute;inset:0;z-index:1;background:#e9eee9;font-family:Arial,sans-serif; }
+#map-note { z-index:600; pointer-events:none; background:rgba(255,255,255,.94); }
+#map-zoom,#map-status { z-index:600; }
+#map-drill { z-index:650; }
+#map-error { z-index:700; }
+#toc-burger { z-index:750; }
+#map-status { bottom:29px; }
+#map-stage .leaflet-control-attribution { font-size:10px; }
+#map-stage .leaflet-control-scale { margin-bottom:23px; }
+.qgis-marker { background:none;border:0; }
+.qgis-symbol { display:block;width:100%;height:100%;transform-origin:center; }
+.qgis-symbol img { display:block;width:100%;height:100%; }
+.qgis-marker-shape {display:block;width:100%;height:100%;border:1px solid #253947;box-sizing:border-box;border-radius:50%;}
+.shape-square,.shape-rectangle {border-radius:0;}
+.shape-diamond {border-radius:0;transform:rotate(45deg) scale(.75);}
+.shape-triangle {border-radius:0;clip-path:polygon(50% 0,100% 100%,0 100%);}
+.shape-cross,.shape-cross2 {border-radius:0;clip-path:polygon(35% 0,65% 0,65% 35%,100% 35%,100% 65%,65% 65%,65% 100%,35% 100%,35% 65%,0 65%,0 35%,35% 35%);}
+.shape-cross2 {transform:rotate(45deg);}
+.qgz-label.leaflet-tooltip { border:0;box-shadow:none;background:none;color:#182a31;padding:0;font-size:10px;line-height:1.2;text-shadow:-1px -1px 1px #fff,1px 1px 1px #fff,-1px 1px 1px #fff,1px -1px 1px #fff; }
+.qgz-label.leaflet-tooltip::before {display:none;}
+.qgz-feature:focus-visible {outline:2px solid #2251ff;outline-offset:2px;}
+@media(max-width:800px){#map-toc {z-index:800;}#toc-burger {z-index:850;}#map-status {bottom:30px;}.map-view-switch button{font-size:11px;} }
+/* Let a wrapped toolbar take its actual height; keep the collapsed drawer fully hidden. */
+#map-topbar { flex:0 0 auto; }
+@media(max-width:800px){#map-toc{visibility:hidden;pointer-events:none;}#map-toc.open{visibility:visible;pointer-events:auto;}}

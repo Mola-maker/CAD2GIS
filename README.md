@@ -6,7 +6,7 @@
 
 **把 DWG/DXF 转成可复核的 GIS，并让 AI Agent 检查、编辑 CAD 副本和交付 QGIS 项目。**
 
-[官方网站](https://cad2gis.molamaker.cn/) · [九图效果展示](https://mola-maker.github.io/CAD2GIS/deliveries/) · [安装指南](https://mola-maker.github.io/CAD2GIS/install.html) · [发行版本](https://github.com/Mola-maker/CAD2GIS/releases) · [English](README.en.md)
+[官方网站](https://cad2gis.molamaker.cn/) · [九图效果展示](https://mola-maker.github.io/CAD2GIS/docs/osm-gcp.html) · [安装指南](https://mola-maker.github.io/CAD2GIS/wiki/) · [发行版本](https://github.com/Mola-maker/CAD2GIS/releases) · [English](README.en.md) · [双语 Wiki](https://github.com/Mola-maker/CAD2GIS/wiki)
 
 CAD2GIS 将源实体、语义映射、几何、拓扑、长度与坐标证据串成可重放流程。
 CLI、Python API、审查工作台和 `cad2gis-agent` MCP 插件使用同一条转换流水线。
@@ -29,9 +29,9 @@ CLI、Python API、审查工作台和 `cad2gis-agent` MCP 插件使用同一条�
 
 ## 先看效果
 
-[![原图与 GIS 交付叠加效果](https://mola-maker.github.io/CAD2GIS/deliveries/drawing-01/process/source-delivery-overlay.png)](https://mola-maker.github.io/CAD2GIS/deliveries/)
+[![QGIS 首次打开效果](https://mola-maker.github.io/CAD2GIS/docs/assets/img/first-open/drawing-01.jpg)](https://mola-maker.github.io/CAD2GIS/docs/osm-gcp.html)
 
-[查看九张图的效果、图层与过程](https://mola-maker.github.io/CAD2GIS/deliveries/)。
+[查看九张图的效果、图层与过程](https://mola-maker.github.io/CAD2GIS/docs/osm-gcp.html)。
 展示复用既有 Pages 内容；九图仍为 `CONDITIONAL`，没有验证测量级绝对定位精度。
 图纸声明 CRS 或视觉重合，均不能单独证明位置准确。
 

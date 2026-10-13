@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>软件界面 · CAD2GIS 文档中心</title>
+<meta name="description" content="Windows / Linux 桌面 shell 四屏 HTML/CSS 重绘、平台交付字节数与真实运行证据画廊。">
+<link rel="canonical" href="https://cad2gis.molamaker.cn/docs/app.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CAD2GIS · molamaker">
+<meta property="og:title" content="软件界面 · CAD2GIS 文档中心">
+<meta property="og:description" content="Windows / Linux 桌面 shell 四屏 HTML/CSS 重绘、平台交付字节数与真实运行证据画廊。">
+<meta property="og:url" content="https://cad2gis.molamaker.cn/docs/app.html">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<main class="doc-main">
+  <div class="doc-wrap">
+    <p class="doc-kicker">DOCS / 04 · DESKTOP &amp; MOBILE APP</p>
+    <h1 class="doc-h1">Windows / Linux 软件界面</h1>
+    <p class="doc-lede">桌面端不是另一个转换核心，而是同一核心的薄壳：<b>单一转换核心，薄入口，按平台封装</b>。本页四屏界面为 <code>/_app/</code> shell 的 HTML/CSS 忠实重绘（非截图），其后是平台交付的真实字节数与运行证据。</p>
+    <p class="doc-anchor">桌面与 Android WebView 跑同一套 shell——手机与桌面不会维护两套配准算法。</p>
+  </div>
+
+  <!-- ═══ §1 界面重绘 ═══ -->
+  <section class="doc-sec" data-toc="§1 界面重绘 · 四屏">
+    <div class="doc-wrap">
+      <p class="sec-no">§1 · 界面重绘</p>
+      <h2>四屏：登录 → 项目 → 语义任务 → 审查台</h2>
+      <p class="dek">Framework7 风格工具栏 + 报告设计系统配色。切屏按钮在图框上方；每屏配一条设计原则。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="app-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §2 平台交付卡 ═══ -->
+  <section class="doc-sec" data-toc="§2 平台交付">
+    <div class="doc-wrap">
+      <p class="sec-no">§2 · 平台交付</p>
+      <h2>四类制品，字节级核验</h2>
+      <p class="dek">2026-09-12 同日构建验收（PLATFORM_DELIVERY_ACCEPTANCE，K23）。Windows 安装核验 <b>14,767</b> 个文件。</p>
+      <div class="plat-cards">
+        <div class="plat-card">
+          <div class="pc-os">WINDOWS · EXE</div>
+          <div class="pc-size">168,607,203 B</div>
+          <div class="pc-name">CAD2GIS-0.7.0-windows-x64-setup.exe</div>
+          <div class="pc-note">安装器未签名（开发包尚无 Authenticode 生产签名）</div>
+        </div>
+        <div class="plat-card">
+          <div class="pc-os">LINUX · DEB</div>
+          <div class="pc-size">344,884,110 B</div>
+          <div class="pc-name">cad2gis_0.7.0_amd64.deb</div>
+        </div>
+        <div class="plat-card">
+          <div class="pc-os">LINUX · 便携包</div>
+          <div class="pc-size">344,888,579 B</div>
+          <div class="pc-name">cad2gis-0.7.0-linux-x86_64.tar.gz</div>
+        </div>
+        <div class="plat-card">
+          <div class="pc-os">ANDROID · APK</div>
+          <div class="pc-size">1,725,056 B</div>
+          <div class="pc-name">CAD2GIS-0.4.0-android-dev.apk</div>
+          <div class="pc-note">开发签名 · 服务器客户端（不含转换核心）</div>
+        </div>
+      </div>
+      <div class="note-box">
+        <p><b>声明原样保留。</b>Windows 安装器未签名；Android 为开发测试签名；Android 端到端仍 blocked——没有系统信任的 HTTPS 服务端，就不宣称端到端可用。APK 文档版本号 0.4.0 与桌面 0.7.0 的命名差异以 repo 实际交付 0.7.0 为准。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ §3 真实运行证据 ═══ -->
+  <section class="doc-sec" data-toc="§3 运行证据">
+    <div class="doc-wrap">
+      <p class="sec-no">§3 · 真实运行证据</p>
+      <h2>交付在真实 QGIS 里的样子</h2>
+      <p class="dek">独立 QGIS 进程首开验证截图（first-open）精选四张 + 用户回传 QGIS 截图精选两张。与子页 1、2 复用同一批文件。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="ev-fig"></div>
+    </div>
+  </section>
+
+  <div class="doc-wrap"><div id="docs-pager"></div></div>
+</main>
+
+<script src="assets/docs.js"></script>
+<script src="assets/page-app.js"></script>
+</body>
+</html>

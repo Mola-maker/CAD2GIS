@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SVG 提取与渲染 · CAD2GIS 文档中心</title>
+<meta name="description" content="SVG 候选提取流水线、759 个真实提取符号画廊、QGZ base64 内嵌证据与首开验证。">
+<link rel="canonical" href="https://cad2gis.molamaker.cn/docs/svg.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CAD2GIS · molamaker">
+<meta property="og:title" content="SVG 提取与渲染 · CAD2GIS 文档中心">
+<meta property="og:description" content="SVG 候选提取流水线、759 个真实提取符号画廊、QGZ base64 内嵌证据与首开验证。">
+<meta property="og:url" content="https://cad2gis.molamaker.cn/docs/svg.html">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<main class="doc-main">
+  <div class="doc-wrap">
+    <p class="doc-kicker">DOCS / 02 · SVG EXTRACTION &amp; RENDERING</p>
+    <h1 class="doc-h1">SVG 提取与渲染</h1>
+    <p class="doc-lede">SVG 提取是标准转换流程的一部分，默认 <code>candidate</code> 模式：每个 run 在 <code>&lt;run&gt;/svg-candidates/</code> 生成三个产物——<code>symbols.sqlite3</code>、<code>correspondence.json</code>、<code>correspondence.html</code>。候选<b>不自动应用</b>到交付 QML 或 GIS 业务数据；reviewed 模式尚未开放。</p>
+    <p class="doc-anchor">本页画廊的 759 个 SVG 全部来自真实 DWG 交付包 svg-review/drawing-01..09/source-symbols，一个不少。</p>
+  </div>
+
+  <!-- ═══ §1 流程步进 ═══ -->
+  <section class="doc-sec" data-toc="§1 提取流水线">
+    <div class="doc-wrap">
+      <p class="sec-no">§1 · 提取流水线</p>
+      <h2>从 DWG 实体到 QGIS 渲染的七步</h2>
+      <p class="dek">逐步播放：每一步配真实产物名。候选与 GIS 完整生成后原子发布；提取失败不发布半成品 run，已有 run 保留。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="flow-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §2 真实符号画廊 ═══ -->
+  <section class="doc-sec" data-toc="§2 符号画廊 · 759">
+    <div class="doc-wrap">
+      <p class="sec-no">§2 · 真实符号画廊</p>
+      <h2>759 个真实提取的 SVG 符号</h2>
+      <p class="dek">按九张图纸筛选（徽记 = 该图符号数）。懒加载；hover 放大；点击开深色详情卡。SVG 多为透明底细线稿，格子用墨色描边纸底衬托。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="svg-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §3 覆盖率数据 ═══ -->
+  <section class="doc-sec" data-toc="§3 覆盖率对比">
+    <div class="doc-wrap">
+      <p class="sec-no">§3 · 覆盖率数据</p>
+      <h2>九图候选处置对比</h2>
+      <p class="dek">逐图读 <code>correspondence.json</code> 的 dispositions 字段：<b>LEGEND_MATCH_CANDIDATE</b>（图例对应候选）/ SOURCE_INSTANCE_ONLY / UNRESOLVED_NON_BLOCK。多数图纸没有可用图例——候选以源实例身份保留，这正是 candidate 模式的诚实之处。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="cov-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §4 QGZ 内嵌证据 ═══ -->
+  <section class="doc-sec" data-toc="§4 QGZ 内嵌证据">
+    <div class="doc-wrap">
+      <p class="sec-no">§4 · QGZ 内嵌证据</p>
+      <h2>SVG 以 base64 内嵌进 QGZ</h2>
+      <p class="dek">逐个数过：<code>view-with-source-SVG.qgz</code> 内 .qgs 的 base64 SVG 载荷数。首开图 = 11 份 QGZ 在独立 QGIS 进程中的首开验证截图。</p>
+    </div>
+    <div class="doc-wide">
+      <div id="qgz-fig"></div>
+      <div id="fo-fig"></div>
+    </div>
+  </section>
+
+  <!-- ═══ §5 CLI 参考 ═══ -->
+  <section class="doc-sec" data-toc="§5 CLI 参考">
+    <div class="doc-wrap">
+      <p class="sec-no">§5 · CLI 参考</p>
+      <h2>独立提取与人工绑定（逐字命令）</h2>
+      <p class="dek">独立运行不依赖转换；选择配置必须绑定实际源文件 SHA-256 与实际 handle。</p>
+
+      <h3>extract / qml</h3>
+      <div class="codeblk">python -m cad2gis.symbol_assets extract --source drawing.dwg --selection selection.json --output symbol-review-v1
+python -m cad2gis.symbol_assets qml --store symbol-review-v1/symbols.sqlite3 --symbol-id pole-source-candidate --output pole-candidate.qml --size-mm 6</div>
+      <p class="code-cap">也可用 tools/extract_svg_symbols.py，或安装后的 cad2gis-symbols · 缺字体 Linux 环境提供 --font-dir /path/to/fonts（可重复）；无字体时拒绝提取含文字的符号</p>
+
+      <h3>selection.json / bindings.json 示例</h3>
+      <div class="codeblk">{
+  "source_sha256": "&lt;DWG 文件的完整 SHA-256&gt;",
+  "symbols": [
+    {"symbol_id": "pole-source-candidate", "label": "原图杆型候选", "handles": ["&lt;实际 handle&gt;"]}
+  ]
+}</div>
+      <div class="codeblk">[{"layer": "PTECH", "source_handle": "7943", "symbol_id": "ptech-7943"}]</div>
+      <p class="code-cap">脚本拒绝错误源 SHA、找不到的 handle、重复 ID、覆盖已有输出和被修改的 SVG</p>
+
+      <h3>package_qgis_standalone / verify_qgis_standalone</h3>
+      <div class="codeblk">python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz --output EMR29619-standard.qgz
+python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz --output EMR29619-with-SVG.qgz --store source-symbols/symbols.sqlite3 --bindings bindings.json --delivery-manifest delivery/delivery-manifest.json</div>
+      <p class="code-cap">人工绑定到 QGZ 需 PyQGIS 环境（如 Windows 的 python-qgis.bat）</p>
+
+      <h3>cad2gis-svg-delivery / 独立复验</h3>
+      <div class="codeblk">cad2gis-svg-delivery --baseline &lt;完整交付目录&gt; --assets &lt;候选目录&gt; --output &lt;新目录&gt;
+python tools/verify_qgis_standalone.py --project output.qgz --output verification</div>
+      <p class="code-cap">生成后必须退出进程再独立复验（可加 --font /path/to/font.ttf）· 实现亦随核心包发布：python -m cad2gis.qgis_package / qgis_verify / svg_delivery，安装命令为 cad2gis-qgis-package / cad2gis-qgis-verify / cad2gis-svg-delivery</p>
+    </div>
+  </section>
+
+  <div class="doc-wrap"><div id="docs-pager"></div></div>
+</main>
+
+<script src="assets/docs.js"></script>
+<script src="assets/docs-data.js"></script>
+<script src="assets/page-svg.js"></script>
+</body>
+</html>

@@ -5,3 +5,5 @@ pages-delivery/** -text whitespace=cr-at-eol
 packaging/patches/libredwg-0.14-cquote-termination.patch -text whitespace=-blank-at-eol,-blank-at-eof
 packaging/patches/cquote_minimal.c -text
 .github/scripts/*.sh text eol=lf
+# Retain the exact official production archive bytes on every checkout.
+/site/official/** -text

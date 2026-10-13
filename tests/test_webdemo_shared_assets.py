@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 import pytest
 
-from scripts import build_pages
+from scripts import build_local_demo as build_pages
 
 
 ROOT = Path(__file__).resolve().parents[1]

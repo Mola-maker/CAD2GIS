@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>交互地图 · CAD2GIS 文档中心</title>
+<meta name="description" content="GitHub baselines 的真实 QGZ 图层叠加到 OSM 底图，可查看属性、缩放平移与开关图层。">
+<link rel="canonical" href="https://cad2gis.molamaker.cn/docs/map.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CAD2GIS · molamaker">
+<meta property="og:title" content="交互地图 · CAD2GIS 文档中心">
+<meta property="og:description" content="GitHub baselines 的真实 QGZ 图层叠加到 OSM 底图，可查看属性、缩放平移与开关图层。">
+<meta property="og:url" content="https://cad2gis.molamaker.cn/docs/map.html">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/docs.css">
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/map.css">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+</head>
+<body class="map-page">
+
+<header id="map-topbar">
+  <a class="tb-back" href="osm-gcp.html">← 返回路网匹配</a>
+  <a class="tb-back tb-docs" href="index.html">文档中心</a>
+  <span class="tb-brand">BASELINE ATLAS</span>
+  <label class="tb-pick">项目
+    <select id="map-project"></select>
+  </label>
+  <div class="map-view-switch"><button id="map-labels-toggle" aria-pressed="true">显示标注</button><button id="map-basemap-retry">刷新 OSM 底图</button></div>
+</header>
+
+<div id="map-banner">CONDITIONAL · authority: relative_osm · absolute_accuracy_verified: false</div>
+
+<div id="map-shell">
+  <aside id="map-toc">
+    <div class="map-identity"><span class="oc-badge s-idle" aria-hidden="true"></span><span>molamaker<br><small>CAD2GIS · 地图档案</small></span></div>
+    <h1 id="map-title">正在读取地图目录</h1>
+    <p id="map-view-description">QGZ 的真实图层、符号与标注叠加到 OpenStreetMap。</p>
+    <div class="map-source-actions"><a id="map-download" hidden download>下载 QGZ ↗</a><a id="map-source" hidden target="_blank" rel="noopener">GitHub 源文件 ↗</a><a id="map-image-link" hidden target="_blank" rel="noopener">QGIS 静态参考图 ↗</a></div>
+    <details id="map-provenance"><summary>查看版本与来源</summary><p id="map-provenance-text"></p></details>
+    <div class="toc-lab">LAYERS · 图层</div>
+    <div id="map-layers"></div>
+    <div id="map-legend-note"></div>
+  </aside>
+  <main id="map-stage">
+    <div id="leaflet-map" aria-label="QGZ 图层与 OpenStreetMap 交互地图"></div>
+    <div id="map-zoom">
+      <button id="mz-in" aria-label="放大">+</button>
+      <button id="mz-out" aria-label="缩小">−</button>
+      <button id="mz-fit" aria-label="适配全图">⤢</button>
+    </div>
+    <div id="map-status">
+      <span class="oc-badge" id="map-oc" aria-hidden="true"></span>
+      <span id="map-status-text" role="status" aria-live="polite">加载中…</span>
+    </div>
+    <div id="map-note" hidden></div>
+    <div id="map-drill" role="dialog" aria-labelledby="map-feature-title" hidden></div>
+    <div id="map-error" role="alert" hidden><p id="map-error-text"></p><button id="map-retry">重新加载</button><a href="osm-gcp.html#qgis-fig">返回成果画廊</a></div>
+  </main>
+</div>
+
+<script src="assets/docs.js"></script>
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/page-map.js"></script>
+</body>
+</html>

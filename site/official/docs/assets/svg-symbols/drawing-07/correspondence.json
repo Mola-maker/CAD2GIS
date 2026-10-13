@@ -1,0 +1,521 @@
+{
+  "schema": "cad2gis.svg-correspondence.v1",
+  "source_sha256": "524aa257bdbe706a3175337e5722787c269c8ebe44dca4f5525c0092046c77a8",
+  "mode": "candidate",
+  "all_points_accounted_for": 15,
+  "dispositions": {
+    "SOURCE_INSTANCE_ONLY": 15
+  },
+  "complete_legend_correspondence_verified": false,
+  "auto_applied": false,
+  "source_instance_bindings": [
+    {
+      "layer": "SITE",
+      "source_handle": "2793C",
+      "symbol_id": "instance-2793c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "2988D",
+      "symbol_id": "instance-2988d",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "287A6",
+      "symbol_id": "instance-287a6",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "28842",
+      "symbol_id": "instance-28842",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "28601",
+      "symbol_id": "instance-28601",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "28635",
+      "symbol_id": "instance-28635",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2867C",
+      "symbol_id": "instance-2867c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "278E6",
+      "symbol_id": "instance-278e6",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2880E",
+      "symbol_id": "instance-2880e",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "286C3",
+      "symbol_id": "instance-286c3",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "28772",
+      "symbol_id": "instance-28772",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2873E",
+      "symbol_id": "instance-2873e",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2870A",
+      "symbol_id": "instance-2870a",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "29540",
+      "symbol_id": "instance-29540",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "287DA",
+      "symbol_id": "instance-287da",
+      "database_scope": "delivery"
+    }
+  ],
+  "points": [
+    {
+      "database": "delivery",
+      "layer": "SITE",
+      "source_handle": "2793C",
+      "symbol_id": "instance-2793c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "2988D",
+      "symbol_id": "instance-2988d",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "287A6",
+      "symbol_id": "instance-287a6",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "28842",
+      "symbol_id": "instance-28842",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "28601",
+      "symbol_id": "instance-28601",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "28635",
+      "symbol_id": "instance-28635",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "2867C",
+      "symbol_id": "instance-2867c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "278E6",
+      "symbol_id": "instance-278e6",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "2880E",
+      "symbol_id": "instance-2880e",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "286C3",
+      "symbol_id": "instance-286c3",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "28772",
+      "symbol_id": "instance-28772",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "2873E",
+      "symbol_id": "instance-2873e",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "2870A",
+      "symbol_id": "instance-2870a",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "29540",
+      "symbol_id": "instance-29540",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "287DA",
+      "symbol_id": "instance-287da",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    }
+  ],
+  "legend_clusters": [
+    {
+      "bbox": [
+        -6787.483455644577,
+        -89093.50904430002,
+        -6786.272645312949,
+        -89093.00533032409
+      ],
+      "member_count": 4,
+      "member_ids": [
+        "24353",
+        "2443E",
+        "2443F",
+        "24440"
+      ],
+      "anchor_hits": [],
+      "confidence": 0.6,
+      "separation_distance": 89093.0909,
+      "separation_axes": [
+        "x",
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "APD MAP LAYOUT"
+    },
+    {
+      "bbox": [
+        -6787.483455644577,
+        -89093.50904430002,
+        -6786.272645312949,
+        -89093.00533032409
+      ],
+      "member_count": 4,
+      "member_ids": [
+        "25DAC",
+        "25E97",
+        "25E98",
+        "25E99"
+      ],
+      "anchor_hits": [],
+      "confidence": 0.6,
+      "separation_distance": 89093.1412,
+      "separation_axes": [
+        "x",
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "FDT LAYOUT"
+    },
+    {
+      "bbox": [
+        12170292.80726918,
+        -6354.234630286252,
+        12173057.43128449,
+        -5255.473535770472
+      ],
+      "member_count": 136,
+      "member_ids": [
+        "2670A",
+        "2670B",
+        "2670D",
+        "26711",
+        "26715",
+        "2671D",
+        "2671E",
+        "2672B",
+        "2672F",
+        "26737",
+        "26738",
+        "26745",
+        "26748",
+        "26749",
+        "2674E",
+        "26759",
+        "2675A",
+        "2676E",
+        "26770",
+        "26771",
+        "26773",
+        "26775",
+        "26776",
+        "26779",
+        "2677B",
+        "2677E",
+        "26780",
+        "26783",
+        "26785",
+        "26788",
+        "2678A",
+        "2678D",
+        "2678F",
+        "26792",
+        "26794",
+        "26797",
+        "26799",
+        "2679C",
+        "2679E",
+        "2679F",
+        "267A0",
+        "267A1",
+        "267A2",
+        "267A3",
+        "267A4",
+        "267A5",
+        "267A6",
+        "267BE",
+        "267CD",
+        "267CE",
+        "267D7",
+        "267D8",
+        "267DC",
+        "267DE",
+        "267DF",
+        "267E0",
+        "267F0",
+        "267FD",
+        "267FF",
+        "26800",
+        "26891",
+        "26C3C",
+        "26C40",
+        "26C41",
+        "26C42",
+        "26C43",
+        "26C6E",
+        "26C6F",
+        "26C70",
+        "26C71",
+        "26C72",
+        "26C73",
+        "26C74",
+        "26C75",
+        "26C76",
+        "26C77",
+        "26CB4",
+        "26CB5",
+        "26CB6",
+        "26CB7",
+        "26CB8",
+        "26CB9",
+        "26CBD",
+        "26CBE",
+        "26CBF",
+        "26CC3",
+        "26CC4",
+        "26CC5",
+        "26CC9",
+        "26CCA",
+        "26CCB",
+        "26CCF",
+        "26CD0",
+        "26CD1",
+        "26CD3",
+        "26CD5",
+        "26CD8",
+        "26CDA",
+        "26CDC",
+        "26CDE",
+        "26CE0",
+        "26CE7",
+        "26CE8",
+        "26CE9",
+        "26CEA",
+        "26CEB",
+        "26CEC",
+        "26CF0",
+        "26CF1",
+        "26CF2",
+        "26CF6",
+        "26CF7",
+        "26CF8",
+        "26CFC",
+        "26CFD",
+        "26CFE",
+        "26D02",
+        "26D03",
+        "26D04",
+        "26D07",
+        "26D09",
+        "26D0B",
+        "26D0D",
+        "26D0F",
+        "26D11",
+        "26D12",
+        "26D15",
+        "26DC1",
+        "26DC3",
+        "26DD2",
+        "26DD4",
+        "26DD5",
+        "26DD9",
+        "26DDB",
+        "26DED",
+        "26E0A"
+      ],
+      "anchor_hits": [
+        "FDT",
+        "LAYOUT",
+        "SPLICING"
+      ],
+      "confidence": 1.0,
+      "separation_distance": 1326.9001,
+      "separation_axes": [
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "Model"
+    },
+    {
+      "bbox": [
+        -6787.483455644577,
+        -89093.50904430002,
+        -6786.272645312949,
+        -89093.00533032409
+      ],
+      "member_count": 4,
+      "member_ids": [
+        "25C0E",
+        "25CF9",
+        "25CFA",
+        "25CFB"
+      ],
+      "anchor_hits": [],
+      "confidence": 0.6,
+      "separation_distance": 89093.1412,
+      "separation_axes": [
+        "x",
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "SPLICING CONFIGURATION"
+    },
+    {
+      "bbox": [
+        -6787.483455644577,
+        -89093.50904430002,
+        -6786.272645312949,
+        -89093.00533032409
+      ],
+      "member_count": 4,
+      "member_ids": [
+        "2597F",
+        "25A6A",
+        "25A6B",
+        "25A6C"
+      ],
+      "anchor_hits": [],
+      "confidence": 0.6,
+      "separation_distance": 89093.1412,
+      "separation_axes": [
+        "x",
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "TOPOLOGY"
+    }
+  ],
+  "inventory_blocks": 143,
+  "input_databases_sha256": {
+    "drawing-07/delivery/delivery.gpkg": "f1a870f35364d31fd88b45ea16e0ba4995dcc45a60a089c3577d1f0a4e4dfacc"
+  }
+}

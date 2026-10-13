@@ -1,0 +1,571 @@
+{
+  "schema": "cad2gis.svg-correspondence.v1",
+  "source_sha256": "a03aacdc28469aeed7b1d1d80e8069dd4c69186fe941454e7ba7b5d133102289",
+  "mode": "candidate",
+  "all_points_accounted_for": 20,
+  "dispositions": {
+    "LEGEND_MATCH_CANDIDATE": 19,
+    "SOURCE_INSTANCE_ONLY": 1
+  },
+  "complete_legend_correspondence_verified": false,
+  "auto_applied": false,
+  "source_instance_bindings": [
+    {
+      "layer": "SITE",
+      "source_handle": "2104E",
+      "symbol_id": "instance-2104e",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A64",
+      "symbol_id": "instance-21a64",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AC6",
+      "symbol_id": "instance-21ac6",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AAA",
+      "symbol_id": "instance-21aaa",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AB8",
+      "symbol_id": "instance-21ab8",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A95",
+      "symbol_id": "instance-21a95",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A9C",
+      "symbol_id": "instance-21a9c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A56",
+      "symbol_id": "instance-21a56",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AB1",
+      "symbol_id": "instance-21ab1",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A87",
+      "symbol_id": "instance-21a87",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20958",
+      "symbol_id": "instance-20958",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20912",
+      "symbol_id": "instance-20912",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2090B",
+      "symbol_id": "instance-2090b",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A79",
+      "symbol_id": "instance-21a79",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A6B",
+      "symbol_id": "instance-21a6b",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A80",
+      "symbol_id": "instance-21a80",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21ABF",
+      "symbol_id": "instance-21abf",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21A8E",
+      "symbol_id": "instance-21a8e",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21ACD",
+      "symbol_id": "instance-21acd",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "21AA3",
+      "symbol_id": "instance-21aa3",
+      "database_scope": "delivery"
+    }
+  ],
+  "points": [
+    {
+      "database": "delivery",
+      "layer": "SITE",
+      "source_handle": "2104E",
+      "symbol_id": "instance-2104e",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A64",
+      "symbol_id": "instance-21a64",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21AC6",
+      "symbol_id": "instance-21ac6",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21AAA",
+      "symbol_id": "instance-21aaa",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21AB8",
+      "symbol_id": "instance-21ab8",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A95",
+      "symbol_id": "instance-21a95",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A9C",
+      "symbol_id": "instance-21a9c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A56",
+      "symbol_id": "instance-21a56",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21AB1",
+      "symbol_id": "instance-21ab1",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A87",
+      "symbol_id": "instance-21a87",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "20958",
+      "symbol_id": "instance-20958",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "20912",
+      "symbol_id": "instance-20912",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "2090B",
+      "symbol_id": "instance-2090b",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A79",
+      "symbol_id": "instance-21a79",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A6B",
+      "symbol_id": "instance-21a6b",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A80",
+      "symbol_id": "instance-21a80",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21ABF",
+      "symbol_id": "instance-21abf",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21A8E",
+      "symbol_id": "instance-21a8e",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21ACD",
+      "symbol_id": "instance-21acd",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "21AA3",
+      "symbol_id": "instance-21aa3",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "d19a1c198922370a54603f473f61d38bbe9df00ceca9f151c2c955b79d09db73",
+      "legend_handles": [
+        "18B39"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    }
+  ],
+  "legend_clusters": [
+    {
+      "bbox": [
+        587.7984701891091,
+        -4.154020053027978,
+        689.9372171241357,
+        269.122612133302
+      ],
+      "member_count": 142,
+      "member_ids": [
+        "18963",
+        "18965",
+        "18966",
+        "18967",
+        "18968",
+        "18A1F",
+        "18A20",
+        "18A21",
+        "18A22",
+        "18A24",
+        "18A25",
+        "18A30",
+        "18A31",
+        "18A33",
+        "18A34",
+        "18A36",
+        "18A37",
+        "18A3F",
+        "18A40",
+        "18A41",
+        "18A42",
+        "18A47",
+        "18A48",
+        "18A4E",
+        "18A4F",
+        "18A50",
+        "18A5A",
+        "18A5E",
+        "18A62",
+        "18A63",
+        "18A64",
+        "18A65",
+        "18A67",
+        "18A6A",
+        "18A6B",
+        "18A6C",
+        "18A6E",
+        "18A6F",
+        "18A73",
+        "18A75",
+        "18A76",
+        "18A78",
+        "18A7A",
+        "18A7B",
+        "18A7C",
+        "18A7D",
+        "18A7E",
+        "18A80",
+        "18A81",
+        "18A82",
+        "18A84",
+        "18A85",
+        "18A87",
+        "18A88",
+        "18A89",
+        "18A8A",
+        "18A8B",
+        "18A8C",
+        "18A91",
+        "18A93",
+        "18A9D",
+        "18AA0",
+        "18AA1",
+        "18AA2",
+        "18AA3",
+        "18AA5",
+        "18AA9",
+        "18AC6",
+        "18AC7",
+        "18AC8",
+        "18AC9",
+        "18ACA",
+        "18ACB",
+        "18ACC",
+        "18ACD",
+        "18ACE",
+        "18ACF",
+        "18AD0",
+        "18AD1",
+        "18AD2",
+        "18AD3",
+        "18AD4",
+        "18AD5",
+        "18AD6",
+        "18AD7",
+        "18AD8",
+        "18AD9",
+        "18ADA",
+        "18ADB",
+        "18ADC",
+        "18ADD",
+        "18ADE",
+        "18ADF",
+        "18AE0",
+        "18AE1",
+        "18AE8",
+        "18AF0",
+        "18AF1",
+        "18AF2",
+        "18AF9",
+        "18AFA",
+        "18AFB",
+        "18AFC",
+        "18B03",
+        "18B04",
+        "18B0B",
+        "18B12",
+        "18B19",
+        "18B20",
+        "18B23",
+        "18B24",
+        "18B25",
+        "18B28",
+        "18B2F",
+        "18B30",
+        "18B31",
+        "18B38",
+        "18B39",
+        "18B40",
+        "18B41",
+        "18B48",
+        "18B4A",
+        "18B4B",
+        "18B4C",
+        "18B4D",
+        "18B51",
+        "18B52",
+        "18B53",
+        "18B54",
+        "18B55",
+        "18B56",
+        "18B57",
+        "18B64",
+        "18B65",
+        "18B67",
+        "18B69",
+        "18B6A",
+        "18B6B",
+        "18B6C",
+        "18B6D",
+        "18DA1",
+        "18DA2"
+      ],
+      "anchor_hits": [
+        "FDT",
+        "KETERANGAN",
+        "LEGEND"
+      ],
+      "confidence": 1.0,
+      "separation_distance": 214.3583,
+      "separation_axes": [
+        "x"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "APD"
+    },
+    {
+      "bbox": [
+        -163073.5685657121,
+        -2144483.347805175,
+        -163044.4244184124,
+        -2144471.223433638
+      ],
+      "member_count": 4,
+      "member_ids": [
+        "18A59",
+        "18B4E",
+        "18B4F",
+        "18B50"
+      ],
+      "anchor_hits": [],
+      "confidence": 0.6,
+      "separation_distance": 2144466.6293,
+      "separation_axes": [
+        "x",
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-002",
+      "layout": "APD"
+    }
+  ],
+  "inventory_blocks": 56,
+  "input_databases_sha256": {
+    "drawing-09/delivery/delivery.gpkg": "b3a5f6a059f66a941da19f65601b7f025fa335e2a371f5f0dcaab09ce0f28eff"
+  }
+}
