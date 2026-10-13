@@ -34,8 +34,6 @@
         "--no-project",
         "--python",
         "3.12",
-        "--with",
-        "__VERSIONED_WHEEL_REQUIREMENT__",
         "python",
         "${__dirname}/server/entrypoint.py"
       ],

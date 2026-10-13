@@ -1,6 +1,8 @@
 """Source-preserving CAD workspaces with hash-bound, immutable revisions."""
+
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -20,7 +22,9 @@ def safe_path(path: Path) -> Path:
         raise ValueError("CAD workspace paths cannot contain a symlink")
     path = path.resolve()
     if "," in str(path):
-        raise ValueError("CAD workspace paths cannot contain a comma (ALLOWED_PATHS limitation)")
+        raise ValueError(
+            "CAD workspace paths cannot contain a comma (ALLOWED_PATHS limitation)"
+        )
     return path
 
 
@@ -31,9 +35,12 @@ def sha256(path: Path) -> str:
 
 def validate_dxf(path: Path) -> Path:
     import ezdxf
+
     path = safe_path(path)
     if not path.is_file() or path.suffix.lower() != ".dxf":
-        raise ValueError("Expected an existing DXF; export DWG with the CAD2GIS reader first")
+        raise ValueError(
+            "Expected an existing DXF; export DWG with the CAD2GIS reader first"
+        )
     if path.stat().st_size > MAX_DXF_BYTES:
         raise ValueError("DXF exceeds the 512 MiB size limit")
     try:
@@ -72,9 +79,12 @@ def create_workspace(source: Path, workspace: Path) -> dict[str, Any]:
     for file in (workspace / "source.dxf", workspace / "revisions/000000.dxf"):
         file.chmod(0o444)
     manifest = {
-        "schema_version": SCHEMA, "workspace_id": str(workspace),
-        "source": str(source), "source_sha256": source_hash,
-        "current_revision": 0, "current_sha256": source_hash,
+        "schema_version": SCHEMA,
+        "workspace_id": str(workspace),
+        "source": str(source),
+        "source_sha256": source_hash,
+        "current_revision": 0,
+        "current_sha256": source_hash,
         "upstream_sha": UPSTREAM_SHA,
     }
     _write_json(workspace / "manifest.json", manifest)
@@ -90,45 +100,104 @@ def load_workspace(workspace: Path) -> dict[str, Any]:
     if not isinstance(data, dict) or data.get("schema_version") != SCHEMA:
         raise ValueError("Not a CAD2GIS CAD workspace")
     revision = data.get("current_revision")
-    if (data.get("workspace_id") != str(workspace) or data.get("upstream_sha") != UPSTREAM_SHA
-            or type(revision) is not int or not 0 <= revision < 1_000_000):
+    if (
+        data.get("workspace_id") != str(workspace)
+        or data.get("upstream_sha") != UPSTREAM_SHA
+        or type(revision) is not int
+        or not 0 <= revision < 1_000_000
+    ):
         raise ValueError("Invalid CAD workspace identity or revision")
     if sha256(workspace / "source.dxf") != data.get("source_sha256"):
         raise ValueError("CAD source snapshot hash mismatch")
-    if sha256(workspace / f"revisions/{revision:06d}.dxf") != data.get("current_sha256"):
+    if sha256(workspace / f"revisions/{revision:06d}.dxf") != data.get(
+        "current_sha256"
+    ):
         raise ValueError("CAD current revision hash mismatch")
     return data
 
 
-def commit_revision(workspace: Path, staged_dxf: Path, expected_revision: int,
-                    evidence: dict[str, Any]) -> dict[str, Any]:
+@contextmanager
+def _revision_lock(workspace: Path):
+    """An OS lock is released even if the writer exits without cleanup."""
+    lock = safe_path(workspace / ".revision.lock")
+    with lock.open("a+b") as stream:
+        if stream.tell() == 0:
+            stream.write(b"0")
+            stream.flush()
+        stream.seek(0)
+        try:
+            if os.name == "nt":
+                import msvcrt
+
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            raise ValueError("CAD workspace revision is busy") from exc
+        try:
+            yield
+        finally:
+            stream.seek(0)
+            if os.name == "nt":
+                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
+
+def _remove_unpublished(path: Path) -> None:
+    path = safe_path(path)
+    if path.exists():
+        path.chmod(0o600)  # Windows also requires writable deletion.
+        path.unlink()
+
+
+def commit_revision(
+    workspace: Path, staged_dxf: Path, expected_revision: int, evidence: dict[str, Any]
+) -> dict[str, Any]:
     workspace = safe_path(workspace)
     staged_dxf = validate_dxf(staged_dxf)
     if not staged_dxf.is_relative_to(workspace):
         raise ValueError("Staged DXF must belong to the workspace")
-    lock = workspace / ".revision-lock"
-    try:
-        lock.mkdir()
-    except FileExistsError as exc:
-        raise ValueError("CAD workspace revision is busy") from exc
-    try:
+    with _revision_lock(workspace):
         data = load_workspace(workspace)
         if data["current_revision"] != expected_revision:
-            raise ValueError("CAD workspace revision changed; retry from the latest revision")
+            raise ValueError(
+                "CAD workspace revision changed; retry from the latest revision"
+            )
         revision = expected_revision + 1
+        if revision >= 1_000_000:
+            raise ValueError("CAD workspace revision limit reached")
         destination = safe_path(workspace / f"revisions/{revision:06d}.dxf")
-        # The exclusive write preserves old evidence even after an interrupted publication.
-        with staged_dxf.open("rb") as source, destination.open("xb") as target:
-            shutil.copyfileobj(source, target)
-            target.flush()
-            os.fsync(target.fileno())
-        destination.chmod(0o444)
-        data.update(current_revision=revision, current_sha256=sha256(destination))
-        _write_json(workspace / f"evidence/{revision:06d}.json", {
-            **evidence, "before_sha256": load_workspace(workspace)["current_sha256"],
-            "after_sha256": data["current_sha256"], "revision": revision,
-        })
-        _write_json(workspace / "manifest.json", data)
+        evidence_path = safe_path(workspace / f"evidence/{revision:06d}.json")
+        # Under the process lock, N+1 is unpublished while the verified manifest
+        # still names N. Recover an interrupted writer without touching 0..N.
+        _remove_unpublished(destination)
+        _remove_unpublished(evidence_path)
+        before_hash = data["current_sha256"]
+        try:
+            with staged_dxf.open("rb") as source, destination.open("xb") as target:
+                shutil.copyfileobj(source, target)
+                target.flush()
+                os.fsync(target.fileno())
+            destination.chmod(0o444)
+            data.update(current_revision=revision, current_sha256=sha256(destination))
+            _write_json(
+                evidence_path,
+                {
+                    **evidence,
+                    "before_sha256": before_hash,
+                    "after_sha256": data["current_sha256"],
+                    "revision": revision,
+                },
+            )
+            _write_json(workspace / "manifest.json", data)
+        except BaseException:
+            # Atomic manifest replacement is the publication point. If it
+            # completed, keep the published files even if cleanup raised.
+            if load_workspace(workspace)["current_revision"] == expected_revision:
+                _remove_unpublished(destination)
+                _remove_unpublished(evidence_path)
+            raise
         return data
-    finally:
-        lock.rmdir()

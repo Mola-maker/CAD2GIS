@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import zipfile
 from cad2gis.contracts import MCP_TOOL_NAMES, PLUGIN_CONTRACT_VERSION
 
@@ -72,15 +73,16 @@ def build_agent_delivery(
     if manifest["version"] != version:
         raise ValueError("MCPB version mismatch")
     url = f"https://github.com/Mola-maker/CAD2GIS/releases/download/v{version}/{wheel.name}"
-    manifest["server"]["mcp_config"]["args"][
-        manifest["server"]["mcp_config"]["args"].index("--with") + 1
-    ] = f"cad2gis[agent] @ {url}#sha256={_hash(wheel)}"
     manifest["tools"] = [
         {"name": name, "description": name.replace("_", " ")} for name in MCP_TOOL_NAMES
     ]
     bundle = {
         **common,
         "manifest.json": (json.dumps(manifest, indent=2) + "\n").encode(),
+        "server/wheel.json": (
+            json.dumps({"url": url, "filename": wheel.name, "sha256": _hash(wheel)})
+            + "\n"
+        ).encode(),
         "server/entrypoint.py": (
             ROOT / "packaging/mcpb/server/entrypoint.py"
         ).read_bytes(),
@@ -113,6 +115,26 @@ def build_agent_delivery(
     ]
     result = {
         "schema": "cad2gis-release-v1",
+        "git_sha": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip(),
+        "validation_scope": {
+            "platform": "Linux x86_64 / Python 3.12",
+            "desktop_binaries": "not_rebuilt",
+            "evidence": [
+                "audit/pytest-full.txt",
+                "audit/final-real-sidecar.txt",
+                "audit/mcpb-isolation-tests.txt",
+                "audit/review-fixes-green.txt",
+            ],
+            "external_corpus": "not_available",
+            "absolute_accuracy_verified": False,
+        },
+        "git_dirty": bool(
+            subprocess.check_output(
+                ["git", "status", "--porcelain"], cwd=ROOT, text=True
+            ).strip()
+        ),
         "version": version,
         "license": "Apache-2.0",
         "wheel_url": url,

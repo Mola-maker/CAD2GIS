@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from pathlib import Path
 import zipfile
 import subprocess
@@ -85,6 +86,7 @@ def test_mcpb_contains_no_project_data_or_secrets(delivery):
         assert set(names) == {
             "manifest.json",
             "server/entrypoint.py",
+            "server/wheel.json",
             "LICENSE.md",
             "NOTICE.md",
             "THIRD_PARTY_NOTICES.md",
@@ -93,6 +95,10 @@ def test_mcpb_contains_no_project_data_or_secrets(delivery):
 
 
 def test_mcpb_launches_installed_wheel(delivery, tmp_path):
+    if sys.version_info[:2] != (3, 12):
+        pytest.skip(
+            "MCPB targets Python 3.12; archive/schema checks cover other interpreter jobs"
+        )
     uv = shutil.which("uv") or (
         str(ROOT / ".venv/bin/uv") if (ROOT / ".venv/bin/uv").exists() else None
     )
@@ -114,7 +120,13 @@ def test_mcpb_launches_installed_wheel(delivery, tmp_path):
         for a in manifest["server"]["mcp_config"]["args"]
     ]
     # Before publication use the same built wheel locally; public URL is tested after release.
-    args[args.index("--with") + 1] = f"cad2gis[agent] @ {wheel.as_uri()}"
+    wheel_config = unpack / "server/wheel.json"
+    config = json.loads(wheel_config.read_text())
+    config.update(
+        url=wheel.as_uri(),
+        sha256=__import__("hashlib").sha256(wheel.read_bytes()).hexdigest(),
+    )
+    wheel_config.write_text(json.dumps(config))
 
     async def check():
         async with asyncio.timeout(180):
@@ -126,6 +138,10 @@ def test_mcpb_launches_installed_wheel(delivery, tmp_path):
                         env={
                             "CAD2GIS_PROJECT_ROOT": str(tmp_path),
                             "UV_PYTHON_DOWNLOADS": "never",
+                            "PATH": str(Path(uv).parent)
+                            + os.pathsep
+                            + os.environ.get("PATH", ""),
+                            "XDG_CACHE_HOME": str(tmp_path / "cache"),
                         },
                     ),
                     errlog=err,
@@ -148,3 +164,28 @@ def test_mcpb_does_not_resolve_host_project(delivery):
     with zipfile.ZipFile(out / "cad2gis-agent-0.8.0.mcpb") as z:
         manifest = json.loads(z.read("manifest.json"))
     assert "--no-project" in manifest["server"]["mcp_config"]["args"]
+
+
+def test_release_manifest_records_reviewed_source_and_scope(delivery):
+    _, result, _ = delivery
+    assert len(result["git_sha"]) == 40
+    assert result["validation_scope"]["platform"] == "Linux x86_64 / Python 3.12"
+    assert result["validation_scope"]["desktop_binaries"] == "not_rebuilt"
+    assert result["validation_scope"]["evidence"]
+
+
+def test_mcpb_rejects_wheel_hash_mismatch(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "mcpb_entry", ROOT / "packaging/mcpb/server/entrypoint.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    wheel = tmp_path / "fake.whl"
+    wheel.write_bytes(b"changed wheel")
+    with pytest.raises(ValueError, match="SHA-256"):
+        module.download_verified_wheel(
+            wheel.as_uri(), tmp_path / "cached.whl", "0" * 64
+        )
+    assert not (tmp_path / "cached.whl").exists()
