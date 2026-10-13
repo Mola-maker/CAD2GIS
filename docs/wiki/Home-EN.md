@@ -36,7 +36,7 @@ The sidecar uses MIT-licensed U-C4N/Autocad-MCP v1.6.0 at a fixed source revisio
 | 2D creation | `entity_create_line`, `entity_create_circle`, `entity_create_arc`, `entity_create_polyline`, `entity_create_rectangle`, `entity_create_text` | Add basic geometry and annotations |
 | Copy cleanup | `entity_delete` | Remove specified entities in a working copy |
 
-CAD2GIS exposes four wrapper tools: `cad_bundle_status`, `cad_bundle_open`, `cad_bundle_execute`, and `cad_bundle_export_dxf`. Opening creates a session with revision information. Execution accepts an allowed tool and validated arguments. Exported DXF returns to the CAD2GIS conversion and validation workflow. Wrappers cannot invoke arbitrary upstream tools or write arbitrary files outside the project root.
+CAD2GIS exposes four wrapper tools: `get_cad_bundle_status`, `prepare_cad_bundle_workspace`, `call_cad_bundle_tool`, and `list_cad_bundle_tools`. Preparation returns a workspace_id; list the actual allowed tools and their argument schemas before executing queries or edits. The returned `edited_source` identifies the revised DXF. Inspect that file and bootstrap a fresh project, then run CAD2GIS conversion and validation. Wrappers cannot invoke arbitrary upstream tools or write arbitrary files outside the project root.
 
 ## A workflow from edit to delivery
 

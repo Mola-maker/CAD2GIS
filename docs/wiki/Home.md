@@ -36,7 +36,7 @@ MCP 是智能体与本地 CAD2GIS 运行时之间的工具接口。用户指定�
 | 二维创建 | `entity_create_line`, `entity_create_circle`, `entity_create_arc`, `entity_create_polyline`, `entity_create_rectangle`, `entity_create_text` | 创建基本二维图元和标注 |
 | 副本清理 | `entity_delete` | 在修订副本中删除指定实体 |
 
-CAD2GIS 暴露四个稳定包装工具：`cad_bundle_status`、`cad_bundle_open`、`cad_bundle_execute`、`cad_bundle_export_dxf`。打开后得到会话和修订信息，执行时指定允许的工具及参数，导出修订 DXF 后回到 CAD2GIS 转换与检查。通过包装器不能任意执行上游工具，也不能越过项目根目录修改任意文件。
+CAD2GIS 暴露四个稳定包装工具：`get_cad_bundle_status`、`prepare_cad_bundle_workspace`、`call_cad_bundle_tool`、`list_cad_bundle_tools`。准备工作区后得到 workspace_id，通过工具清单读取实际允许的名称与参数 schema，再执行查询或编辑。调用结果中的 `edited_source` 指向修订 DXF；检查它并 bootstrap 新项目后，再进入 CAD2GIS 转换与检查。通过包装器不能任意执行上游工具，也不能越过项目根目录修改任意文件。
 
 ## 从一次修改到一次交付
 

@@ -40,7 +40,7 @@ def verify_public_site(base_url: str, *, gallery_url: str) -> dict:
     base_url = base_url.rstrip("/") + "/"
     targets = [
         (base_url, "从图纸到证据：CAD2GIS"),
-        (urljoin(base_url, "wiki/index.html"), "cad_bundle_execute"),
+        (urljoin(base_url, "wiki/index.html"), "call_cad_bundle_tool"),
         (urljoin(base_url, "wiki/en.html"), "reviewable GIS"),
         (urljoin(base_url, "robots.txt"), "sitemap.xml"),
         (urljoin(base_url, "sitemap.xml"), "https://cad2gis.molamaker.cn/"),

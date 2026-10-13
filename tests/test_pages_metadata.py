@@ -71,7 +71,7 @@ def test_bilingual_wiki_shares_design_and_explains_verified_advantages(
             "CONDITIONAL",
             "15",
             "0.8.0",
-            "cad_bundle_execute",
+            "call_cad_bundle_tool",
             "project_root",
             "SHA-256",
         ]:
@@ -110,3 +110,52 @@ def test_tampered_archive_asset_is_rejected_before_output_mutation(
     with pytest.raises(ValueError, match="hash mismatch"):
         build_pages.build(output)
     assert not output.exists()
+
+
+def test_wiki_names_actual_registered_cad_wrappers():
+    from cad2gis.contracts import MCP_TOOL_NAMES
+
+    wrappers = {
+        "get_cad_bundle_status",
+        "prepare_cad_bundle_workspace",
+        "list_cad_bundle_tools",
+        "call_cad_bundle_tool",
+    }
+    assert wrappers <= set(MCP_TOOL_NAMES)
+    for name in ["Home.md", "Home-EN.md"]:
+        guide = (ROOT / "docs/wiki" / name).read_text(encoding="utf8")
+        for wrapper in wrappers:
+            assert f"`{wrapper}`" in guide
+        assert "cad_bundle_export_dxf" not in guide
+        assert "`edited_source`" in guide
+
+
+def test_unmanifested_directory_symlink_cannot_publish_external_files(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "source"
+    source.mkdir()
+    external = tmp_path / "private"
+    external.mkdir()
+    (external / "private.txt").write_text("synthetic-not-for-publication")
+    entries = []
+    for name in ["index.html", "cad2gis-report.html", "docs/index.html"]:
+        path = source / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = b'<html><head></head><body><main class="doc-main"></main></body></html>'
+        path.write_bytes(data)
+        entries.append({"path": name, "sha256": hashlib.sha256(data).hexdigest()})
+    try:
+        (source / "unmanifested").symlink_to(external, target_is_directory=True)
+    except OSError:
+        pytest.skip("Host does not permit directory symlinks")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps({"files": entries, "archive_sha256": "fixture", "prefix": "fixture"})
+    )
+    monkeypatch.setattr(build_pages, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(build_pages, "SOURCE_ROOT", source)
+    monkeypatch.setattr(build_pages, "SOURCE_MANIFEST", manifest)
+    with pytest.raises(ValueError, match="symlink"):
+        build_pages.build(tmp_path / "site")
+    assert not (tmp_path / "site/unmanifested/private.txt").exists()

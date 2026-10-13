@@ -161,6 +161,8 @@ def build(
         raise ValueError("Refusing to replace an unowned output directory")
     manifest = json.loads(SOURCE_MANIFEST.read_text(encoding="utf8"))
     entries = manifest["files"]
+    if SOURCE_ROOT.is_symlink() or any(path.is_symlink() for path in source.rglob("*")):
+        raise ValueError("Refusing source symlink")
     expected = set()
     for item in entries:
         relative = Path(item["path"])
