@@ -85,6 +85,7 @@ def get_capabilities() -> dict[str, Any]:
         "transports": ["stdio", "streamable-http"],
         "http_endpoint": "/mcp",
         "conversion_engine": "canonical deterministic cad2gis pipeline",
+        "source_formats": ["DWG (managed reader)", "DXF (native ezdxf)"],
         "host_ai_role": (
             "inventory interpretation and typed proposal generation; source "
             "geometry, fitting, validation, and delivery remain deterministic"

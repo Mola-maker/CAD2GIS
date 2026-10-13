@@ -964,6 +964,74 @@ def _metadata_record(
     }
 
 
+def records_from_dxf_document(
+    document: Any, source: Path, source_sha256: str, *,
+    layout_filter: str | None = None,
+    geodata_registration: dict[str, Any] | None = None,
+    backend: str = "libredwg_cli_dxf",
+) -> DWGRecordInventory:
+    """One DXF projection for native DXF and LibreDWG-converted documents."""
+    records: list[dict[str, Any]] = [
+        _metadata_record(
+            source,
+            source_sha256,
+            document,
+            geodata_registration=geodata_registration,
+        )
+    ]
+    unsupported = Counter()
+    entity_count = 0
+    attribute_count = 0
+    for context, layout, layout_role, cad_role in _contexts(document):
+        if layout_filter is not None and layout_role not in {"block_definition"}:
+            if layout != layout_filter:
+                continue
+        for entity in context:
+            record = _record(
+                document=document,
+                entity=entity,
+                source=source,
+                source_sha256=source_sha256,
+                layout=layout,
+                layout_role=layout_role,
+                cad_role=cad_role,
+            )
+            records.append(record)
+            entity_count += 1
+            unsupported.update(record["raw_properties"]["unsupported_reasons"])
+            if entity.dxftype().upper() == "INSERT":
+                for attribute in entity.attribs:
+                    attribute_record = _record(
+                        document=document,
+                        entity=attribute,
+                        source=source,
+                        source_sha256=source_sha256,
+                        layout=layout,
+                        layout_role="attribute",
+                        cad_role="attribute",
+                    )
+                    records.append(attribute_record)
+                    attribute_count += 1
+                    unsupported.update(
+                        attribute_record["raw_properties"]["unsupported_reasons"]
+                    )
+
+    replacements = _escaped_string_map(records)
+    if replacements:
+        records = [_preserve_undecodable_strings(record, document, replacements) for record in records]
+    for record in records:
+        record["raw_properties"]["extraction_backend"] = backend
+    return DWGRecordInventory(records, diagnostics={
+        "backend": backend, "extraction_backend": backend,
+        "skipped_rows": 0, "inventory_complete": True,
+        "metadata_evidence": records[0]["raw_properties"]["metadata_evidence"],
+        "unsupported_reason_counts": dict(sorted(unsupported.items())),
+        "source_entity_count": entity_count, "attribute_entity_count": attribute_count,
+        "returned_records": len(records), "parsed_rows": len(records),
+        "total_rows": len(records), "completion_rows": len(records),
+    })
+
+
 def extract_dwg_records(
     source_path: str | Path, *, layout_filter: str | None = None
 ) -> DWGRecordInventory:
@@ -1009,54 +1077,14 @@ def extract_dwg_records(
             geodata_registration, geodata_diagnostics = _read_geodata_registration(
                 Path(executable), source,
             )
-        records: list[dict[str, Any]] = [
-            _metadata_record(
-                source,
-                source_sha256,
-                document,
-                geodata_registration=geodata_registration,
-            )
-        ]
-        unsupported = Counter()
-        entity_count = 0
-        attribute_count = 0
-        for context, layout, layout_role, cad_role in _contexts(document):
-            if layout_filter is not None and layout_role not in {"block_definition"}:
-                if layout != layout_filter:
-                    continue
-            for entity in context:
-                record = _record(
-                    document=document,
-                    entity=entity,
-                    source=source,
-                    source_sha256=source_sha256,
-                    layout=layout,
-                    layout_role=layout_role,
-                    cad_role=cad_role,
-                )
-                records.append(record)
-                entity_count += 1
-                unsupported.update(record["raw_properties"]["unsupported_reasons"])
-                if entity.dxftype().upper() == "INSERT":
-                    for attribute in entity.attribs:
-                        attribute_record = _record(
-                            document=document,
-                            entity=attribute,
-                            source=source,
-                            source_sha256=source_sha256,
-                            layout=layout,
-                            layout_role="attribute",
-                            cad_role="attribute",
-                        )
-                        records.append(attribute_record)
-                        attribute_count += 1
-                        unsupported.update(
-                            attribute_record["raw_properties"]["unsupported_reasons"]
-                        )
-
-        replacements = _escaped_string_map(records)
-        if replacements:
-            records = [_preserve_undecodable_strings(record, document, replacements) for record in records]
+        inventory = records_from_dxf_document(
+            document, source, source_sha256, layout_filter=layout_filter,
+            geodata_registration=geodata_registration,
+        )
+        records = list(inventory)
+        unsupported = Counter(inventory.diagnostics["unsupported_reason_counts"])
+        entity_count = inventory.diagnostics["source_entity_count"]
+        attribute_count = inventory.diagnostics["attribute_entity_count"]
         stderr_text = process.stderr.decode("utf-8", errors="replace")
         text_preservation = [
             record["raw_properties"]["text_encoding_preservation"] for record in records
@@ -1100,5 +1128,6 @@ def extract_dwg_records(
 __all__ = [
     "DWGRecordInventory",
     "extract_dwg_records",
+    "records_from_dxf_document",
     "libredwg_cli_capability",
 ]

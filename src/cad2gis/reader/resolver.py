@@ -91,6 +91,10 @@ def extract_records(source_path: str | Path):
     fallback and remains an explicit user choice.
     """
 
+    if Path(source_path).suffix.casefold() == ".dxf":
+        from .dxf import extract_dxf_records
+        return extract_dxf_records(source_path)
+
     backend = configured_reader()
     if backend == "autocad":
         from .autocad import extract_dwg_records

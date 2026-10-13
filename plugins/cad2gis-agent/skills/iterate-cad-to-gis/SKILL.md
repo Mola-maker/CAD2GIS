@@ -5,6 +5,10 @@ description: Improve an unsatisfactory CAD2GIS conversion from user-provided vis
 
 # Iterate CAD to GIS
 
+For requested DXF copy edits before a fresh GIS run, use the
+[optional CAD sidecar reference](../convert-cad-to-gis/references/cad-bundles.md).
+It documents workspace tools and the required new-source revalidation handoff.
+
 Skill contract: `cad2gis.iterate_skill.v1`.
 
 Use the CAD2GIS MCP iteration tools to adapt project interpretation and

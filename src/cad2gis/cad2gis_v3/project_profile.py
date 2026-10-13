@@ -116,8 +116,8 @@ def build_source_inventory(
     source_path = Path(source).expanduser().resolve()
     if not source_path.is_file():
         raise ValueError(f"DWG source does not exist: {source_path}")
-    if source_path.suffix.casefold() != ".dwg":
-        raise ValueError(f"Project inspection requires a DWG source: {source_path}")
+    if source_path.suffix.casefold() not in {".dwg", ".dxf"}:
+        raise ValueError(f"Project inspection requires a DWG or DXF source: {source_path}")
 
     reader_protocol = _reader_protocol_contract(
         getattr(records, "diagnostics", {}) or {}

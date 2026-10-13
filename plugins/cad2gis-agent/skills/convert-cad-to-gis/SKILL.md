@@ -5,6 +5,10 @@ description: Inspect, convert, register, and review CAD/DWG projects with CAD2GI
 
 # Convert CAD to GIS
 
+For optional DXF queries, drawing checks or copy edits before conversion, read
+[the CAD sidecar reference](references/cad-bundles.md). Its tools preserve the
+source and return a revised source for the existing validation workflow.
+
 Skill contract: `cad2gis.convert_skill.v3`.
 
 Use the CAD2GIS MCP tools as the orchestration surface. The Python package is
