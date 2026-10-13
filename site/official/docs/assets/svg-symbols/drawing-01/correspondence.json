@@ -1,0 +1,654 @@
+{
+  "schema": "cad2gis.svg-correspondence.v1",
+  "source_sha256": "5b0872935a070cac9b3969811799d229bb48e534085254930263d526db9c5735",
+  "mode": "candidate",
+  "all_points_accounted_for": 30,
+  "dispositions": {
+    "LEGEND_MATCH_CANDIDATE": 26,
+    "SOURCE_INSTANCE_ONLY": 2,
+    "UNRESOLVED_NON_BLOCK": 2
+  },
+  "complete_legend_correspondence_verified": false,
+  "auto_applied": false,
+  "source_instance_bindings": [
+    {
+      "layer": "SITE",
+      "source_handle": "1BA661",
+      "symbol_id": "instance-1ba661",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "SITE",
+      "source_handle": "1BABB4",
+      "symbol_id": "instance-1babb4",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B056C",
+      "symbol_id": "instance-1b056c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C984F",
+      "symbol_id": "instance-1c984f",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9D85",
+      "symbol_id": "instance-1c9d85",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEAB0",
+      "symbol_id": "instance-1aeab0",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B051C",
+      "symbol_id": "instance-1b051c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEAA0",
+      "symbol_id": "instance-1aeaa0",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEA10",
+      "symbol_id": "instance-1aea10",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEA00",
+      "symbol_id": "instance-1aea00",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AE9F0",
+      "symbol_id": "instance-1ae9f0",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9D65",
+      "symbol_id": "instance-1c9d65",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9D5D",
+      "symbol_id": "instance-1c9d5d",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEAA8",
+      "symbol_id": "instance-1aeaa8",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEAB8",
+      "symbol_id": "instance-1aeab8",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEA88",
+      "symbol_id": "instance-1aea88",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B0564",
+      "symbol_id": "instance-1b0564",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEA98",
+      "symbol_id": "instance-1aea98",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AE9F8",
+      "symbol_id": "instance-1ae9f8",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9847",
+      "symbol_id": "instance-1c9847",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9D75",
+      "symbol_id": "instance-1c9d75",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEA90",
+      "symbol_id": "instance-1aea90",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9D6D",
+      "symbol_id": "instance-1c9d6d",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9D7D",
+      "symbol_id": "instance-1c9d7d",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AC878",
+      "symbol_id": "instance-1ac878",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B3E06",
+      "symbol_id": "instance-1b3e06",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1AEA08",
+      "symbol_id": "instance-1aea08",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1C9D8D",
+      "symbol_id": "instance-1c9d8d",
+      "database_scope": "delivery"
+    }
+  ],
+  "points": [
+    {
+      "database": "delivery",
+      "layer": "SITE",
+      "source_handle": "1BA661",
+      "symbol_id": "instance-1ba661",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "SITE",
+      "source_handle": "1BABB4",
+      "symbol_id": "instance-1babb4",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "1CB380/15AA06",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "missing",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "1CB380/15AA07",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "missing",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B056C",
+      "symbol_id": "instance-1b056c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C984F",
+      "symbol_id": "instance-1c984f",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9D85",
+      "symbol_id": "instance-1c9d85",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEAB0",
+      "symbol_id": "instance-1aeab0",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B051C",
+      "symbol_id": "instance-1b051c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEAA0",
+      "symbol_id": "instance-1aeaa0",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEA10",
+      "symbol_id": "instance-1aea10",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEA00",
+      "symbol_id": "instance-1aea00",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AE9F0",
+      "symbol_id": "instance-1ae9f0",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9D65",
+      "symbol_id": "instance-1c9d65",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9D5D",
+      "symbol_id": "instance-1c9d5d",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEAA8",
+      "symbol_id": "instance-1aeaa8",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEAB8",
+      "symbol_id": "instance-1aeab8",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEA88",
+      "symbol_id": "instance-1aea88",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B0564",
+      "symbol_id": "instance-1b0564",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEA98",
+      "symbol_id": "instance-1aea98",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AE9F8",
+      "symbol_id": "instance-1ae9f8",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9847",
+      "symbol_id": "instance-1c9847",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9D75",
+      "symbol_id": "instance-1c9d75",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEA90",
+      "symbol_id": "instance-1aea90",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9D6D",
+      "symbol_id": "instance-1c9d6d",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9D7D",
+      "symbol_id": "instance-1c9d7d",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AC878",
+      "symbol_id": "instance-1ac878",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B3E06",
+      "symbol_id": "instance-1b3e06",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1AEA08",
+      "symbol_id": "instance-1aea08",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "a9d800c8a940f0f0a0731f372e5d09adfd67215732ab186ecf64194153984adf",
+      "legend_handles": [
+        "1399B4"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1C9D8D",
+      "symbol_id": "instance-1c9d8d",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "3a5abb966f389892ee27ac927bf036e05d3bd40ee46cd712558e16921bbcce55",
+      "legend_handles": [
+        "139995"
+      ],
+      "status": "LEGEND_MATCH_CANDIDATE"
+    }
+  ],
+  "legend_clusters": [
+    {
+      "bbox": [
+        4998.023091312643,
+        31.30432535451914,
+        5313.361728528449,
+        279.5676283502675
+      ],
+      "member_count": 22,
+      "member_ids": [
+        "183B81",
+        "183B84",
+        "183B85",
+        "183B87",
+        "183B88",
+        "183B8B",
+        "1C83C7",
+        "1CCFAD",
+        "1CCFAE",
+        "1CCFAF",
+        "1CCFB0",
+        "1CCFB1",
+        "1CCFB2",
+        "1CCFB3",
+        "1CCFB5",
+        "1CCFB6",
+        "1CCFB7",
+        "1CCFB8",
+        "1CCFC1",
+        "1CCFC2",
+        "1CCFC3",
+        "1CCFC4"
+      ],
+      "anchor_hits": [
+        "FDT"
+      ],
+      "confidence": 1.0,
+      "separation_distance": 539.2718,
+      "separation_axes": [
+        "x"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "APD - SF"
+    },
+    {
+      "bbox": [
+        1752.89318517697,
+        -9748.6402277989,
+        2854.78128513597,
+        -8117.212879104605
+      ],
+      "member_count": 45,
+      "member_ids": [
+        "139924",
+        "13992B",
+        "13992C",
+        "139933",
+        "139936",
+        "13993F",
+        "139950",
+        "139951",
+        "139952",
+        "139953",
+        "139954",
+        "139955",
+        "139956",
+        "139959",
+        "13995A",
+        "13995B",
+        "13995C",
+        "139965",
+        "139966",
+        "139967",
+        "139968",
+        "139969",
+        "13996A",
+        "13996B",
+        "13996C",
+        "139973",
+        "139974",
+        "13997B",
+        "13997C",
+        "139983",
+        "139984",
+        "139985",
+        "13998C",
+        "13998D",
+        "139994",
+        "139995",
+        "13999C",
+        "13999D",
+        "1399A4",
+        "1399A6",
+        "1399AB",
+        "1399AC",
+        "1399B3",
+        "1399B4",
+        "1399BB"
+      ],
+      "anchor_hits": [
+        "FDT",
+        "LEGEND"
+      ],
+      "confidence": 1.0,
+      "separation_distance": 6188.0038,
+      "separation_axes": [
+        "x",
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "Model"
+    }
+  ],
+  "inventory_blocks": 55,
+  "input_databases_sha256": {
+    "drawing-01/delivery/delivery.gpkg": "4ed7706f86389c74c55a9c635a2e1958dbcff0d8f5ddbf5ba5096d9cced741d6"
+  }
+}

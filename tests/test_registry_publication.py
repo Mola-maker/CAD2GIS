@@ -58,6 +58,7 @@ def test_registry_package_matches_actual_bundle():
     )
     package = server["packages"][0]
     assert package["registryType"] == "mcpb"
+    assert "registryBaseUrl" not in package
     bundle = ROOT.parent / "deliverables/cad2gis-agent-0.8.0.mcpb"
     assert len(package["fileSha256"]) == 64
     if bundle.exists():

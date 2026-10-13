@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.build_pages import _publication_gate_passed, _validate_demo
+from scripts.build_local_demo import _publication_gate_passed, _validate_demo
 
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -1,0 +1,3714 @@
+{
+  "schema": "cad2gis.svg-correspondence.v1",
+  "source_sha256": "100a90e5f8332e333ffc6a8a7c1ef51a719707836a5e836140115200b6048977",
+  "mode": "candidate",
+  "all_points_accounted_for": 323,
+  "dispositions": {
+    "SOURCE_INSTANCE_ONLY": 78,
+    "UNRESOLVED_NON_BLOCK": 245
+  },
+  "complete_legend_correspondence_verified": false,
+  "auto_applied": false,
+  "source_instance_bindings": [
+    {
+      "layer": "SITE",
+      "source_handle": "3144",
+      "symbol_id": "instance-3144",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21CE",
+      "symbol_id": "instance-21ce",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21AD",
+      "symbol_id": "instance-21ad",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "2198",
+      "symbol_id": "instance-2198",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21C5",
+      "symbol_id": "instance-21c5",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21A7",
+      "symbol_id": "instance-21a7",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B3",
+      "symbol_id": "instance-21b3",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "2E21",
+      "symbol_id": "instance-2e21",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B0",
+      "symbol_id": "instance-21b0",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21AA",
+      "symbol_id": "instance-21aa",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21C2",
+      "symbol_id": "instance-21c2",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B9",
+      "symbol_id": "instance-21b9",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21BF",
+      "symbol_id": "instance-21bf",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21CB",
+      "symbol_id": "instance-21cb",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21B6",
+      "symbol_id": "instance-21b6",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "21BC",
+      "symbol_id": "instance-21bc",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3229",
+      "symbol_id": "instance-3229",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1A31",
+      "symbol_id": "instance-1a31",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1BB6",
+      "symbol_id": "instance-1bb6",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1D58",
+      "symbol_id": "instance-1d58",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1BA1",
+      "symbol_id": "instance-1ba1",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2075",
+      "symbol_id": "instance-2075",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "197B",
+      "symbol_id": "instance-197b",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "207C",
+      "symbol_id": "instance-207c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1949",
+      "symbol_id": "instance-1949",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1957",
+      "symbol_id": "instance-1957",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19A5",
+      "symbol_id": "instance-19a5",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3027",
+      "symbol_id": "instance-3027",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20F4",
+      "symbol_id": "instance-20f4",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3955",
+      "symbol_id": "instance-3955",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "196D",
+      "symbol_id": "instance-196d",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19DD",
+      "symbol_id": "instance-19dd",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "31B9",
+      "symbol_id": "instance-31b9",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B93",
+      "symbol_id": "instance-1b93",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4339",
+      "symbol_id": "instance-4339",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "303F",
+      "symbol_id": "instance-303f",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1A15",
+      "symbol_id": "instance-1a15",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1989",
+      "symbol_id": "instance-1989",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1BAF",
+      "symbol_id": "instance-1baf",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19F2",
+      "symbol_id": "instance-19f2",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1D79",
+      "symbol_id": "instance-1d79",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1974",
+      "symbol_id": "instance-1974",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1933",
+      "symbol_id": "instance-1933",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1A00",
+      "symbol_id": "instance-1a00",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1997",
+      "symbol_id": "instance-1997",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "394E",
+      "symbol_id": "instance-394e",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B77",
+      "symbol_id": "instance-1b77",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "395C",
+      "symbol_id": "instance-395c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "320A",
+      "symbol_id": "instance-320a",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1942",
+      "symbol_id": "instance-1942",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "19C8",
+      "symbol_id": "instance-19c8",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B85",
+      "symbol_id": "instance-1b85",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "4340",
+      "symbol_id": "instance-4340",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "3218",
+      "symbol_id": "instance-3218",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "2083",
+      "symbol_id": "instance-2083",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20EC",
+      "symbol_id": "instance-20ec",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1990",
+      "symbol_id": "instance-1990",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "1B8C",
+      "symbol_id": "instance-1b8c",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "20B1",
+      "symbol_id": "instance-20b1",
+      "database_scope": "delivery"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75C1",
+      "symbol_id": "instance-75c1",
+      "database_scope": "EMR28560"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75C9",
+      "symbol_id": "instance-75c9",
+      "database_scope": "EMR28560"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75AB",
+      "symbol_id": "instance-75ab",
+      "database_scope": "EMR28560"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75D9",
+      "symbol_id": "instance-75d9",
+      "database_scope": "EMR28560"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75A2",
+      "symbol_id": "instance-75a2",
+      "database_scope": "EMR28560"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "75D1",
+      "symbol_id": "instance-75d1",
+      "database_scope": "EMR28560"
+    },
+    {
+      "layer": "BOITE",
+      "source_handle": "79D1",
+      "symbol_id": "instance-79d1",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "7913",
+      "symbol_id": "instance-7913",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "7943",
+      "symbol_id": "instance-7943",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "793B",
+      "symbol_id": "instance-793b",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "78FB",
+      "symbol_id": "instance-78fb",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "7933",
+      "symbol_id": "instance-7933",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "791B",
+      "symbol_id": "instance-791b",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "792B",
+      "symbol_id": "instance-792b",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "7903",
+      "symbol_id": "instance-7903",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "794C",
+      "symbol_id": "instance-794c",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "7923",
+      "symbol_id": "instance-7923",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "76EA",
+      "symbol_id": "instance-76ea",
+      "database_scope": "EMR29619"
+    },
+    {
+      "layer": "PTECH",
+      "source_handle": "78F3",
+      "symbol_id": "instance-78f3",
+      "database_scope": "EMR29619"
+    }
+  ],
+  "points": [
+    {
+      "database": "delivery",
+      "layer": "SITE",
+      "source_handle": "3144",
+      "symbol_id": "instance-3144",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21CE",
+      "symbol_id": "instance-21ce",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21AD",
+      "symbol_id": "instance-21ad",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "2198",
+      "symbol_id": "instance-2198",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21C5",
+      "symbol_id": "instance-21c5",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21A7",
+      "symbol_id": "instance-21a7",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21B3",
+      "symbol_id": "instance-21b3",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "2E21",
+      "symbol_id": "instance-2e21",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21B0",
+      "symbol_id": "instance-21b0",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21AA",
+      "symbol_id": "instance-21aa",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21C2",
+      "symbol_id": "instance-21c2",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21B9",
+      "symbol_id": "instance-21b9",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21BF",
+      "symbol_id": "instance-21bf",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21CB",
+      "symbol_id": "instance-21cb",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21B6",
+      "symbol_id": "instance-21b6",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "BOITE",
+      "source_handle": "21BC",
+      "symbol_id": "instance-21bc",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "3229",
+      "symbol_id": "instance-3229",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1A31",
+      "symbol_id": "instance-1a31",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1BB6",
+      "symbol_id": "instance-1bb6",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1D58",
+      "symbol_id": "instance-1d58",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1BA1",
+      "symbol_id": "instance-1ba1",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "2075",
+      "symbol_id": "instance-2075",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "197B",
+      "symbol_id": "instance-197b",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "207C",
+      "symbol_id": "instance-207c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1949",
+      "symbol_id": "instance-1949",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1957",
+      "symbol_id": "instance-1957",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "19A5",
+      "symbol_id": "instance-19a5",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "3027",
+      "symbol_id": "instance-3027",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "20F4",
+      "symbol_id": "instance-20f4",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "3955",
+      "symbol_id": "instance-3955",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "196D",
+      "symbol_id": "instance-196d",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "19DD",
+      "symbol_id": "instance-19dd",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "31B9",
+      "symbol_id": "instance-31b9",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B93",
+      "symbol_id": "instance-1b93",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "4339",
+      "symbol_id": "instance-4339",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "303F",
+      "symbol_id": "instance-303f",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1A15",
+      "symbol_id": "instance-1a15",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1989",
+      "symbol_id": "instance-1989",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1BAF",
+      "symbol_id": "instance-1baf",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "19F2",
+      "symbol_id": "instance-19f2",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1D79",
+      "symbol_id": "instance-1d79",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1974",
+      "symbol_id": "instance-1974",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1933",
+      "symbol_id": "instance-1933",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1A00",
+      "symbol_id": "instance-1a00",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1997",
+      "symbol_id": "instance-1997",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "394E",
+      "symbol_id": "instance-394e",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B77",
+      "symbol_id": "instance-1b77",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "395C",
+      "symbol_id": "instance-395c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "320A",
+      "symbol_id": "instance-320a",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1942",
+      "symbol_id": "instance-1942",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "19C8",
+      "symbol_id": "instance-19c8",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B85",
+      "symbol_id": "instance-1b85",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "4340",
+      "symbol_id": "instance-4340",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "3218",
+      "symbol_id": "instance-3218",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "2083",
+      "symbol_id": "instance-2083",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "20EC",
+      "symbol_id": "instance-20ec",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "eef16a07634ba2830e8c39a7a4036592abb11080e3d6324f44ec2e9d47d36e10",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1990",
+      "symbol_id": "instance-1990",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "1B8C",
+      "symbol_id": "instance-1b8c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "PTECH",
+      "source_handle": "20B1",
+      "symbol_id": "instance-20b1",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "ec59b0a759a411e82cabf807af0ea2830ab262270e6d62ee3058ffec4b55dfc1",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1610",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15DD",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "160B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "166D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1598",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E3",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1628",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15CD",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15DE",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1623",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D5",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1631",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1640",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E9",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15AE",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15AC",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "165C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1645",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A2",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "162F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15CB",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1669",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "167F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1671",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F6",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1698",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "159F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "163B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "159E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C7",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1646",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C2",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "162B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1665",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D9",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D1",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "162C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15EA",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15EB",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B2",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C6",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B9",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1621",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1673",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A3",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "159B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "161C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1599",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "166A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15EC",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1642",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "159C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1639",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C4",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1728",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15AA",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1625",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1611",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1643",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C0",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1613",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1659",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15EF",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1635",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15DF",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1697",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "182E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1617",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1620",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1641",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "161D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "161F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1647",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15AB",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B6",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "162A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A5",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1651",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E6",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1629",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E7",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "16C4",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1672",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15EE",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "160A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1677",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "166F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15BD",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "161B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1603",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "160E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "163E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E8",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "169A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1648",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1664",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "163C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15FF",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1633",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1638",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C5",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C8",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1676",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "16C7",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1658",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1604",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "175D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "164A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "161A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "165F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "164D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1622",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A1",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A7",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "16C5",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1618",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1661",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "160C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A6",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F0",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D8",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1679",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1660",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15FA",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1624",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F8",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "17CA",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "16C6",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1675",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1606",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F2",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15FD",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "167C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1662",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1602",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D3",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1616",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1632",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1608",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "160F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15FC",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "166C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "164B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1600",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "166E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F9",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B3",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15DB",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E4",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D2",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15ED",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B7",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "160D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1607",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "165D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15CF",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1634",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1657",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1614",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E1",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1654",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15BF",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "167A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1668",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "163A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1649",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15DA",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1663",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "164F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "164C",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1699",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F4",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B4",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A4",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1630",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "165A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15CC",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "159A",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "163D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F3",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C9",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15AD",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F5",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1655",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C3",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1626",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "159D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1636",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B5",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D4",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D7",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1656",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1650",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1680",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1605",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15BE",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15AF",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F1",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D0",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A0",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15FE",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E2",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1644",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E0",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "163F",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "166B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15FB",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15CE",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1670",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15DC",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1601",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1637",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15A8",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B8",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15BC",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15BB",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1652",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "17E0",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1674",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "162D",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1667",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1615",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1666",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "161E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15D6",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "162E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1612",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15BA",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15C1",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15F7",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B1",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1609",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "165E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "165B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "164E",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1619",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1678",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15CA",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15E5",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "15B0",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1653",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "1627",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "delivery",
+      "layer": "IMB",
+      "source_handle": "167B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "MTEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "EMR28560",
+      "layer": "PTECH",
+      "source_handle": "75C1",
+      "symbol_id": "instance-75c1",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR28560",
+      "layer": "PTECH",
+      "source_handle": "75C9",
+      "symbol_id": "instance-75c9",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR28560",
+      "layer": "PTECH",
+      "source_handle": "75AB",
+      "symbol_id": "instance-75ab",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR28560",
+      "layer": "PTECH",
+      "source_handle": "75D9",
+      "symbol_id": "instance-75d9",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR28560",
+      "layer": "PTECH",
+      "source_handle": "75A2",
+      "symbol_id": "instance-75a2",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR28560",
+      "layer": "PTECH",
+      "source_handle": "75D1",
+      "symbol_id": "instance-75d1",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR28560",
+      "layer": "EMR",
+      "source_handle": "75E3",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "TEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    },
+    {
+      "database": "EMR29619",
+      "layer": "BOITE",
+      "source_handle": "79D1",
+      "symbol_id": "instance-79d1",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": null,
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "7913",
+      "symbol_id": "instance-7913",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "7943",
+      "symbol_id": "instance-7943",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "793B",
+      "symbol_id": "instance-793b",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "78FB",
+      "symbol_id": "instance-78fb",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "7933",
+      "symbol_id": "instance-7933",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "791B",
+      "symbol_id": "instance-791b",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "792B",
+      "symbol_id": "instance-792b",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "7903",
+      "symbol_id": "instance-7903",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "794C",
+      "symbol_id": "instance-794c",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "b61a23d211b0ebdc3903684bd9864448dcfd3a8457ddba91a70b589c67002052",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "7923",
+      "symbol_id": "instance-7923",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "76EA",
+      "symbol_id": "instance-76ea",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "PTECH",
+      "source_handle": "78F3",
+      "symbol_id": "instance-78f3",
+      "source_type": "INSERT",
+      "normalized_svg_sha256": "1d3b012d8926118fa129ee77bbc6d6eaa0124c6b831396781d5b79cb0e7b6a42",
+      "legend_handles": [],
+      "status": "SOURCE_INSTANCE_ONLY"
+    },
+    {
+      "database": "EMR29619",
+      "layer": "EMR",
+      "source_handle": "785B",
+      "status": "UNRESOLVED_NON_BLOCK",
+      "source_type": "TEXT",
+      "legend_handles": [],
+      "symbol_id": null
+    }
+  ],
+  "legend_clusters": [
+    {
+      "bbox": [
+        13902759.50566852,
+        145103.809370455,
+        13903252.76088498,
+        146128.8150623764
+      ],
+      "member_count": 105,
+      "member_ids": [
+        "4BE5",
+        "4BE8",
+        "4BEB",
+        "4BEE",
+        "4BF1",
+        "4BF4",
+        "4BF7",
+        "4BFA",
+        "4BFD",
+        "4C00",
+        "4C03",
+        "4C06",
+        "4C09",
+        "4C0C",
+        "4C0F",
+        "4C10",
+        "4C11",
+        "4C12",
+        "4C13",
+        "4C14",
+        "4C15",
+        "4C16",
+        "4C17",
+        "4C18",
+        "4C19",
+        "4C1A",
+        "4C1B",
+        "4C1C",
+        "4C1D",
+        "4C20",
+        "4C21",
+        "6845",
+        "6849",
+        "684A",
+        "684B",
+        "684C",
+        "6877",
+        "6878",
+        "6879",
+        "687A",
+        "687B",
+        "687C",
+        "687D",
+        "687E",
+        "687F",
+        "6880",
+        "68BD",
+        "68BE",
+        "68BF",
+        "68C0",
+        "68C1",
+        "68C2",
+        "68C6",
+        "68C7",
+        "68C8",
+        "68CC",
+        "68CD",
+        "68CE",
+        "68D2",
+        "68D3",
+        "68D4",
+        "68D9",
+        "68DA",
+        "68DB",
+        "68DD",
+        "68DE",
+        "68E1",
+        "68E3",
+        "68E5",
+        "68E7",
+        "68E9",
+        "68EB",
+        "68F2",
+        "68F3",
+        "68F4",
+        "68F5",
+        "68F6",
+        "68F7",
+        "68FB",
+        "68FC",
+        "68FD",
+        "6901",
+        "6902",
+        "6903",
+        "6907",
+        "6908",
+        "6909",
+        "690D",
+        "690E",
+        "690F",
+        "6912",
+        "6914",
+        "6916",
+        "6918",
+        "691A",
+        "691C",
+        "691D",
+        "6921",
+        "69CD",
+        "69CF",
+        "69DE",
+        "69E0",
+        "69E1",
+        "69E5",
+        "69E7"
+      ],
+      "anchor_hits": [
+        "SPLICING"
+      ],
+      "confidence": 0.8934,
+      "separation_distance": 423.1076,
+      "separation_axes": [
+        "x"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-001",
+      "layout": "Model"
+    },
+    {
+      "bbox": [
+        13900938.80685039,
+        143667.9689206726,
+        13901230.09351904,
+        143776.5766091283
+      ],
+      "member_count": 46,
+      "member_ids": [
+        "7432",
+        "76EA",
+        "76F1",
+        "76F2",
+        "785B",
+        "78F3",
+        "78FA",
+        "78FB",
+        "7902",
+        "7903",
+        "790A",
+        "7913",
+        "791A",
+        "791B",
+        "7922",
+        "7923",
+        "792A",
+        "792B",
+        "7932",
+        "7933",
+        "793A",
+        "793B",
+        "7942",
+        "7943",
+        "794A",
+        "794C",
+        "7953",
+        "795C",
+        "795D",
+        "795E",
+        "795F",
+        "7960",
+        "7961",
+        "7962",
+        "7963",
+        "7964",
+        "7965",
+        "7966",
+        "7967",
+        "7968",
+        "7969",
+        "796A",
+        "7973",
+        "79D1",
+        "79D4",
+        "7C71"
+      ],
+      "anchor_hits": [],
+      "confidence": 0.6,
+      "separation_distance": 1204.1605,
+      "separation_axes": [
+        "y"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-002",
+      "layout": "Model"
+    },
+    {
+      "bbox": [
+        13896390.22071092,
+        145543.9471008497,
+        13896538.17170173,
+        145660.1985328406
+      ],
+      "member_count": 24,
+      "member_ids": [
+        "74EC",
+        "74F6",
+        "74FA",
+        "75A2",
+        "75A9",
+        "75AA",
+        "75AB",
+        "75B2",
+        "75C1",
+        "75C8",
+        "75C9",
+        "75D0",
+        "75D1",
+        "75D8",
+        "75D9",
+        "75E0",
+        "75E3",
+        "75E4",
+        "762C",
+        "762D",
+        "762E",
+        "762F",
+        "7630",
+        "7631"
+      ],
+      "anchor_hits": [],
+      "confidence": 0.6,
+      "separation_distance": 4400.6351,
+      "separation_axes": [
+        "x"
+      ],
+      "confirmed": false,
+      "cluster_id": "LC-003",
+      "layout": "Model"
+    }
+  ],
+  "inventory_blocks": 127,
+  "input_databases_sha256": {
+    "drawing-03/delivery/delivery.gpkg": "8ba4d0957ff2c3794ff84964590f8087a351aed79c0950e0411a3254ad945a76",
+    "drawing-03/delivery/EMR28560/delivery.gpkg": "f00c79a9b51a3d996299669c5d6914b8c8fffe2ab87088f4e9a86da65f83e600",
+    "drawing-03/delivery/EMR29619/delivery.gpkg": "31a715baaa329a249556aaaf347e86912d7bf854d465dc08ad71241bb6ab20c3"
+  }
+}

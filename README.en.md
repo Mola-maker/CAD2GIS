@@ -2,7 +2,7 @@
 
 Convert DWG/DXF into inspectable GIS deliveries, with source hashes, entity provenance, geometry, topology and coordinate evidence. The CLI, Python API, review workspace and MCP plugin use the same conversion pipeline.
 
-[中文](README.md) · [Official demo](https://cad2gis.molamaker.cn/) · [Nine drawing examples](https://mola-maker.github.io/CAD2GIS/deliveries/) · [Install](https://mola-maker.github.io/CAD2GIS/install.html) · [Releases](https://github.com/Mola-maker/CAD2GIS/releases)
+[中文](README.md) · [Bilingual Wiki](https://github.com/Mola-maker/CAD2GIS/wiki) · [Official demo](https://cad2gis.molamaker.cn/) · [Nine drawing examples](https://mola-maker.github.io/CAD2GIS/docs/osm-gcp.html) · [Install](https://mola-maker.github.io/CAD2GIS/wiki/) · [Releases](https://github.com/Mola-maker/CAD2GIS/releases)
 
 | Capability | Requirements |
 | --- | --- |
@@ -41,9 +41,9 @@ For other clients see [MCP templates](plugins/cad2gis-agent/clients/README.md). 
 
 ## Examples and releases
 
-[![CAD and GIS delivery overlay](https://mola-maker.github.io/CAD2GIS/deliveries/drawing-01/process/source-delivery-overlay.png)](https://mola-maker.github.io/CAD2GIS/deliveries/)
+[![QGIS first-open preview](https://mola-maker.github.io/CAD2GIS/docs/assets/img/first-open/drawing-01.jpg)](https://mola-maker.github.io/CAD2GIS/docs/osm-gcp.html)
 
-The nine examples reuse the existing public gallery. Their status remains `CONDITIONAL`: absolute surveying accuracy has not been verified. A declared CRS or visually aligned overlay alone does not prove positional accuracy.
+The nine examples reuse the owner-supplied official website gallery. Their status remains `CONDITIONAL`: absolute surveying accuracy has not been verified. A declared CRS or visually aligned overlay alone does not prove positional accuracy.
 
 0.8.0 is the Python/Agent source release. Existing desktop downloads retain their actual versions: Windows 0.7.8, Linux 0.7.0-3 and macOS 0.7.0. See the [download matrix](README.md#下载与版本). Older binaries retain their original license and validation scope.
 

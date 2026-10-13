@@ -147,3 +147,10 @@ raw/
 !tools/build_agent_delivery.py
 
 !tools/registry_status.py
+
+# Official public website imported from the owner-approved local release.
+!/site/
+!/site/**
+!scripts/build_local_demo.py
+
+/_official_preview/

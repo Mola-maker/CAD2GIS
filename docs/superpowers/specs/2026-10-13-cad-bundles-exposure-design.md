@@ -158,3 +158,9 @@ GitHub Pages 通过现有 Actions 部署。官网在现有托管路径和凭据�
 - https://www.apache.org/licenses/GPL-compatibility.html
 - https://www.gnu.org/licenses/gpl-faq.html
 
+
+### 2026-10-13 用户修订：官网标准与 Wiki
+
+用户明确要求完整抛弃原 GitHub Pages 网站，采用本地 ZIP 的发布网页，并以 cad2gis.molamaker.cn 的构建为标准。生产子树 tencent-deploy-20260912/publish 的首页与现官网逐字节一致；本次构建保留该 955 文件公共网页树及字体/CSS，新增当前能力入口。此要求取代上文保留旧 Pages 路由和原产品 landing 的约束，不再下载旧 nine-drawings 派生发布包。九图效果来自网页包本身，不新增九图报告 ZIP。
+
+用户另要求 Wiki 明确项目价值、英文/中文切换和 MCP/插件优势。GitHub Wiki 发布双语 Markdown；相同内容在网站中使用原 fonts.css、theme.css、docs.css 渲染。历史报告和手册保留原版本与实验数字，当前 Wiki 明确 0.8.0 的实际能力、许可和验证范围。GitHub Pages 部署用户确认的 http://127.0.0.1:18868/ 预览版本。

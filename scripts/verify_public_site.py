@@ -38,19 +38,16 @@ def _check(url: str, expected: str | None = None) -> dict:
 
 def verify_public_site(base_url: str, *, gallery_url: str) -> dict:
     base_url = base_url.rstrip("/") + "/"
-    gallery_url = gallery_url.rstrip("/") + "/"
     targets = [
-        (base_url, "SoftwareApplication"),
-        (urljoin(base_url, "install.html"), "CAD2GIS"),
+        (base_url, "从图纸到证据：CAD2GIS"),
+        (urljoin(base_url, "wiki/index.html"), "cad_bundle_execute"),
+        (urljoin(base_url, "wiki/en.html"), "reviewable GIS"),
         (urljoin(base_url, "robots.txt"), "sitemap.xml"),
-        (urljoin(base_url, "sitemap.xml"), base_url),
-        (gallery_url, None),
+        (urljoin(base_url, "sitemap.xml"), "https://cad2gis.molamaker.cn/"),
+        (gallery_url, "CAD2GIS"),
     ]
     targets.extend(
-        (
-            urljoin(gallery_url, f"drawing-{n:02}/process/source-delivery-overlay.png"),
-            None,
-        )
+        (urljoin(base_url, f"docs/assets/img/first-open/drawing-{n:02}.jpg"), None)
         for n in range(1, 10)
     )
     with ThreadPoolExecutor(max_workers=5) as executor:
@@ -70,7 +67,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("base_url")
     parser.add_argument(
-        "--gallery-url", default="https://mola-maker.github.io/CAD2GIS/deliveries/"
+        "--gallery-url",
+        default="https://mola-maker.github.io/CAD2GIS/docs/osm-gcp.html",
     )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()

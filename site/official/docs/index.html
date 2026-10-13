@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使用手册 · CAD2GIS 文档中心</title>
+<meta name="description" content="CAD2GIS 0.7.0 完整使用说明：十一章分页手册，命令逐字转录自仓库文档。">
+<link rel="canonical" href="https://cad2gis.molamaker.cn/docs/index.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CAD2GIS · molamaker">
+<meta property="og:title" content="使用手册 · CAD2GIS 文档中心">
+<meta property="og:description" content="CAD2GIS 0.7.0 完整使用说明：十一章分页手册，命令逐字转录自仓库文档。">
+<meta property="og:url" content="https://cad2gis.molamaker.cn/docs/index.html">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/theme.css">
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+
+<main class="doc-main">
+
+  <!-- ═══ 封面 ═══ -->
+  <div class="doc-wrap" id="man-cover">
+    <div class="man-cover-grid">
+      <div>
+        <p class="doc-kicker">DOCS / 00 · THE COMPLETE MANUAL</p>
+        <h1 class="doc-h1">使用说明 · The Complete Manual</h1>
+        <p class="doc-lede">报告讲架构为什么对，手册讲明天怎么用起来。十一章覆盖安装、首个转换、OSM 匹配、SVG 提取、审查微调、二次匹配、QGIS 交付、MCP 智能体、Android 连接与术语。全部命令逐字转录自仓库文档，尖括号 <code>&lt;...&gt;</code> 为需替换的本地路径/值。</p>
+        <p class="doc-anchor">CAD2GIS 0.7.0 · 仓库快照 commit ed93cd2 · 全部交付状态 CONDITIONAL / not independently verified</p>
+      </div>
+      <figure class="man-cover-oc">
+        <img src="assets/img/oc/molamaker-layers.jpg" alt="CAD2GIS 分层交付插画" loading="lazy">
+        <figcaption>图纸 → GIS 图层 → 证据链 · <span class="oc-credit">OC 形象 · molamaker</span></figcaption>
+      </figure>
+    </div>
+
+    <h3 style="margin-top:34px">十一章目录</h3>
+    <div class="man-chapters" id="man-toc-grid"></div>
+
+    <h3>四个过程子页</h3>
+    <div class="doc-cards">
+      <a class="doc-card" href="osm-gcp.html">
+        <div class="dc-no">DOCS / 01</div>
+        <div class="dc-t">路网匹配与人工校验</div>
+        <div class="dc-d">OSM 标准匹配五幕动画、真实配准 before/after、0.01 m 步长 GCP 微调台。</div>
+        <div class="dc-go">打开 →</div>
+      </a>
+      <a class="doc-card" href="svg.html">
+        <div class="dc-no">DOCS / 02</div>
+        <div class="dc-t">SVG 提取与渲染</div>
+        <div class="dc-d">759 个真实提取符号画廊、QGZ base64 内嵌证据、首开验证。</div>
+        <div class="dc-go">打开 →</div>
+      </a>
+      <a class="doc-card" href="cli.html">
+        <div class="dc-no">DOCS / 03</div>
+        <div class="dc-t">终端与 CLI</div>
+        <div class="dc-d">打字机四章剧场、全量命令参考总表、七参数卡。</div>
+        <div class="dc-go">打开 →</div>
+      </a>
+      <a class="doc-card" href="app.html">
+        <div class="dc-no">DOCS / 04</div>
+        <div class="dc-t">软件界面</div>
+        <div class="dc-d">/_app/ shell 四屏重绘、平台交付字节数、真实运行证据。</div>
+        <div class="dc-go">打开 →</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══ 01 安装 · Windows ═══ -->
+  <section class="man-page" id="ch-01" data-title="01 安装 · Windows">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 01 · 安装 · WINDOWS</p>
+      <h2>安装器一路下一步，或一条 uv 命令</h2>
+      <p class="dek">出处：docs/INSTALL_WINDOWS.md、README「1. 安装本地运行时」。支持 Windows 10/11 x64；安装包自带 Python 3.12、GIS 库与 LibreDWG，无需先装 Python/uv/AutoCAD/Conda/QGIS。</p>
+      <h3>安装器方式（GUI 步骤）</h3>
+      <ol>
+        <li>运行 <code>CAD2GIS-0.7.0-windows-x64-setup.exe</code>（位于 <code>dist/windows/</code>）。</li>
+        <li>默认安装到 <code>%LOCALAPPDATA%\Programs\CAD2GIS</code>，无需管理员权限；可选桌面快捷方式与「添加命令到用户 PATH」（PATH 项供既有智能体插件使用）。</li>
+        <li>从开始菜单打开 CAD2GIS：启动本地服务并用系统浏览器打开专用登录链接。</li>
+      </ol>
+      <h3>运行库检查（验证命令，逐字）</h3>
+      <div class="codeblk">cad2gis doctor --deep --strict --profile full --json</div>
+      <p class="code-cap">桌面启动日志：%LOCALAPPDATA%\CAD2GIS\logs · 开发包尚无 Authenticode 生产签名</p>
+      <h3>免安装器的 uv 运行时路径（PowerShell，逐字）</h3>
+      <div class="codeblk">winget install --id=astral-sh.uv -e
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install
+Get-Command cad2gis-agent-mcp
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --profile full --json</div>
+      <h3>向 Android 提供 HTTPS 服务（逐字，需替换路径/域名/密码）</h3>
+      <div class="codeblk">$env:CAD2GIS_APP_PASSWORD = '&lt;至少12字符的服务密码&gt;'
+cad2gis-desktop --no-browser --host 0.0.0.0 --port 8765 `
+  --public-host cad.example.com `
+  --project-root 'D:\CAD Projects' `
+  --ssl-certfile 'D:\Certificates\fullchain.pem' `
+  --ssl-keyfile 'D:\Certificates\privkey.pem'</div>
+      <p class="code-cap">详见第 10 章 Android 连接</p>
+    </div>
+  </section>
+
+  <!-- ═══ 02 安装 · Linux ═══ -->
+  <section class="man-page" id="ch-02" data-title="02 安装 · Linux">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 02 · 安装 · LINUX</p>
+      <h2>DEB、便携包，或一条 uv 命令</h2>
+      <p class="dek">出处：docs/INSTALL_LINUX.md（面向 Ubuntu 24.04 x86_64，glibc 2.39+）、README。</p>
+      <h3>.deb 安装 + 校验（逐字）</h3>
+      <div class="codeblk">sha256sum --check SHA256SUMS --ignore-missing
+sudo apt install ./cad2gis_0.7.0_amd64.deb</div>
+      <p class="code-cap">打开：应用菜单打开 CAD2GIS，或运行 cad2gis-desktop · 卸载 sudo apt remove cad2gis（不删项目与用户设置）</p>
+      <h3>免管理员便携方式</h3>
+      <p>解压 <code>cad2gis-0.7.0-linux-x86_64.tar.gz</code> 到自有目录，运行解压目录里的 <code>bin/cad2gis-desktop</code>；运行库检查（逐字）：</p>
+      <div class="codeblk">bin/cad2gis doctor --deep --strict --profile full --json</div>
+      <p class="code-cap">便携包要求系统已有 libstdc++6、libgomp1、CA 证书与可用字体</p>
+      <h3>安装后完整验证（用安装目录自带 Python，逐字）</h3>
+      <div class="codeblk">/opt/cad2gis/runtime/bin/python3 -I -B packaging/linux/verify_install.py \
+  --bundle /opt/cad2gis --output tmp/linux-installed-verification</div>
+      <h3>智能体插件环境变量与 MCP 入口（逐字）</h3>
+      <div class="codeblk">export CAD2GIS_PROJECT_ROOTS="$HOME/CAD-projects"
+cad2gis-agent-mcp --transport stdio</div>
+      <p class="code-cap">插件位于 /opt/cad2gis/plugins/cad2gis-agent，可执行入口装到 /usr/bin；多个项目根目录用冒号分隔</p>
+      <h3>README 的 uv 路径（Linux，逐字）</h3>
+      <div class="codeblk">curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+uv tool install --python 3.12 --force "cad2gis[agent] @ https://github.com/Mola-maker/CAD2GIS/archive/refs/heads/main.zip"
+cad2gis runtime install  # 无 Homebrew 时从校验过的官方源码构建到用户缓存
+command -v cad2gis-agent-mcp
+cad2gis-agent-mcp --help
+cad2gis doctor --deep --profile full --json</div>
+      <div class="note-box">
+        <p><b>可选 Redis 缓存。</b>从安装包根目录启动 Compose，并为后端设置 <code>CAD2GIS_REDIS_URL=redis://127.0.0.1:16379/0</code>（默认 TTL 120 秒；未配置时直接用 SQLite）。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 03 首个转换 ═══ -->
+  <section class="man-page" id="ch-03" data-title="03 首个转换">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 03 · 首个转换</p>
+      <h2>inspect → bootstrap → validate → convert</h2>
+      <p class="dek">出处：README「新图纸的推荐流程」。每个新 DWG 都必须建立自己的 source-bound profile 和 mapping registry。</p>
+      <div class="codeblk">cad2gis inspect "&lt;SOURCE.dwg&gt;" --json
+cad2gis bootstrap "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --json</div>
+      <p class="code-cap">第一步：建立源画像与项目骨架</p>
+      <div class="codeblk">cad2gis validate --project "&lt;PROJECT_DIR&gt;" --json
+cad2gis convert "&lt;SOURCE.dwg&gt;" `
+  --project "&lt;PROJECT_DIR&gt;" `
+  --run-dir "&lt;NEW_RUN_DIR&gt;" `
+  --json</div>
+      <p class="code-cap">第二步：检查并完成生成的源配置与语义映射后，再验证和转换</p>
+      <h3>使用 DeepSeek 自动完成受约束的 onboarding（逐字）</h3>
+      <div class="codeblk">$env:DEEPSEEK_API_KEY = "&lt;secret&gt;"
+cad2gis auto-convert "&lt;SOURCE.dwg&gt;" `
+  --project "&lt;PROJECT_DIR&gt;" `
+  --run-dir "&lt;NEW_RUN_DIR&gt;" `
+  --provider deepseek `
+  --force-bootstrap `
+  --json</div>
+      <p class="code-cap">密钥不写入项目、日志或 manifest；New API 聚合网关用 --provider new-api</p>
+      <h3>已有验证通过的项目配置时的最短命令（逐字）</h3>
+      <div class="codeblk">cad2gis validate --project "&lt;PROJECT_DIR&gt;" --json
+cad2gis convert "&lt;SOURCE.dwg&gt;" --project "&lt;PROJECT_DIR&gt;" --run-dir "&lt;FIRST_RUN_DIR&gt;" --json</div>
+      <div class="note-box">
+        <p><b>关键说明。</b><code>convert</code> 和 <code>auto-convert</code> 默认使用 <code>--matching osm</code>；标称坐标兼容流程需显式 <code>--matching nominal</code>；测量 GCP 配置需显式 <code>--gcp-profile "&lt;GCP_PROFILE.json&gt;"</code>。标准 OSM 模式不会自动启用项目目录中发现的 GCP 文件。有效坐标域、地点提示或离线 OSM 快照提供匹配搜索参考；无任何地理参考的本地 CAD 仍需补充定位输入；系统不会从文件名隐式猜测城市。自动匹配不确定但地域已知时，保留待人工检查的粗定位。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 04 OSM 路网匹配 ═══ -->
+  <section class="man-page" id="ch-04" data-title="04 OSM 路网匹配">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 04 · OSM 路网匹配</p>
+      <h2>参数、四态与模型约束</h2>
+      <p class="dek">出处：docs/OSM_STANDARD_MATCHING.md。动态过程演示见 <a href="osm-gcp.html">子页 1 · 路网匹配与人工校验</a>。</p>
+      <p>标准流程只有一条：<b>OSM 自动匹配 → SVG 图例候选提取 → 查看 GIS 与候选 → 人工控制点预览 → 确认后二次匹配 → 自动加载新结果</b>。交付记录 <code>authority: relative_osm</code>、<code>absolute_accuracy_verified: false</code>；地图重合/小残差/高自动分数均不代表测量级绝对精度。</p>
+      <h3>参数表（逐字）</h3>
+      <table class="doc-table">
+        <thead><tr><th>参数</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>--matching osm</code></td><td>默认标准模式：尝试 OSM 相对匹配。</td></tr>
+          <tr><td><code>--matching nominal</code></td><td>使用原标称坐标兼容流程，保留其现有验证要求。</td></tr>
+          <tr><td><code>--osm-data "&lt;OVERPASS.json&gt;"</code></td><td>使用离线 Overpass 道路快照。</td></tr>
+          <tr><td><code>--osm-place "&lt;PLACE_NAME&gt;"</code></td><td>显式指定地点搜索地域，优先于标称坐标推定的在线范围。</td></tr>
+          <tr><td><code>--match-profile "&lt;SAVED_MATCH_PROFILE.json&gt;"</code></td><td>使用完整、原样保存的匹配记录，重放同一基础坐标操作和匹配平移。</td></tr>
+          <tr><td><code>--gcp-profile "&lt;GCP_PROFILE.json&gt;"</code></td><td>显式使用已有 GCP 校准流程，仍须满足其训练、检查与精度验证要求。</td></tr>
+          <tr><td><code>--svg-mode candidate</code></td><td>默认提取原图 SVG 与图例对应候选；不自动应用到交付样式。</td></tr>
+          <tr><td><code>--svg-mode off</code></td><td>显式关闭 SVG 提取；不传字体目录。</td></tr>
+          <tr><td><code>--svg-font-dir "&lt;FONT_DIR&gt;"</code></td><td>SVG 提取所用的原图字体目录，可以重复指定。</td></tr>
+        </tbody>
+      </table>
+      <h3>匹配状态四态（逐字表）</h3>
+      <table class="doc-table">
+        <thead><tr><th>状态</th><th>含义与下一步</th></tr></thead>
+        <tbody>
+          <tr><td><code>matched</code></td><td>自动网络匹配通过相对匹配门槛，或已计算人工平移；仍需核对地理对应关系。</td></tr>
+          <tr><td><code>coarse</code></td><td>地域可用，但道路不足、网络拟合较弱或存在多解；保留粗定位以供人工校正。</td></tr>
+          <tr><td><code>unavailable</code></td><td>缺少可用匹配输入或可匹配路线；有可信标称坐标时可查看其结果，本地 CAD 需补充定位输入。</td></tr>
+          <tr><td><code>abstained</code></td><td>自动候选未获接受；查看诊断并补充参考，不应把候选解释为已确认匹配。</td></tr>
+        </tbody>
+      </table>
+      <div class="warn-box">
+        <p><b>互斥规则。</b><code>--matching nominal</code> 不能与 OSM 输入混用；<code>--match-profile</code> 不能同时传入新 <code>--osm-data</code>、<code>--osm-place</code> 或 <code>--gcp-profile</code>。不要手动编辑匹配记录（摘要绑定源文件、CRS、单位、基础操作、版本与道路快照，改动导致校验失败）。</p>
+      </div>
+      <div class="note-box">
+        <p><b>匹配模型说明。</b>基础坐标操作（单位、必要投影转换、Web Mercator 比例）+ 一个总平移；不自动旋转、不拉伸/仿射/橡皮片变形、不沿 OSM 道路逐点吸附缆线；每轮迭代均从原始 CAD 坐标重新计算。独立图框分别匹配，分区控制点平移不应用到其他图框。服务配置环境变量：<code>CAD2GIS_NOMINATIM_URL</code>、<code>CAD2GIS_OVERPASS_URL</code>、<code>CAD2GIS_OSM_USER_AGENT</code>；公共 Nominatim 要求 ≤1 请求/秒。OSM 数据需保留 <b>© OpenStreetMap contributors</b> 署名及 ODbL 信息。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 05 SVG 符号提取 ═══ -->
+  <section class="man-page" id="ch-05" data-title="05 SVG 符号提取">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 05 · SVG 符号提取</p>
+      <h2>candidate 模式：三产物，不自动应用</h2>
+      <p class="dek">出处：docs/OPTIONAL_SYMBOL_ASSETS.md。真实符号画廊与内嵌证据见 <a href="svg.html">子页 2 · SVG 提取与渲染</a>。</p>
+      <p>SVG 提取是标准转换流程的一部分，默认 <code>candidate</code> 模式。<code>convert</code>、<code>auto-convert</code>、Python <code>convert_project</code>、MCP <code>run_conversion</code>/<code>auto_onboard_and_convert</code> 与批量入口都在 <code>&lt;run&gt;/svg-candidates/</code> 生成三个产物：</p>
+      <ul>
+        <li><code>symbols.sqlite3</code>（候选数据库：SVG、SHA-256、原图 SHA、实体 handle、定义依赖与诊断；<code>symbol_id</code> 主键）</li>
+        <li><code>correspondence.json</code>（JSON 报告）</li>
+        <li><code>correspondence.html</code>（并排复核页）</li>
+      </ul>
+      <p>候选与 GIS 完整生成后原子发布；提取失败不发布半成品 run，已有 run 保留。候选不自动应用到交付 QML 或 GIS 业务数据；reviewed 模式尚未开放。</p>
+      <h3>独立运行（不依赖转换，逐字）</h3>
+      <div class="codeblk">python -m cad2gis.symbol_assets extract --source drawing.dwg --selection selection.json --output symbol-review-v1
+python -m cad2gis.symbol_assets qml --store symbol-review-v1/symbols.sqlite3 --symbol-id pole-source-candidate --output pole-candidate.qml --size-mm 6</div>
+      <p class="code-cap">也可用 tools/extract_svg_symbols.py，或安装后的 cad2gis-symbols</p>
+      <h3>选择配置示例（必须绑定实际源文件 SHA-256 与实际 handle）</h3>
+      <div class="codeblk">{
+  "source_sha256": "&lt;DWG 文件的完整 SHA-256&gt;",
+  "symbols": [
+    {"symbol_id": "pole-source-candidate", "label": "原图杆型候选", "handles": ["&lt;实际 handle&gt;"]}
+  ]
+}</div>
+      <p class="code-cap">脚本拒绝错误源 SHA、找不到的 handle、重复 ID、覆盖已有输出和被修改的 SVG · 缺字体 Linux 环境提供 --font-dir /path/to/fonts（可重复）；无字体时拒绝提取含文字的符号</p>
+      <h3>人工绑定到 QGZ（逐字，需 PyQGIS 环境）</h3>
+      <div class="codeblk">python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz --output EMR29619-standard.qgz
+python tools/package_qgis_standalone.py --project delivery/EMR29619/delivery.qgz --output EMR29619-with-SVG.qgz --store source-symbols/symbols.sqlite3 --bindings bindings.json --delivery-manifest delivery/delivery-manifest.json</div>
+      <div class="codeblk">[{"layer": "PTECH", "source_handle": "7943", "symbol_id": "ptech-7943"}]</div>
+      <div class="codeblk">cad2gis-svg-delivery --baseline &lt;完整交付目录&gt; --assets &lt;候选目录&gt; --output &lt;新目录&gt;
+python tools/verify_qgis_standalone.py --project output.qgz --output verification</div>
+      <p class="code-cap">生成后必须退出进程再独立复验（可加 --font /path/to/font.ttf）· 实现亦随核心包发布：python -m cad2gis.qgis_package / qgis_verify / svg_delivery，安装命令为 cad2gis-qgis-package / cad2gis-qgis-verify / cad2gis-svg-delivery</p>
+    </div>
+  </section>
+
+  <!-- ═══ 06 审查与 GCP 微调 ═══ -->
+  <section class="man-page" id="ch-06" data-title="06 审查与 GCP 微调">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 06 · 审查与 GCP 微调</p>
+      <h2>六步操作流与 0.01 m 步长</h2>
+      <p class="dek">出处：README「Web 配准、坐标传送与审查」、OSM_STANDARD_MATCHING §2、UPGRADE_0_6_0「第一次使用」。交互演示见 <a href="osm-gcp.html">子页 1 · 路网匹配与人工校验</a>。</p>
+      <h3>启动审查工作台（逐字）</h3>
+      <div class="codeblk">cad2gis review "&lt;RUN_DIR&gt;" --workspace "&lt;REVIEW_DIR&gt;" --port 8765</div>
+      <p class="code-cap">打开 http://127.0.0.1:8765/ · 界面提供 ?demo=1 合成交互模式（不读取/上传真实 DWG）</p>
+      <h3>逐步操作（逐字转录）</h3>
+      <ol class="six-flow">
+        <li>右图先显示当前已应用的 GIS 匹配结果，与 OSM 底图对照；</li>
+        <li>左图点击 CAD 实体，系统吸附到真实几何；右图点击同一位置，或输入 EPSG:4326 经度/纬度；</li>
+        <li>保存至少两个位置不同的训练点后查看人工平移校正预览。独立检查点只评估残差，不参与拟合；足够且分布合理的检查点有助于识别局部偏差；</li>
+        <li>确认预览后点击「二次匹配并生成新结果」，由正式转换管线创建新的 GIS；</li>
+        <li>完成后自动加载新结果，保留控制点；可继续修改、预览和再次匹配；</li>
+        <li>复核版交付用 <code>cad2gis publish-match "&lt;新RUN_DIR&gt;"</code> 发布。</li>
+      </ol>
+      <div class="note-box">
+        <p><b>微调与撤销。</b>选中控制点后可按 <code>0.01 / 0.1 / 1 m</code> 向东、西、南、北微调，并撤销或恢复最初选点；保存控制点后先看预览与残差，再生成新的 GIS run。<b>0.01 m 是操作步长，不是厘米级绝对精度承诺。</b></p>
+        <p><b>关键说明。</b>保存控制点只更新审查工作区与预览；预览由服务端用正式匹配变换计算；转换期间控制点编辑被锁定；过期匹配版本提交会被要求刷新；失败时保留当前结果与控制点。OSM 控制点精度类别固定为 <code>RELATIVE_OSM_REFERENCE_ONLY</code>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 07 二次匹配 ═══ -->
+  <section class="man-page" id="ch-07" data-title="07 二次匹配">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 07 · 二次匹配</p>
+      <h2>冻结本轮 → 正式转换 → 新目录不覆盖</h2>
+      <p class="dek">出处：OSM_STANDARD_MATCHING §3。</p>
+      <p>确认预览后点击 <b>「二次匹配并生成新结果」</b>。服务冻结本轮人工点与匹配记录，检查源文件、原始配置和当前匹配版本，再运行正式转换。</p>
+      <ul>
+        <li>成功后工作台自动加载新 GIS，显示新匹配版本，保留人工点供下一轮修改。</li>
+        <li>已发布 run 不可覆盖；每次转换使用新目录，保留前一版结果与来源记录。</li>
+        <li>二次匹配沿用本轮 SVG 模式和字体目录，为新 GIS 重新生成候选，候选与新数据库哈希绑定一起更新；新 run SVG 提取失败时当前 GIS 与旧候选保留。</li>
+        <li>控制台显示本次匹配配置路径、结果位置和可复制的转换命令；重开同一审查工作区可恢复当前匹配结果。</li>
+      </ul>
+      <div class="note-box">
+        <p><b>分区。</b>用 <code>cad2gis review "&lt;PARTITION_RUN_DIR&gt;"</code> 打开某个已有分区；该分区二次匹配只发布该区域新交付。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 08 QGIS 交付 ═══ -->
+  <section class="man-page" id="ch-08" data-title="08 QGIS 交付">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 08 · QGIS 交付</p>
+      <h2>publish-match 与固定六文件</h2>
+      <p class="dek">出处：README「QGIS 交付」。首开验证截图见 <a href="svg.html">子页 2</a> 与 <a href="app.html">子页 4</a>。</p>
+      <h3>发布复核版交付（逐字）</h3>
+      <div class="codeblk"># RUN_DIR 位于 &lt;PROJECT_DIR&gt;/run.review/matching/r&lt;N&gt;-&lt;uuid&gt;/run 时自动推导交付目录
+cad2gis publish-match "&lt;RUN_DIR&gt;"
+
+# 其他位置需显式指定
+cad2gis publish-match "&lt;RUN_DIR&gt;" --delivery-root "&lt;PROJECT_DIR&gt;/delivery"</div>
+      <ul>
+        <li>版本目录名取自 <code>osm_matching.revision</code>（<code>r2</code>、<code>r3</code>……）；已存在版本目录被拒绝，不覆盖旧版本。</li>
+        <li>需要能 <code>import qgis.core</code> 的解释器，依次尝试 <code>--qgis-python</code>、环境变量 <code>CAD2GIS_QGIS_PYTHON</code>、当前解释器、<code>/usr/bin/python3</code>。</li>
+        <li>可用 <code>--osm-data "[SCOPE=]PATH"</code> 复用已复核的 Overpass JSON 快照。</li>
+      </ul>
+      <h3>交付包固定六文件</h3>
+      <table class="doc-table">
+        <thead><tr><th>文件</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>delivery.gpkg</code></td><td>与对应 run 字节完全一致</td></tr>
+          <tr><td><code>delivery.qgz</code></td><td>QGIS 工程</td></tr>
+          <tr><td><code>delivery.review.json</code></td><td>审查记录</td></tr>
+          <tr><td><code>osm-basemap.gpkg</code></td><td>OSM 底图快照</td></tr>
+          <tr><td><code>view-with-source-SVG.qgz</code></td><td>内嵌源 SVG 视图</td></tr>
+          <tr><td><code>view-with-source-SVG.review.json</code></td><td>SVG 视图审查记录</td></tr>
+        </tbody>
+      </table>
+      <div class="note-box">
+        <p><b>在 QGIS 中打开。</b>直接拖入 <code>delivery.gpkg</code>，或通过「数据源管理器 → GeoPackage」连接；加载随包 QML 后恢复 CAD 图层颜色、线型、点符号和标签。成功 run 包含：<code>source.gpkg</code>、<code>evidence.gpkg</code>、<code>delivery.gpkg</code>、QML 与 style manifest、evidence graph 与视觉索引、<code>run_manifest.json</code>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 09 MCP 智能体 ═══ -->
+  <section class="man-page" id="ch-09" data-title="09 MCP 智能体">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 09 · MCP 智能体</p>
+      <h2>50 个工具，先读能力再动手</h2>
+      <p class="dek">出处：README「MCP 与主流智能体」、「1. 安装本地运行时 / 2. 安装智能体客户端插件」。</p>
+      <h3>传输方式（逐字）</h3>
+      <div class="codeblk"># stdio（通常由智能体自动启动）
+cad2gis-agent-mcp --transport stdio
+
+# 本机 Streamable HTTP
+python -m cad2gis.agent_mcp `
+  --transport streamable-http `
+  --host 127.0.0.1 `
+  --port 8768</div>
+      <p class="code-cap">HTTP endpoint 为 http://127.0.0.1:8768/mcp · 默认只允许本机 loopback，网络部署必须增加认证反向代理</p>
+      <h3>客户端插件安装（逐字）</h3>
+      <div class="codeblk"># Codex
+codex plugin marketplace add Mola-maker/CAD2GIS --ref main
+codex plugin add cad2gis-agent@cad2gis
+codex plugin list
+
+# Claude Code
+claude plugin marketplace add Mola-maker/CAD2GIS
+claude plugin install cad2gis-agent@cad2gis-tools
+claude plugin list</div>
+      <p class="code-cap">Cursor / VS Code：下载 plugins/cad2gis-agent/clients 下的 cursor.mcp.json / vscode.mcp.json 到 .cursor/mcp.json / .vscode/mcp.json（模板用 ${workspaceFolder}，无需绝对路径），重启客户端</p>
+      <h3>使用要点</h3>
+      <p>服务暴露 <code>get_capabilities</code>，智能体先读取转换边界、transport 和精度声明，再调用 inspection、onboarding、conversion、evidence、repair、review 工具；转换完成后调用 <code>audit_run</code> 校验每个产物 SHA-256、GeoPackage 图层计数与 manifest census。</p>
+      <h3>目录授权（需要授权工作区外数据目录时，逐字）</h3>
+      <div class="codeblk">$env:CAD2GIS_PROJECT_ROOTS = "D:\survey-data;D:\shared-cad"</div>
+      <div class="note-box">
+        <p><b>边界。</b>MCP 只能访问客户端工作区或显式授权根目录中的文件。Python <code>convert_project</code> 与 MCP <code>run_conversion</code> 同样提供 <code>matching</code>、<code>osm_data</code>、<code>osm_place</code>、<code>match_profile</code> 参数，并与 <code>auto_onboard_and_convert</code> 共享 <code>svg_mode</code>、<code>svg_font_dirs</code>；两个 MCP 转换工具返回 <code>svg_candidates</code>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 10 Android 连接 ═══ -->
+  <section class="man-page" id="ch-10" data-title="10 Android 连接">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 10 · Android 连接</p>
+      <h2>手机是客户端，不是转换器</h2>
+      <p class="dek">出处：docs/CONNECT_ANDROID.md。Android 安装包是<b>服务器客户端</b>——手机负责登录、浏览图纸和查看审查地图；DWG 读取、OSM 匹配、SVG 提取与二次匹配由 Windows/Linux 服务端执行。</p>
+      <h3>1 · 准备服务端</h3>
+      <p>管理员准备手机可达域名、与域名匹配且被 Android 系统信任的 HTTPS 证书、≥12 字符服务密码；可用同一局域网，不要求公共云。Linux 启动示例（逐字）：</p>
+      <div class="codeblk">export CAD2GIS_APP_PASSWORD='替换为至少12字符的服务密码'
+cad2gis-desktop --no-browser --host 0.0.0.0 --port 8765 \
+  --public-host cad.example.com \
+  --project-root '/srv/cad-projects' \
+  --ssl-certfile '/etc/cad2gis/fullchain.pem' \
+  --ssl-keyfile '/etc/cad2gis/privkey.pem'</div>
+      <p class="code-cap">服务只访问 --project-root 指定目录（可重复）；--public-host 必须与手机地址主机名一致</p>
+      <h3>2 · 安装并连接手机</h3>
+      <p>安装 <code>CAD2GIS-0.4.0-android-dev.apk</code>（开发测试签名）→ 打开应用点「服务器」填 <code>https://cad.example.com:8765</code> → 用服务密码登录。要求 Android 8.0+ 与 Android System WebView 83+。</p>
+      <h3>3 · 使用匹配结果</h3>
+      <p>标准转换生成 OSM 相对匹配与 SVG 候选；人工控制点先预览，确认二次匹配才生成新 GIS，原结果保留。</p>
+      <div class="warn-box">
+        <p><b>常见异常。</b>地址须为 HTTPS 服务根地址；证书错误不跳过（只信任系统证书）；无图纸则把 DWG 放入管理员授权目录；切换服务器会清除旧登录状态（正常行为）。</p>
+      </div>
+      <div class="note-box">
+        <p><b>版本命名说明。</b>APK 文档版本 0.4.0 与桌面 0.7.0 存在命名差异，以 repo 实际交付 0.7.0 为准。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 11 术语 ═══ -->
+  <section class="man-page" id="ch-11" data-title="11 术语">
+    <div class="doc-wrap">
+      <p class="sec-no">CHAPTER 11 · 术语</p>
+      <h2>读图之前先读词</h2>
+      <p class="dek">出处：README「术语」、docs/GLOSSARY.md（项目权威术语表）。图纸层名与要素类的完整定义以 GLOSSARY 为准。</p>
+      <table class="doc-table">
+        <thead><tr><th>术语</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td><b>APD</b></td><td>As Plan Drawing（按计划图纸）：记录 as-planned 设计，非 as-built 竣工实测；APD 几何是权威设计计划，精度声明须区分「计划图纸」与「地面验证」。</td></tr>
+          <tr><td><b>SF</b></td><td>Subfeeder（副馈线/分支配电线）；文件名 <code>- SF</code> 后缀表示该图是网络的 subfeeder 部分。</td></tr>
+          <tr><td><b>FTTH</b></td><td>Fibre To The Home（光纤到户）。</td></tr>
+          <tr><td><b>BOITE</b></td><td>交付要素类：分线盒。</td></tr>
+          <tr><td><b>SITE</b></td><td>交付要素类：站点围封。</td></tr>
+          <tr><td><b>PTECH</b></td><td>交付要素类：杆/支撑设施。</td></tr>
+          <tr><td><b>IMB / CABLE / ZPM / ZNRO</b></td><td>九图交付中出现的图纸层名/要素类名；权威定义见仓库 docs/GLOSSARY.md，本手册不另行转译。</td></tr>
+        </tbody>
+      </table>
+      <div class="warn-box">
+        <p><b>CONDITIONAL。</b>全部交付的精度声明永久封顶 <code>CONDITIONAL / not independently verified</code>：通过源几何/拓扑/长度门禁不授权任何绝对地图精度声明；<code>authority: relative_osm</code>、<code>absolute_accuracy_verified: false</code>；地图重合、小残差、高自动分数均不代表测量级绝对精度。直到测量级控制点出现，这个词不会变。</p>
+      </div>
+      <div class="note-box">
+        <p><b>语料划分原则。</b>开发/基线集（4 DWG）与验证集（6 DWG）的语料划分属内部研发约定；面向用户只有一条原则：每张新图独立建 source-bound 配置，不得复用基线规则或数量门禁。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="doc-wrap"><div id="docs-pager"></div></div>
+</main>
+
+<script src="assets/docs.js"></script>
+<script src="assets/page-manual.js"></script>
+</body>
+</html>

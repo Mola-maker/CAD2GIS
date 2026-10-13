@@ -1,391 +1,282 @@
-from __future__ import annotations
+"""Build both public hosts from the owner-supplied official production website.
 
+The local runtime demo has a separate builder: build_local_demo.py.
+"""
+
+from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
+import tempfile
 from html import escape
-from urllib.parse import urlsplit
 from pathlib import Path
-
+from urllib.parse import urlsplit
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-WEB_ROOT = PROJECT_ROOT / "src" / "cad2gis" / "webdemo"
-DEMO_ROOT = WEB_ROOT / "original-demo"
-
-ASSETS = (
-    "landing.css",
-    "landing.js",
-    "hero-tube.js",
-    "install.css",
-    "install.js",
-    "pointer.css",
-    "pointer.js",
-    "workspace-shell.css",
-)
-
-DEMO_REQUIRED = (
-    "index.html",
-    "assets/app.js",
-    "assets/styles.css",
-    "assets/demo-catalog.json",
-)
-
-# These data-free assets are shared with the local, nine-case console.
-# Public fixtures and their publication gate remain under original-demo/assets.
-SHARED_DEMO_SCRIPTS = ("app.js", "demo-fixture.js")
-SHARED_DEMO_ASSETS = (
-    "cad2gis-hero-display.woff2",
-    "hero-evidence-graph.svg",
-    "hero-geometry.json",
-    "hero-grid.svg",
-    "hero-stickers.svg",
-    "hero-tunnel.svg",
-    "ibm-plex-mono-regular-subset.woff2",
-    "ibm-plex-mono-semibold-subset.woff2",
-    "noto-sans-sc-subset.woff2",
-    "smiley-sans-subset.woff2",
-    "space-grotesk-subset.woff2",
-    "font-licenses/OFL-IBMPlexMono.txt",
-    "font-licenses/OFL-NotoSansSC.txt",
-    "font-licenses/OFL-SmileySans.txt",
-    "font-licenses/OFL-SpaceGrotesk.txt",
-)
-
-FORBIDDEN_DEMO_SUFFIXES = {
-    ".dwg",
-    ".dxf",
-    ".gpkg",
-    ".qgz",
-    ".sqlite",
-    ".sqlite3",
-}
-
-RETAINED_PREVIEW_PROVENANCE = "already-bundled-nine-drawing-preview"
-# Fixed identity of the preview already bundled before data cleanup. Catalog
-# declarations cannot extend this list or authorize a different specimen.
-# Text hashes normalize CRLF to LF so Git checkout policy does not change them.
-RETAINED_PREVIEWS = {
-    "kletek": {
-        "fixture": "../../demo-data-kletek.json",
-        "source_sha256": "756f6e5bb4feb61fed2d86046478e0fb714434628bd0f17db4d78fef0b221016",
-        "fixture_sha256": "de1cd5132dafe51ffca9cc29cba00df5918d4ff3df83d02cc2ddeb841f356221",
-        "fixture_hash_normalization": "CRLF-to-LF",
-    },
-}
+SOURCE_ROOT = PROJECT_ROOT / "site" / "official"
+SOURCE_MANIFEST = PROJECT_ROOT / "site" / "source-manifest.json"
+WIKI_ROOT = PROJECT_ROOT / "docs" / "wiki"
+NOTICE_ROOT = PROJECT_ROOT / "site" / "notices"
+CANONICAL_BASE = "https://cad2gis.molamaker.cn/"
+OWNER = "cad2gis-official-static-v1"
 
 
-def _publication_gate_passed(project: dict[str, object]) -> bool:
-    # Retain an already bundled preview; this branch grants no new publication
-    # authorization or engineering acceptance. Check its exact source-bound
-    # bytes below. New external releases still use verify_derived_release.
-    if project.get("publication_scope") == "retained_bundled_preview":
-        retained = RETAINED_PREVIEWS.get(project.get("id"))
-        return bool(
-            retained
-            and all(project.get(key) == value for key, value in retained.items())
-            and project.get("preview_provenance") == RETAINED_PREVIEW_PROVENANCE
-            and project.get("new_publication_authorization") is False
-            and project.get("absolute_accuracy_verified") is False
-            and project.get("run_status") == "CONDITIONAL"
-        )
-    gate = project.get("publication_gate")
-    if not isinstance(gate, dict):
-        return False
-    return (
-        gate.get("calibration_status") == "verified"
-        and gate.get("control_authority") in {"surveyed", "official"}
-        and isinstance(gate.get("independent_checkpoint_count"), int)
-        and gate["independent_checkpoint_count"] >= 3
-        and gate.get("spatial_coverage_passed") is True
-        and gate.get("run_status") == "VERIFIED"
-    )
+def _inline(text: str) -> str:
+    text = escape(text)
+    text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
+    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
+    return text
 
 
-def _rewrite_landing(source: str) -> str:
-    return (
-        source
-        .replace('href="/assets/', 'href="./assets/')
-        .replace('src="/assets/', 'src="./assets/')
-        .replace('href="/install"', 'href="./install.html"')
-        .replace('href="/workspace"', 'href="./workspace/"')
-        .replace('href="/"', 'href="./"')
-        .replace('>工作台</a>', '>演示台</a>')
-        .replace('打开工作台', '打开演示台')
-    )
+def _markdown(text: str) -> str:
+    """Small renderer for the deliberately limited author-owned Wiki format."""
+    parts, paragraph, table, listing, code = [], [], [], [], None
 
-
-def _rewrite_install(source: str) -> str:
-    return (
-        source
-        .replace('href="/assets/', 'href="./assets/')
-        .replace('src="/assets/', 'src="./assets/')
-        .replace('href="/workspace"', 'href="./workspace/"')
-        .replace('href="/"', 'href="./"')
-        .replace('>工作台</a>', '>演示台</a>')
-        .replace('打开审查工作台', '打开图纸定位演示台')
-    )
-
-
-def _validate_demo() -> None:
-    missing = [name for name in DEMO_REQUIRED if not (DEMO_ROOT / name).is_file()]
-    if missing:
-        raise ValueError("Original WebDemo is incomplete: " + ", ".join(missing))
-    shared = SHARED_DEMO_SCRIPTS + tuple(f"assets/{name}" for name in SHARED_DEMO_ASSETS)
-    missing_shared = [name for name in shared if not (WEB_ROOT / name).is_file()]
-    if missing_shared:
-        raise ValueError("Shared WebDemo assets are incomplete: " + ", ".join(missing_shared))
-    forbidden = sorted(
-        path.relative_to(DEMO_ROOT).as_posix()
-        for path in DEMO_ROOT.rglob("*")
-        if path.is_file() and path.suffix.casefold() in FORBIDDEN_DEMO_SUFFIXES
-    )
-    if forbidden:
-        raise ValueError(
-            "Refusing to publish CAD/GIS source data: " + ", ".join(forbidden)
-        )
-    catalog = json.loads(
-        (DEMO_ROOT / "assets" / "demo-catalog.json").read_text(encoding="utf-8")
-    )
-    projects = catalog.get("projects", [])
-    if not projects or catalog.get('default_project') not in {project.get('id') for project in projects}:
-        raise ValueError("Public demo must select an available project")
-    for project in projects:
-        if not _publication_gate_passed(project):
-            raise ValueError(
-                f"Public demo calibration gate failed: {project.get('id')!r}"
+    def flush():
+        if paragraph:
+            parts.append("<p>" + _inline(" ".join(paragraph)) + "</p>")
+            paragraph.clear()
+        if table:
+            header, *rows = table
+            parts.append(
+                '<div class="wiki-table"><table><thead><tr>'
+                + "".join("<th>" + _inline(c) + "</th>" for c in header)
+                + "</tr></thead><tbody>"
             )
-        fixture = project.get("fixture")
-        if not isinstance(fixture, str):
-            raise ValueError(f"Public demo fixture is missing: {fixture!r}")
-        path = (DEMO_ROOT / "assets" / fixture).resolve()
-        if not path.is_relative_to(WEB_ROOT.resolve()) or not path.is_file():
-            raise ValueError(f"Public demo fixture is missing: {fixture!r}")
-        if project.get('publication_scope') == 'retained_bundled_preview':
-            raw = path.read_bytes().replace(b'\r\n', b'\n')
-            data = json.loads(raw)
-            if (hashlib.sha256(raw).hexdigest() != project.get('fixture_sha256')
-                    or data.get('provenance', {}).get('project_id') != project.get('id')
-                    or data.get('provenance', {}).get('source_sha256') != project.get('source_sha256')
-                    or data.get('run', {}).get('run_status') != project.get('run_status')):
-                raise ValueError(f"Public demo preview binding failed: {project.get('id')!r}")
+            parts.extend(
+                "<tr>" + "".join("<td>" + _inline(c) + "</td>" for c in row) + "</tr>"
+                for row in rows
+            )
+            parts.append("</tbody></table></div>")
+            table.clear()
+        if listing:
+            parts.append(
+                "<ol>"
+                + "".join("<li>" + _inline(c) + "</li>" for c in listing)
+                + "</ol>"
+            )
+            listing.clear()
+
+    for line in text.splitlines():
+        if line.startswith("```"):
+            if code is None:
+                flush()
+                code = []
+            else:
+                parts.append(
+                    '<pre class="codeblk"><code>'
+                    + escape("\n".join(code))
+                    + "</code></pre>"
+                )
+                code = None
+            continue
+        if code is not None:
+            code.append(line)
+            continue
+        if not line.strip():
+            flush()
+            continue
+        if line.startswith("|"):
+            if re.fullmatch(r"[| :\-]+", line):
+                continue
+            table.append([c.strip() for c in line.strip("|").split("|")])
+            continue
+        match = re.match(r"^(#{1,3}) (.+)", line)
+        if match:
+            flush()
+            level = len(match[1])
+            parts.append(f"<h{level}>" + _inline(match[2]) + f"</h{level}>")
+            continue
+        match = re.match(r"^\d+\. (.+)", line)
+        if match:
+            listing.append(match[1])
+            continue
+        paragraph.append(line)
+    flush()
+    return "\n".join(parts)
 
 
-def _workspace_page(source: str) -> str:
-    config_start = source.index('  <script id="cad2gis-page-config" type="application/json">')
-    config_end = source.index("</script>", config_start) + len("</script>")
-    page_config = source[config_start:config_end]
-    fragment_start = source.index('  <div id="console-app">')
-    fragment_end = source.index('  <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js">')
-    fragment = source[fragment_start:fragment_end]
-    fragment = fragment.replace(
-        '<div class="brand-lockup">',
-        '<a class="brand-lockup" href="../" aria-label="返回 CAD2GIS 产品首页">',
-        1,
-    ).replace(
-        '    </div>\n    <div class="run-state" aria-label="服务状态">',
-        '    </a>\n    <nav class="workspace-product-nav" aria-label="产品导航">'
-        '<a href="../">产品首页</a><a href="../install.html">安装</a></nav>\n'
-        '    <div class="run-state" aria-label="服务状态">',
-        1,
+def _wiki_page(language: str, markdown: str) -> str:
+    english = language == "en"
+    counterpart = "index.html" if english else "en.html"
+    title = "CAD2GIS · MCP & Plugin Guide" if english else "CAD2GIS · MCP 与插件指南"
+    content = (
+        _markdown(markdown)
+        .replace('href="Home-EN"', 'href="en.html"')
+        .replace('href="Home"', 'href="index.html"')
     )
     return f'''<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f5f8f7">
-  <title>CAD2GIS — 图纸理解与交付控制台</title>
-{page_config}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.6.1/ol.css">
-  <link rel="preload" href="./assets/cad2gis-hero-display.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="./assets/noto-sans-sc-subset.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./assets/styles.css">
-  <link rel="stylesheet" href="../assets/workspace-shell.css">
-  <link rel="stylesheet" href="../assets/pointer.css">
-</head>
-<body class="workspace-subpage">
-{fragment}
-  <script src="https://cdn.jsdelivr.net/npm/ol@10.6.1/dist/ol.js"></script>
-  <script src="./assets/demo-fixture.js"></script>
-  <script type="module" src="./assets/app.js"></script>
-  <script type="module" src="../assets/pointer.js"></script>
-</body>
-</html>
-'''
+<html lang="{"en" if english else "zh-CN"}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title><meta name="description" content="CAD2GIS 0.8.0: DWG/DXF to GIS, source-preserving CAD tools, MCP and plugins with validation evidence.">
+<link rel="canonical" href="{CANONICAL_BASE}wiki/{"en.html" if english else "index.html"}">
+<link rel="alternate" hreflang="en" href="{CANONICAL_BASE}wiki/en.html">
+<link rel="alternate" hreflang="zh-CN" href="{CANONICAL_BASE}wiki/index.html">
+<link rel="stylesheet" href="../docs/assets/fonts.css">
+<link rel="stylesheet" href="../docs/assets/theme.css">
+<link rel="stylesheet" href="../docs/assets/docs.css">
+<link rel="stylesheet" href="wiki.css"></head><body>
+<header id="docs-topbar"><a class="tb-back" href="../">CAD2GIS</a><span class="tb-brand">WIKI / 0.8.0</span><nav aria-label="Wiki navigation"><a href="{counterpart}" lang="{"zh-CN" if english else "en"}">{"中文" if english else "English"}</a><a href="../docs/index.html">{"Historical manual" if english else "历史手册"}</a><a href="https://github.com/Mola-maker/CAD2GIS/wiki">GitHub Wiki ↗</a></nav></header>
+<main class="doc-main"><article class="doc-wrap">{content}</article></main>
+<footer class="doc-wrap"><p>Apache-2.0 · Original code / 原创代码 · CONDITIONAL demo evidence</p></footer></body></html>'''
 
 
-def _demo_redirect() -> str:
-    return '''<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=../workspace/">
-  <title>正在打开图纸理解与交付控制台</title>
-</head>
-<body><p>正在前往<a href="../workspace/">图纸理解与交付控制台</a>…</p></body>
-</html>
-'''
-
-
-
-def _metadata(source: str, url: str, title: str) -> str:
-    description = "DWG/DXF 转 GIS、QGIS 交付与 AI Agent CAD 副本编辑；保留来源哈希和验收证据。"
-    schema = {"@context": "https://schema.org", "@type": "SoftwareApplication",
-              "name": "CAD2GIS", "softwareVersion": "0.8.0", "url": url,
-              "applicationCategory": "DeveloperApplication", "operatingSystem": "Windows, macOS, Linux",
-              "description": description, "license": "https://www.apache.org/licenses/LICENSE-2.0"}
-    tags = (f'<link rel="canonical" href="{escape(url, quote=True)}">\n'
-            f'<meta name="description" content="{description}">\n'
-            f'<meta property="og:title" content="{escape(title, quote=True)}">\n'
-            f'<meta property="og:description" content="{description}">\n'
-            f'<meta property="og:url" content="{escape(url, quote=True)}">\n'
-            '<meta property="og:type" content="website">\n'
-            '<meta property="og:image" content="https://mola-maker.github.io/CAD2GIS/deliveries/drawing-01/process/source-delivery-overlay.png">\n'
-            '<script type="application/ld+json">' + json.dumps(schema, ensure_ascii=False) + '</script>\n')
-    return source.replace('</head>', tags + '</head>', 1)
-
-def build(output: Path, *, release_root: Path | None = None,
-          public_base_url: str = "https://mola-maker.github.io/CAD2GIS/") -> None:
+def build(
+    output: Path, *, public_base_url: str = "https://mola-maker.github.io/CAD2GIS/"
+) -> None:
     parsed = urlsplit(public_base_url)
-    if parsed.scheme not in {"https", "http"} or not parsed.netloc or parsed.query or parsed.fragment or parsed.username:
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.query
+        or parsed.fragment
+        or parsed.username
+    ):
         raise ValueError("public_base_url must be an absolute HTTP(S) site URL")
-    public_base_url = public_base_url.rstrip("/") + "/"
-    _validate_demo()
-    release_root = release_root or PROJECT_ROOT / "pages-delivery" / "nine-drawings"
-    release_catalog = None
-    if release_root.exists():
-        try:
-            from scripts.verify_derived_release import verify
-        except ModuleNotFoundError:
-            from verify_derived_release import verify
-        release_catalog = verify(release_root)
+    base = public_base_url.rstrip("/") + "/"
+    root, source, output = (
+        PROJECT_ROOT.resolve(),
+        SOURCE_ROOT.resolve(),
+        output.absolute(),
+    )
+    if output.is_symlink():
+        raise ValueError("Refusing symlink output")
     output = output.resolve()
-    if output == PROJECT_ROOT or PROJECT_ROOT not in output.parents:
-        raise ValueError("Pages output must be a child directory of the project root")
-    if output.exists():
-        shutil.rmtree(output)
+    if (
+        output == root
+        or not output.is_relative_to(root)
+        or source.is_relative_to(output)
+        or output.is_relative_to(source)
+    ):
+        raise ValueError("Output must be a project child separate from source assets")
+    marker = output / ".cad2gis-site-owner"
+    if (
+        output.exists()
+        and any(output.iterdir())
+        and (not marker.is_file() or marker.read_text() != OWNER)
+    ):
+        raise ValueError("Refusing to replace an unowned output directory")
+    manifest = json.loads(SOURCE_MANIFEST.read_text(encoding="utf8"))
+    entries = manifest["files"]
+    expected = set()
+    for item in entries:
+        relative = Path(item["path"])
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError("Unsafe source manifest path")
+        path = source / relative
+        if path.is_symlink() or not path.resolve().is_relative_to(source):
+            raise ValueError("Unsafe source asset")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != item["sha256"]:
+            raise ValueError(f"Source asset hash mismatch: {relative}")
+        expected.add(relative.as_posix())
+    actual = {
+        p.relative_to(source).as_posix() for p in source.rglob("*") if p.is_file()
+    }
+    if actual != expected:
+        raise ValueError("Unmanifested or missing official site assets")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    stage = Path(tempfile.mkdtemp(prefix=".official-build-", dir=output.parent))
+    try:
+        shutil.copytree(source, stage, dirs_exist_ok=True)
+        shutil.copytree(NOTICE_ROOT, stage / "notices")
+        for name in ("index.html", "cad2gis-report.html"):
+            path = stage / name
+            page = path.read_text(encoding="utf8")
+            banner = '<aside class="cad2gis-current"><a href="wiki/index.html">MCP / 插件 0.8.0 · 中文指南</a> · <a href="wiki/en.html">English</a> · <a href="https://github.com/Mola-maker/CAD2GIS/releases/tag/v0.8.0">下载 / Download</a></aside>'
+            style = '<style>.cad2gis-current{position:relative;z-index:100;padding:12px 20px;border-bottom:1px solid #d7d7ce;background:#fffff8;color:#142a33;font:14px "et-book","Songti SC",serif;line-height:1.6}.cad2gis-current a{color:inherit;text-decoration:underline}</style>'
+            page = page.replace("</head>", style + "</head>", 1)
+            page = re.sub(r"(<body\b[^>]*>)", r"\1" + banner, page, count=1)
+            path.write_text(page, encoding="utf8")
+        wiki = stage / "wiki"
+        wiki.mkdir()
+        for lang, filename, md in [
+            ("zh", "index.html", "Home.md"),
+            ("en", "en.html", "Home-EN.md"),
+        ]:
+            (wiki / filename).write_text(
+                _wiki_page(lang, (WIKI_ROOT / md).read_text(encoding="utf8")),
+                encoding="utf8",
+            )
+        (wiki / "wiki.css").write_text(
+            """/* Extend the official documentation design; fonts and palette are inherited. */
+.doc-wrap h1{font-size:clamp(30px,5vw,48px);line-height:1.2}.doc-wrap h2{margin-top:2.4em}.doc-wrap p,.doc-wrap li{line-height:1.85}.wiki-table{overflow-x:auto;margin:24px 0}.wiki-table table{width:100%;border-collapse:collapse;min-width:560px}.wiki-table th,.wiki-table td{padding:12px;text-align:left;border-bottom:1px solid var(--line,#ddd);vertical-align:top}.wiki-table th{font-family:var(--mono);font-size:12px}.codeblk{overflow-x:auto;white-space:pre;font-size:13px}.codeblk code{border:0;background:transparent}#docs-topbar{box-sizing:border-box}#docs-topbar nav{min-width:0}footer{padding-bottom:40px}
+""",
+            encoding="utf8",
+        )
+        manual = stage / "docs/index.html"
+        page = manual.read_text(encoding="utf8").replace(
+            '<main class="doc-main">',
+            '<main class="doc-main"><div class="doc-wrap"><p class="doc-kicker">CURRENT AGENT / 0.8.0</p><p>以下手册保留历史快照。当前 MCP 与插件能力、Apache-2.0 许可和安装说明：<a href="../wiki/index.html">中文 Wiki</a> · <a href="../wiki/en.html">English Wiki</a>。</p></div>',
+            1,
+        )
+        manual.write_text(page, encoding="utf8")
+        pages = sorted(p.relative_to(stage).as_posix() for p in stage.rglob("*.html"))
+        (stage / "sitemap.xml").write_text(
+            '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            + "".join(
+                "<url><loc>"
+                + CANONICAL_BASE
+                + (
+                    "wiki/"
+                    if n == "wiki/index.html"
+                    else ""
+                    if n == "index.html"
+                    else n
+                )
+                + "</loc></url>"
+                for n in pages
+            )
+            + "</urlset>\n",
+            encoding="utf8",
+        )
+        (stage / "robots.txt").write_text(
+            "User-agent: *\nAllow: /\nSitemap: " + CANONICAL_BASE + "sitemap.xml\n",
+            encoding="utf8",
+        )
+        (stage / ".nojekyll").write_text("", encoding="utf8")
+        (stage / ".cad2gis-site-owner").write_text(OWNER, encoding="utf8")
+        (stage / "build-manifest.json").write_text(
+            json.dumps(
+                {
+                    "mode": "official-production-archive",
+                    "version": "0.8.0",
+                    "public_base_url": base,
+                    "canonical_base_url": CANONICAL_BASE,
+                    "source_archive_sha256": manifest["archive_sha256"],
+                    "source_prefix": manifest["prefix"],
+                    "source_files": len(entries),
+                    "pages": pages,
+                    "wiki_languages": ["zh-CN", "en"],
+                    "contains_source_cad_binaries": False,
+                    "historical_demo_status": "CONDITIONAL",
+                    "absolute_accuracy_verified": False,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf8",
+        )
+        if output.exists():
+            shutil.rmtree(output)
+        stage.rename(output)
+    finally:
+        if stage.exists():
+            shutil.rmtree(stage)
 
-    assets_dir = output / "assets"
-    assets_dir.mkdir(parents=True)
-    for filename in ASSETS:
-        shutil.copy2(WEB_ROOT / filename, assets_dir / filename)
 
-    landing = (WEB_ROOT / "landing.html").read_text(encoding="utf-8")
-    install = (WEB_ROOT / "install.html").read_text(encoding="utf-8")
-    (output / "index.html").write_text(
-        _metadata(_rewrite_landing(landing), public_base_url, "CAD2GIS · CAD to GIS for AI agents"), encoding="utf-8",
-    )
-    (output / "install.html").write_text(
-        _metadata(_rewrite_install(install), public_base_url + "install.html", "安装 CAD2GIS Agent"), encoding="utf-8",
-    )
-    # Preserve already-shared URLs after reverting the architecture presentation.
-    (output / "architecture.html").write_text(
-        '<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
-        '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<meta http-equiv="refresh" content="0; url=./"><title>CAD2GIS</title>'
-        '<p><a href="./">返回 CAD2GIS 首页</a></p></html>', encoding="utf-8",
-    )
-    workspace_dir = output / "workspace"
-    workspace_assets = workspace_dir / "assets"
-    shutil.copytree(DEMO_ROOT / "assets", workspace_assets)
-    # A source page can reference the retained shared fixture without another
-    # tracked data copy. Resolve it into this self-contained build only.
-    catalog_path = workspace_assets / 'demo-catalog.json'
-    catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
-    for project in catalog['projects']:
-        source_fixture = (DEMO_ROOT / 'assets' / project['fixture']).resolve()
-        project['fixture'] = source_fixture.name
-        shutil.copy2(source_fixture, workspace_assets / source_fixture.name)
-    catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding='utf-8')
-    if release_catalog is not None:
-        shutil.copytree(release_root, output / "deliveries")
-        catalog_path = workspace_assets / "demo-catalog.json"
-        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
-        # Release IDs may differ from preview IDs. Replace the same source's
-        # preview with its main delivery, while retaining every release partition.
-        retained_projects = []
-        for preview in catalog['projects']:
-            replacement = next((project for project in release_catalog['projects']
-                                if project['id'] == preview['id'] or (
-                                    not project.get('parent_project_id')
-                                    and project.get('source_sha256') == preview['source_sha256'])), None)
-            if replacement is None:
-                retained_projects.append(preview)
-            elif catalog.get('default_project') == preview['id']:
-                catalog['default_project'] = replacement['id']
-        catalog["projects"] = retained_projects
-        catalog["projects"].extend(release_catalog["projects"])
-        catalog["publication_boundary"] = "含授权九图完整派生成果；不含 DWG；CONDITIONAL，绝对 GCP 精度未验收。"
-        catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
-        for project in release_catalog["projects"]:
-            shutil.copy2(release_root / "assets" / project["fixture"], workspace_assets / project["fixture"])
-    for filename in SHARED_DEMO_SCRIPTS:
-        shutil.copy2(WEB_ROOT / filename, workspace_assets / filename)
-    for filename in SHARED_DEMO_ASSETS:
-        destination = workspace_assets / filename
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(WEB_ROOT / "assets" / filename, destination)
-    # Source HTML/CSS can be served in place; the Pages artifact is self-contained.
-    stylesheet = (workspace_assets / "styles.css").read_text(encoding="utf-8")
-    (workspace_assets / "styles.css").write_text(
-        stylesheet.replace('url("../../assets/', 'url("./'), encoding="utf-8",
-    )
-    demo_source = (DEMO_ROOT / "index.html").read_text(encoding="utf-8")
-    if release_catalog is not None:
-        demo_source = demo_source.replace('retained-nine-20260913', 'nine-delivery-20260906')
-        demo_source = demo_source.replace('左图始终保留原始 CAD 坐标，图层开关同步作用于右侧预览。', '左图显示交付坐标几何，右图按声明 CRS 投影。原 CAD 对比见九图审查叠图。')
-        demo_source = demo_source.replace('<b>CAD</b> 原始坐标', '<b>GIS</b> 交付坐标')
-        demo_source = demo_source.replace('源几何 ↔ 地理预览', '交付几何 ↔ 地理预览')
-    (workspace_dir / "index.html").write_text(
-        _workspace_page(demo_source).replace('<a href="../install.html">安装</a>', '<a href="../install.html">安装</a>' + ('<a href="../deliveries/">九图交付与过程</a>' if release_catalog else '')), encoding="utf-8",
-    )
-    demo_redirect_dir = output / "demo"
-    demo_redirect_dir.mkdir()
-    (demo_redirect_dir / "index.html").write_text(
-        _demo_redirect(), encoding="utf-8",
-    )
-    (output / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {public_base_url}sitemap.xml\n", encoding="utf-8")
-    locations = [public_base_url + suffix for suffix in ("", "install.html", "workspace/")]
-    (output / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
-        ''.join(f'<url><loc>{escape(url)}</loc></url>' for url in locations) + '</urlset>\n', encoding="utf-8")
-    (output / ".nojekyll").write_text("", encoding="utf-8")
-    (output / "build-manifest.json").write_text(
-        json.dumps({
-            "site": "CAD2GIS Agent",
-            "public_base_url": public_base_url,
-            "version": "0.8.0",
-            "gallery_url": "https://mola-maker.github.io/CAD2GIS/deliveries/",
-            "pages": [
-                "index.html",
-                "install.html",
-                "architecture.html",
-                "workspace/index.html",
-            ],
-            "mode": "static-github-pages",
-            "workspace": "authorized-derived-delivery-console" if release_catalog else "retained-derived-preview-console",
-            "contains_derived_qgis_deliveries": release_catalog is not None,
-            "contains_source_binaries": False,
-        }, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Build the CAD2GIS static GitHub Pages artifact.",
-    )
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=PROJECT_ROOT / "_site")
     parser.add_argument(
-        "--output",
-        type=Path,
-        default=PROJECT_ROOT / "_site",
+        "--public-base-url", default="https://mola-maker.github.io/CAD2GIS/"
     )
-    parser.add_argument("--public-base-url", default="https://mola-maker.github.io/CAD2GIS/")
     args = parser.parse_args()
     build(args.output, public_base_url=args.public_base_url)
-    print(f"Built GitHub Pages artifact: {args.output.resolve()}")
+    print(f"Built official-standard site: {args.output.resolve()}")
 
 
 if __name__ == "__main__":

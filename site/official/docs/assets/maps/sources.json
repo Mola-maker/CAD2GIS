@@ -1,0 +1,135 @@
+{
+  "repository": "Mola-maker/CAD2GIS",
+  "commit": "244f9ebe01dc87a328bf91b89114aedaba0671cf",
+  "sources": [
+    {
+      "path": "baselines/darat_sekip_sf/delivery/view-with-source-SVG.qgz",
+      "git_blob": "e096b2102b9907f417cd3378a36d64a6dc885f04",
+      "sha256": "57e069267e7446272a0edacab07f1b410ad61811e6fc612583b62a7d12634eff",
+      "bytes": 252558,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/darat_sekip_sf/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "a373e0e61e25b5f72a2a956b9ed7f2e7e3b2791e1c682be93b864abb59d88151"
+      }
+    },
+    {
+      "path": "baselines/hutabohu/delivery/view-with-source-SVG.qgz",
+      "git_blob": "86d887f5b8fb3606c6ff20a7e910d1da26e49e0e",
+      "sha256": "86f4d2bbcc554161e1505c944cb51b3c416881ba595c38f0dc9cf2c02dd0b37c",
+      "bytes": 377899,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/hutabohu/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "92c2988bbf1096dfd76fb364ea0553d58ef7004c0fa97f0e414c667c0b717363"
+      }
+    },
+    {
+      "path": "baselines/kletek/delivery/view-with-source-SVG.qgz",
+      "git_blob": "9a27fa237cf6a137ca92621a639b6689c3d8ba8a",
+      "sha256": "6e9d6c7e22039edca72a97ff031eb13cf78a096b66e44da27e8fdda89db20df0",
+      "bytes": 184759,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/kletek/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "65d46d501351fff9cee7fe9d3a8cff776d0469ec364077a3b1cd10f36b202a95"
+      }
+    },
+    {
+      "path": "baselines/lamteh_main/delivery/view-with-source-SVG.qgz",
+      "git_blob": "35eb2f6b2dc728b3b3976edcb4be79b9fae091b0",
+      "sha256": "c73e05770ed4dabd2cb247aebb609a765dde93366223cf713d71f11ce37912fd",
+      "bytes": 594685,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/lamteh_main/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "cee7c2ab4d038bec97ca6d20a3eff6ac1ccc93b4d2130ea788d1e771d4a340e5",
+        "assets_src": "c73e05770ed4dabd2cb247aebb609a765dde93366223cf713d71f11ce37912fd"
+      }
+    },
+    {
+      "path": "baselines/lamteh_sf/delivery/view-with-source-SVG.qgz",
+      "git_blob": "110e7ef762e736e97ac825cac131c260a2dcc41e",
+      "sha256": "a7685246057c0e0e8bc0db6e55da01f4df04545495086452e493502417dfad4c",
+      "bytes": 232917,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/lamteh_sf/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "19bcd493198b4e62c62a266d541c404644576dda763bcc3feadc738e0c4b111b",
+        "assets_src": "a7685246057c0e0e8bc0db6e55da01f4df04545495086452e493502417dfad4c"
+      }
+    },
+    {
+      "path": "baselines/manado-tomohon_uplink/delivery/EMR28560/view-with-source-SVG.qgz",
+      "git_blob": "70891b41d2106176c7655182cdf130e287a3574b",
+      "sha256": "ec84c7209b793b37858b09c2ebe35778a8e7f1c01dc6653693ebe3302ac27bfa",
+      "bytes": 102224,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/manado-tomohon_uplink/delivery/EMR28560/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "5addfe713bd95a66ebba20f82e58e728f92fd3c55160d03e7ddc0b1a97b9b203",
+        "assets_src": "5addfe713bd95a66ebba20f82e58e728f92fd3c55160d03e7ddc0b1a97b9b203"
+      }
+    },
+    {
+      "path": "baselines/manado-tomohon_uplink/delivery/EMR29619/view-with-source-SVG.qgz",
+      "git_blob": "a5457457dbbace5b9cbd8f67928d0767c49cc540",
+      "sha256": "5ccf82bd85e8ec1776c37709c949276290c5299963011322ffd0366a5daa4ebb",
+      "bytes": 110751,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/manado-tomohon_uplink/delivery/EMR29619/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "c298f16214ccb8f70934357260cc4ddfe657fd59a688e8b1f0769d61b27958b8",
+        "assets_src": "c298f16214ccb8f70934357260cc4ddfe657fd59a688e8b1f0769d61b27958b8"
+      }
+    },
+    {
+      "path": "baselines/manado-tomohon_uplink/delivery/view-with-source-SVG.qgz",
+      "git_blob": "3ef8fac8d7308c4e743fbdbff57e1172c15d6701",
+      "sha256": "289b0dab02efafc6bcf7455c263af152f274569d19e261438864f29a5c1eacde",
+      "bytes": 186730,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/manado-tomohon_uplink/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "512cee00452a88beabe70217fae3428b7c47f522edee46f0256d022896d5f368",
+        "assets_src": "512cee00452a88beabe70217fae3428b7c47f522edee46f0256d022896d5f368"
+      }
+    },
+    {
+      "path": "baselines/semarang_sf/delivery/view-with-source-SVG.qgz",
+      "git_blob": "b8c085d8ee7c863f556a3aecaac6830401ab66e9",
+      "sha256": "6abfb00bd86fc23aa0181f9bcfc106ae41f7268d59e50ffda178fc652633fa23",
+      "bytes": 110880,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/semarang_sf/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "6ea8a3edfd79d2f438cfcd9847268ee20b62b6d1928faee7745fa463af6b784b",
+        "assets_src": "6ea8a3edfd79d2f438cfcd9847268ee20b62b6d1928faee7745fa463af6b784b"
+      }
+    },
+    {
+      "path": "baselines/taipa/delivery/view-with-source-SVG.qgz",
+      "git_blob": "ced155bb8aa2edb29257d8c23fb80e894a2d464a",
+      "sha256": "dd60a386e9d52dad53ca13e0c93365461aae19800deee0e8603cd75fed4de199",
+      "bytes": 274684,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/taipa/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "990653163029864c86c785674ee1574f886a08f57bc9cfabf049585a79049d7c",
+        "assets_src": "990653163029864c86c785674ee1574f886a08f57bc9cfabf049585a79049d7c"
+      }
+    },
+    {
+      "path": "baselines/tinggar/delivery/view-with-source-SVG.qgz",
+      "git_blob": "742db6b66cdda78230d57f0e42618016bcb83f3f",
+      "sha256": "24775d990a9ab6163e70825bd9b15d4d57dee379f784477e07efb8794722a9f2",
+      "bytes": 299528,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/tinggar/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "6e5edbbc74ff7cc60b0b2163011756358785df8fe55f2fcdd139ea1b4f648978",
+        "assets_src": "6e5edbbc74ff7cc60b0b2163011756358785df8fe55f2fcdd139ea1b4f648978"
+      }
+    },
+    {
+      "path": "baselines/tinggede/delivery/view-with-source-SVG.qgz",
+      "git_blob": "aa35e5397b18fcc99bbf2060cf9d9cb85967f534",
+      "sha256": "0a9f49be1929298452d768375c767975ab3ff951e814976724f32162f5ef30d6",
+      "bytes": 219316,
+      "source_url": "https://github.com/Mola-maker/CAD2GIS/blob/244f9ebe01dc87a328bf91b89114aedaba0671cf/baselines/tinggede/delivery/view-with-source-SVG.qgz",
+      "local_comparison_sha256": {
+        "repo": "62d8234517221bf0020de9f2c7ec93b80325dabb141e0178b64034be10cf8cc8",
+        "assets_src": "0a9f49be1929298452d768375c767975ab3ff951e814976724f32162f5ef30d6"
+      }
+    }
+  ]
+}
