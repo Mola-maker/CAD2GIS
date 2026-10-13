@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "CAD2GIS Agent",
     "shortDescription": "CAD to GIS with evidence",
-    "longDescription": "Inspect a DWG, build source-bound semantic decisions, run deterministic geometry/topology/length/CRS validation, and review GeoPackage delivery without duplicating the conversion engine.",
+    "longDescription": "Inspect DWG/DXF, review source-bound semantic decisions, validate GIS delivery and edit source-preserving CAD copies through an optional isolated runtime.",
     "developerName": "CAD2GIS contributors",
     "category": "Developer Tools",
     "capabilities": [

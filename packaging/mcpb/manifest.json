@@ -31,6 +31,7 @@
       "command": "uv",
       "args": [
         "run",
+        "--no-project",
         "--python",
         "3.12",
         "--with",

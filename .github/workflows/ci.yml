@@ -106,7 +106,7 @@ jobs:
           cache: pip
 
       - name: Install portable agent runtime and quality tools
-        run: python -m pip install --upgrade pip && python -m pip install -e ".[agent,test]" "setuptools>=75"
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[agent,test]" "setuptools>=77"
 
       - name: Check dependency compatibility
         run: python -m pip check
