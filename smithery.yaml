@@ -1,0 +1,17 @@
+# Smithery 本地服务器配置草稿
+# 用途：放到 CAD2GIS 仓库根目录后，Smithery 可据此生成安装配置。
+# 注意：Smithery 不负责安装运行时，用户需先按 description 里的命令装好 cad2gis[agent]。
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      projectRoot:
+        type: string
+        description: "Optional absolute path of the CAD project directory the agent may work in."
+  commandFunction: |
+    (config) => ({
+      command: 'cad2gis-agent-mcp',
+      args: ['--transport', 'stdio'],
+      env: {}
+    })
