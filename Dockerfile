@@ -15,7 +15,7 @@ FROM python:3.12-slim-bookworm AS runtime
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="CAD2GIS" \
       org.opencontainers.image.source="https://github.com/Mola-maker/CAD2GIS" \
-      org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0" \
+      org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.revision=$VCS_REF
 ENV PATH="/opt/venv/bin:$PATH" \
     CAD2GIS_CACHE_DIR=/opt/cad2gis-cache \
