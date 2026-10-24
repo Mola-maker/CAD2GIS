@@ -27,6 +27,12 @@ def test_runtime_install_is_checksum_pinned_and_cache_scoped(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     bundle = _zip_bytes({"dwg2dxf.exe": b"portable-reader", "libredwg.dll": b"dll"})
+    wheel = _zip_bytes(
+        {
+            "pyramids/__init__.py": b"",
+            "pyramids/_vendor/osgeo/__init__.py": b"",
+        }
+    )
     monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setattr(native_runtime, "sys_platform", lambda: "win32")
     monkeypatch.setattr(native_runtime.platform, "machine", lambda: "x86_64")
@@ -38,10 +44,17 @@ def test_runtime_install_is_checksum_pinned_and_cache_scoped(
         hashlib.sha256(bundle).hexdigest(),
     )
     monkeypatch.setattr(
-        native_runtime.urllib.request,
-        "urlopen",
-        lambda _request, timeout: io.BytesIO(bundle),
+        native_runtime,
+        "_pyramids_wheel_asset",
+        lambda: ("pyramids_gis-fake.whl", hashlib.sha256(wheel).hexdigest()),
     )
+
+    def fake_urlopen(request: object, timeout: int) -> io.BytesIO:
+        if "pyramids" in request.full_url:  # type: ignore[attr-defined]
+            return io.BytesIO(wheel)
+        return io.BytesIO(bundle)
+
+    monkeypatch.setattr(native_runtime.urllib.request, "urlopen", fake_urlopen)
 
     result = native_runtime.install_portable_runtime()
 
@@ -52,6 +65,10 @@ def test_runtime_install_is_checksum_pinned_and_cache_scoped(
     )
     assert executable.read_bytes() == b"portable-reader"
     assert (executable.parent / "cad2gis-runtime.json").is_file()
+    assert result["pyramids_wheel"]["install_status"] == "installed"
+    wheel_dir = tmp_path / "cache" / "runtime" / "pyramids-gis-0.58.1-wheel"
+    assert (wheel_dir / "pyramids" / "_vendor" / "osgeo" / "__init__.py").is_file()
+    assert (wheel_dir / "cad2gis-runtime.json").is_file()
 
 
 def test_runtime_archive_rejects_path_traversal(tmp_path: Path) -> None:
@@ -87,11 +104,24 @@ def test_posix_runtime_builds_pinned_source_into_user_cache(
         "LIBREDWG_SOURCE_SHA256",
         hashlib.sha256(bundle).hexdigest(),
     )
-    monkeypatch.setattr(
-        native_runtime.urllib.request,
-        "urlopen",
-        lambda _request, timeout: io.BytesIO(bundle),
+    wheel = _zip_bytes(
+        {
+            "pyramids/__init__.py": b"",
+            "pyramids/_vendor/osgeo/__init__.py": b"",
+        }
     )
+    monkeypatch.setattr(
+        native_runtime,
+        "_pyramids_wheel_asset",
+        lambda: ("pyramids_gis-fake.whl", hashlib.sha256(wheel).hexdigest()),
+    )
+
+    def fake_urlopen(request: object, timeout: int) -> io.BytesIO:
+        if "pyramids" in request.full_url:  # type: ignore[attr-defined]
+            return io.BytesIO(wheel)
+        return io.BytesIO(bundle)
+
+    monkeypatch.setattr(native_runtime.urllib.request, "urlopen", fake_urlopen)
 
     def build(arguments: list[str], **_kwargs: object) -> SimpleNamespace:
         if arguments[:2] == ["make", "install"]:
@@ -119,6 +149,7 @@ def test_posix_runtime_builds_pinned_source_into_user_cache(
         json.loads(receipt.read_text(encoding="utf-8"))["install_method"]
         == "source-build"
     )
+    assert result["pyramids_wheel"]["install_status"] == "installed"
 
 
 def test_default_resolver_uses_cli_without_selecting_autocad(
@@ -317,3 +348,127 @@ def test_dimension_rendered_annotation_still_takes_precedence():
     geometry = libredwg_cli._entity_geometry(document, entity, "DIMENSION")
     assert geometry["dimension_text_override"] == "42m"
     assert geometry["dimension_value"] == 42.0
+
+
+def test_pyramids_wheel_asset_selection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cases = [
+        ("linux", "x86_64", "cp312", "manylinux_2_28_x86_64"),
+        ("linux", "aarch64", "cp311", "manylinux_2_28_aarch64"),
+        ("darwin", "arm64", "cp312", "macosx_11_0_arm64"),
+        ("darwin", "x86_64", "cp311", "macosx_11_0_x86_64"),
+        ("win32", "AMD64", "cp312", "win_amd64"),
+        ("win32", "ARM64", "cp312", "win_arm64"),
+        ("win32", "ARM64", "cp311", None),  # upstream shipped no such wheel
+        ("freebsd13", "x86_64", "cp312", None),
+    ]
+    for system, machine, python_tag, platform_tag in cases:
+        monkeypatch.setattr(native_runtime, "sys_platform", lambda s=system: s)
+        monkeypatch.setattr(native_runtime.platform, "machine", lambda m=machine: m)
+        monkeypatch.setattr(native_runtime, "_python_tag", lambda t=python_tag: t)
+        asset = native_runtime._pyramids_wheel_asset()
+        if platform_tag is None:
+            assert asset is None, (system, machine, python_tag)
+            continue
+        assert asset is not None
+        filename, sha256 = asset
+        assert filename == (
+            f"pyramids_gis-0.58.1-{python_tag}-{python_tag}-{platform_tag}.whl"
+        )
+        assert sha256 == native_runtime.PYRAMIDS_WHEEL_SHA256[(python_tag, platform_tag)]
+
+
+def test_install_pyramids_wheel_extracts_vendored_osgeo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wheel = _zip_bytes(
+        {
+            "pyramids/__init__.py": b"",
+            "pyramids/_vendor/osgeo/__init__.py": b"",
+        }
+    )
+    monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setattr(
+        native_runtime,
+        "_pyramids_wheel_asset",
+        lambda: ("pyramids_gis-fake.whl", hashlib.sha256(wheel).hexdigest()),
+    )
+    monkeypatch.setattr(
+        native_runtime.urllib.request,
+        "urlopen",
+        lambda _request, timeout: io.BytesIO(wheel),
+    )
+
+    result = native_runtime.install_pyramids_wheel()
+
+    assert result["install_status"] == "installed"
+    assert result["extracted"] is True
+    destination = native_runtime.managed_pyramids_wheel_dir()
+    assert (destination / "pyramids" / "_vendor" / "osgeo" / "__init__.py").is_file()
+    receipt = json.loads((destination / "cad2gis-runtime.json").read_text("utf-8"))
+    assert receipt["component"] == "pyramids-gis-wheel"
+    assert receipt["install_method"] == "wheel-extract"
+
+    again = native_runtime.install_pyramids_wheel()
+    assert again["install_status"] == "already_available"
+
+
+def test_install_pyramids_wheel_checksum_mismatch_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wheel = _zip_bytes({"pyramids/_vendor/osgeo/__init__.py": b""})
+    monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setattr(
+        native_runtime,
+        "_pyramids_wheel_asset",
+        lambda: ("pyramids_gis-fake.whl", "0" * 64),
+    )
+    monkeypatch.setattr(
+        native_runtime.urllib.request,
+        "urlopen",
+        lambda _request, timeout: io.BytesIO(wheel),
+    )
+
+    with pytest.raises(RuntimeError, match="checksum mismatch"):
+        native_runtime.install_pyramids_wheel()
+
+    assert not native_runtime.managed_pyramids_wheel_dir().exists()
+
+
+def test_install_pyramids_wheel_without_vendored_osgeo_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wheel = _zip_bytes({"pyramids/__init__.py": b""})
+    monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setattr(
+        native_runtime,
+        "_pyramids_wheel_asset",
+        lambda: ("pyramids_gis-fake.whl", hashlib.sha256(wheel).hexdigest()),
+    )
+    monkeypatch.setattr(
+        native_runtime.urllib.request,
+        "urlopen",
+        lambda _request, timeout: io.BytesIO(wheel),
+    )
+
+    with pytest.raises(RuntimeError, match="vendored osgeo"):
+        native_runtime.install_pyramids_wheel()
+
+
+def test_activate_managed_pyramids_wheel_inserts_sys_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import sys
+
+    monkeypatch.setenv("CAD2GIS_CACHE_DIR", str(tmp_path / "cache"))
+    destination = native_runtime.managed_pyramids_wheel_dir()
+    (destination / "pyramids" / "_vendor" / "osgeo").mkdir(parents=True)
+
+    before = list(sys.path)
+    try:
+        assert native_runtime._activate_managed_pyramids_wheel() is True
+        assert sys.path[0] == str(destination)
+        assert native_runtime.pyramids_wheel_status()["active"] is True
+    finally:
+        sys.path[:] = before

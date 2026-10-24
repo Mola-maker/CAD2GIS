@@ -5,7 +5,10 @@ components are present.  This module centralizes two portable bridges:
 
 * the official LibreDWG command-line release used by the DWG reader; and
 * ``pyramids-gis`` wheels, which expose a bundled ``osgeo`` runtime after the
-  package initializes its private native-library path.
+  package initializes its private native-library path. PyPI no longer serves
+  the pinned platform wheels (only the sdist, whose build omits the vendored
+  runtime), so the wheel is provisioned into the managed cache from the
+  upstream GitHub release instead; see ``install_pyramids_wheel``.
 
 No machine-specific project directory is stored here.  Managed binaries live
 under the platform user cache and every downloaded asset is checksum-pinned.
@@ -43,6 +46,54 @@ LIBREDWG_SOURCE_SHA256 = (
     "cb6ee0b078c6d9e0f09d66f1feac33ba6342df88ae544e9f9335fab475218351"
 )
 
+PYRAMIDS_VERSION = "0.58.1"
+PYRAMIDS_WHEEL_BASE_URL = (
+    "https://github.com/serapeum-org/pyramids/releases/download/"
+    f"{PYRAMIDS_VERSION}/"
+)
+# The vendored ``osgeo`` runtime ships only inside the pyramids-gis platform
+# wheels (``pyramids/_vendor/``). PyPI now serves only the 0.58.1 sdist, whose
+# build omits that directory, so the wheels are fetched from the upstream
+# GitHub release instead and pinned here by (python tag, platform tag), the
+# same checksum discipline as the LibreDWG assets above. Wheel filenames are
+# derived from the tags; Python tags outside cp311/cp312 are unsupported
+# because the project requires >=3.11,<3.13.
+PYRAMIDS_WHEEL_SHA256 = {
+    ("cp311", "macosx_11_0_arm64"): (
+        "abc8232dc9c486b5a72497e01052a174bdba82423b5e8430cffa9ff3aeecafcc"
+    ),
+    ("cp311", "macosx_11_0_x86_64"): (
+        "0b1aa14cefc1ec37d0628903f612cf6fb1dd12ea09d9e6da7c84da03ed2b2adf"
+    ),
+    ("cp311", "manylinux_2_28_aarch64"): (
+        "8fce945fc57340e562122c8497e1d50e6093546a2fef6203c4fc512398502820"
+    ),
+    ("cp311", "manylinux_2_28_x86_64"): (
+        "2bf310b05b10bc3b011da9d9ce38fcc805e155bfdad472bd2e4a2ee41a19bdf1"
+    ),
+    ("cp311", "win_amd64"): (
+        "d64682753b5d69ddec5ba5be993ec9b55ceda8728cf1de705b4daca448ab0e72"
+    ),
+    ("cp312", "macosx_11_0_arm64"): (
+        "f8beb529b17c4b4f07cb1735b94963fdc339b0e63982108c5ebecb3b02b91b5f"
+    ),
+    ("cp312", "macosx_11_0_x86_64"): (
+        "d76525f9be85c93b09ac88ebbc24bf67d7ac7b536006faf4da3177f1b754b00c"
+    ),
+    ("cp312", "manylinux_2_28_aarch64"): (
+        "a5965704f387e95526853c7ebbe5000f4361f7acfaf8b2e7c91b18aefb65b0b0"
+    ),
+    ("cp312", "manylinux_2_28_x86_64"): (
+        "f3a38f6a95d208844ddaaff2fe63f96c4cc23dff542b9735e8e9cd6690005f8a"
+    ),
+    ("cp312", "win_amd64"): (
+        "c95feb0d2f2ce68cc3eb010371fa8ea8a8f786d2abcd0db5e02143c8467a63a0"
+    ),
+    ("cp312", "win_arm64"): (
+        "3c326aadc6c6d1487e7ffa1d5ceb48af73660053561896d22596ee3899991cd2"
+    ),
+}
+
 
 def _user_cache_root() -> Path:
     override = os.environ.get("CAD2GIS_CACHE_DIR", "").strip()
@@ -69,6 +120,149 @@ def sys_platform() -> str:
 
 def managed_libredwg_dir() -> Path:
     return _user_cache_root() / "runtime" / f"libredwg-{LIBREDWG_VERSION}"
+
+
+def _python_tag() -> str:
+    """Small seam for deterministic platform tests."""
+
+    import sys
+
+    return f"cp{sys.version_info.major}{sys.version_info.minor}"
+
+
+def managed_pyramids_wheel_dir() -> Path:
+    return _user_cache_root() / "runtime" / f"pyramids-gis-{PYRAMIDS_VERSION}-wheel"
+
+
+def _pyramids_wheel_asset() -> tuple[str, str] | None:
+    """Return the pinned wheel (filename, sha256) for this interpreter/platform."""
+
+    machine = platform.machine().casefold()
+    system = sys_platform()
+    if system == "linux":
+        platform_tag = {
+            "x86_64": "manylinux_2_28_x86_64",
+            "aarch64": "manylinux_2_28_aarch64",
+            "arm64": "manylinux_2_28_aarch64",
+        }.get(machine)
+    elif system == "darwin":
+        platform_tag = {
+            "x86_64": "macosx_11_0_x86_64",
+            "arm64": "macosx_11_0_arm64",
+        }.get(machine)
+    elif system == "win32":
+        platform_tag = {
+            "amd64": "win_amd64",
+            "x86_64": "win_amd64",
+            "arm64": "win_arm64",
+        }.get(machine)
+    else:
+        platform_tag = None
+    if platform_tag is None:
+        return None
+    python_tag = _python_tag()
+    sha256 = PYRAMIDS_WHEEL_SHA256.get((python_tag, platform_tag))
+    if sha256 is None:
+        return None
+    filename = (
+        f"pyramids_gis-{PYRAMIDS_VERSION}-{python_tag}-{python_tag}-"
+        f"{platform_tag}.whl"
+    )
+    return filename, sha256
+
+
+def _pyramids_wheel_site() -> Path | None:
+    """The extracted wheel tree, when it carries the vendored osgeo runtime."""
+
+    destination = managed_pyramids_wheel_dir()
+    if (destination / "pyramids" / "_vendor" / "osgeo").is_dir():
+        return destination
+    return None
+
+
+def _activate_managed_pyramids_wheel() -> bool:
+    """Put the managed wheel's package tree ahead of site-packages.
+
+    The wheel build of ``pyramids`` is the same pinned version as the
+    installed one; only the wheel carries ``pyramids/_vendor``. Activating it
+    before ``import pyramids`` lets the wheel's own bootstrap expose the
+    vendored ``osgeo`` runtime exactly as upstream intended.
+    """
+
+    import sys
+
+    site = _pyramids_wheel_site()
+    if site is None:
+        return False
+    site_text = str(site)
+    if site_text not in sys.path:
+        sys.path.insert(0, site_text)
+    return True
+
+
+def pyramids_wheel_status() -> dict[str, Any]:
+    import sys
+
+    asset = _pyramids_wheel_asset()
+    site = _pyramids_wheel_site()
+    return {
+        "version": PYRAMIDS_VERSION,
+        "asset": asset[0] if asset is not None else None,
+        "managed_dir": str(managed_pyramids_wheel_dir()),
+        "extracted": site is not None,
+        "active": site is not None and str(site) in sys.path,
+    }
+
+
+def install_pyramids_wheel() -> dict[str, Any]:
+    """Install the checksum-pinned pyramids-gis platform wheel into the cache.
+
+    The wheel is extracted under the managed cache (never written into
+    site-packages) and activated per-process by ``ensure_osgeo_runtime``.
+    """
+
+    if _pyramids_wheel_site() is not None:
+        return {**pyramids_wheel_status(), "install_status": "already_available"}
+
+    asset = _pyramids_wheel_asset()
+    if asset is None:
+        return {**pyramids_wheel_status(), "install_status": "unsupported_platform"}
+    filename, sha256 = asset
+    url = PYRAMIDS_WHEEL_BASE_URL + filename
+
+    destination = managed_pyramids_wheel_dir()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="cad2gis-pyramids-") as temp_name:
+        temporary = Path(temp_name)
+        archive = temporary / filename
+        _download_pinned_asset(url, sha256, archive, label="pyramids-gis wheel")
+        extracted = temporary / "extracted"
+        extracted.mkdir()
+        _safe_extract(archive, extracted)
+        if not (extracted / "pyramids" / "_vendor" / "osgeo").is_dir():
+            raise RuntimeError(
+                "pyramids-gis wheel does not contain the vendored osgeo runtime"
+            )
+        staging = destination.with_name(f"{destination.name}.staging-{os.getpid()}")
+        if staging.exists():
+            shutil.rmtree(staging)
+        shutil.copytree(extracted, staging)
+        if destination.exists():
+            shutil.rmtree(destination)
+        staging.replace(destination)
+
+    receipt = {
+        "schema_version": "cad2gis.portable_runtime_receipt.v1",
+        "component": "pyramids-gis-wheel",
+        "version": PYRAMIDS_VERSION,
+        "source_url": url,
+        "sha256": sha256,
+        "install_method": "wheel-extract",
+    }
+    (destination / "cad2gis-runtime.json").write_text(
+        json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+    )
+    return {**pyramids_wheel_status(), "install_status": "installed"}
 
 
 def _cli_name() -> str:
@@ -152,6 +346,11 @@ def ensure_osgeo_runtime() -> dict[str, Any]:
     except (ImportError, AttributeError, ValueError):
         pass
 
+    # An sdist-installed pyramids has no vendored runtime to initialize; if
+    # the managed platform wheel was provisioned into the cache, activate it
+    # first so the import below loads the wheel build of the same version.
+    _activate_managed_pyramids_wheel()
+
     try:
         import pyramids  # noqa: F401 - initializes the bundled native runtime
     except (ImportError, OSError) as exc:
@@ -195,6 +394,7 @@ def portable_runtime_status() -> dict[str, Any]:
             "text_fidelity": libredwg_cli_text_fidelity(executable),
         },
         "gdal": ensure_osgeo_runtime(),
+        "pyramids_wheel": pyramids_wheel_status(),
         "autocad_required": False,
         "conda_required": False,
     }
@@ -243,7 +443,9 @@ def _safe_extract_tar(archive: Path, destination: Path) -> None:
             target.chmod(0o755 if member.isdir() or member.mode & 0o111 else 0o644)
 
 
-def _download_pinned_asset(url: str, sha256: str, destination: Path) -> None:
+def _download_pinned_asset(
+    url: str, sha256: str, destination: Path, *, label: str = "LibreDWG"
+) -> None:
     request = urllib.request.Request(
         url,
         headers={"User-Agent": "cad2gis-portable-runtime/1"},
@@ -257,7 +459,7 @@ def _download_pinned_asset(url: str, sha256: str, destination: Path) -> None:
     actual = digest.hexdigest()
     if actual != sha256:
         raise RuntimeError(
-            f"LibreDWG archive checksum mismatch: expected {sha256}, got {actual}"
+            f"{label} archive checksum mismatch: expected {sha256}, got {actual}"
         )
 
 
@@ -337,7 +539,7 @@ def _install_posix_from_source(destination: Path) -> None:
     )
 
 
-def install_portable_runtime() -> dict[str, Any]:
+def _install_libredwg_runtime() -> dict[str, Any]:
     """Install the pinned official LibreDWG CLI into the user cache.
 
     Windows uses the checksum-pinned official release archive. macOS and Linux
@@ -430,12 +632,29 @@ def install_portable_runtime() -> dict[str, Any]:
     return {**portable_runtime_status(), "install_status": "installed"}
 
 
+def install_portable_runtime() -> dict[str, Any]:
+    """Install the full checksum-pinned portable runtime into the user cache.
+
+    Two components: the official LibreDWG CLI (``_install_libredwg_runtime``)
+    and the pyramids-gis platform wheel carrying the vendored osgeo (GDAL)
+    runtime (``install_pyramids_wheel``).
+    """
+
+    result = _install_libredwg_runtime()
+    result["pyramids_wheel"] = install_pyramids_wheel()
+    return result
+
+
 __all__ = [
     "LIBREDWG_CLI_ENV",
     "LIBREDWG_VERSION",
+    "PYRAMIDS_VERSION",
     "discover_libredwg_cli",
     "ensure_osgeo_runtime",
     "install_portable_runtime",
+    "install_pyramids_wheel",
     "managed_libredwg_dir",
+    "managed_pyramids_wheel_dir",
     "portable_runtime_status",
+    "pyramids_wheel_status",
 ]

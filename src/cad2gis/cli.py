@@ -89,7 +89,13 @@ def _parser() -> argparse.ArgumentParser:
     _add_json(runtime_status)  #给runtime status命令添加--json参数
     runtime_status.set_defaults(handler=_runtime_status) #最终调用_runtime_status函数处理
     runtime_install = runtime_commands.add_parser(
-        "install", help="Install the checksum-pinned LibreDWG CLI runtime."
+        "install",
+        help="Install the checksum-pinned portable runtime (LibreDWG CLI and the pyramids-gis GIS wheel).",
+    )
+    runtime_install.add_argument(
+        "--wheel-only",
+        action="store_true",
+        help="Install only the pyramids-gis platform wheel (the vendored osgeo/GDAL runtime), without the LibreDWG CLI.",
     )
     _add_json(runtime_install) #给runtime install命令添加--json参数
     runtime_install.set_defaults(handler=_runtime_install) #最终调用_runtime_install函数处理
@@ -501,6 +507,11 @@ def _debug_mcp(args: argparse.Namespace) -> tuple[Any, int]:
 
 
 def _runtime_install(args: argparse.Namespace) -> tuple[Any, int]:
+    if getattr(args, "wheel_only", False):
+        from .native_runtime import install_pyramids_wheel
+
+        return install_pyramids_wheel(), 0
+
     from .native_runtime import install_portable_runtime
 
     return install_portable_runtime(), 0

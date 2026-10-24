@@ -246,7 +246,7 @@ def get_runtime_status() -> dict[str, Any]:
 
 
 def install_runtime() -> dict[str, Any]:
-    """Install the checksum-pinned official LibreDWG CLI in the user cache."""
+    """Install the checksum-pinned portable runtime (LibreDWG CLI + GIS wheel)."""
 
     from .native_runtime import install_portable_runtime
 
