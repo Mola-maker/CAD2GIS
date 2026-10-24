@@ -30,6 +30,11 @@ jobs:
         run: python -m pip install -e ".[agent,test]"
       - name: Check dependency compatibility
         run: python -m pip check
+      - name: Install portable GIS wheel
+        # The gate exercises osgeo-backed code but not the DWG reader; the
+        # wheel-only install provisions the vendored GDAL runtime without
+        # building LibreDWG.
+        run: cad2gis runtime install --wheel-only
       - name: Verify deterministic matching, GCP and MCP failures
         # These fixtures do not call a public OSM/LLM endpoint or open private
         # DWG drawings. The full platform/runtime matrix remains below.
@@ -132,6 +137,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: bash .github/scripts/build-ci-libredwg.sh
+
+      - name: Install portable GIS wheel
+        if: runner.os == 'Windows'
+        # runtime install discovers the patched reader via
+        # CAD2GIS_LIBREDWG_CLI (exported by the build step) and therefore
+        # only provisions the pyramids-gis wheel (vendored osgeo runtime).
+        run: cad2gis runtime install
 
       - name: Verify conversion runtime
         run: cad2gis doctor --deep --strict --profile full --json
