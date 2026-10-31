@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CAD2GIS icon: a blueprint square turning into a map pin">
+  <!-- Deep teal-blue field -->
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="#0C5B6B"/>
+  <!-- Blueprint sheet: CAD square with grid and dimension ticks -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="64" y="128" width="188" height="188"/>
+    <path d="M64 222 H252 M158 128 V316" stroke="#5FB3C2" stroke-width="10"/>
+    <path d="M96 352 H220 M96 352 l-14 -18 M220 352 l14 -18" stroke="#2DD4BF" stroke-width="12"/>
+  </g>
+  <circle cx="158" cy="222" r="26" fill="none" stroke="#FFFFFF" stroke-width="14"/>
+  <!-- Transition arrow: blueprint to map -->
+  <path d="M272 222 H344 M320 196 L352 222 L320 248" fill="none" stroke="#2DD4BF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Map pin -->
+  <path d="M416 368 C416 368 340 292 340 224 a76 76 0 1 1 152 0 C492 292 416 368 416 368 Z" fill="#FFFFFF"/>
+  <circle cx="416" cy="224" r="34" fill="#0C5B6B"/>
+  <!-- Map contour arc under the pin -->
+  <path d="M312 416 H440" fill="none" stroke="#5FB3C2" stroke-width="14" stroke-linecap="round"/>
+</svg>

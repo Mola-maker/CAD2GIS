@@ -1,5 +1,7 @@
 # CAD2GIS · CAD → GIS for AI agents
 
+<img src="assets/icon.svg" width="96" height="96" alt="CAD2GIS 图标：蓝图方框转为地图图钉">
+
 [![CI](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mola-maker/CAD2GIS/actions/workflows/ci.yml)
 [![License Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE.md)
 [![Python 3.11–3.12](https://img.shields.io/badge/Python-3.11–3.12-3776AB)](pyproject.toml)
