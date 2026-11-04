@@ -43,6 +43,8 @@ _ERROR_RECOVERY = {
     "REVIEW_START_FAILED": "Inspect the returned startup log and runtime readiness before starting again.",
     "REVIEW_STOPPING": "The owned server is finishing in-flight review actions; inspect its status before restarting.",
     "PATH_OUTSIDE_ROOT": "Choose a path inside the configured project roots; do not widen the roots automatically.",
+    "JOB_NOT_FOUND": "Pass the job_dir returned by start_conversion_job.",
+    "JOB_NOT_OWNED": "Only the MCP server that started a job can cancel it; poll get_conversion_job or stop the worker process manually.",
     "PROJECT_ROOT_NOT_CONFIGURED": "Ask the user to set CAD2GIS_PROJECT_ROOTS to the authorised project directories and restart the MCP server.",
     "ARTIFACT_NOT_FOUND": "Check the supplied file or run directory; create the required input with the preceding workflow step.",
     "OUTPUT_EXISTS": "Inspect the existing immutable output. Use a new run directory for a new conversion.",

@@ -21,6 +21,7 @@ from .contracts import (
     PLUGIN_CONTRACT_VERSION,
     SKILL_CONTRACT_VERSION,
     SKILL_CONTRACTS,
+    enabled_mcp_tools,
     mcp_tool_contract,
 )
 from .cad2gis_v3.cad_scene_graph import CadSceneGraph
@@ -81,6 +82,7 @@ def get_capabilities() -> dict[str, Any]:
         "skill_contract_version": SKILL_CONTRACT_VERSION,
         "skill_contracts": dict(SKILL_CONTRACTS),
         "tool_contract": mcp_tool_contract(),
+        "enabled_tools": list(enabled_mcp_tools(os.environ.get("CAD2GIS_MCP_TOOLSETS"))),
         "protocol": "Model Context Protocol",
         "transports": ["stdio", "streamable-http"],
         "http_endpoint": "/mcp",
@@ -1726,6 +1728,7 @@ from .agent_qgis import (
     audit_visual_conversion, build_qgis_review, build_source_svg_delivery, publish_matched_delivery, verify_qgis_review,
 )
 from .agent_review import get_review_server_status, start_review_server, stop_review_server
+from .agent_jobs import cancel_conversion_job, get_conversion_job, start_conversion_job
 from .agent_cad import (get_cad_bundle_status, prepare_cad_bundle_workspace,
                         list_cad_bundle_tools, call_cad_bundle_tool)
 
@@ -1872,6 +1875,9 @@ def create_server(
         ("prepare_iteration_context", prepare_iteration_context),
         ("record_iteration_feedback", record_iteration_feedback),
         ("run_conversion", run_conversion),
+        ("start_conversion_job", start_conversion_job),
+        ("get_conversion_job", get_conversion_job),
+        ("cancel_conversion_job", cancel_conversion_job),
         ("start_feedback_iteration", start_feedback_iteration),
         ("prepare_review_workspace", prepare_review_workspace),
     )
@@ -1883,8 +1889,11 @@ def create_server(
         )
     from .mcp_diagnostics import _code_identity, database_tool, traced_tool
 
+    enabled = set(enabled_mcp_tools(os.environ.get("CAD2GIS_MCP_TOOLSETS")))
     trace_identity = _code_identity()["source_files_sha256"]
     for name, handler in registrations:
+        if name not in enabled:
+            continue
         if name in {
             "export_source", "query_source_entities", "get_entity_context_batch",
             "prepare_semantic_batches", "query_relationship_candidates",

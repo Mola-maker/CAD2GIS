@@ -50,7 +50,9 @@ workflow below instead of generating a replacement mapping from layer guesses.
    return prose in place of a proposal object.
 6. `apply_ai_onboarding`
 7. `validate_project`
-8. `run_conversion`
+8. `run_conversion` (for large drawings or short client timeouts use
+   `start_conversion_job`, then poll `get_conversion_job`; `cancel_conversion_job`
+   stops it)
 9. `inspect_run`
 10. `audit_run`
 

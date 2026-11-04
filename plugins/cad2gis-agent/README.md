@@ -60,6 +60,16 @@ POSIX). Plugin caches are never treated as project roots. When none of
 file tools return `PROJECT_ROOT_NOT_CONFIGURED`; the server's working directory
 is never used as an implicit root.
 
+Large drawings can convert for several minutes. Clients with short tool-call
+timeouts should use `start_conversion_job`, poll `get_conversion_job` and, if
+needed, `cancel_conversion_job` instead of the blocking `run_conversion`.
+
+All tools are advertised by default. To shorten the tool list, set
+`CAD2GIS_MCP_TOOLSETS` to a comma-separated subset of `review`, `evidence`,
+`scene`, `semantic`, `iteration` and `cad_bundle`; the `core` set (runtime,
+onboarding, conversion, jobs, inspection) is always included. Unknown names
+stop the server at startup.
+
 ## Clients
 
 The repository plugin works directly in Codex. For Claude Code, Cursor, VS

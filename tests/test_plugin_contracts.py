@@ -217,3 +217,23 @@ def test_doctor_rejects_undeclared_python_minor(
     )
     python_check = next(check for check in checks if check.name == "python")
     assert python_check.status == "error"
+
+
+def test_mcp_toolsets_partition_the_contract_and_filter_registration(monkeypatch) -> None:
+    import asyncio
+
+    from cad2gis.agent_mcp import create_server
+    from cad2gis.contracts import MCP_TOOLSETS, enabled_mcp_tools
+
+    grouped = [tool for group in MCP_TOOLSETS.values() for tool in group]
+    assert sorted(grouped) == list(MCP_TOOL_NAMES) and len(grouped) == len(set(grouped))
+    assert enabled_mcp_tools(None) == MCP_TOOL_NAMES
+    assert enabled_mcp_tools("all") == MCP_TOOL_NAMES
+    with pytest.raises(ValueError, match="Unknown CAD2GIS_MCP_TOOLSETS"):
+        enabled_mcp_tools("core,nope")
+
+    monkeypatch.setenv("CAD2GIS_MCP_TOOLSETS", "semantic")
+    tools = asyncio.run(create_server().list_tools())
+    names = {tool.name for tool in tools}
+    assert names == set(MCP_TOOLSETS["core"]) | set(MCP_TOOLSETS["semantic"])
+    assert "get_capabilities" in names and "start_review_server" not in names
