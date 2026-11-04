@@ -31,6 +31,11 @@ def test_legacy_datum_2d_inverse_preserves_forward_coordinates(source_crs, point
     ]
 
 
+def _flat(points):
+    # pytest.approx does not compare nested sequences; keep point count exact.
+    return [coordinate for point in points for coordinate in point]
+
+
 def test_batched_crs_paths_match_scalar_reference() -> None:
     transformer = DirectTransformer("EPSG:3857", "EPSG:32748")
     points = [
@@ -41,13 +46,13 @@ def test_batched_crs_paths_match_scalar_reference() -> None:
 
     scalar_targets = [transformer.point(point) for point in points]
     batch_targets = transformer.points(points)
-    assert batch_targets == pytest.approx(scalar_targets, rel=0.0, abs=1e-9)
+    assert _flat(batch_targets) == pytest.approx(_flat(scalar_targets), rel=0.0, abs=1e-9)
 
     scalar_sources = [
         transformer.target_to_source_point(point) for point in batch_targets
     ]
     batch_sources = transformer.target_to_source_points(batch_targets)
-    assert batch_sources == pytest.approx(scalar_sources, rel=0.0, abs=1e-9)
+    assert _flat(batch_sources) == pytest.approx(_flat(scalar_sources), rel=0.0, abs=1e-9)
 
     scalar_roundtrip = max(
         transformer.source_length_to_m(

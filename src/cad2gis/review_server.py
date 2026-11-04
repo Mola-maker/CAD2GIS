@@ -112,6 +112,13 @@ def _expected_revision(value: Any, *, required: bool = False) -> None:
 
 
 async def _request_object(request: Any) -> dict[str, Any]:
+    # A JSON content type forces a CORS preflight for cross-site callers, so a
+    # text/plain "simple request" from another page cannot mutate review state.
+    media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if media_type != "application/json":
+        from starlette.exceptions import HTTPException
+
+        raise HTTPException(status_code=415, detail="Content-Type must be application/json")
     try:
         payload = await request.json()
     except (ValueError, UnicodeError) as exc:
@@ -2380,6 +2387,63 @@ def create_review_app(
     return app
 
 
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
+def _loopback_host_name(value: str) -> str | None:
+    from urllib.parse import urlsplit
+
+    try:
+        parsed = urlsplit("//" + value)
+        _ = parsed.port  # rejects malformed ports
+    except ValueError:
+        return None
+    if not parsed.hostname or parsed.username or parsed.password or parsed.path:
+        return None
+    name = parsed.hostname.lower().rstrip(".")
+    return name if name in _LOOPBACK_HOSTS else None
+
+
+class LoopbackGuard:
+    """ASGI guard for the standalone local review server.
+
+    Rejects non-loopback Host headers (DNS rebinding) and, for WebSockets and
+    state-changing HTTP methods, any browser Origin other than the server's
+    own. Requests without an Origin come from non-browser local clients.
+    The embedded desktop application applies its own host/origin/session
+    middleware and does not use this wrapper.
+    """
+
+    def __init__(self, app: Any) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] not in {"http", "websocket"}:
+            await self.app(scope, receive, send)
+            return
+        headers = {k.decode("latin1").lower(): v.decode("latin1") for k, v in scope.get("headers", [])}
+        websocket = scope["type"] == "websocket"
+
+        async def reject(status: int, detail: str) -> None:
+            if websocket:
+                await send({"type": "websocket.close", "code": 1008})
+                return
+            from starlette.responses import JSONResponse
+
+            await JSONResponse({"detail": detail}, status_code=status)(scope, receive, send)
+
+        host = headers.get("host", "")
+        if _loopback_host_name(host) is None:
+            await reject(400, "Host is not allowed")
+            return
+        origin = headers.get("origin")
+        if origin is not None and (websocket or scope.get("method") not in {"GET", "HEAD", "OPTIONS"}):
+            if origin != f"http://{host}":
+                await reject(403, "Origin is not allowed")
+                return
+        await self.app(scope, receive, send)
+
+
 def run_review_server(
     run_dir: str | Path,
     *,
@@ -2414,12 +2478,13 @@ def run_review_server(
         qgis_layers=qgis_layers,
         postgis_dsn=postgis_dsn,
     )
-    uvicorn.run(app, host=host, port=int(port), log_level="info")
+    uvicorn.run(LoopbackGuard(app), host=host, port=int(port), log_level="info")
 
 
 __all__ = [
     "REVIEW_SCHEMA",
     "GeoPackageProvider",
+    "LoopbackGuard",
     "PostGISReviewStore",
     "ReviewConflictError",
     "ReviewServerError",

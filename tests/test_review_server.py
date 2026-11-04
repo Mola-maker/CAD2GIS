@@ -1151,3 +1151,43 @@ def test_registration_export_keeps_the_original_coverage_policy(tmp_path, monkey
     assert client.post("/api/registration/export", json={"activate": True,
         "expected_controls_sha256": "stale"}).status_code == 409
     assert Path(result["profile"]["path"]).read_bytes() == old_profile
+
+
+def test_review_writes_require_json_content_type(tmp_path):
+    run, _, _ = _run_fixture(tmp_path)
+    client = TestClient(create_review_app(run, workspace_dir=tmp_path / "review"))
+    payload = json.dumps({"expected_revision": 0, "feature": {
+        "type": "Feature", "id": "note:1", "properties": {},
+        "geometry": {"type": "Point", "coordinates": [0.0, 0.0]}}})
+    # text/plain is a CORS "simple request": it must not reach the store.
+    response = client.post("/api/review/features", content=payload,
+                           headers={"Content-Type": "text/plain"})
+    assert response.status_code == 415
+    assert client.get("/api/review/features").json()["features"] == []
+
+
+def test_loopback_guard_rejects_rebound_hosts_and_foreign_origins(tmp_path):
+    from starlette.websockets import WebSocketDisconnect
+
+    run, _, _ = _run_fixture(tmp_path)
+    guarded = review_server.LoopbackGuard(create_review_app(run, workspace_dir=tmp_path / "review"))
+    local = TestClient(guarded, base_url="http://127.0.0.1:8765")
+    assert local.get("/api/health").status_code == 200
+    assert local.get("/api/health", headers={"Origin": "http://evil.example"}).status_code == 200
+
+    rebound = TestClient(guarded, base_url="http://attacker.example:8765")
+    assert rebound.get("/api/health").status_code == 400
+
+    foreign = local.post("/api/review/features", json={}, headers={"Origin": "http://evil.example"})
+    assert foreign.status_code == 403
+    other_port = local.post("/api/review/features", json={}, headers={"Origin": "http://127.0.0.1:9999"})
+    assert other_port.status_code == 403
+    assert local.delete("/api/review/features/x", headers={"Origin": "http://evil.example"}).status_code == 403
+
+    with pytest.raises(WebSocketDisconnect):
+        with local.websocket_connect("ws://127.0.0.1:8765/ws", headers={"Origin": "http://evil.example"}) as socket:
+            socket.receive_json()
+    with local.websocket_connect("ws://127.0.0.1:8765/ws", headers={"Origin": "http://127.0.0.1:8765"}) as socket:
+        assert socket.receive_json()["type"] == "connected"
+    ipv6 = TestClient(guarded, base_url="http://[::1]:8765")
+    assert ipv6.get("/api/health").status_code == 200

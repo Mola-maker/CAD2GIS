@@ -296,7 +296,7 @@ def _serve(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     if re.fullmatch(r"review-[a-f0-9]{32}", args.session_id) is None or not 1 <= args.port <= 65535:
         parser.error("Invalid owned review session or port")
-    from .review_server import create_review_app
+    from .review_server import LoopbackGuard, create_review_app
     from fastapi import HTTPException, Request
     import uvicorn
 
@@ -316,7 +316,7 @@ def _serve(argv: list[str] | None = None) -> None:
             raise HTTPException(status_code=404, detail="Not found")
         return {"session_id": args.session_id, "binding": _binding(run)}
 
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=args.port,
+    server = uvicorn.Server(uvicorn.Config(LoopbackGuard(app), host="127.0.0.1", port=args.port,
                                            log_level="warning", access_log=False, proxy_headers=False))
 
     def parent_closed():

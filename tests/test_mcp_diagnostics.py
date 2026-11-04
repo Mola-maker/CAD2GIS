@@ -147,3 +147,16 @@ def test_query_diagnostic_uses_path_boundary(tmp_path, monkeypatch):
         mcp_diagnostics.diagnose(scope="query", tool_schemas=[],
                                  graph_path=str(tmp_path / "outside.json"))
     assert error.value.code == "PATH_OUTSIDE_ROOT"
+
+
+def test_unconfigured_project_roots_fail_closed_instead_of_using_cwd(tmp_path, monkeypatch):
+    from cad2gis import agent_mcp
+    for name in ("CAD2GIS_PROJECT_ROOTS", "CAD2GIS_PROJECT_ROOT", "CLAUDE_PROJECT_DIR"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "inside-cwd.json").write_text("{}", encoding="utf-8")
+    assert agent_mcp._roots() == ()
+    with pytest.raises(agent_mcp.MCPServiceError) as error:
+        agent_mcp._path(tmp_path / "inside-cwd.json")
+    assert error.value.code == "PROJECT_ROOT_NOT_CONFIGURED"
+    assert "PROJECT_ROOT_NOT_CONFIGURED" in mcp_diagnostics._ERROR_RECOVERY

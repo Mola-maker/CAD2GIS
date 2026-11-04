@@ -55,7 +55,10 @@ export CAD2GIS_PROJECT_ROOTS="$HOME/projects:/srv/survey-data"
 ```
 
 The separator is the operating system path separator (`;` on Windows, `:` on
-POSIX). Plugin caches are never treated as project roots.
+POSIX). Plugin caches are never treated as project roots. When none of
+`CAD2GIS_PROJECT_ROOTS`, `CAD2GIS_PROJECT_ROOT` or `CLAUDE_PROJECT_DIR` is set,
+file tools return `PROJECT_ROOT_NOT_CONFIGURED`; the server's working directory
+is never used as an implicit root.
 
 ## Clients
 

@@ -194,8 +194,8 @@ def _roots() -> tuple[Path, ...]:
     claude_project = os.environ.get("CLAUDE_PROJECT_DIR", "").strip()
     if claude_project:
         values.append(claude_project)
-    if not values:
-        values.append(str(Path.cwd()))
+    # No implicit cwd root: MCP hosts often start stdio servers in / or $HOME,
+    # which would silently authorise the whole disk. Unconfigured fails closed.
     roots: list[Path] = []
     for value in values:
         root = Path(value).expanduser().resolve()
@@ -255,7 +255,14 @@ def install_runtime() -> dict[str, Any]:
 
 def _path(value: str | Path, *, must_exist: bool = True) -> Path:
     path = Path(value).expanduser().resolve()
-    if not any(path == root or root in path.parents for root in _roots()):
+    roots = _roots()
+    if not roots:
+        raise MCPServiceError(
+            "No CAD2GIS project root is configured; set CAD2GIS_PROJECT_ROOTS "
+            "(or CAD2GIS_PROJECT_ROOT / CLAUDE_PROJECT_DIR) before using file tools",
+            code="PROJECT_ROOT_NOT_CONFIGURED",
+        )
+    if not any(path == root or root in path.parents for root in roots):
         raise MCPServiceError(
             f"Path is outside configured CAD2GIS project roots: {path}",
             code="PATH_OUTSIDE_ROOT",
