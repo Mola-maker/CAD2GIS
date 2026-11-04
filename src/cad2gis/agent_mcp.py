@@ -411,6 +411,47 @@ def audit_run(run_dir: str) -> dict[str, Any]:
     }
 
 
+def list_geometry_changes(audit_dir: str, workspace_dir: str) -> dict[str, Any]:
+    """List audited geometry changes, each with a review question and its latest decision."""
+
+    from .geometry_review import list_geometry_changes as _list
+
+    return _list(_path(audit_dir), _path(workspace_dir, must_exist=False))
+
+
+def record_geometry_decision(
+    audit_dir: str, workspace_dir: str, change_id: str, decision: str,
+    reviewer: str = "", note: str = "",
+) -> dict[str, Any]:
+    """Record accept / reject / defer for one audited geometry change (never edits the run)."""
+
+    from .agent_review import _require_mutable_path
+    from .geometry_review import record_geometry_decision as _record
+
+    workspace = _path(workspace_dir, must_exist=False)
+    _require_mutable_path(workspace)
+    try:
+        return _record(_path(audit_dir), workspace, change_id, decision, reviewer=reviewer, note=note)
+    except ValueError as exc:
+        raise MCPServiceError(str(exc), code="VALIDATION_FAILED") from exc
+
+
+def export_delivery(run_dir: str, output_dir: str, format: str = "flatgeobuf") -> dict[str, Any]:
+    """Export a run's delivery layers to flatgeobuf, geojson, shapefile or filegdb (derived copy)."""
+
+    from .agent_review import _require_mutable_path
+    from .delivery_export import export_delivery as _export
+
+    output = _path(output_dir, must_exist=False)
+    _require_mutable_path(output)
+    try:
+        return _export(_path(run_dir), output, format)
+    except FileExistsError as exc:
+        raise MCPServiceError(str(exc), code="OUTPUT_EXISTS") from exc
+    except ValueError as exc:
+        raise MCPServiceError(str(exc), code="VALIDATION_FAILED") from exc
+
+
 def inspect_source(source: str) -> dict[str, Any]:
     """Read and summarize a new DWG without reusing another source's mapping."""
 
@@ -1876,6 +1917,9 @@ def create_server(
         ("record_iteration_feedback", record_iteration_feedback),
         ("run_conversion", run_conversion),
         ("start_conversion_job", start_conversion_job),
+        ("list_geometry_changes", list_geometry_changes),
+        ("export_delivery", export_delivery),
+        ("record_geometry_decision", record_geometry_decision),
         ("get_conversion_job", get_conversion_job),
         ("cancel_conversion_job", cancel_conversion_job),
         ("start_feedback_iteration", start_feedback_iteration),

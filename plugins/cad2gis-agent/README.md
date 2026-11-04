@@ -64,6 +64,18 @@ Large drawings can convert for several minutes. Clients with short tool-call
 timeouts should use `start_conversion_job`, poll `get_conversion_job` and, if
 needed, `cancel_conversion_job` instead of the blocking `run_conversion`.
 
+After `audit_visual_conversion`, `list_geometry_changes` lists every audited
+geometry change (boundary repairs, device/support collocation, cable bridges,
+derived zones) with a question that fits the operation;
+`record_geometry_decision` appends an accept / reject / defer receipt bound to
+the run, audit and source hashes in a review workspace. The run is never
+modified, and an accepted change is not positional-accuracy evidence.
+
+`export_delivery` writes a derived copy of a run's delivery layers as
+FlatGeobuf (lossless), GeoJSON, Shapefile or FileGDB outside the run, checks
+every layer's feature count and records hashes and format limitations in
+`export_manifest.json`. The GeoPackage remains the authoritative delivery.
+
 All tools are advertised by default. To shorten the tool list, set
 `CAD2GIS_MCP_TOOLSETS` to a comma-separated subset of `review`, `evidence`,
 `scene`, `semantic`, `iteration` and `cad_bundle`; the `core` set (runtime,

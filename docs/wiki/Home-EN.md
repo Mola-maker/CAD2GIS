@@ -22,7 +22,7 @@ MCP connects an agent to the local CAD2GIS runtime. The user selects an authoriz
 
 The plugin packages MCP configuration, task skills and workflow instructions. It helps an agent choose tools, interpret validation results, iterate on a review and prepare deliverables. Output quality still depends on source drawings, coordinate and control information, and the operator's review of the checks.
 
-The current code registers **66 MCP interfaces**, including four CAD wrappers. The 15 sidecar tools are optional capabilities within those wrappers; the two counts must not be added as independent MCP interfaces. Core workflows cover drawing understanding, DWG/DXF conversion, project validation, review and QGIS delivery. An optional CAD runtime adds layer/entity queries, 2D editing, topology checks and revision comparisons. Public directory status is recorded in `registries/publication-status.json`; client compatibility does not itself mean acceptance into a client's official directory.
+The current code registers **69 MCP interfaces**, including four CAD wrappers. The 15 sidecar tools are optional capabilities within those wrappers; the two counts must not be added as independent MCP interfaces. Core workflows cover drawing understanding, DWG/DXF conversion, project validation, review and QGIS delivery. An optional CAD runtime adds layer/entity queries, 2D editing, topology checks and revision comparisons. Public directory status is recorded in `registries/publication-status.json`; client compatibility does not itself mean acceptance into a client's official directory.
 
 ## Optional CAD tools: 15 tools exercised through the adapter
 
