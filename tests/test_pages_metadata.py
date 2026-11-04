@@ -170,7 +170,7 @@ def test_homepage_primary_copy_tracks_current_code_not_historical_metrics(
     html = (output / "index.html").read_text(encoding="utf8")
     current = html.split('<details id="historical-report"', 1)[0]
     assert "CAD2GIS / 0.8.0" in current
-    assert "63 个 MCP 接口" in current
+    assert "66 个 MCP 接口" in current
     assert "15 个已验证" in current
     assert "get_cad_bundle_status" in current
     assert "call_cad_bundle_tool" in current

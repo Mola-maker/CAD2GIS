@@ -73,10 +73,30 @@ def _table(dataset, name, fields):
     return layer
 
 
+# GDAL's Python ``SetField(name, ...)`` resolves names with a Python loop over
+# every field definition, which dominated evidence writing. Cache the resolved
+# index per feature definition; a cached index is reused only while that slot
+# still carries the exact field name, so the selected field never changes.
+_FIELD_INDEX_CACHE: dict[tuple[int, str], int] = {}
+
+
+def _field_index(row, defn, key):
+    pointer = int(defn.this)
+    index = _FIELD_INDEX_CACHE.get((pointer, key))
+    if index is not None and index < defn.GetFieldCount() and defn.GetFieldDefn(index).GetName() == key:
+        return index
+    index = row._getfieldindex(key)
+    if index >= 0 and defn.GetFieldDefn(index).GetName() == key:
+        _FIELD_INDEX_CACHE[(pointer, key)] = index
+    return index
+
+
 def _set(row, values):
+    defn = row.GetDefnRef()
     for key, value in values.items():
         if value is not None:
-            row.SetField(key, value)
+            index = _field_index(row, defn, key)
+            row.SetField(index if index >= 0 else key, value)
 
 
 def _line_layer(dataset, name, srs):

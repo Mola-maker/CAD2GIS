@@ -1773,16 +1773,41 @@ def _denoise_plan_entities(
     return catalog_roots, spatial_result
 
 
-def convert(request: ConversionRequest) -> ConversionResult:
+@dataclass
+class _ConversionAdmission:
+    """Outputs of :func:`_admit_conversion` used by later phases."""
+
+    conversion_snapshot: Any
+    geodata_registration: Any
+    geometry_candidates: Any
+    geometry_state: Any
+    local_osm_reference: Any
+    profile: Any
+    record_geometry_candidates: Any
+    registry: Any
+    replay_receipt: Any
+    replay_records: Any
+    request: Any
+    run_dir: Any
+    semantic_decisions: Any
+    semantic_receipt: Any
+    source: Any
+    source_hash: Any
+    stage_inputs: Any
+    stage_recorder: Any
+    unit_contract: Any
+
+
+def _admit_conversion(request: ConversionRequest) -> _ConversionAdmission:
+    """Freeze inputs, enforce review gates and prepare stage recording."""
+
     source = Path(request.source).resolve()
     run_dir = Path(request.run_dir).resolve()
     _require_unpublished_run(run_dir)
     from .implementation import (
-        conversion_snapshot_manifest_fields,
         freeze_conversion_snapshot,
-        verify_conversion_snapshot,
     )
-    from .runtime_provenance import collect_runtime_provenance, runtime_manifest_fields
+    from .runtime_provenance import collect_runtime_provenance
     startup_runtime = collect_runtime_provenance()
     try:
         conversion_snapshot = freeze_conversion_snapshot(
@@ -1869,22 +1894,22 @@ def convert(request: ConversionRequest) -> ConversionResult:
     run_dir.parent.mkdir(parents=True, exist_ok=True)
 
     geometry_candidates = []
-    geometry_report = None
+    geometry_state: dict[str, Any] = {"report": None}
     geometry_review_path = None
     if request.geometry_repairs == "candidate-only":
         geometry_review_path = Path(tempfile.mkdtemp(prefix=f"{run_dir.name}.repair-review-", dir=run_dir.parent)) / "geometry_repair_candidates.json"
         stage_inputs["geometry_repairs"] = "candidate-only"
 
     def record_geometry_candidates(stage):
-        nonlocal geometry_report
+
         if geometry_review_path is not None:
-            geometry_report = {"schema_version": "cad2gis.geometry_repair_candidates.v1",
+            geometry_state["report"] = {"schema_version": "cad2gis.geometry_repair_candidates.v1",
                                "source_sha256": source_hash, "stage": stage,
                                "conversion_inputs": dict(stage_inputs), "mode": "candidate-only",
                                "accepted": False, "candidate_count": len(geometry_candidates),
                                "candidates": [{**item, "candidate_id": canonical_sha256({"source_sha256": source_hash, **item})}
                                               for item in geometry_candidates]}
-            _write_manifest(geometry_review_path, geometry_report)
+            _write_manifest(geometry_review_path, geometry_state["report"])
 
     replay_records, replay_receipt = None, None
     semantic_decisions, semantic_receipt = None, None
@@ -1898,6 +1923,81 @@ def convert(request: ConversionRequest) -> ConversionResult:
             request.semantic_store, request.semantic_job, replay_receipt["snapshot_sha256"],
         )
         stage_inputs["semantic_revision"] = semantic_receipt
+    return _ConversionAdmission(
+        conversion_snapshot=conversion_snapshot,
+        geodata_registration=geodata_registration,
+        geometry_candidates=geometry_candidates,
+        geometry_state=geometry_state,
+        local_osm_reference=local_osm_reference,
+        profile=profile,
+        record_geometry_candidates=record_geometry_candidates,
+        registry=registry,
+        replay_receipt=replay_receipt,
+        replay_records=replay_records,
+        request=request,
+        run_dir=run_dir,
+        semantic_decisions=semantic_decisions,
+        semantic_receipt=semantic_receipt,
+        source=source,
+        source_hash=source_hash,
+        stage_inputs=stage_inputs,
+        stage_recorder=stage_recorder,
+        unit_contract=unit_contract,
+    )
+
+
+@dataclass
+class _ClassifiedSource:
+    """Outputs of :func:`_classify_source` used by later phases."""
+
+    annotation_gate: Any
+    cad_scene_graph: Any
+    coordinate_domain: Any
+    curve_materialization: Any
+    entities: Any
+    evidence_entities: Any
+    feature_gate: Any
+    features: Any
+    ingest_diagnostics: Any
+    inventory_gate: Any
+    legend_diagnostics: Any
+    legend_flag_map: Any
+    native_source_crs: Any
+    osm_anchor: Any
+    plan_domain: Any
+    relations: Any
+    semantic_coverage: Any
+    semantic_diagnostics: Any
+    semantic_entities: Any
+    source_dependencies: Any
+    source_entity_count: Any
+    source_geometry_gate: Any
+    source_policy: Any
+    terminal_accounting: Any
+    topology_diagnostics: Any
+    unresolved: Any
+
+
+def _classify_source(admission: _ConversionAdmission) -> _ClassifiedSource:
+    """Ingest, plan-domain, denoise, classify and build topology."""
+
+    request = admission.request
+    geodata_registration = admission.geodata_registration
+    geometry_candidates = admission.geometry_candidates
+    geometry_state = admission.geometry_state
+    local_osm_reference = admission.local_osm_reference
+    profile = admission.profile
+    record_geometry_candidates = admission.record_geometry_candidates
+    registry = admission.registry
+    replay_receipt = admission.replay_receipt
+    replay_records = admission.replay_records
+    semantic_decisions = admission.semantic_decisions
+    semantic_receipt = admission.semantic_receipt
+    source = admission.source
+    source_hash = admission.source_hash
+    stage_inputs = admission.stage_inputs
+    stage_recorder = admission.stage_recorder
+    unit_contract = admission.unit_contract
     entities, ingest_diagnostics = stage_recorder.run(
         "ingest",
         version="v3-reader-ir-2",
@@ -2064,7 +2164,6 @@ def convert(request: ConversionRequest) -> ConversionResult:
 
     from .curve_geometry import (
         materialize_cable_features,
-        validate_cable_geometry_materialization,
     )
 
     curve_materialization = materialize_cable_features(
@@ -2109,8 +2208,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
         },
     )
     record_geometry_candidates("topology")
-    if geometry_report is not None:
-        semantic_diagnostics["geometry_repair_candidates"] = geometry_report
+    if geometry_state["report"] is not None:
+        semantic_diagnostics["geometry_repair_candidates"] = geometry_state["report"]
     if semantic_decisions is not None:
         from .semantic_delivery import apply_revision
         semantic_diagnostics["committed_revision"] = stage_recorder.run(
@@ -2121,6 +2220,67 @@ def convert(request: ConversionRequest) -> ConversionResult:
             summarize=lambda result: {"affected_feature_count": len(result["affected_features"]),
                                       "geometry_changed": False},
         )
+    return _ClassifiedSource(
+        annotation_gate=annotation_gate,
+        cad_scene_graph=cad_scene_graph,
+        coordinate_domain=coordinate_domain,
+        curve_materialization=curve_materialization,
+        entities=entities,
+        evidence_entities=evidence_entities,
+        feature_gate=feature_gate,
+        features=features,
+        ingest_diagnostics=ingest_diagnostics,
+        inventory_gate=inventory_gate,
+        legend_diagnostics=legend_diagnostics,
+        legend_flag_map=legend_flag_map,
+        native_source_crs=native_source_crs,
+        osm_anchor=osm_anchor,
+        plan_domain=plan_domain,
+        relations=relations,
+        semantic_coverage=semantic_coverage,
+        semantic_diagnostics=semantic_diagnostics,
+        semantic_entities=semantic_entities,
+        source_dependencies=source_dependencies,
+        source_entity_count=source_entity_count,
+        source_geometry_gate=source_geometry_gate,
+        source_policy=source_policy,
+        terminal_accounting=terminal_accounting,
+        topology_diagnostics=topology_diagnostics,
+        unresolved=unresolved,
+    )
+
+
+@dataclass
+class _ReasonedNetwork:
+    """Outputs of :func:`_reason_over_evidence` used by later phases."""
+
+    decision_execution: Any
+    evidence_graph: Any
+    features: Any
+    policy_diagnostics: Any
+    reasoning_diagnostics: Any
+    relations: Any
+    segment_gate: Any
+    topology_gate: Any
+    visual_evidence: Any
+
+
+def _reason_over_evidence(admission: _ConversionAdmission, classified: _ClassifiedSource) -> _ReasonedNetwork:
+    """Build evidence graphs, apply a decision pack and evaluate gates."""
+
+    request = admission.request
+    from .curve_geometry import validate_cable_geometry_materialization
+    profile = admission.profile
+    source_hash = admission.source_hash
+    cad_scene_graph = classified.cad_scene_graph
+    curve_materialization = classified.curve_materialization
+    evidence_entities = classified.evidence_entities
+    features = classified.features
+    relations = classified.relations
+    semantic_entities = classified.semantic_entities
+    source_policy = classified.source_policy
+    topology_diagnostics = classified.topology_diagnostics
+    unresolved = classified.unresolved
     # CABLE business labels retain reviewed route identity. DIMENSION evidence
     # belongs only in segment length fields; it never substitutes for identity.
     base_evidence_graph = build_stage_evidence_graph(
@@ -2207,6 +2367,65 @@ def convert(request: ConversionRequest) -> ConversionResult:
     segment_gate = _evaluate_diagnostic_gates(
         "segments", profile.expectations.segment_gates, topology_diagnostics,
     )
+    return _ReasonedNetwork(
+        decision_execution=decision_execution,
+        evidence_graph=evidence_graph,
+        features=features,
+        policy_diagnostics=policy_diagnostics,
+        reasoning_diagnostics=reasoning_diagnostics,
+        relations=relations,
+        segment_gate=segment_gate,
+        topology_gate=topology_gate,
+        visual_evidence=visual_evidence,
+    )
+
+
+@dataclass
+class _Georeference:
+    """Outputs of :func:`_georeference_features` used by later phases."""
+
+    all_partitioned_features: Any
+    calibration_audit: Any
+    calibration_diagnostics: Any
+    coordinate_domains_by_region: Any
+    delivery_partitions: Any
+    engine_crosscheck: Any
+    feature_displacements: Any
+    feature_transformers: Any
+    features: Any
+    gcp_partition_id: Any
+    gcp_profile: Any
+    lineage_audit: Any
+    native_source_crs: Any
+    operation_metadata: Any
+    osm_active: Any
+    osm_by_region: Any
+    osm_matching: Any
+    osm_partition_id: Any
+    roundtrip_error: Any
+    selected_transformer: Any
+    style_coverage: Any
+    transformer: Any
+
+
+def _georeference_features(admission: _ConversionAdmission, classified: _ClassifiedSource, reasoned: _ReasonedNetwork) -> _Georeference:
+    """Select the CRS, OSM and GCP registration and record lineage."""
+
+    request = admission.request
+    from .coordinate_domain import assess_coordinate_domain
+    geodata_registration = admission.geodata_registration
+    local_osm_reference = admission.local_osm_reference
+    profile = admission.profile
+    registry = admission.registry
+    source = admission.source
+    source_hash = admission.source_hash
+    stage_inputs = admission.stage_inputs
+    stage_recorder = admission.stage_recorder
+    unit_contract = admission.unit_contract
+    coordinate_domain = classified.coordinate_domain
+    native_source_crs = classified.native_source_crs
+    osm_anchor = classified.osm_anchor
+    features = reasoned.features
     if local_osm_reference:
         from .osm_matching import LocalMatchingReference
         transformer = LocalMatchingReference(profile.source_crs, profile.target_crs, unit_contract)
@@ -2522,6 +2741,104 @@ def convert(request: ConversionRequest) -> ConversionResult:
             "and a geographic search area, or preview control points: "
             + "; ".join(coordinate_domain.get("failures") or ())
         )
+    return _Georeference(
+        all_partitioned_features=all_partitioned_features,
+        calibration_audit=calibration_audit,
+        calibration_diagnostics=calibration_diagnostics,
+        coordinate_domains_by_region=coordinate_domains_by_region,
+        delivery_partitions=delivery_partitions,
+        engine_crosscheck=engine_crosscheck,
+        feature_displacements=feature_displacements,
+        feature_transformers=feature_transformers,
+        features=features,
+        gcp_partition_id=gcp_partition_id,
+        gcp_profile=gcp_profile,
+        lineage_audit=lineage_audit,
+        native_source_crs=native_source_crs,
+        operation_metadata=operation_metadata,
+        osm_active=osm_active,
+        osm_by_region=osm_by_region,
+        osm_matching=osm_matching,
+        osm_partition_id=osm_partition_id,
+        roundtrip_error=roundtrip_error,
+        selected_transformer=selected_transformer,
+        style_coverage=style_coverage,
+        transformer=transformer,
+    )
+
+
+def _publish_conversion(admission: _ConversionAdmission, classified: _ClassifiedSource, reasoned: _ReasonedNetwork, georeference: _Georeference) -> ConversionResult:
+    """Assemble diagnostics, write staged artifacts and publish atomically."""
+
+    request = admission.request
+    from .implementation import conversion_snapshot_manifest_fields
+    from .implementation import verify_conversion_snapshot
+    from .runtime_provenance import collect_runtime_provenance
+    from .runtime_provenance import runtime_manifest_fields
+    conversion_snapshot = admission.conversion_snapshot
+    geodata_registration = admission.geodata_registration
+    geometry_state = admission.geometry_state
+    profile = admission.profile
+    registry = admission.registry
+    replay_receipt = admission.replay_receipt
+    run_dir = admission.run_dir
+    semantic_receipt = admission.semantic_receipt
+    source = admission.source
+    source_hash = admission.source_hash
+    stage_inputs = admission.stage_inputs
+    stage_recorder = admission.stage_recorder
+    unit_contract = admission.unit_contract
+    annotation_gate = classified.annotation_gate
+    cad_scene_graph = classified.cad_scene_graph
+    coordinate_domain = classified.coordinate_domain
+    entities = classified.entities
+    evidence_entities = classified.evidence_entities
+    feature_gate = classified.feature_gate
+    ingest_diagnostics = classified.ingest_diagnostics
+    inventory_gate = classified.inventory_gate
+    legend_diagnostics = classified.legend_diagnostics
+    legend_flag_map = classified.legend_flag_map
+    osm_anchor = classified.osm_anchor
+    plan_domain = classified.plan_domain
+    semantic_coverage = classified.semantic_coverage
+    semantic_diagnostics = classified.semantic_diagnostics
+    semantic_entities = classified.semantic_entities
+    source_dependencies = classified.source_dependencies
+    source_entity_count = classified.source_entity_count
+    source_geometry_gate = classified.source_geometry_gate
+    terminal_accounting = classified.terminal_accounting
+    topology_diagnostics = classified.topology_diagnostics
+    unresolved = classified.unresolved
+    decision_execution = reasoned.decision_execution
+    evidence_graph = reasoned.evidence_graph
+    policy_diagnostics = reasoned.policy_diagnostics
+    reasoning_diagnostics = reasoned.reasoning_diagnostics
+    relations = reasoned.relations
+    segment_gate = reasoned.segment_gate
+    topology_gate = reasoned.topology_gate
+    visual_evidence = reasoned.visual_evidence
+    all_partitioned_features = georeference.all_partitioned_features
+    calibration_audit = georeference.calibration_audit
+    calibration_diagnostics = georeference.calibration_diagnostics
+    coordinate_domains_by_region = georeference.coordinate_domains_by_region
+    delivery_partitions = georeference.delivery_partitions
+    engine_crosscheck = georeference.engine_crosscheck
+    feature_displacements = georeference.feature_displacements
+    feature_transformers = georeference.feature_transformers
+    features = georeference.features
+    gcp_partition_id = georeference.gcp_partition_id
+    gcp_profile = georeference.gcp_profile
+    lineage_audit = georeference.lineage_audit
+    native_source_crs = georeference.native_source_crs
+    operation_metadata = georeference.operation_metadata
+    osm_active = georeference.osm_active
+    osm_by_region = georeference.osm_by_region
+    osm_matching = georeference.osm_matching
+    osm_partition_id = georeference.osm_partition_id
+    roundtrip_error = georeference.roundtrip_error
+    selected_transformer = georeference.selected_transformer
+    style_coverage = georeference.style_coverage
+    transformer = georeference.transformer
     diagnostics = {
         "ingest": ingest_diagnostics,
         "source_dependencies": source_dependencies,
@@ -2628,8 +2945,8 @@ def convert(request: ConversionRequest) -> ConversionResult:
         staged_source_path = staged_run_dir / source_path.name
         if osm_matching is not None:
             _write_manifest(staged_run_dir / "osm_matching.json", osm_matching)
-        if geometry_report is not None:
-            _write_manifest(staged_run_dir / "geometry_repair_candidates.json", geometry_report)
+        if geometry_state["report"] is not None:
+            _write_manifest(staged_run_dir / "geometry_repair_candidates.json", geometry_state["report"])
         staged_evidence_path = staged_run_dir / evidence_path.name
         staged_delivery_path = staged_run_dir / delivery_path.name
         staged_styles_dir = staged_run_dir / "qgis" / "styles"
@@ -2918,7 +3235,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             **({"source_replay": replay_receipt} if replay_receipt is not None else {}),
             **({"semantic_revision": {**semantic_receipt, "store_path": str(Path(request.semantic_store).resolve())}}
                if semantic_receipt is not None else {}),
-            **({"geometry_repairs": "candidate-only"} if geometry_report is not None else {}),
+            **({"geometry_repairs": "candidate-only"} if geometry_state["report"] is not None else {}),
             "source": {"path": str(source), "sha256": source_hash},
             "profiles": {
                 "source_profile": {"path": str(profile.path), "sha256": _sha256(profile.path)},
@@ -2937,7 +3254,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
                 **({"geometry_repair_candidates": {
                     "path": str(run_dir / "geometry_repair_candidates.json"),
                     "sha256": _sha256(staged_run_dir / "geometry_repair_candidates.json"),
-                }} if geometry_report is not None else {}),
+                }} if geometry_state["report"] is not None else {}),
                 "source": {
                     "path": str(source_path), "sha256": _sha256(staged_source_path),
                 },
@@ -3032,6 +3349,7 @@ def convert(request: ConversionRequest) -> ConversionResult:
             if final_snapshot["snapshot_sha256"] != replay_receipt["snapshot_sha256"]:
                 raise ValueError("Source snapshot changed during conversion")
         if semantic_receipt is not None:
+            from .semantic_delivery import load_published_revision
             _, final_revision = load_published_revision(
                 request.semantic_store, request.semantic_job, replay_receipt["snapshot_sha256"],
             )
@@ -3057,3 +3375,11 @@ def convert(request: ConversionRequest) -> ConversionResult:
         counts=counts,
         diagnostics=diagnostics,
     )
+
+
+def convert(request: ConversionRequest) -> ConversionResult:
+    admission = _admit_conversion(request)
+    classified = _classify_source(admission)
+    reasoned = _reason_over_evidence(admission, classified)
+    georeference = _georeference_features(admission, classified, reasoned)
+    return _publish_conversion(admission, classified, reasoned, georeference)
