@@ -21,6 +21,7 @@ from typing import Any
 
 from ..native_runtime import ensure_osgeo_runtime
 from .schema_config import BOITE, CABLE, EMR, IMB, INFRASTRUCTURE_FC, PTECH, SITE, ZNRO, ZPM
+from .domain_pack import FTTH_APD
 from .curve_geometry import delivery_points, delivery_segments
 from .georef import DirectTransformer
 from .gpkg_metadata import compact_geopackage, normalize_geopackage_metadata
@@ -92,16 +93,14 @@ LAYER_CONFIGS["CABLE"] = {
 LAYER_CONFIGS["EMR"] = EMR
 # QGIS layer-tree order follows the reviewed sample legend.  Optional
 # special-purpose layers (e.g. EMR) are inserted immediately before IMB.
-LAYER_ORDER = (
-    "SITE", "BOITE", "PTECH", "IMB", "INFRASTRUCTURE", "CABLE", "ZPM", "ZNRO",
-)
-OPTIONAL_LAYER_ORDER = ("EMR",)
+LAYER_ORDER = FTTH_APD.delivery_layers
+OPTIONAL_LAYER_ORDER = FTTH_APD.optional_layers
 
 
 def _active_layer_order(features):
     emitted = {feature.feature_class for feature in features}
     order = list(LAYER_ORDER)
-    insertion_point = order.index("IMB")
+    insertion_point = order.index(FTTH_APD.optional_layers_before)
     for name in OPTIONAL_LAYER_ORDER:
         if name in emitted:
             order.insert(insertion_point, name)

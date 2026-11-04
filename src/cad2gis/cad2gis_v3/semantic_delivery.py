@@ -9,15 +9,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .domain_pack import FTTH_APD
 from .semantic_stage import SemanticContractError, _digest, _read_only, _sha256_path
 from .semantic_store import _verified_result
 
-_COMPATIBLE = {
-    "CENTRAL_SITE": {"SITE"}, "SUPPORT": {"PTECH"},
-    "DISTRIBUTION_NODE": {"BOITE"}, "ACCESS_NODE": {"BOITE"},
-    "PREMISE": {"IMB"}, "NETWORK_ROUTE": {"CABLE"},
-    "NETWORK_SEGMENT": {"CABLE"}, "ZONE": {"ZPM", "ZNRO"},
-}
+_COMPATIBLE = FTTH_APD.role_classes
 
 
 def load_published_revision(store: Path, job_id: str, snapshot_sha256: str):

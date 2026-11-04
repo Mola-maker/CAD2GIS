@@ -58,8 +58,17 @@ that receipt; it does not change the conversion algorithm.
 
 Source admission, reviewed spatial filtering, styled delivery, layer schema
 creation and segment/asset row writing have explicit helper boundaries.
-Classification and topology still need further decomposition; this work does
-not change their matching or denoising policy. Before a refactor is accepted,
+`cad2gis_v3.pipeline.convert` runs five phase functions in order, each
+returning an explicit result object consumed by the later phases:
+`_admit_conversion` (snapshot, review gates, unit/CRS contract),
+`_classify_source` (ingest, plan domain, denoising, classification,
+topology), `_reason_over_evidence` (evidence graphs, decision pack, gates),
+`_georeference_features` (nominal CRS, OSM, GCP, lineage) and
+`_publish_conversion` (diagnostics, staged writes, atomic publication).
+Stage receipts and their order are unchanged. Delivery vocabulary such as
+layer order and route/support classes comes from a domain pack; see
+[DOMAIN_PACKS.md](DOMAIN_PACKS.md). Classification rules themselves are still
+FTTH-specific. Before a refactor is accepted,
 `tools/verify_delivery_equivalence.py BASELINE.gpkg CANDIDATE.gpkg` compares
 feature schemas and exact rows (including binary geometries, labels, lengths
 and lineage). Equivalence is a regression check, not surveyed accuracy proof.

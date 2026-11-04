@@ -10,6 +10,7 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from .curve_geometry import delivery_points, delivery_segments
+from .domain_pack import FTTH_APD
 from .model import Relation
 from .ports import build_port_candidates
 
@@ -750,8 +751,10 @@ def build_topology(entities, features, registry, existing_relations, unresolved,
     by_class = defaultdict(list)
     for feature in features:
         by_class[feature.feature_class].append(feature)
-    supports, boxes, sites = by_class["PTECH"], by_class["BOITE"], by_class["SITE"]
-    routes = by_class["CABLE"]
+    supports = by_class[FTTH_APD.support_class]
+    boxes = by_class[FTTH_APD.box_class]
+    sites = by_class[FTTH_APD.site_class]
+    routes = by_class[FTTH_APD.route_class]
     support_index = _NearestFeatureIndex(supports)
     site_index = _NearestFeatureIndex(sites)
     route_source_segments = {
@@ -875,7 +878,7 @@ def build_topology(entities, features, registry, existing_relations, unresolved,
         )
         collocated = (
             _collocated_support(asset)
-            if asset.feature_class == "BOITE"
+            if asset.feature_class == FTTH_APD.box_class
             else None
         )
         if support is None and collocated is not None:

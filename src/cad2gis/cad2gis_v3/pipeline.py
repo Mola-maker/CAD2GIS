@@ -38,6 +38,7 @@ from .ingest import ingest
 from .implementation import implementation_manifest_fields, production_conversion_provenance
 from .model import canonical_curve_fingerprint
 from .curve_geometry import supports_endpoint_bridge
+from .domain_pack import FTTH_APD
 from .semantics import classify_entities, _PTECH_CABLE_ENDPOINT_BRIDGE_M, _PTECH_CABLE_ENDPOINT_MIN_GAP_M
 from .spatial_coverage import evaluate_corridor_coverage, evaluate_spatial_coverage
 from .styles import write_styles
@@ -429,7 +430,7 @@ def _validate_source_geometry(
             + getattr(registry, "layers", {}).get("patchcord", ())
         )
     }
-    cables = [feature for feature in features if feature.feature_class == "CABLE"]
+    cables = [feature for feature in features if feature.feature_class == FTTH_APD.route_class]
     failures = []
     curve_facts_checked = 0
     for cable in cables:
@@ -475,7 +476,7 @@ def _validate_source_geometry(
                 distance = math.dist(old, target)
                 if (
                     bridge["route_source_entity_key"] != source.entity_key
-                    or support.feature_class not in {"PTECH", "EMR"}
+                    or support.feature_class not in FTTH_APD.route_support_classes
                     or bridge["source_entity_key"] != support.source_entity_key
                     or bridge["support_handle"] != support.source_handle
                     or support.source_entity_key not in source_by_key
@@ -606,8 +607,8 @@ def _validate_topology_policy(
         if relation.relation_kind != "connects":
             continue
         if (
-            feature_class_by_key.get(relation.source_key) == "PTECH"
-            or feature_class_by_key.get(relation.target_key) == "PTECH"
+            feature_class_by_key.get(relation.source_key) == FTTH_APD.passive_support_class
+            or feature_class_by_key.get(relation.target_key) == FTTH_APD.passive_support_class
         ):
             failures.append(f"{relation.relation_key}: support promoted to optical node")
         if "crossing" in relation.method.casefold():
@@ -2568,13 +2569,13 @@ def _georeference_features(admission: _ConversionAdmission, classified: _Classif
         drawing_extent_points = tuple(
             point
             for feature in gcp_feature_scope
-            if feature.feature_class in {"PTECH", "BOITE", "SITE", "EMR"}
+            if feature.feature_class in FTTH_APD.control_coverage_classes
             for point in feature.native_points
         )
         corridor_polylines = tuple(
             tuple(feature.native_points)
             for feature in gcp_feature_scope
-            if feature.feature_class == "CABLE"
+            if feature.feature_class == FTTH_APD.route_class
             and feature.geometry_kind == "LineString"
             and len(feature.native_points) >= 2
         )
